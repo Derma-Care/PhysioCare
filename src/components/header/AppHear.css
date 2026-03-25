@@ -1,0 +1,8 @@
+.profile-image {
+  transition: transform 0.3s ease-in-out;
+  border-radius: 50%; /* Optional: Makes it circular */
+}
+
+.profile-image:hover {
+  transform: scale(1.2); /* Slight zoom */
+}

@@ -1,0 +1,21 @@
+/* components/CustomToast.css */
+.custom-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-weight: 500;
+  color: #fff;
+}
+
+
+
+.custom-toast .toast-logo {
+  width: 30px;
+  height: 30px;
+}
+
+.custom-toast .toast-message {
+  flex: 1;
+}

@@ -1,0 +1,111 @@
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+a {
+  color: var(--color-black);
+}
+::placeholder {
+  color: var(--color-black);
+}
+
+/* Force dynamic header background + text color */
+.pink-table {
+  background-color: var(--color-bgcolor) !important; /* #a5c4d4ff */
+  color: var(--color-black) !important; /* #7e3a93 */
+  font-size: 14px !important;
+}
+.pink-table th {
+  background-color: var(--color-bgcolor) !important; /* #a5c4d4ff */
+  color: var(--color-black) !important; /* #7e3a93 */
+  font-size: 14px !important;
+}
+
+/* Optional: make striped rows light pink dynamically */
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: var(
+    --color-success
+  ) !important; /* Replace with your highlight color if needed */
+}
+
+.pink-table td {
+  color: var(--color-black) !important; /* #7e3a93 */
+  font-size: 14px !important;
+
+  vertical-align: middle; /* centers vertically */
+}
+
+.btn-selected {
+  background-color: var(--color-black) !important; /* #7e3a93 */
+  color: var(--color-white) !important; /* #fff */
+  border: 1px solid var(--color-black) !important; /* #7e3a93 */
+}
+
+.btn-unselected {
+  background-color: transparent !important;
+  color: var(--color-black) !important; /* #7e3a93 */
+  border: 1px solid var(--color-black) !important; /* #7e3a93 */
+}
+/* Force pink header background + white text */
+.pink-table th {
+  background-color: var(--color-bgcolor) !important;
+  color: var(--color-black) !important;
+}
+
+/* Optional: make striped rows light pink */
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: #ffe4ec !important;
+}
+
+.pink-table td {
+  color: var(--color-black) !important; /* white text */
+}
+
+.btn-selected {
+  background-color: var(--color-black) !important; /* Pink background */
+  color: #fff !important; /* White text */
+  border: 1px solidvar(--color-black) !important;
+}
+
+.btn-unselected {
+  background-color: transparent !important;
+  color: var(--color-black) !important; /* Pink text */
+  border: 1px solid var(--color-black) !important; /* Pink border */
+}
+
+/* Action Buttons */
+
+.actionBtn {
+  background-color: var(--color-bgcolor);
+  color: var(--color-black);
+  border: none;
+  border-radius: 4px;
+  box-shadow: 1px 2px 4px gray;
+  padding: 5px;
+}
+
+/* add/submit btn */
+
+.pink-Btn {
+  color: white !important; /* #a5c4d4ff */
+  background-color: var(--color-black) !important; /* #7e3a93 */
+  font-size: 14px !important;
+  border: none;
+}
+/* modal heigth */
+
+.custom-modal .modal-content {
+  height: 90vh;         /* modal height */
+  max-height: 90vh;     /* restrict max height */
+  display: flex;
+  flex-direction: column;
+}
+
+.custom-modal .modal-body {
+  overflow-y: auto;     /* enable vertical scroll */
+  flex: 1;              /* take available space */
+}

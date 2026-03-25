@@ -1,0 +1,2023 @@
+{
+  "services": [
+    {
+      "serviceId": 1,
+      "serviceName": "SkinCare",
+      "hospitals": [
+        {
+          "hospitalId": "H_1",
+          "id": 1,
+          "name": "SkinCare Multispecialty Hospital",
+          "address": "123 Wellness Street, Banjara Hills",
+          "city": "Hyderabad",
+          "contactNumber": "+91 98765 43210",
+          "hospitalOveralRating": 5,
+          "hospitalRegistrations": "78798899",
+          "openingTime": "09-00AM",
+          "closingTime": "05-00PM",
+          "hospitalLogo": "",
+          "hospitalDoucuments": [],
+          "doctors": [
+            {
+              "doctorId": "DC_1",
+              "name": "Dr. Anjali Mehta",
+              "gender": "Female",
+              "specialization": "Dermato-Genetics",
+              "experienceYears": 12,
+              "qualification": "MD",
+              "doctorMobileNumber": "7842259803",
+              "license": "",
+              "focusAreas": [
+                "Genetic Skin Disorders",
+                "Hair Loss Solutions",
+                "Pigmentation Disorders",
+                "Skin Cancer Risk Mapping"
+              ],
+              "availableDays": "Mon - Sat",
+              "availableTimings": "09:00 AM - 05:00 PM",
+              "slots": [
+                {
+                  "date": "2025-05-08",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "05:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-04",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-05",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-06",
+                  "availableSlots": [
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "05:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-07",
+                  "availableSlots": []
+                },
+                {
+                  "date": "2025-04-08",
+                  "availableSlots": []
+                },
+                {
+                  "date": "2025-04-09",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-10",
+                  "availableSlots": [
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                }
+              ],
+              "languagesKnown": ["English", "Hindi", "Telugu"],
+              "profile": "Specializes in diagnosing and treating hereditary skin disorders and improving personalized skincare treatments.",
+              "profileImage": "https://randomuser.me/api/portraits/women/44.jpg",
+              "careerPath": ["Medico Skin Institute", "GlowCare Clinic", "SkinCare Hospital"],
+              "highlights": [
+                "25+ research papers",
+                "Best Dermatologist South India 2022",
+                "TEDx Speaker"
+              ],
+              "ratings": {
+                "overall": 4.8,
+                "rated": false,
+                "comments": [
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 4,
+                    "comment": "Dr. Mehta is amazing! She helped me treat my acne which I’ve been struggling with for years. She explained everything so clearly and the prescription worked like magic within weeks. Highly recommend Derma Care!",
+                    "rated": true,
+                    "createAt": "2025-03-27T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": []
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Satisfied with the consultation. I visited for hair fall treatment and got a clear understanding of the issue. Doctor prescribed a customized solution. Clinic was well-maintained and organized.",
+                    "rated": false,
+                    "createAt": "2025-03-27T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": [
+                      {
+                        "userId": "admin001",
+                        "reply": "Thank you for your kind words! We’re glad you’re seeing improvement. 😊",
+                        "createAt": "2025-03-28T09:15:00Z"
+                      },
+                      {
+                        "userId": "admin002",
+                        "reply": "good doctor",
+                        "createAt": "2025-04-02T10:00:00Z"
+                      }
+                    ]
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2025-03-27T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": []
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2025-03-27T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": [
+                      {
+                        "userId": "clinic_staff",
+                        "reply": "Thanks for your positive feedback! 💙",
+                        "createAt": "2025-03-28T11:00:00Z"
+                      }
+                    ]
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor ",
+                    "rated": false,
+                    "createAt": "2025-03-27T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": []
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "fsdfsdfdsfsdfdsfsdfdfds",
+                    "rated": false,
+                    "createAt": "2025-03-27T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": [
+                      {
+                        "userId": "admin001",
+                        "reply": "We appreciate your feedback!",
+                        "createAt": "2025-03-28T12:30:00Z"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "favorites": true,
+              "bookingSlots": ["2024-03-25T10:00:00", "2024-03-25T11:00:00"],
+              "fee": {
+                "treatmentFee": 1500,
+                "inClinicFee": 1200,
+                "videoConsultationFee": 1000
+              },
+              "availablity": true,
+              "status": {
+                "status": "pending",
+                "rejectionReason": null
+              }
+            },
+            {
+              "doctorId": "DC_2",
+              "name": "Dr. Rohan Deshmukh",
+              "gender": "Male",
+              "qualification": "MBBS, MD ",
+              "doctorMobileNumber": "7842259802",
+              "license": "",
+              "specialization": "Cosmetic Dermatology",
+              "experienceYears": 9,
+              "focusAreas": ["Laser Skin Rejuvenation", "Anti-Aging", "Scar Treatment"],
+              "availableDays": "Tue - Sat",
+              "availableTimings": "10:00 AM - 05:00 PM",
+              "slots": [
+                {
+                  "date": "2025-04-03",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "05:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-04",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-05",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-06",
+                  "availableSlots": [
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "05:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-07",
+                  "availableSlots": []
+                },
+                {
+                  "date": "2025-04-08",
+                  "availableSlots": []
+                },
+                {
+                  "date": "2025-04-09",
+                  "availableSlots": []
+                }
+              ],
+              "languagesKnown": ["English", "Hindi", "Marathi"],
+              "profile": "Expert in cosmetic skin care, lasers and rejuvenation treatments.",
+              "profileImage": "https://randomuser.me/api/portraits/men/55.jpg",
+              "careerPath": ["Apollo Skin Dept.", "DermaGlow Bangalore"],
+              "highlights": ["Korean Laser Training", "Vogue Skincare Feature"],
+              "ratings": {
+                "overall": 4.6,
+                "rated": true,
+                "comments": [
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": []
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": [
+                      {
+                        "userId": "admin002",
+                        "reply": "good doctor",
+                        "createAt": "2025-04-02T10:00:00Z"
+                      }
+                    ]
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": []
+                  }
+                ]
+              },
+              "favorites": false,
+              "bookingSlots": ["2024-03-26T11:00:00", "2024-03-26T16:00:00"],
+              "fee": {
+                "treatmentFee": 2000,
+                "inClinicFee": 1800,
+                "videoConsultationFee": 1500
+              },
+              "availablity": true,
+              "status": {
+                "status": "pending",
+                "rejectionReason": null
+              }
+            }
+          ]
+        },
+        {
+          "hospitalId": "H_2",
+          "id": "2",
+          "name": "GlowSkin Laser & Aesthetic Center",
+          "address": "45 Jubilee Road, Indiranagar",
+          "city": "Bangalore",
+          "contactNumber": "+91 99876 11223",
+          "hospitalOveralRating": 5,
+          "hospitalRegistrations": "78798899",
+          "openingTime": "",
+          "closingTime": "",
+          "hospitalLogo": "",
+          "hospitalDoucuments": [],
+          "doctors": [
+            {
+              "doctorId": "DC_3",
+              "name": "Dr. Fatima Shaikh",
+              "gender": "Female",
+              "qualification": "MBBS, DDVL",
+              "doctorMobileNumber": "7842259801",
+              "license": "",
+              "specialization": "Pediatric Dermatology",
+              "experienceYears": 7,
+              "focusAreas": ["Eczema", "Infant Rashes", "Birthmark Management"],
+              "availableDays": "Mon - Sat",
+              "availableTimings": "11:00 AM - 05:00 PM",
+              "slots": [
+                {
+                  "date": "2025-04-03",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "05:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-04",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-05",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-06",
+                  "availableSlots": [
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "05:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-07",
+                  "availableSlots": []
+                },
+                {
+                  "date": "2025-04-08",
+                  "availableSlots": []
+                },
+                {
+                  "date": "2025-04-09",
+                  "availableSlots": []
+                }
+              ],
+              "languagesKnown": ["English", "Hindi", "Urdu"],
+              "profile": "Provides gentle, expert care for skin conditions in children and infants.",
+              "profileImage": "https://randomuser.me/api/portraits/women/65.jpg",
+              "careerPath": ["Rainbow Hospitals", "SkinCare Chennai"],
+              "highlights": ["12 pediatric papers", "NeoDerm Speaker"],
+              "ratings": {
+                "overall": 4.9,
+                "rated": true,
+                "comments": [
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": []
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": [
+                      {
+                        "userId": "admin002",
+                        "reply": "good doctor",
+                        "createAt": "2025-04-02T10:00:00Z"
+                      }
+                    ]
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": []
+                  }
+                ]
+              },
+              "favorites": true,
+              "bookingSlots": ["2024-03-27T09:00:00", "2024-03-27T10:30:00"],
+              "fee": {
+                "treatmentFee": 1200,
+                "inClinicFee": 1000,
+                "videoConsultationFee": 900
+              },
+              "availablity": true,
+              "status": {
+                "status": "rejected",
+                "rejectionReason": "I am not available at the moment."
+              }
+            },
+            {
+              "doctorId": "DC_4",
+
+              "name": "Dr. Arvind Rao",
+              "gender": "Male",
+              "qualification": "MD",
+              "doctorMobileNumber": "7842259800",
+              "license": "",
+              "specialization": "Trichology",
+              "experienceYears": 10,
+              "focusAreas": ["Hair Transplant", "Hair Fall", "Dandruff"],
+              "availableDays": "Tue - Sat",
+              "availableTimings": "09:00 AM - 05:00 PM",
+              "slots": [
+                {
+                  "date": "2025-04-03",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "05:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-04",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-05",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-06",
+                  "availableSlots": [
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "05:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-07",
+                  "availableSlots": []
+                },
+                {
+                  "date": "2025-04-08",
+                  "availableSlots": []
+                },
+                {
+                  "date": "2025-04-09",
+                  "availableSlots": []
+                }
+              ],
+              "languagesKnown": ["English", "Hindi", "Kannada"],
+              "profile": "Leading hair specialist with expertise in transplant and scalp care.",
+              "profileImage": "https://randomuser.me/api/portraits/men/45.jpg",
+              "careerPath": ["Kaya Skin Clinic", "HairCraft Founder"],
+              "highlights": ["1000+ transplants", "Spain-trained surgeon"],
+              "ratings": {
+                "overall": 4.7,
+                "rated": true,
+                "comments": [
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": []
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": []
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 5,
+                    "comment": "Excellent Doctor, very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": [
+                      {
+                        "userId": "admin002",
+                        "reply": "good doctor",
+                        "createAt": "2025-04-02T10:00:00Z"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "favorites": false,
+              "bookingSlots": ["2024-03-28T14:00:00", "2024-03-28T15:30:00"],
+              "fee": {
+                "treatmentFee": 2500,
+                "inClinicFee": 2000,
+                "videoConsultationFee": 1800
+              },
+              "availablity": true,
+              "status": {
+                "status": "pending",
+                "rejectionReason": null
+              }
+            }
+          ]
+        }
+      ],
+      "id": "1"
+    },
+    {
+      "serviceId": 2,
+
+      "serviceName": "Pediatric Dermatology",
+      "hospitals": [
+        {
+          "hospitalId": "H_3",
+          "id": 3,
+          "name": "Rainbow Kids & Skin Clinic",
+          "address": "56 Blossom Lane, Anna Nagar",
+          "city": "Chennai",
+          "contactNumber": "+91 98456 78900",
+          "hospitalOveralRating": 5,
+          "hospitalRegistrations": "78798899",
+          "openingTime": "",
+          "closingTime": "",
+          "hospitalLogo": "",
+          "hospitalDoucuments": [],
+          "doctors": [
+            {
+              "doctorId": "DC_5",
+              "name": "Dr. Sneha Reddy",
+              "gender": "Female",
+              "qualification": "MBBS",
+              "doctorMobileNumber": "7842259813",
+              "license": "",
+              "specialization": "Clinical Dermatology",
+              "experienceYears": 8,
+              "focusAreas": ["Psoriasis", "Vitiligo", "Chronic Eczema"],
+              "availableDays": "Tue - Sat",
+              "availableTimings": "10:00 AM - 05:00 PM",
+              "slots": [
+                {
+                  "date": "2025-04-03",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "05:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-04",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": true
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-05",
+                  "availableSlots": [
+                    {
+                      "slot": "09:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "09:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "10:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:00 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "11:30 AM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-06",
+                  "availableSlots": [
+                    {
+                      "slot": "12:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "12:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "01:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "02:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "03:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:00 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "04:30 PM",
+                      "slotbooked": false
+                    },
+                    {
+                      "slot": "05:00 PM",
+                      "slotbooked": false
+                    }
+                  ]
+                },
+                {
+                  "date": "2025-04-07",
+                  "availableSlots": []
+                },
+                {
+                  "date": "2025-04-08",
+                  "availableSlots": []
+                },
+                {
+                  "date": "2025-04-09",
+                  "availableSlots": []
+                }
+              ],
+              "languagesKnown": ["English", "Telugu", "Gujarati"],
+              "profile": "Experienced in managing long-term dermatological diseases using medical therapies.",
+              "profileImage": "https://randomuser.me/api/portraits/women/32.jpg",
+              "careerPath": ["NIMS Fellow", "Lead at DermaPlus"],
+              "highlights": ["Vitiligo Campaigner", "Case Study Winner"],
+              "ratings": {
+                "overall": 4.5,
+                "rated": true,
+                "comments": [
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 4,
+                    "comment": "very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": []
+                  },
+                  {
+                    "userId": "676e6648d8bb6d014787a101",
+                    "rating": 4,
+                    "comment": "very knowledgeable and caring.",
+                    "rated": false,
+                    "createAt": "2024-03-29T10:00:00Z",
+                    "hospitalRating": 5,
+                    "replies": [
+                      {
+                        "userId": "admin002",
+                        "reply": "good doctor",
+                        "createAt": "2025-04-02T10:00:00Z"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "favorites": true,
+              "bookingSlots": ["2024-03-29T10:00:00", "2024-03-29T11:30:00"],
+              "fee": {
+                "treatmentFee": 1400,
+                "inClinicFee": 1300,
+                "videoConsultationFee": 1000
+              },
+              "availablity": false,
+              "status": {
+                "status": "pending",
+                "rejectionReason": null
+              }
+            }
+          ]
+        }
+      ],
+      "id": "2"
+    }
+  ],
+  "doctorLogin": [
+    {
+      "id": "1",
+      "hospitalId": "H_1",
+      "doctorId": "DC_1",
+      "username": "doctor_1",
+      "password": "doctor@12"
+    },
+    {
+      "id": "2",
+      "hospitalId": "H_1",
+      "doctorId": "DC_2",
+      "username": "doctor_2",
+      "password": "doctor@2"
+    },
+    {
+      "id": "3",
+      "hospitalId": "H_2",
+      "doctorId": "DC_3",
+      "username": "doctor_3",
+      "password": "doctor@3"
+    },
+    {
+      "id": "4",
+      "hospitalId": "H_2",
+      "doctorId": "DC_4",
+      "username": "doctor_4",
+      "password": "doctor@4"
+    },
+    {
+      "id": "5",
+      "hospitalId": "H_3",
+      "doctorId": "DC_5",
+      "username": "doctor_5",
+      "password": "doctor@5"
+    }
+  ],
+  "notifications": [
+    {
+      "doctorId": "DC_1",
+      "notifications": [
+        {
+          "notificationid": "1",
+          "title": "New Appointment",
+          "message": "You have a new appointment at 9 AM.",
+          "date": "2025-04-07T08:00:00",
+          "patient": {
+            "patientId": "P001",
+            "name": "prashanth",
+            "age": 28,
+            "gender": "Male",
+            "problems": "problem_1",
+            "bookingfor": "self",
+            "notes": "Simulate download URLs for Flutter testing",
+            "reports": []
+          },
+          "booking": {
+            "bookingId": "B001",
+            "slotTime": "09:00 AM ",
+            "startDate": "2025-04-08",
+            "serviceName": "Skin Consultation",
+            "consultationType": "Service & Treatments",
+            "status": "pending"
+          }
+        },
+        {
+          "notificationid": "3",
+          "title": "New Appointment",
+          "message": "You have a new appointment at 9 AM.",
+          "date": "2025-04-07T08:00:00",
+          "patient": {
+            "patientId": "P003",
+            "name": "prashanth",
+            "age": 28,
+            "gender": "Male",
+            "problems": "problem_1",
+            "bookingfor": "self",
+            "notes": " ",
+            "reports": []
+          },
+          "booking": {
+            "bookingId": "B003",
+            "slotTime": "09:00 AM ",
+            "startDate": "2025-04-08",
+            "serviceName": "Skin Consultation",
+            "consultationType": "In-clinic",
+            "status": "pending"
+          }
+        },
+        {
+          "notificationid": "2",
+          "title": "Test Results Ready",
+          "message": "Test results for patient John Doe are ready.",
+          "date": "2025-04-08T13:30:00",
+          "patient": {
+            "patientId": "P002",
+            "name": "nadhiya",
+            "age": 30,
+            "gender": "Female",
+            "problems": "problem_2",
+            "bookingfor": "Others",
+            "notes": " ",
+            "reports": []
+          },
+          "booking": {
+            "bookingId": "B002",
+            "slotTime": "09:30 AM",
+            "startDate": "2025-04-08",
+            "serviceName": "Hair Consultation",
+            "consultationType": "video consultation",
+            "status": "pending"
+          }
+        },
+        {
+          "notificationid": "4",
+          "title": "Test Results Ready",
+          "message": "Test results for patient John Doe are ready.",
+          "date": "2025-04-08T13:30:00",
+          "patient": {
+            "patientId": "P002",
+            "name": "Ramesh",
+            "age": 30,
+            "gender": "Male",
+            "problems": "problem_7",
+            "bookingfor": "Others",
+            "notes": "Please avoid dairy until further advice",
+            "reports": [
+              {
+                "reportId": "R011",
+                "reportName": "Report 11",
+                "reportDate": "2025-04-08",
+                "reportStatus": "completed",
+                "reportType": "Lab Test",
+                "reportFile": "https://www.sample-videos.com/pdf/Sample-pdf-5mb.pdf"
+              },
+              {
+                "reportId": "R012",
+                "reportName": "Report 12",
+                "reportDate": "2025-04-08",
+                "reportStatus": "completed",
+                "reportType": "Lab Test",
+                "reportFile": "https://www.pixelstalk.net/wp-content/uploads/2016/07/Background-Beautiful-Nature-Images-HD.jpg"
+              },
+              {
+                "reportId": "R013",
+                "reportName": "Report 13",
+                "reportDate": "2025-04-08",
+                "reportStatus": "completed",
+                "reportType": "Lab Test",
+                "reportFile": "https://th.bing.com/th/id/OIP.G37tgeQqSNt7v2oPfj9ltQHaE7?rs=1&pid=ImgDetMain"
+              }
+            ]
+          },
+          "booking": {
+            "bookingId": "B002",
+            "slotTime": "09:30 AM",
+            "startDate": "2025-04-08",
+            "serviceName": "Hair Consultation",
+            "consultationType": "In-Clinic",
+            "status": "completed"
+          }
+        },
+        {
+          "notificationid": "6",
+          "title": "Test Results Ready",
+          "message": "Test results for patient John Doe are ready.",
+          "date": "2025-04-08T13:30:00",
+          "patient": {
+            "patientId": "P009",
+            "name": "Rajitha",
+            "age": 20,
+            "gender": "Female",
+            "problems": "problem_7",
+            "bookingfor": "Others",
+            "notes": "",
+            "reports": []
+          },
+          "booking": {
+            "bookingId": "B007",
+            "slotTime": "09:30 AM",
+            "startDate": "2025-04-08",
+            "serviceName": "Hair Consultation",
+            "consultationType": "Service & Treatments",
+            "status": "completed"
+          }
+        },
+        {
+          "notificationid": "6",
+          "title": "Test Results Ready",
+          "message": "Test results for patient John Doe are ready.",
+          "date": "2025-04-08T13:30:00",
+          "patient": {
+            "patientId": "P009",
+            "name": "Suma",
+            "age": 18,
+            "gender": "Female",
+            "problems": "problem_20",
+            "bookingfor": "Others",
+            "notes": "",
+            "reports": [
+              {
+                "reportId": "R001",
+                "reportName": "Report 01",
+                "reportDate": "2025-04-08",
+                "reportStatus": "completed",
+                "reportType": "Lab Test",
+                "reportFile": "https://www.pixelstalk.net/wp-content/uploads/2016/07/Background-Beautiful-Nature-Images-HD.jpg"
+              },
+              {
+                "reportId": "R002",
+                "reportName": "Report 02",
+                "reportDate": "2025-04-08",
+                "reportStatus": "completed",
+                "reportType": "Lab Test",
+                "reportFile": "https://th.bing.com/th/id/OIP.JlYNhV7cKk6hbEd9rRQg2gHaEc?rs=1&pid=ImgDetMain"
+              }
+            ]
+          },
+          "booking": {
+            "bookingId": "B007",
+            "slotTime": "09:30 AM",
+            "startDate": "2025-04-08",
+            "serviceName": "Hair Consultation",
+            "consultationType": "Video Counsltation",
+            "status": "completed"
+          }
+        }
+      ],
+      "id": "2ca0"
+    },
+    {
+      "doctorId": "DC_2",
+      "notifications": [
+        {
+          "notificationid": "11",
+          "title": "Surgery Reminder",
+          "message": "Scheduled surgery at 11 AM.",
+          "date": "2025-04-06T01:30:00",
+          "patient": {
+            "patientId": "P003",
+            "name": "spandana",
+            "age": 20,
+            "gender": "Female",
+            "problems": "problem_3",
+            "bookingfor": "self",
+            "notes": "",
+            "reports": [
+              {
+                "reportId": "R001",
+                "reportName": "Report 01234",
+                "reportDate": "2025-04-08",
+                "reportStatus": "completed",
+                "reportType": "Lab Test",
+                "reportFile": "https://www.pixelstalk.net/wp-content/uploads/2016/07/Background-Beautiful-Nature-Images-HD.jpg"
+              },
+              {
+                "reportId": "R002",
+                "reportName": "Report 07872",
+                "reportDate": "2025-04-08",
+                "reportStatus": "completed",
+                "reportType": "Lab Test",
+                "reportFile": "https://th.bing.com/th/id/OIP.JlYNhV7cKk6hbEd9rRQg2gHaEc?rs=1&pid=ImgDetMain"
+              }
+            ]
+          },
+          "booking": {
+            "bookingId": "B003",
+            "slotTime": "06:00 PM",
+            "startDate": "2025-04-08",
+            "serviceName": "Derma Consultation",
+            "consultationType": "In-Clinic",
+            "status": "completed"
+          }
+        }
+      ],
+      "id": "8a4a"
+    },
+    {
+      "doctorId": "DC_3",
+      "notifications": [
+        {
+          "notificationid": "1",
+          "title": "Weekly Summary",
+          "message": "You have 15 appointments this week.",
+          "date": "2025-04-06T17:00:00",
+          "patient": {
+            "patientId": "P004",
+            "name": "anil",
+            "age": 28,
+            "gender": "Male",
+            "problems": "problem_4",
+            "bookingfor": "self"
+          },
+          "booking": {
+            "bookingId": "B004",
+            "slotTime": "11:00 AM",
+            "startDate": "2025-04-08",
+            "serviceName": "Skin Consultation",
+            "consultationType": "In-Clinic"
+          }
+        },
+        {
+          "notificationid": "2",
+          "title": "Pending Reports",
+          "message": "3 reports need your review.",
+          "date": "2025-04-06T15:00:00",
+          "patient": {
+            "patientId": "P005",
+            "name": "souji",
+            "age": 32,
+            "gender": "Female",
+            "problems": "problem_5",
+            "bookingfor": "Others"
+          },
+          "booking": {
+            "bookingId": "B005",
+            "slotTime": "09:00 AM",
+            "startDate": "2025-04-08",
+            "serviceName": "Skin Consultation",
+            "consultationType": "Video Counsltation"
+          }
+        }
+      ],
+      "id": "dc80"
+    }
+  ]
+}

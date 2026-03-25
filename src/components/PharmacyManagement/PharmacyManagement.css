@@ -1,0 +1,78 @@
+.pharmacy-management {
+  background-color: #f4f7fa;
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.pm-title {
+  font-weight: 700;
+  color: #7e3a93;
+}
+
+.pm-tabs .nav-link {
+  font-weight: 600;
+  color: #555;
+  transition: all 0.3s ease;
+}
+
+.pm-tabs .nav-link:hover {
+  color: #3b3b98;
+}
+
+.pm-tabs .active-tab {
+  color: #fff !important;
+  background-color: #3b3b98;
+  border-radius: 8px;
+}
+
+.pm-card {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 1.5rem;
+  background-color: #fff;
+  transition: transform 0.3s ease;
+}
+.pm-add-btn {
+  height: 38px; /* match the search input height */
+  padding: 0 12px;
+}
+.pm-card:hover {
+  transform: translateY(-5px);
+}
+
+.pm-card h4 {
+  color: #3b3b98;
+  margin-bottom: 0.5rem;
+}
+/* --- Adjust the main Purchase Screen container --- */
+.purchase-screen { 
+    /* This sets the light blue background and border-radius. */
+    background: #e9f6ff; 
+    border-radius: 8px; 
+    
+    /* 1. Eliminate the floating page look by setting minimal padding. */
+    /* Original: likely had p-3, which translates to ~1rem padding all around. */
+    /* NEW: Reduce top padding to 0, use minimal padding for the sides/bottom. */
+    padding: 0 1rem 1rem 1rem; /* 0px top, 16px right/bottom/left */
+}
+
+/* --- Remove vertical space/margin from the first element's container --- */
+/* The element above the Purchase Bill form is this d-flex container: */
+.purchase-screen > .d-flex.flex-wrap.justify-content-between.align-items-center:first-child {
+    /* Ensure no residual top margin or padding is pushing it down */
+    margin-top: 0 !important;
+    padding-top: 0 !important; 
+}
+
+/* Optional: If the CFormCheck label/input itself has margin, zero it out */
+.purchase-screen .form-check {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Keep the card spacing consistent (use mb-3 on the card itself) */
+.purchase-screen .card.p-3.mb-3 {
+    margin-top: 1rem; /* Add space between the Non-Local bar and the card */
+}
+
+

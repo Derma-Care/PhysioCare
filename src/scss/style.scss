@@ -1,0 +1,49 @@
+// @import "variables";
+
+@import "@coreui/coreui/scss/coreui";
+@import "@coreui/chartjs/scss/coreui-chartjs";
+
+@import "vendors/simplebar";
+
+@import "theme";
+
+@import "custom";
+
+$breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px,
+  xxl: 1400px
+);
+
+@media (max-width: map-get($breakpoints, sm)) {
+  body {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: map-get($breakpoints, md)) and (max-width: map-get($breakpoints, lg)) {
+  .custom-container {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: map-get($breakpoints, xl)) {
+  .custom-header {
+    font-size: 1.5rem; 
+  }
+}
+
+.custom-card {
+  @media (max-width: 768px) {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+
+  @media (min-width: 1200px) {
+    margin: 2rem;
+    padding: 2rem;
+  }
+}

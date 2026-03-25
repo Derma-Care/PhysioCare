@@ -1,0 +1,21 @@
+/* toastify-custom.css */
+
+/* General toast style */
+.Toastify__toast {
+  background-color: var(--color-black) !important;
+  color: white !important;
+}
+
+/* Force all icons to white */
+.Toastify__toast-icon svg {
+  fill: white !important;
+}
+
+/* Progress bar override */
+.Toastify__progress-bar,
+.Toastify__progress-bar--success,
+.Toastify__progress-bar--error,
+.Toastify__progress-bar--info,
+.Toastify__progress-bar--warning {
+  background: var(--color-bgcolor) !important;
+}

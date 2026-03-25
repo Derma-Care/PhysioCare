@@ -1,0 +1,35 @@
+/* Optional: For smaller screen spacing or dark mode */
+.bg-white {
+  background-color: #fff !important;
+}
+
+.comment-avatar {
+  width: 40px;
+  height: 40px;
+  background-color: #ccc;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 16px;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-avatar-sm {
+  width: 30px;
+  height: 30px;
+  background-color: #bbb;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 13px;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-text {
+  font-size: 14px;
+  line-height: 1.5;
+}

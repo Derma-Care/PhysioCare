@@ -1,0 +1,66 @@
+.doctor-card {
+  display: flex;
+  align-items: flex-start;
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.doctor-avatar img {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  object-fit: cover;
+  outline: 2px solid grey;
+}
+
+.doctor-info {
+  flex-grow: 1;
+  padding: 0 20px;
+}
+
+.doctor-info h2 {
+  color: #007bff;
+  font-size: 18px;
+  margin: 0;
+}
+
+.speciality {
+  font-weight: 500;
+  color: #666;
+}
+
+.location {
+  margin: 6px 0;
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.rating-badge {
+  background-color: green;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-right: 10px;
+}
+
+.stories {
+  color: #555;
+}
+
+.doctor-action button {
+  background-color: #0d99ff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+}

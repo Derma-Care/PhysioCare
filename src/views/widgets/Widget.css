@@ -1,0 +1,54 @@
+/* Force dynamic header background + text color */
+.pink-table th {
+  background-color: var(--color-bgcolor) !important; /* #a5c4d4ff */
+  color: var(--color-black) !important; /* #7e3a93 */
+}
+
+/* Optional: make striped rows light pink dynamically */
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: var(
+    --color-success
+  ) !important; /* Replace with your highlight color if needed */
+}
+
+.pink-table td {
+  color: var(--color-black) !important; /* #7e3a93 */
+}
+
+.btn-selected {
+  background-color: var(--color-black) !important; /* #7e3a93 */
+  color: var(--color-white) !important; /* #fff */
+  border: 1px solid var(--color-black) !important; /* #7e3a93 */
+}
+
+.btn-unselected {
+  background-color: transparent !important;
+  color: var(--color-black) !important; /* #7e3a93 */
+  border: 1px solid var(--color-black) !important; /* #7e3a93 */
+}
+/* Force pink header background + white text */
+.pink-table th {
+  background-color: var(--color-bgcolor) !important;
+  color: var(--color-black) !important;
+}
+
+/* Optional: make striped rows light pink */
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: #ffe4ec !important;
+}
+
+.pink-table td {
+  color: var(--color-black) !important; /* white text */
+}
+
+.btn-selected {
+  background-color: var(--color-black) !important; /* Pink background */
+  color: #fff !important; /* White text */
+  border: 1px solidvar(--color-black) !important;
+}
+
+.btn-unselected {
+  background-color: transparent !important;
+  color: var(--color-black) !important; /* Pink text */
+  border: 1px solid var(--color-black) !important; /* Pink border */
+}

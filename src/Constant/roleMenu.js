@@ -1,0 +1,72 @@
+// rolePermissions.js
+export const roleMenu = {
+  //Admin Permissions
+  admin: {
+    Dashboard: ['read'],
+    Appointments: ['create', 'read', 'update', 'delete'],
+    'Employee management': ['create', 'read', 'update', 'delete'],
+    'Disease-Management': ['create', 'read', 'update', 'delete'],
+    Tests: ['create', 'read', 'update', 'delete'],
+    Treatments: ['create', 'read', 'update', 'delete'],
+    'Procedure Management': ['create', 'read', 'update', 'delete'],
+    Reports: ['read'],
+    Payouts: ['create', 'read', 'update', 'delete'],
+    Help: ['read'],
+    'Customer Management': ['create', 'read', 'update', 'delete'],
+    ConsentForms: ['create', 'read', 'update', 'delete'],
+    Doctors: ['create', 'read', 'update', 'delete'],
+    Nurses: ['create', 'read', 'update',],
+    Pharmacist: ['create', 'read', 'update', 'delete'],
+    Laboratory: ['create', 'read', 'update', 'delete'],
+    Admin: ['create', 'read', 'update', 'delete'],
+    FrontDesk: ['create', 'read', 'update', 'delete'],
+    Security: ['create', 'read', 'update', 'delete'],
+    OtherStaff: ['create', 'read', 'update', 'delete'],
+    'Vendor Management': ['create', 'read', 'update', 'delete'],
+    'Pharmacy Management ': ['create', 'read', 'update', 'delete'],
+    'Inventory Management': ['create', 'read', 'update', 'delete'],
+    Support: ['create', 'read', 'update', 'delete'],
+    Billing: ['create', 'read', 'update', 'delete'],
+    Analytics: ['create', 'read', 'update', 'delete'],
+    'Tax reports': ['create', 'read', 'update', 'delete'],
+    "Refer Doctors":['create', 'read', 'update', 'delete'],
+  },
+  //Lab Technician Permissions
+  labTechnician: {
+    Dashboard: ['read'],
+    Appointments: ['read', 'update'],
+    Tests: ['read'],
+    Treatments: ['read', 'update'],
+    Reports: ['read'],
+    Help: ['read'],
+  },
+  //Receptionist Permissions
+  receptionist: {
+    Dashboard: ['read'],
+    Appointments: ['create', 'read', 'update'],
+    Payouts: ['read'],
+    Help: ['read'],
+  },
+  //Nurse Permissions
+  nurse: {
+    'Disease-Management': ['create', 'read', 'update', 'delete'],
+    Appointments: ['create', 'read', 'update'],
+    Payouts: ['read'],
+    Help: ['read'],
+    Test: ['read'],
+    Treatments: ['read'],
+    'Procedure Management': ['create', 'read', 'update', 'delete'],
+    ConsentForms: ['create', 'read', 'update', 'delete'],
+  },
+  //Pharmacist Permissions
+  pharmacist: {
+    'Disease-Management': ['create', 'read', 'update', 'delete'],
+    Appointments: ['create', 'read', 'update'],
+    Payouts: ['read'],
+    Help: ['read'],
+    Test: ['read'],
+    Treatments: ['read'],
+    'Procedure Management': ['create', 'read', 'update', 'delete'],
+    ConsentForms: ['create', 'read', 'update', 'delete'],
+  },
+}
