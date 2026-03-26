@@ -19,6 +19,7 @@ import EmployeeList from './views/pages/attendance/EmployeeList'
 import AttendanceMenu from './views/pages/attendance/AttendanceMenu'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+import BodyAssessment from './views/AppointmentManagement/BodyAssessment'
 function Root() {
   // attach interceptors once when app mounts
   // useEffect(() => {
@@ -49,6 +50,12 @@ function Root() {
                   }}
                 />
                 <App />
+                
+                
+                      {/* <BodyAssessment   /> */}
+                
+                     
+                
                 {/* <AttendanceMenu /> */}
                 {/* <EmployeeList /> */}
               </MedicineProvider>

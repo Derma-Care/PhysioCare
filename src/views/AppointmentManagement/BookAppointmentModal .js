@@ -23,7 +23,7 @@ import {
   CListGroupItem,
 } from '@coreui/react'
 
-import { GetClinicBranches,getDoctorByClinicIdData } from '../Doctors/DoctorAPI'
+import { GetClinicBranches, getDoctorByClinicIdData } from '../Doctors/DoctorAPI'
 import { useNavigate } from 'react-router-dom'
 import { getAllReferDoctors } from '../EmployeeManagement/ReferDoctor/ReferDoctorAPI'
 import Select from 'react-select'
@@ -52,6 +52,8 @@ import { addCustomer } from '../customerManagement/CustomerManagementAPI'
 import { showCustomToast } from '../../Utils/Toaster'
 import imageCompression from 'browser-image-compression'
 import { GetdoctorsByClinicIdData } from './appointmentAPI'
+
+import BodyAssessment from './BodyAssessment'
 const BookAppointmentModal = ({ visible, onClose }) => {
   const [visitType, setVisitType] = useState('first')
   const [appointmentType, setAppointmentType] = useState('services') // services / inclinic / online
@@ -70,6 +72,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [mvisible, setMVisible] = useState(false)
+  const [part, setPart] = useState([])
+  const [markedImage, setMarkedImage] = useState('')
 
   const [showAllSlots, setShowAllSlots] = useState(false)
   const [subServiceInfo, setSubServiceInfo] = useState(null)
@@ -161,7 +165,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     },
   }
   const [bookingDetails, setBookingDetails] = useState(initialBookingDetails)
-const [originalConsultationFee, setOriginalConsultationFee] = useState('');
+  const [originalConsultationFee, setOriginalConsultationFee] = useState('')
 
   const [errors, setErrors] = useState({})
 
@@ -348,12 +352,12 @@ const [originalConsultationFee, setOriginalConsultationFee] = useState('');
             ...prev,
             subServiceId: subServiceInfo.subServiceId,
             subServiceName: subServiceInfo.subServiceName,
-         consultationFee: prev.foc === 'FOC' ? 0 : subServiceInfo.consultationFee || 0,
+            consultationFee: prev.foc === 'FOC' ? 0 : subServiceInfo.consultationFee || 0,
 
             servicecost: subServiceInfo.price,
             discountAmount: subServiceInfo.discountedCost || 0,
             discountPercentage: subServiceInfo.discountPercentage || 0,
-           totalFee: subServiceInfo.finalCost,
+            totalFee: subServiceInfo.finalCost,
           }))
           setOriginalConsultationFee(subServiceInfo.consultationFee || 0)
         }
@@ -451,55 +455,45 @@ const [originalConsultationFee, setOriginalConsultationFee] = useState('');
   }, [appointmentType, bookingDetails.branchId, selectedSubService])
 
   const fetchDoctors = async () => {
-  setLoadingDoctors(true)
+    setLoadingDoctors(true)
 
-  try {
-    let doctorsList = []
+    try {
+      let doctorsList = []
 
-    if (appointmentType !== 'services') {
+      if (appointmentType !== 'services') {
+        const clinicId = localStorage.getItem('HospitalId')
+        const branchId = localStorage.getItem('branchId')
 
-      const clinicId = localStorage.getItem('HospitalId')
-      const branchId = localStorage.getItem('branchId')
+        if (!clinicId || !branchId) {
+          console.warn('Missing clinicId or branchId')
+          setDoctors([])
+          return
+        }
 
-      if (!clinicId || !branchId) {
-        console.warn('Missing clinicId or branchId')
-        setDoctors([])
-        return
+        const response = await getDoctorByClinicIdData(clinicId, branchId)
+
+        doctorsList = Array.isArray(response?.data) ? response.data : []
+      } else if (appointmentType === 'services' && bookingDetails.branchId && selectedSubService) {
+        const clinicId = localStorage.getItem('HospitalId')
+        const branchId = bookingDetails.branchId
+        const subServiceId = selectedSubService
+
+        const url = `${BASE_URL}/doctors/${clinicId}/${branchId}/${subServiceId}`
+        const response = await axios.get(url)
+
+        doctorsList = Array.isArray(response?.data?.data) ? response.data.data : []
+      } else {
+        doctorsList = []
       }
 
-      const response = await getDoctorByClinicIdData(clinicId, branchId)
-
-      doctorsList = Array.isArray(response?.data)
-        ? response.data
-        : []
+      setDoctors(doctorsList)
+    } catch (err) {
+      console.error('Error fetching doctors:', err)
+      setDoctors([])
+    } finally {
+      setLoadingDoctors(false)
     }
-    else if (
-      appointmentType === 'services' && bookingDetails.branchId && selectedSubService
-    ) {
-      const clinicId = localStorage.getItem('HospitalId')
-      const branchId = bookingDetails.branchId
-      const subServiceId = selectedSubService
-
-      const url = `${BASE_URL}/doctors/${clinicId}/${branchId}/${subServiceId}`
-      const response = await axios.get(url)
-
-      doctorsList = Array.isArray(response?.data?.data)
-        ? response.data.data
-        : []
-    } else {
-      doctorsList = []
-    }
-
-    setDoctors(doctorsList)
-    
-  } catch (err) {
-    console.error("Error fetching doctors:", err)
-    setDoctors([])
-  } finally {
-    setLoadingDoctors(false)
   }
-}
-
 
   const fetchSlots = async (doctorId) => {
     try {
@@ -547,46 +541,43 @@ const [originalConsultationFee, setOriginalConsultationFee] = useState('');
   useEffect(() => {
     fetchRefferrDoctor()
   }, [])
- const handleFeeTypeChange = async (e) => {
-  const selectedType = e.target.value
-  const hospitalId = localStorage.getItem('HospitalId')
-  const { subServiceId, subServiceName, consultationType } = bookingDetails
+  const handleFeeTypeChange = async (e) => {
+    const selectedType = e.target.value
+    const hospitalId = localStorage.getItem('HospitalId')
+    const { subServiceId, subServiceName, consultationType } = bookingDetails
 
-  try {
-    // 1 = FOC, 2 = Paid
-    const feeTypeCode = selectedType === 'FOC' ? 1 : 2
+    try {
+      // 1 = FOC, 2 = Paid
+      const feeTypeCode = selectedType === 'FOC' ? 1 : 2
 
-    
+      const url = `${BASE_URL}/calculateAmountByConsultationType/${hospitalId}/${subServiceId}/${subServiceName}/${feeTypeCode}`
 
-    const url = `${BASE_URL}/calculateAmountByConsultationType/${hospitalId}/${subServiceId}/${subServiceName}/${feeTypeCode}`
+      const response = await axios.get(url, {
+        params: { feeType: feeTypeCode },
+      })
 
-    const response = await axios.get(url, {
-      params: { feeType: feeTypeCode },
-    })
+      console.log('Fee API response:', response.data)
 
-    console.log('Fee API response:', response.data)
-
-    setBookingDetails((prev) => ({
-      ...prev,
-      foc: selectedType,
-      consultationFee:
-        selectedType === 'FOC' ? 0 : response.data?.data?.consultationFee || 0,
-        totalFee:
-  
-    (response.data?.data?.finalCost ?? 0),
-    }))
-  } catch (error) {
-    console.error('Error calculating fee amount:', error)
+      setBookingDetails((prev) => ({
+        ...prev,
+        foc: selectedType,
+        consultationFee: selectedType === 'FOC' ? 0 : response.data?.data?.consultationFee || 0,
+        totalFee: response.data?.data?.finalCost ?? 0,
+      }))
+    } catch (error) {
+      console.error('Error calculating fee amount:', error)
+    }
   }
-}
-useEffect(() => {
-  if (bookingDetails.subServiceId && bookingDetails.subServiceName && bookingDetails.consultationType) {
-    // Fetch the default Paid amount (feeType = 2)
-    handleFeeTypeChange('Paid', bookingDetails, setBookingDetails)
-  }
-}, [bookingDetails.subServiceId, bookingDetails.subServiceName, bookingDetails.consultationType])
-
-
+  useEffect(() => {
+    if (
+      bookingDetails.subServiceId &&
+      bookingDetails.subServiceName &&
+      bookingDetails.consultationType
+    ) {
+      // Fetch the default Paid amount (feeType = 2)
+      handleFeeTypeChange('Paid', bookingDetails, setBookingDetails)
+    }
+  }, [bookingDetails.subServiceId, bookingDetails.subServiceName, bookingDetails.consultationType])
 
   // Watch for appointmentType changes and reset related fields
 
@@ -1103,6 +1094,16 @@ useEffect(() => {
   }, [selectedBooking, setBookingDetails])
 
   console.log(`appointmenttype ${appointmentType}`)
+
+  // const [part, setPart] = useState("");
+
+  const handlePartClick = (data) => {
+    console.log(data.parts)
+    console.log(data.image)
+
+    setPart(data.parts)
+    setMarkedImage(data.image)
+  }
   return (
     <COffcanvas
       placement="end"
@@ -1777,15 +1778,11 @@ useEffect(() => {
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
                   Consultation Fee Type <span className="text-danger">*</span>
                 </CFormLabel>
-               <CFormSelect
-  value={bookingDetails.foc || 'Paid'}
-  onChange={handleFeeTypeChange}
->
-  <option value="">-- Select Fee Type --</option>
-  <option value="FOC">FOC (Free of Consultation)</option>
-  <option value="Paid">Paid</option>
-</CFormSelect>
-
+                <CFormSelect value={bookingDetails.foc || 'Paid'} onChange={handleFeeTypeChange}>
+                  <option value="">-- Select Fee Type --</option>
+                  <option value="FOC">FOC (Free of Consultation)</option>
+                  <option value="Paid">Paid</option>
+                </CFormSelect>
               </CCol>
             </CRow>
           </>
@@ -1877,7 +1874,7 @@ useEffect(() => {
                           return (
                             <div
                               key={i}
-                              style={{ cursor: 'pointer' ,color:"var(--color-black)"}}
+                              style={{ cursor: 'pointer', color: 'var(--color-black)' }}
                               className={`slot-item text-center border rounded px-2 py-1 transition-all duration-200
                         ${isBooked ? 'bg-danger text-white cursor-not-allowed opacity-60' : ''}
                         ${isSelectedSlot && !isBooked ? 'bg-primary text-white' : ''}
@@ -2152,33 +2149,33 @@ useEffect(() => {
                 {errors.paymentType && <div className="text-danger mt-1">{errors.paymentType}</div>}
               </CCol>
               <CCol md={5}>
-  <CFormLabel style={{ color: 'var(--color-black)' }}>
-    Payment Mode <span className="text-danger">*</span>
-  </CFormLabel>
+                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  Payment Mode <span className="text-danger">*</span>
+                </CFormLabel>
 
-  <CFormSelect
-    name="paymentMode"
-    value={bookingDetails.paymentMode}
-    className="custom-select-placeholder"
-    onChange={(e) => {
-      const value = e.target.value
-      setBookingDetails((prev) => ({
-        ...prev,
-        paymentMode: value,
-      }))
-      setErrors((prev) => ({
-        ...prev,
-        paymentMode: value ? '' : 'Please select a payment mode',
-      }))
-    }}
-  >
-    <option value="">Select Payment Mode</option>
-    <option value="Full">Full Payment</option>
-    <option value="Partial">Part Payment</option>
-  </CFormSelect>
+                <CFormSelect
+                  name="paymentMode"
+                  value={bookingDetails.paymentMode}
+                  className="custom-select-placeholder"
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setBookingDetails((prev) => ({
+                      ...prev,
+                      paymentMode: value,
+                    }))
+                    setErrors((prev) => ({
+                      ...prev,
+                      paymentMode: value ? '' : 'Please select a payment mode',
+                    }))
+                  }}
+                >
+                  <option value="">Select Payment Mode</option>
+                  <option value="Full">Full Payment</option>
+                  <option value="Partial">Part Payment</option>
+                </CFormSelect>
 
-  {errors.paymentMode && <div className="text-danger mt-1">{errors.paymentMode}</div>}
-</CCol>
+                {errors.paymentMode && <div className="text-danger mt-1">{errors.paymentMode}</div>}
+              </CCol>
               {/* Doctor Referral Code */}
               <CCol md={6}>
                 <h6>Referred By</h6>
@@ -2229,7 +2226,13 @@ useEffect(() => {
             </div>
           </>
         )}
+        <div>
+          <BodyAssessment onPartClick={handlePartClick} />
 
+          {markedImage && <img src={markedImage} width={200} crossOrigin="anonymous"/>}
+
+          <h3>Selected: {part}</h3>
+        </div>
         {/* Buttons */}
         <div className="mt-4 text-end d-flex justify-content-end gap-2">
           <CButton
