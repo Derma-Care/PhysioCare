@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /* eslint-disable react/prop-types */
 import React, { useState, useRef } from 'react'
 import front from '../../assets/body_front.png'
@@ -15,31 +16,32 @@ export default function BodyAssessment({ onPartClick }) {
   const [points, setPoints] = useState([])
   const [previewImage, setPreviewImage] = useState(null)
   const [loading, setLoading] = useState(false)
-const containerRef = useRef()
+  const containerRef = useRef()
   const svgRef = useRef()
 const handleClick = (id, event) => {
   const svg = svgRef.current
+  const rect = svg.getBoundingClientRect()
 
-  const pt = svg.createSVGPoint()
-  pt.x = event.clientX
-  pt.y = event.clientY
+  const px = (event.clientX - rect.left) / rect.width
+const py = (event.clientY - rect.top) / rect.height
 
-  const svgPoint = pt.matrixTransform(svg.getScreenCTM().inverse())
+let x = px * 600
+let y = py * 600
 
-  const x = svgPoint.x
-  const y = svgPoint.y
+// fix for left / right body split
+if (px > 0.5) {
+  // right side (back body)
+  x = 300 + (px - 0.5) * 600
+} else {
+  // left side (front body)
+  x = px * 600
+}
 
-  // if already selected → remove
   if (selected.includes(id)) {
     setSelected((prev) => prev.filter((p) => p !== id))
-
-    // remove dot also
     setPoints((prev) => prev.filter((p) => p.id !== id))
-
   } else {
-    // add new
     setSelected((prev) => [...prev, id])
-
     setPoints((prev) => [...prev, { id, x, y }])
   }
 }
@@ -72,59 +74,103 @@ const handleClick = (id, event) => {
     setModalPart(null)
   }
   // ✅ SEND TO PARENT
-const sendToParent = async () => {
+ const sendToParent = async () => {
   setLoading(true)
 
-  const canvas = await html2canvas(containerRef.current, {
-    logging: false,
-    useCORS: true,
-    backgroundColor: null,
-  })
+  const canvas = document.createElement("canvas")
+  canvas.width = 600
+  canvas.height = 600
 
-  const base64 = canvas.toDataURL("image/png")
+  const ctx = canvas.getContext("2d")
 
-  setPreviewImage(base64)
+  const frontImg = new Image()
+  const backImg = new Image()
 
-  setModalPart(selected)
+  frontImg.src = front
+  backImg.src = back
 
-  setLoading(false)
+  frontImg.onload = () => {
+    ctx.drawImage(frontImg, 0, 0, 300, 550)
 
-  if (onPartClick) {
-    onPartClick({
-      parts: selected,
-      image: base64,
-    })
+    backImg.onload = () => {
+      ctx.drawImage(backImg, 300, 0, 300, 600)
+
+      // draw dots
+      points.forEach((p) => {
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2)
+        ctx.fillStyle = "red"
+        ctx.fill()
+      })
+
+      const base64 = canvas.toDataURL("image/png")
+
+      setPreviewImage(base64)
+      setModalPart(selected)
+
+      setLoading(false)
+
+      if (onPartClick) {
+        onPartClick({
+          parts: selected,
+          image: base64,
+        })
+      }
+    }
   }
 }
 
   return (
-    <div ref={containerRef}>
+    <>
+    <div>
       {/* TOGGLE */}
       {/* <button className="btn btn-primary gap-5 mx-2" onClick={() => setView('front')}>Front</button>
       <button className='btn btn-success' onClick={() => setView('back')}>Back</button> */}
       {/* SVG + IMAGE */}
-      <svg ref={svgRef} viewBox="0 0 300 600" width="800" height="600">
-        <image href={front} x="-20" y="0" width="250" height="600" />
-        <image href={back} x="260" y="0" width="250" height="600" />
-        {points.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="6" fill="red" />
-        ))}
-        <BodySvg view={view} onClickPart={handleClick} getColor={getColor} />
-      </svg>
+     <svg
+  ref={svgRef}
+  viewBox="0 0 600 600"
+  width="600"
+  height="600"
+>
+ <image href={front} x="0" y="0" width="300" height="550" />
+  <image href={back} x="300" y="0" width="300" height="600" />
+
+{points.map((p, i) => (
+  <circle
+    key={i}
+    cx={p.x}
+    cy={p.y}
+    r="3"
+    className="dot"
+  />
+))}
+
+  <BodySvg
+    view={view}
+    onClickPart={handleClick}
+    getColor={getColor}
+  />
+</svg>
       <br />
       Selected: {selected.join(', ')}
       <br />
-      <button className='btn btn-primary' onClick={sendToParent}>{!loading ? "Done": <LoadingIndicator message='Generating Image ...' />}</button>
-      {previewImage && (
-  <div>
-    <h4>Generated Image</h4>
-    <img
-      src={previewImage}
-      width={400}
-      alt="preview"
-    />
-  </div>
-)}
+      <button className="btn btn-primary" onClick={sendToParent}>
+        {!loading ? (
+          'Done'
+        ) : (
+          <div>
+            <Spinner /> Generating Image ...
+          </div>
+        )}
+      </button>
+      {/* {previewImage && (
+        <div>
+          <h4>Generated Image</h4>
+         
+          <img src={previewImage}  alt="preview" />
+        </div>
+      )} */}
       {modalPart.length > 0 && (
         <QuestionModal
           partId={modalPart}
@@ -133,5 +179,29 @@ const sendToParent = async () => {
         />
       )}
     </div>
+  <style>{`
+.dot {
+  fill: red;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+`}</style>
+    </>
   )
 }
