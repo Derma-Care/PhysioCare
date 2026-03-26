@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import React, { useState } from "react";
 import {
   CModal,
@@ -7,6 +8,7 @@ import {
   CModalFooter,
   CButton,
   CFormInput,
+  CFormCheck,
 } from "@coreui/react";
 
 import { questionsByPart } from "./questions";
@@ -17,49 +19,135 @@ export default function QuestionModal({
   onClose,
   onSave,
 }) {
-  const questions = questionsByPart[partId] || [];
+
+  const partIds = Array.isArray(partId) ? partId : [partId];
 
   const [answers, setAnswers] = useState({});
 
-  const handleChange = (q, value) => {
-    setAnswers({
-      ...answers,
-      [q]: value,
-    });
+  const handleChange = (key, value) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   };
 
-  const handleSave = () => {
-    onSave({
-      partId,
-      answers,
+const handleSave = () => {
+
+  const therapyQuestion = partIds.map((part) => {
+
+    const questions = questionsByPart[part] || [];
+
+    const ans = questions.map((q) => {
+
+      const key = part + "_" + q.questionId;
+
+      return {
+        questionId: q.questionId,
+        answer: answers[key] || "",
+      };
+
     });
-  };
+
+    return {
+      bodyPart: part,
+      answers: ans,
+    };
+
+  });
+
+  onSave({
+    therapyQuestion,
+  });
+
+};
 
   return (
     <CModal visible={visible} onClose={onClose} size="lg">
-      
+
       <CModalHeader>
         <CModalTitle>
-          Assessment - {partId}
+          Assessment - {partIds.join(", ")}
         </CModalTitle>
       </CModalHeader>
 
       <CModalBody>
 
-        {questions.map((q, i) => (
-          <div key={i} className="mb-3">
+        {partIds.map((part) => {
 
-            <label>{q}</label>
+          const questions = questionsByPart[part] || [];
 
-            <CFormInput
-              type="text"
-              onChange={(e) =>
-                handleChange(q, e.target.value)
-              }
-            />
+          return (
+            <div key={part} style={{ marginBottom: 20 }}>
 
-          </div>
-        ))}
+              <h5>{part.toUpperCase()}</h5>
+
+              {questions.length === 0 && (
+                <p>No questions</p>
+              )}
+
+              {questions.map((q) => {
+
+                const key = part + "_" + q.questionId;
+
+                return (
+                  <div key={q.questionId} className="mb-3">
+
+                    <label>{q.question}</label>
+
+                    {/* YES / NO */}
+                    {q.type === "YES/NO" && (
+  <>
+    <CFormCheck
+      type="radio"
+      name={key}
+      label="Yes"
+      value="YES"
+      checked={answers[key] === "YES"}
+      onChange={(e) =>
+        handleChange(key, e.target.value)
+      }
+    />
+
+    <CFormCheck
+      type="radio"
+      name={key}
+      label="No"
+      value="NO"
+      checked={answers[key] === "NO"}
+      onChange={(e) =>
+        handleChange(key, e.target.value)
+      }
+    />
+  </>
+)}
+
+                    {/* TEXT */}
+                    {q.type === "TEXT" && (
+                      <CFormInput
+                        type="text"
+                        onChange={(e) =>
+                          handleChange(key, e.target.value)
+                        }
+                      />
+                    )}
+
+                    {/* NUMBER */}
+                    {q.type === "NUMBER" && (
+                      <CFormInput
+                        type="number"
+                        onChange={(e) =>
+                          handleChange(key, e.target.value)
+                        }
+                      />
+                    )}
+
+                  </div>
+                );
+              })}
+
+            </div>
+          );
+        })}
 
       </CModalBody>
 

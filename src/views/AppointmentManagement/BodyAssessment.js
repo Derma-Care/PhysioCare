@@ -8,15 +8,19 @@ import QuestionModal from './QuestionModal'
 import html2canvas from 'html2canvas'
 import { Spinner } from 'react-bootstrap'
 import LoadingIndicator from '../../Utils/loader'
+import { showCustomToast } from '../../Utils/Toaster'
 export default function BodyAssessment({ onPartClick }) {
   const [view, setView] = useState('front')
   const [selected, setSelected] = useState([])
-  const [modalPart, setModalPart] = useState([])
+  const [modalPart, setModalPart] = useState(null)
   const [answerData, setAnswerData] = useState([])
   const [points, setPoints] = useState([])
   const [previewImage, setPreviewImage] = useState(null)
   const [loading, setLoading] = useState(false)
   const containerRef = useRef()
+  const [modalQueue, setModalQueue] = useState([])
+const [currentPart, setCurrentPart] = useState(null)
+const [finalImage, setFinalImage] = useState(null)
   const svgRef = useRef()
 const handleClick = (id, event) => {
   const svg = svgRef.current
@@ -68,13 +72,32 @@ if (px > 0.5) {
     })
   }
 
-  const handleSaveAnswers = (data) => {
-    setAnswerData((prev) => [...prev, data])
+const handleSaveAnswers = (data) => {
 
-    setModalPart(null)
+  const newAnswers = [...answerData, data];
+
+  const selectedParts = [...selected];
+
+  setAnswerData(newAnswers);
+  setModalPart(null);
+  setSelected([]);
+
+  if (onPartClick) {
+    onPartClick({
+      parts: selectedParts,
+      image: finalImage,
+      answerData: newAnswers,
+    });
   }
+};
+
+  console.log(answerData)
   // ✅ SEND TO PARENT
  const sendToParent = async () => {
+    if (selected.length === 0) {
+    showCustomToast("Please select at least one body part");
+    return;
+  }
   setLoading(true)
 
   const canvas = document.createElement("canvas")
@@ -106,20 +129,25 @@ if (px > 0.5) {
       const base64 = canvas.toDataURL("image/png")
 
       setPreviewImage(base64)
+       setFinalImage(base64);
       setModalPart(selected)
 
       setLoading(false)
-
-      if (onPartClick) {
-        onPartClick({
-          parts: selected,
-          image: base64,
-        })
-      }
+handleClear()
+      // if (onPartClick) {
+      //   onPartClick({
+      //     parts: selected,
+      //     image: base64,
+      //     answerData: answerData
+      //   })
+      // }
     }
   }
 }
-
+const handleClear = () => {
+  setSelected([])
+  setPoints([])
+}
   return (
     <>
     <div>
@@ -152,18 +180,41 @@ if (px > 0.5) {
     getColor={getColor}
   />
 </svg>
-      <br />
-      Selected: {selected.join(', ')}
-      <br />
-      <button className="btn btn-primary" onClick={sendToParent}>
-        {!loading ? (
-          'Done'
-        ) : (
-          <div>
-            <Spinner /> Generating Image ...
-          </div>
-        )}
-      </button>
+     <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "10px",
+    marginTop: "10px",
+  }}
+>
+
+  <div>
+    <b>Selected:</b> {selected.join(", ")}
+  </div>
+<div >
+  <button
+    className="btn btn-danger mx-2"
+    onClick={handleClear}
+  >
+    Clear
+  </button>
+
+  <button
+    className="btn btn-primary"
+    onClick={sendToParent}
+  >
+    {!loading ? (
+      "Done"
+    ) : (
+      <div>
+        <Spinner size="sm" /> Generating...
+      </div>
+    )}
+  </button>
+</div>
+</div>
       {/* {previewImage && (
         <div>
           <h4>Generated Image</h4>
@@ -171,13 +222,14 @@ if (px > 0.5) {
           <img src={previewImage}  alt="preview" />
         </div>
       )} */}
-      {modalPart.length > 0 && (
-        <QuestionModal
-          partId={modalPart}
-          onClose={() => setModalPart(null)}
-          onSave={handleSaveAnswers}
-        />
-      )}
+      {modalPart && (
+  <QuestionModal
+    visible={true}
+    partId={modalPart}
+    onClose={() => setModalPart(null)}
+    onSave={handleSaveAnswers}
+  />
+)}
     </div>
   <style>{`
 .dot {

@@ -1,11 +1,121 @@
 export const questionsByPart = {
-  head: ['Do you have pain?', 'Since when?', 'Pain level?', 'Injury history?', 'Swelling?'],
 
-  neck: ['Neck pain?', 'Stiffness?', 'Radiating pain?', 'Headache?', 'Movement difficulty?'],
+  head: [
+    {
+      questionId: 1,
+      question: "Do you have muscle pain?",
+      type: "YES/NO",
+    },
+    {
+      questionId: 2,
+      question: "Since when pain started?",
+      type: "TEXT",
+    },
+    {
+      questionId: 3,
+      question: "Pain level",
+      type: "NUMBER",
+    },
+  ],
 
-  chest: ['Chest pain?', 'Breathing pain?', 'Muscle tightness?', 'Injury?', 'Tenderness?'],
+  neck: [
+    {
+      questionId: 1,
+      question: "Neck stiffness?",
+      type: "YES/NO",
+    },
+    {
+      questionId: 2,
+      question: "Pain while moving?",
+      type: "YES/NO",
+    },
+  ],
 
-  leftArm: ['Arm pain?', 'Weakness?', 'Numbness?', 'Fracture history?', 'Movement pain?'],
+  chest: [
+    {
+      questionId: 1,
+      question: "Chest pain?",
+      type: "YES/NO",
+    },
+  ],
 
-  rightArm: ['Arm pain?', 'Weakness?', 'Numbness?', 'Fracture history?', 'Movement pain?'],
+  leftShoulder: [
+    {
+      questionId: 1,
+      question: "Shoulder pain?",
+      type: "YES/NO",
+    },
+    {
+      questionId: 2,
+      question: "Limited movement?",
+      type: "YES/NO",
+    },
+  ],
+
+  rightShoulder: [
+    {
+      questionId: 1,
+      question: "Shoulder pain?",
+      type: "YES/NO",
+    },
+  ],
+
+  leftKnee: [
+    {
+      questionId: 1,
+      question: "Knee pain?",
+      type: "YES/NO",
+    },
+    {
+      questionId: 2,
+      question: "Swelling?",
+      type: "YES/NO",
+    },
+  ],
+
+  rightKnee: [
+    {
+      questionId: 1,
+      question: "Knee pain?",
+      type: "YES/NO",
+    },
+  ],
+
+  upperBack: [
+    {
+      questionId: 1,
+      question: "Upper back pain?",
+      type: "YES/NO",
+    },
+  ],
+
+  lowerBack: [
+    {
+      questionId: 1,
+      question: "Lower back pain?",
+      type: "YES/NO",
+    },
+    {
+      questionId: 2,
+      question: "Radiating pain?",
+      type: "YES/NO",
+    },
+  ],
+
+  backLeftKnee: [
+    {
+      questionId: 1,
+      question: "Back knee pain?",
+      type: "YES/NO",
+    },
+  ],
+
+  backRightKnee: [
+    {
+      questionId: 1,
+      question: "Back knee pain?",
+      type: "YES/NO",
+    },
+  ],
+
 }

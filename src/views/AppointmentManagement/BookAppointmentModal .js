@@ -73,6 +73,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [mvisible, setMVisible] = useState(false)
   const [part, setPart] = useState([])
+  const [theraphyQuestions, setTheraphyQuestions] = useState([])
   const [markedImage, setMarkedImage] = useState('')
 
   const [showAllSlots, setShowAllSlots] = useState(false)
@@ -967,6 +968,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         symptomsDuration: combinedSymptomsDuration,
         patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
         attachments: bookingDetails.attachments?.map((f) => f.base64.split(',')[1]) || [],
+        partImage: markedImage,
+        theraphyAnswers: theraphyQuestions,
+        parts: part,
       }
 
       console.log('Payload without slot:', payloadToSend)
@@ -1100,9 +1104,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const handlePartClick = (data) => {
     console.log(data.parts)
     console.log(data.image)
+    console.log(data.answerData)
 
     setPart(data.parts)
     setMarkedImage(data.image)
+    setTheraphyQuestions(data.answerData)
   }
   return (
     <COffcanvas
@@ -2205,6 +2211,15 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             </CRow>
           </>
         )}
+        <div className="mb-4">
+          <h6>Pain Assessment</h6>
+
+          <BodyAssessment onPartClick={handlePartClick} />
+
+          {markedImage && <img src={markedImage} width={200} crossOrigin="anonymous" />}
+
+          {/* <h3>Selected: {part}</h3> */}
+        </div>
 
         {selectedBooking == null && (
           <>
@@ -2226,13 +2241,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             </div>
           </>
         )}
-        <div>
-          <BodyAssessment onPartClick={handlePartClick} />
 
-          {markedImage && <img src={markedImage} width={200} crossOrigin="anonymous"/>}
-
-          <h3>Selected: {part}</h3>
-        </div>
         {/* Buttons */}
         <div className="mt-4 text-end d-flex justify-content-end gap-2">
           <CButton
