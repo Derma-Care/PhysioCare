@@ -1189,7 +1189,7 @@ const ServiceManagement = () => {
                   <span className="text-muted">{viewService.serviceId || 'N/A'}</span>
                 </CCol>
                 <CCol sm={6}>
-                  <p className="mb-1 fw-semibold">Category Name:</p>
+                  <p className="mb-1 fw-semibold">Therapy Category:</p>
                   <span className="text-muted">{viewService.categoryName || 'N/A'}</span>
                 </CCol>
                 <CCol sm={6}>
@@ -1393,7 +1393,7 @@ const ServiceManagement = () => {
             <CRow className="mb-4">
               <CCol md={4}>
                 <h6>
-                  Category Name <span className="text-danger">*</span>
+                 Therapy Category <span className="text-danger">*</span>
                 </h6>
                 <CFormSelect
                   name="categoryName"
@@ -1415,7 +1415,7 @@ const ServiceManagement = () => {
 
               <CCol md={4}>
                 <h6>
-                  Service Name <span className="text-danger">*</span>
+                 Therapy Service<span className="text-danger">*</span>
                 </h6>
                 <CFormSelect
                   name="serviceName"
@@ -1437,7 +1437,7 @@ const ServiceManagement = () => {
 
               <CCol md={4}>
                 <h6>
-                  Procedure Name <span className="text-danger">*</span>
+                  Therapy Name <span className="text-danger">*</span>
                 </h6>
                 <CFormSelect
                   name="subServiceId"
@@ -1462,7 +1462,7 @@ const ServiceManagement = () => {
             <CRow className="mb-4">
               <CCol md={4}>
                 <h6>
-                  Procedure Image <span className="text-danger">*</span>
+                  Theraphy Image <span className="text-danger">*</span>
                 </h6>
 
                 <CFormInput
@@ -1504,7 +1504,7 @@ const ServiceManagement = () => {
 
               <CCol md={4}>
                 <h6>
-                  View Description <span className="text-danger">*</span>
+                  Theraphy Description <span className="text-danger">*</span>
                 </h6>
                 <CFormTextarea
                   type="text"
@@ -1535,7 +1535,7 @@ const ServiceManagement = () => {
             <CRow className="mb-4">
               <CCol md={4}>
                 <h6>
-                  Consent Form Type <span className="text-danger">*</span>
+                  Consent Type <span className="text-danger">*</span>
                 </h6>
                 <CFormSelect
                   name="consentFormType"
@@ -1611,7 +1611,7 @@ const ServiceManagement = () => {
             <CRow className="mb-4">
               <CCol md={3}>
                 <h6>
-                  Procedure Price <span className="text-danger">*</span>
+                  Theraphy Fee <span className="text-danger">*</span>
                 </h6>
                 <CFormInput
                   type="text"
