@@ -23,8 +23,8 @@ const EmployeeManagement = () => {
   const iconMap = {
     doctor: faUserDoctor,
     nurse: faUserNurse,
-    pharmacist: faPills,
-    laboratory: faVials,
+    // pharmacist: faPills,
+    // laboratory: faVials,
     admin: faUserAlt,
     frontDesk: faUserTie,
     security: faShieldHalved,
@@ -35,8 +35,8 @@ const EmployeeManagement = () => {
   const employees = [
     { title: 'Doctors', type: 'doctor', path: '/employee-management/doctor' },
     { title: 'Nurses', type: 'nurse', path: '/employee-management/nurse' },
-    { title: 'Pharmacist', type: 'pharmacist', path: '/employee-management/pharmacist' },
-    { title: 'Lab Technician', type: 'laboratory', path: '/employee-management/lab-technician' },
+    // { title: 'Pharmacist', type: 'pharmacist', path: '/employee-management/pharmacist' },
+    // { title: 'Lab Technician', type: 'laboratory', path: '/employee-management/lab-technician' },
     { title: 'FrontDesk', type: 'frontDesk', path: '/employee-management/frontdesk' },
     { title: 'Security', type: 'security', path: '/employee-management/security' },
     { title: 'OtherStaff', type: 'otherStaff', path: '/employee-management/otherstaff' },
