@@ -79,7 +79,7 @@ const TreatmentPackageForm = ({ data, onSave }) => {
       therapies: form.therapies.map((t) => ({
         name: t.name,
         sessions: Number(t.sessions),
-        sessionDuration: Number(t.sessionDuration),
+        sessionDuration: t.sessionDuration,
         validity: Number(t.validity),
       }))
     }
@@ -179,7 +179,7 @@ const TreatmentPackageForm = ({ data, onSave }) => {
 
           <CCol md={3}>
             <CFormLabel>Duration (mins/hrs)</CFormLabel>
-            <CFormInput type="number" value={t.sessionDuration}
+            <CFormInput type="text" value={t.sessionDuration}
               onChange={(e) => handleTherapyChange(i, 'sessionDuration', e.target.value)} />
           </CCol>
 

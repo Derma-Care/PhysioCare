@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-key */
-import React, { useState } from 'react'
+import React, { useState,useEffect } from 'react'
 import {
   CButton,
   CTable,
@@ -16,7 +16,13 @@ import {
 } from '@coreui/react'
 
 import { Eye, Edit2, Trash2 } from 'lucide-react'
-import TreatmentPackageForm from './TreatmentPackageForm'
+import TreatmentPackageForm from '././TreatmentPackageForm'
+import {
+  getAllPackages,
+  addPackage,
+  updatePackage,
+  deletePackage
+} from './TreatmentPackageAPI'
 
 const TreatmentPackages = () => {
   const [packages, setPackages] = useState([])
@@ -25,33 +31,63 @@ const TreatmentPackages = () => {
   const [viewMode, setViewMode] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
 const [deleteId, setDeleteId] = useState(null)
+const clinicId = localStorage.getItem('HospitalId')
+const branchId = localStorage.getItem('branchId')
+
+const fetchPackages = async () => {
+  try {
+    const res = await getAllPackages(clinicId, branchId)
+    setPackages(Array.isArray(res.data?.data) ? res.data.data : [])
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+useEffect(() => {
+  fetchPackages()
+}, [])
 
   // SAVE
-  const handleSave = (data) => {
-    if (selectedPackage) {
-      setPackages((prev) =>
-        prev.map((p) =>
-          p.id === selectedPackage.id ? { ...p, ...data } : p,
-        ),
-      )
-    } else {
-      setPackages((prev) => [
-        ...prev,
-        { ...data, id: Date.now().toString() },
-      ])
+ const handleSave = async (data) => {
+  try {
+    const clinicId = localStorage.getItem('HospitalId')
+    const branchId = localStorage.getItem('branchId')
+
+    const payload = {
+      ...data,
+      clinicId,
+      branchId,
     }
+
+    if (selectedPackage?.id) {
+      // ✅ UPDATE
+      await updatePackage(selectedPackage.id, payload)
+    } else {
+      // ✅ ADD
+      await addPackage(payload)
+    }
+
+    await fetchPackages()
 
     setModalVisible(false)
     setSelectedPackage(null)
+  } catch (err) {
+    console.error('Save failed:', err)
   }
-
-  // DELETE
-  const confirmDelete = () => {
-  setPackages(packages.filter((p) => p.id !== deleteId))
-  setDeleteModal(false)
-  setDeleteId(null)
 }
+  // DELETE
+ const confirmDelete = async () => {
+  try {
+    await deletePackage(deleteId)
 
+    setDeleteModal(false)
+    setDeleteId(null)
+
+    fetchPackages()
+  } catch (err) {
+    console.error(err)
+  }
+}
   // VIEW FIELD COMPONENT
   const Field = ({ label, value }) => (
     <div className="mb-2">
@@ -97,9 +133,9 @@ const [deleteId, setDeleteId] = useState(null)
         <CTableBody>
           {packages.map((pkg) => (
             <CTableRow key={pkg.id}>
-              <CTableDataCell>{pkg.name}</CTableDataCell>
-              <CTableDataCell>{pkg.sessions}</CTableDataCell>
-              <CTableDataCell>₹{pkg.price}</CTableDataCell>
+              <CTableDataCell>{pkg.packageName}</CTableDataCell>
+              <CTableDataCell>{pkg.therapies[0]?.sessions || 'N/A'}</CTableDataCell>
+              <CTableDataCell>₹{pkg.packagePrice}</CTableDataCell>
               <CTableDataCell>{pkg.validity} days</CTableDataCell>
 
               <CTableDataCell className="text-center">
@@ -225,7 +261,7 @@ const [deleteId, setDeleteId] = useState(null)
           </CCol>
 
           <CCol md={3}>
-            <Field label="Duration" value={`${t.sessionDuration} mins`} />
+            <Field label="Duration" value={t.sessionDuration} />
           </CCol>
 
           <CCol md={3}>
