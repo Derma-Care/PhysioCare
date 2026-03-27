@@ -301,55 +301,48 @@ const FrontDeskManagement = () => {
 
                   <CTableDataCell>{tech.dateOfJoining}</CTableDataCell>
 
-              <CTableDataCell className="text-end">
-  <div className="d-flex justify-content-end gap-2">
-
-    {/* VIEW */}
-    {can('Nurses', 'read') && (
-      <button
-        className="actionBtn"
-        onClick={() => {
-          setSelectedPhysio(p)
-          setViewMode(true)
-          setModalVisible(true)
-        }}
-        title="View"
-      >
-        <Eye size={18} />
-      </button>
-    )}
-
-    {/* EDIT */}
-    {can('Nurses', 'update') && (
-      <button
-        className="actionBtn"
-        onClick={() => {
-          setSelectedPhysio(p)
-          setViewMode(false)
-          setModalVisible(true)
-        }}
-        title="Edit"
-      >
-        <Edit2 size={18} />
-      </button>
-    )}
-
-    {/* DELETE */}
-    {can('Nurses', 'delete') && (
-      <button
-        className="actionBtn deleteBtn"
-        onClick={() => {
-          setDeleteId(p.nurseId)
-          setIsModalVisible(true)
-        }}
-        title="Delete"
-      >
-        <Trash2 size={18} />
-      </button>
-    )}
-
-  </div>
-</CTableDataCell>
+                  <CTableDataCell className="text-end">
+                    <div className="d-flex justify-content-end gap-2  ">
+                      {can('FrontDesk', 'read') && (
+                        <button
+                          className="actionBtn"
+                          onClick={() => {
+                            setSelectedTech(tech)
+                            setViewMode(true)
+                            setModalVisible(true)
+                          }}
+                          title="View"
+                        >
+                          <Eye size={18} />
+                        </button>
+                      )}
+                      {can('FrontDesk', 'update') && (
+                        <button
+                          className="actionBtn"
+                          onClick={() => {
+                            setSelectedTech(tech)
+                            setViewMode(false)
+                            setModalVisible(true)
+                          }}
+                          title="Edit"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                      )}
+                      {can('FrontDesk', 'delete') && (
+                        <button
+                          className="actionBtn"
+                          onClick={() => {
+                            setDeleteId(tech.id) // store id
+                            setIsModalVisible(true) // show confirmation modal
+                          }}
+                          title="Delete"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
+                    </div>
+                  </CTableDataCell>
                 </CTableRow>
               ))
             ) : (

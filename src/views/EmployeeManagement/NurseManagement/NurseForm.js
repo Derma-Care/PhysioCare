@@ -88,6 +88,76 @@ const dayOptions = [
   }
 
   const [formData, setFormData] = useState(emptyForm)
+  const [errors, setErrors] = useState({})
+  const validateForm = () => {
+  const newErrors = {}
+
+  if (!formData.fullName?.trim()) {
+    newErrors.fullName = 'Full name is required'
+  }
+
+  if (!/^[6-9]\d{9}$/.test(formData.contactNumber || '')) {
+    newErrors.contactNumber = 'Enter valid 10-digit number'
+  }
+
+  if (!formData.gender) {
+    newErrors.gender = 'Select gender'
+  }
+
+  if (!formData.dateOfBirth) {
+    newErrors.dateOfBirth = 'Select DOB'
+  }
+
+  if (!formData.qualification) {
+    newErrors.qualification = 'Select qualification'
+  }
+
+  if (!formData.yearsOfExperience) {
+    newErrors.yearsOfExperience = 'Enter experience'
+  }
+
+  if (!formData.physioType) {
+    newErrors.physioType = 'Select physio type'
+  }
+
+  if (!formData.services?.length) {
+    newErrors.services = 'Select at least one service'
+  }
+
+  if (!formData.specializations?.length) {
+    newErrors.specializations = 'Select specialization'
+  }
+
+  const a = formData.availability || {}
+
+  if (!a.startDay) newErrors.startDay = 'Select start day'
+  if (!a.endDay) newErrors.endDay = 'Select end day'
+  if (!a.startTime) newErrors.startTime = 'Select start time'
+  if (!a.endTime) newErrors.endTime = 'Select end time'
+
+  if (a.startTime && a.endTime && a.startTime >= a.endTime) {
+    newErrors.endTime = 'End time must be after start time'
+  }
+
+  if (!formData.bio?.trim()) {
+    newErrors.bio = 'Enter profile description'
+  }
+
+  if (!formData.treatmentTypes?.length) {
+    newErrors.treatmentTypes = 'Add treatment type'
+  }
+
+  if (!formData.expertiseAreas?.length) {
+    newErrors.expertiseAreas = 'Add expertise'
+  }
+
+  if (!formData.languages?.length) {
+    newErrors.languages = 'Add language'
+  }
+
+  setErrors(newErrors)
+  return Object.keys(newErrors).length === 0
+}
 
   useEffect(() => {
     if (initialData) setFormData(initialData)
@@ -208,10 +278,47 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
     }))
   }
 
-  const handleSubmit = () => {
-    onSave(formData)
+ const handleSubmit = () => {
+  if (!validateForm()) return
+
+  const { startDay, endDay, startTime, endTime } = formData.availability
+
+  const dayOrder = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+  ]
+
+  const startIndex = dayOrder.indexOf(startDay)
+  const endIndex = dayOrder.indexOf(endDay)
+
+  let selectedDays = []
+
+  if (startIndex <= endIndex) {
+    selectedDays = dayOrder.slice(startIndex, endIndex + 1)
+  } else {
+    // handle wrap (e.g. Fri → Mon)
+    selectedDays = [
+      ...dayOrder.slice(startIndex),
+      ...dayOrder.slice(0, endIndex + 1),
+    ]
   }
 
+  const payload = {
+    ...formData,
+    availability: {
+      days: selectedDays,
+      startTime,
+      endTime,
+    },
+  }
+
+  onSave(payload)
+}
   return (
     <CModal visible={visible} onClose={onClose} size="lg">
       <CModalHeader>
@@ -365,58 +472,71 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
 <CRow className="mb-3">
   <CCol md={6}>
     <CFormLabel>Full Name</CFormLabel>
-    <CFormInput
-      value={formData.fullName}
-      disabled={isView}
-      onChange={(e) => handleChange('fullName', e.target.value)}
-    />
+   <CFormInput
+  value={formData.fullName}
+  disabled={isView}
+  onChange={(e) => handleChange('fullName', e.target.value)}
+  invalid={!!errors.fullName}
+/>
+{errors.fullName && <div className="text-danger small">{errors.fullName}</div>}
   </CCol>
 
   <CCol md={6}>
     <CFormLabel>Contact Number</CFormLabel>
-    <CFormInput
-      value={formData.contactNumber}
-      disabled={isView}
-      onChange={(e) => handleChange('contactNumber', e.target.value)}
-    />
+   <CFormInput
+  value={formData.contactNumber}
+  disabled={isView}
+  maxLength={10}
+  onChange={(e) => handleChange('contactNumber', e.target.value)}
+  invalid={!!errors.contactNumber}
+/>
+{errors.contactNumber && (
+  <div className="text-danger small">{errors.contactNumber}</div>
+)}
   </CCol>
 </CRow>
 
 <CRow className="mb-3">
   <CCol md={4}>
     <CFormLabel>Gender</CFormLabel>
-    <CFormSelect
-      value={formData.gender}
-      disabled={isView}
-      onChange={(e) => handleChange('gender', e.target.value)}
-    >
+   <CFormSelect
+  value={formData.gender}
+  disabled={isView}
+  onChange={(e) => handleChange('gender', e.target.value)}
+  invalid={!!errors.gender}
+>
       <option value="">Select</option>
       <option value="male">Male</option>
       <option value="female">Female</option>
     </CFormSelect>
+    {errors.gender && <div className="text-danger small">{errors.gender}</div>}
   </CCol>
 
   <CCol md={4}>
     <CFormLabel>Date of Birth</CFormLabel>
     <CFormInput
-      type="date"
-      value={formData.dateOfBirth}
-      disabled={isView}
-      onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-    />
+  type="date"
+  value={formData.dateOfBirth}
+  disabled={isView}
+  onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+  invalid={!!errors.dateOfBirth}
+/>
+{errors.dateOfBirth && <div className="text-danger small">{errors.dateOfBirth}</div>}
   </CCol>
 
   <CCol md={4}>
     <CFormLabel>Qualification</CFormLabel>
     <CFormSelect
-      value={formData.qualification}
-      disabled={isView}
-      onChange={(e) => handleChange('qualification', e.target.value)}
-    >
+  value={formData.qualification}
+  disabled={isView}
+  onChange={(e) => handleChange('qualification', e.target.value)}
+  invalid={!!errors.qualification}
+>
       <option value="">Select</option>
       <option value="BPT">BPT</option>
       <option value="MPT">MPT</option>
     </CFormSelect>
+    {errors.qualification && <div className="text-danger small">{errors.qualification}</div>}
   </CCol>
 </CRow>
 
@@ -424,11 +544,15 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
   <CCol md={6}>
     <CFormLabel>Experience (Years)</CFormLabel>
     <CFormInput
-      type="number"
-      value={formData.yearsOfExperience}
-      disabled={isView}
-      onChange={(e) => handleChange('yearsOfExperience', e.target.value)}
-    />
+  type="number"
+  value={formData.yearsOfExperience}
+  disabled={isView}
+  onChange={(e) => handleChange('yearsOfExperience', e.target.value)}
+  invalid={!!errors.yearsOfExperience}
+/>
+{errors.yearsOfExperience && (
+  <div className="text-danger small">{errors.yearsOfExperience}</div>
+)}
   </CCol>
 
   <CCol md={6}>
@@ -458,6 +582,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
         handleChange('services', selected ? selected.map(s => s.value) : [])
       }
     />
+    {errors.services && <div className="text-danger small">{errors.services}</div>}
   </CCol>
 
   <CCol md={6}>
@@ -471,15 +596,12 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
         handleChange('specializations', selected ? selected.map(s => s.value) : [])
       }
     />
+    {errors.specializations && <div className="text-danger small">{errors.specializations}</div>}
   </CCol>
 </CRow>
 
-{/* EXPERTISE */}
-<CRow className="mb-3">
- 
-</CRow>
 
-{/* TREATMENTS */}
+
 
 
 {/* AVAILABILITY */}
@@ -496,6 +618,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
         handleNestedChange('availability', 'startDay', selected?.value || '')
       }
     />
+    {errors.startDay && <div className="text-danger small">{errors.startDay}</div>}
   </CCol>
 
   <CCol md={6}>
@@ -508,6 +631,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
         handleNestedChange('availability', 'endDay', selected?.value || '')
       }
     />
+    {errors.endDay && <div className="text-danger small">{errors.endDay}</div>}
   </CCol>
 </CRow>
 
@@ -522,6 +646,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
         handleNestedChange('availability', 'startTime', e.target.value)
       }
     />
+    {errors.startTime && <div className="text-danger small">{errors.startTime}</div>}
   </CCol>
 
   <CCol md={6}>
@@ -534,6 +659,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
         handleNestedChange('availability', 'endTime', e.target.value)
       }
     />
+    {errors.endTime && <div className="text-danger small">{errors.endTime}</div>}
   </CCol>
 </CRow>
 
@@ -550,6 +676,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
       disabled={isView}
       onChange={(e) => handleChange('bio', e.target.value)}
     />
+    {errors.bio && <div className="text-danger small">{errors.bio}</div>}
   </CCol>
 </CRow>
 <CRow className="mb-3">
@@ -560,6 +687,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
   onAdd={(val) => handleChange('treatmentTypes', val)}
   isView={isView}
 />
+{errors.treatmentTypes && <div className="text-danger small">{errors.treatmentTypes}</div>}
   </CCol>
 </CRow>
 <CRow className="mb-3">
@@ -570,6 +698,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
   onAdd={(val) => handleChange('expertiseAreas', val)}
   isView={isView}
 />
+{errors.expertiseAreas && <div className="text-danger small">{errors.expertiseAreas}</div>}
   </CCol>
 </CRow>
 <CRow className="mb-3">
@@ -580,6 +709,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
   onAdd={(val) => handleChange('languages', val)}
   isView={isView}
 />
+{errors.languages && <div className="text-danger small">{errors.languages}</div>}
   </CCol>
 </CRow>
 
