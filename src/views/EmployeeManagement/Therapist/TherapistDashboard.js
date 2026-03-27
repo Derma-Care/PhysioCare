@@ -1,5 +1,17 @@
-import React from 'react'
-import { CCard, CCardBody, CRow, CCol, CContainer, CBadge, CButton } from '@coreui/react'
+import React, { useState } from 'react'
+import {
+  CCard,
+  CCardBody,
+  CRow,
+  CCol,
+  CContainer,
+  CBadge,
+  CButton,
+  CNav,
+  CNavItem,
+  CNavLink,
+  CFormInput,
+} from '@coreui/react'
 
 // import {
 //   getStats,
@@ -7,13 +19,19 @@ import { CCard, CCardBody, CRow, CCol, CContainer, CBadge, CButton } from '@core
 // } from "./services/therapistService"
 import { therapistInfo } from './commonData'
 import { getPatientBySession, getStats, getTodaySessions } from './therapistService'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 export default function TherapyDashboard() {
   const stats = getStats()
   const today = getTodaySessions()
-  
-const navigate=useNavigate()
+  const [tab, setTab] = useState(1)
+  const [selectedDate, setSelectedDate] = useState('')
+  const location = useLocation()
+  const data = location.state || JSON.parse(localStorage.getItem('loginPayload'))
+
+  console.log('Therapist Data', data)
+
+  const navigate = useNavigate()
   return (
     <CContainer fluid>
       {/* Therapist Info */}
@@ -70,42 +88,83 @@ const navigate=useNavigate()
 
       <CCard className="mt-4">
         <CCardBody>
-          <h5>Today Sessions</h5>
-           {/* <h5>New Sessions</h5>
+          {/* <h5>New Sessions</h5>
             <h5>Active Sessions</h5>
             <h5>Completed Sessions</h5> */}
+          <CNav variant="tabs" className="mb-3" style={{ cursor: 'pointer' }}>
+            <CNavItem>
+              <CNavLink active={tab === 1} onClick={() => setTab(1)}>
+                New Sessions
+              </CNavLink>
+            </CNavItem>
 
-         {today.map((s) => (
-  <CCard key={s.sessionId} className="mb-2">
-    <CCardBody>
-      <b>{s.patientName}</b>
-      <br />
-      Therapy: {s.therapy}
-    
-      <br />
-      Duration: {s.duration} min
-      <br />
+            <CNavItem>
+              <CNavLink active={tab === 2} onClick={() => setTab(2)}>
+                Active Sessions
+              </CNavLink>
+            </CNavItem>
 
-      <CBadge color="secondary" className="me-2">
-        {s.status}
-      </CBadge>
+            <CNavItem>
+              <CNavLink active={tab === 3} onClick={() => setTab(3)}>
+                Completed Sessions
+              </CNavLink>
+            </CNavItem>
+          </CNav>
+          <CRow className="mt-3 mb-3">
+            <CCol md={3}>
+              <CButton
+                color="primary"
+                onClick={() => {
+                  const todayDate = new Date().toISOString().split('T')[0]
+                  setSelectedDate(todayDate)
+                }}
+              >
+                Today
+              </CButton>
+            </CCol>
 
-     <CButton
-  size="sm"
-  color="primary"
-  onClick={() => {
-    const patient = getPatientBySession(s.sessionId)
+            <CCol md={4}>
+              <CFormInput
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </CCol>
 
-    navigate("/session-list", {
-      state: patient,
-    })
-  }}
->
-  View
-</CButton>
-    </CCardBody>
-  </CCard>
-))}
+            <CCol md={3}>
+              <CButton color="success">Filter</CButton>
+            </CCol>
+          </CRow>
+          <h5>Today Sessions</h5>
+
+          {today.map((s) => (
+            <CCard key={s.sessionId} className="mb-2">
+              <CCardBody>
+                <b>{s.patientName}</b>
+                <br />
+                Therapy: {s.therapy}
+                <br />
+                Duration: {s.duration} min
+                <br />
+                <CBadge color="secondary" className="me-2">
+                  {s.status}
+                </CBadge>
+                <CButton
+                  size="sm"
+                  color="primary"
+                  onClick={() => {
+                    const patient = getPatientBySession(s.sessionId)
+
+                    navigate('/session-list', {
+                      state: patient,
+                    })
+                  }}
+                >
+                  View
+                </CButton>
+              </CCardBody>
+            </CCard>
+          ))}
         </CCardBody>
       </CCard>
     </CContainer>

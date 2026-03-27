@@ -21,6 +21,8 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import BodyAssessment from './views/AppointmentManagement/BodyAssessment'
 import TherapistDashboard from './views/EmployeeManagement/Therapist/TherapistDashboard'
+import TherapyExercisesForm from './views/EmployeeManagement/Therapist/TherapyExercise'
+import ExerciseTable from './views/EmployeeManagement/Therapist/TherapyExercise'
 function Root() {
   // attach interceptors once when app mounts
   // useEffect(() => {
@@ -57,7 +59,7 @@ function Root() {
                 
                      
                 
-                {/* <AttendanceMenu /> */}
+                {/* <ExerciseTable /> */}
                 {/* <TherapistDashboard /> */}
               </MedicineProvider>
             </HospitalProvider>

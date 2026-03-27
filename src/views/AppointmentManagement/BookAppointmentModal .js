@@ -54,6 +54,7 @@ import imageCompression from 'browser-image-compression'
 import { GetdoctorsByClinicIdData } from './appointmentAPI'
 
 import BodyAssessment from './BodyAssessment'
+// eslint-disable-next-line react/prop-types
 const BookAppointmentModal = ({ visible, onClose }) => {
   const [visitType, setVisitType] = useState('first')
   const [appointmentType, setAppointmentType] = useState('services') // services / inclinic / online
@@ -131,6 +132,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     consultationFee: '',
     consultationExpiration: selectedHospital.data.consultationExpiration,
     paymentType: '',
+    partAmount: '',
     visitType: 'first',
     servicecost: '',
 
@@ -2165,10 +2167,13 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                   className="custom-select-placeholder"
                   onChange={(e) => {
                     const value = e.target.value
+
                     setBookingDetails((prev) => ({
                       ...prev,
                       paymentMode: value,
+                      partAmount: value === 'Partial' ? prev.partAmount : '', // reset if full
                     }))
+
                     setErrors((prev) => ({
                       ...prev,
                       paymentMode: value ? '' : 'Please select a payment mode',
@@ -2182,6 +2187,35 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
                 {errors.paymentMode && <div className="text-danger mt-1">{errors.paymentMode}</div>}
               </CCol>
+              {/* ✅ Show only when Partial selected */}
+              {bookingDetails.paymentMode === 'Partial' && (
+                <CCol md={5}>
+                  <CFormLabel style={{ color: 'var(--color-black)' }}>
+                    Part Amount <span className="text-danger">*</span>
+                  </CFormLabel>
+
+                  <CFormInput
+                    type="number"
+                    placeholder="Enter Part Amount"
+                    value={bookingDetails.partAmount || ''}
+                    onChange={(e) => {
+                      const value = e.target.value
+
+                      setBookingDetails((prev) => ({
+                        ...prev,
+                        partAmount: value,
+                      }))
+
+                      setErrors((prev) => ({
+                        ...prev,
+                        partAmount: value ? '' : 'Enter part amount',
+                      }))
+                    }}
+                  />
+
+                  {errors.partAmount && <div className="text-danger mt-1">{errors.partAmount}</div>}
+                </CCol>
+              )}
               {/* Doctor Referral Code */}
               <CCol md={6}>
                 <h6>Referred By</h6>
@@ -2236,7 +2270,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 htmlFor="onboardCheckbox"
                 style={{ color: 'var(--color-black)', cursor: 'pointer' }}
               >
-                Can we onboard this patient to the hospital’s customer list?
+                Customer Registration
               </label>
             </div>
           </>

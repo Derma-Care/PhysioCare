@@ -1,6 +1,6 @@
 // export const BASE_URL = 'http://alb-dev-sc-197990416.ap-south-1.elb.amazonaws.com/api'
 // export let wifiUrl = 'localhost'
-export let wifiUrl = 'http://52.66.144.177:9090'
+export let wifiUrl = 'http://3.111.28.174:9090'
 // export let wifiUrl = 'http://3.6.119.57:9090'
 export let splrUrl = 'http:/localhost:8801'
 // export let wifiUrl = '192.168.1.5'

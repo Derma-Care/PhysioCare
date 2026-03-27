@@ -14,7 +14,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cy="65"
             rx="25"
             ry="35"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('head')}
             onClick={(e) => onClickPart('head', e )}
           />
@@ -24,28 +24,28 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="100"
             width="30"
             height="15"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('neck')}
             onClick={(e) => onClickPart('neck',e)}
           />
 
           <path
             d="M70 115 L140 115 L140 200 L60 200 Z"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('chest')}
             onClick={(e) => onClickPart('chest',e)}
           />
 
           <path
             d="M55 200 L145 200 L145 260 L60 260 Z"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('abdomen')}
             onClick={(e) => onClickPart('abdomen',e)}
           />
 
           <path
             d="M60 260 L150 260 L150 310 L55 310 Z "
-            // stroke="black"
+            // stroke="red"
             fill={getColor('pelvis')}
             onClick={(e) => onClickPart('pelvis',e)}
           />
@@ -54,7 +54,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cx="52"
             cy="140"
             r="17"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('leftShoulder')}
             onClick={(e) => onClickPart('leftShoulder',e)}
           />
@@ -63,7 +63,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cx="155"
             cy="140"
             r="20"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightShoulder')}
             onClick={(e) => onClickPart('rightShoulder',e)}
           />
@@ -73,7 +73,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="165"
             width="30"
             height="55"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightArm')}
                transform="rotate(5 172.5 260)"
             onClick={(e) => onClickPart('rightArm',e)}
@@ -85,7 +85,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="150"
             width="30"
             height="60"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightArm')}
             onClick={(e) => onClickPart('rightArm',e)}
           />
@@ -96,7 +96,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="255"
             width="25"
             height="45"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightForearm')}
               transform="rotate(10 172.5 260)"
             onClick={(e) => onClickPart('rightForearm',e)}
@@ -106,7 +106,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="220"
             width="35"
             height="22"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('leftInnerElbow')}
                transform="rotate(5 172.5 260)"
             onClick={(e) => onClickPart('leftInnerElbow',e)}
@@ -117,7 +117,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="300"
             width="25"
             height="20"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightWrist')}
               transform="rotate(10 172.5 260)"
             onClick={(e) => onClickPart('rightWrist',e)}
@@ -127,7 +127,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="320"
             width="45"
             height="50"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightplam')}
               transform="rotate(10 172.5 260)"
             onClick={(e) => onClickPart('rightplam',e)}
@@ -138,7 +138,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
   y="230"
   width="30"
   height="50"
-  // stroke="black"
+  // stroke="red"
   fill={getColor("leftForearm")}
   transform="rotate(-15 172.5 260)"
   onClick={(e) => onClickPart("leftForearm",e)}
@@ -148,7 +148,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="210"
             width="35"
             height="20"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('leftInnerElbow')}
                transform="rotate(5 172.5 260)"
             onClick={(e) => onClickPart('leftInnerElbow',e)}
@@ -158,7 +158,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
   y="280"
   width="30"
   height="20"
-  // stroke="black"
+  // stroke="red"
   fill={getColor("rightWrist")}
   transform="rotate(-15 172.5 260)"
   onClick={(e) => onClickPart("rightWrist",e)}
@@ -168,7 +168,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
   y="300"
   width="45"
   height="50"
-  // stroke="black"
+  // stroke="red"
   fill={getColor("leftPlam")}
   transform="rotate(-15 172.5 260)"
   onClick={(e) => onClickPart("leftPlam",e)}
@@ -180,7 +180,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
              d="M55 310 L100 310 L100 380 60 380 Z "
             // width="30"
             // height="90"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('leftThigh')}
             onClick={(e) => onClickPart('leftThigh',e)}
           />
@@ -191,7 +191,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             // width="15"
             // height="90"
             d="M100 310 L150 310 L145 380 110 380 Z "
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightThigh')}
             onClick={(e) => onClickPart('rightThigh',e)}
           />
@@ -200,7 +200,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cx="83"
             cy="400"
             r="20"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('leftKnee')}
             onClick={(e) => onClickPart('leftKnee',e)}
           />
@@ -209,7 +209,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cx="125"
             cy="400"
             r="20"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightKnee')}
             onClick={(e) => onClickPart('rightKnee',e)}
           />
@@ -220,7 +220,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             // width="25"
             // height="80"
                  d="M70 420 L110 420 L105 510 85 510 Z "
-            // stroke="black"
+            // stroke="red"
             fill={getColor('leftLeg')}
             onClick={(e) => onClickPart('leftLeg',e)}
           />
@@ -231,7 +231,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             // width="15"
             // height="80"
             d="M110 420 L150 420 L135 510 110 510 Z "
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightLeg')}
             onClick={(e) => onClickPart('rightLeg',e)}
           />  
@@ -241,7 +241,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cy="540"
             rx="15"
             ry="30"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('leftFoot')}
             onClick={(e) => onClickPart('leftFoot')}
           />
@@ -251,7 +251,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cy="535"
             rx="15"
             ry="35"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightFoot')}
             onClick={(e) => onClickPart('rightFoot',e)}
           />
@@ -267,7 +267,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cy="55"
             rx="25"
             ry="27"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('backHead')}
             onClick={(e) => onClickPart('backHead',e)}
           />
@@ -277,28 +277,28 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="83"
             width="30"
             height="25"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('backNeck')}
             onClick={(e) => onClickPart('backNeck',e)}
           />
 
           <path
             d="M60 110 L145 110 L145 170 L60 170 Z"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('upperBack')}
             onClick={(e) => onClickPart('upperBack',e)}
           />
 
           <path
             d="M55 170 L155 170 L140 240 L60 240 Z"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('lowerBack')}
             onClick={(e) => onClickPart('lowerBack',e)}
           />
 
           <path
             d="M60 240 L140 240 L160 300 L40 300 Z"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('hip')}
             onClick={(e) => onClickPart('hip',e)}
           />
@@ -309,7 +309,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             // width="15"
             // height="160"
              transform="rotate(30 40 160)"
-            // stroke="black"
+            // stroke="red"
              d="M20 140 L50 140 L90 220 L60 230 Z"
             fill={getColor('backLeftArm')}
             onClick={(e) => onClickPart('backLeftArm',e)}
@@ -320,7 +320,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             width="35"
             height="30"
          
-            // stroke="black"
+            // stroke="red"
             
             fill={getColor('LeftOuterElbow')}
             onClick={(e) => onClickPart('LeftOuterElbow',e)}
@@ -331,7 +331,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             width="35"
             height="40"
          
-            // stroke="black"
+            // stroke="red"
                 transform="rotate(10 0 0)"
             fill={getColor('LeftForearm')}
             onClick={(e) => onClickPart('LeftForearm',e)}
@@ -342,7 +342,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             width="35"
             height="20"
          
-            // stroke="black"
+            // stroke="red"
                 transform="rotate(10 0 0)"
             fill={getColor('LeftDorsal')}
             onClick={(e) => onClickPart('LeftDorsal',e)}
@@ -353,7 +353,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             width="50"
             height="60"
          
-            // stroke="black"
+            // stroke="red"
                 transform="rotate(10 0 0)"
             fill={getColor('LeftBackofHand')}
             onClick={(e) => onClickPart('LeftBackofHand',e)}
@@ -366,7 +366,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             // height="160"
              transform="rotate(-0 140 190)"
              d="M145 140 L180 140 L180 230 L160 230 Z"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('backRightArm')}
             onClick={(e) => onClickPart('backRightArm',e)}
           />
@@ -376,7 +376,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             width="35"
             height="30"
          
-            // stroke="black"
+            // stroke="red"
              
             fill={getColor('rightOuterElbow')}
             onClick={(e) => onClickPart('rightOuterElbow',e)}
@@ -387,7 +387,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             width="35"
             height="40"
          
-            // stroke="black"
+            // stroke="red"
             transform="rotate(-10 140 190)"
             fill={getColor('rightForearm')}
             onClick={(e) => onClickPart('rightForearm',e)}
@@ -398,7 +398,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             width="35"
             height="20"
          
-            // stroke="black"
+            // stroke="red"
             transform="rotate(-10 140 190)"
             fill={getColor('rightDorsal')}
             onClick={(e) => onClickPart('rightDorsal',e)}
@@ -409,7 +409,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             width="45"
             height="60"
          
-            // stroke="black"
+            // stroke="red"
             transform="rotate(-10 140 190)"
             fill={getColor('rightBackofHand')}
             onClick={(e) => onClickPart('rightBackofHand',e)}
@@ -419,7 +419,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="300"
             width="50"
             height="110"
-            // stroke="black"
+            // stroke="red"
             transform="rotate(0, 240 200)"
             fill={getColor('backLeftThigh')}
             onClick={(e) => onClickPart('backLeftThigh',e)}
@@ -430,7 +430,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="300"
             width="50"
             height="110"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('backRightThigh')}
             onClick={(e) => onClickPart('backRightThigh',e)}
           />
@@ -439,7 +439,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cx="75"
             cy="430"
             r="20"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('backLeftKnee')}
             onClick={(e) => onClickPart('backLeftKnee',e)}
           />
@@ -448,7 +448,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cx="120"
             cy="430"
             r="20"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('backRightKnee')}
             onClick={(e) => onClickPart('backRightKnee',e)}
           />
@@ -458,7 +458,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="450"
             width="40"
             height="80"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('leftCalf')}
             onClick={(e) => onClickPart('leftCalf',e)}
           />
@@ -468,7 +468,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             y="450"
             width="40"
             height="80"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('rightCalf')}
             onClick={(e) => onClickPart('rightCalf',e)}
           />
@@ -478,7 +478,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cy="575"
             rx="15"
             ry="45"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('backLeftFoot')}
             onClick={(e) => onClickPart('backLeftFoot',e)}
           />
@@ -489,7 +489,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
             cy="575"
             rx="15"
             ry="45"
-            // stroke="black"
+            // stroke="red"
             fill={getColor('backRightFoot')}
             onClick={(e) => onClickPart('backRightFoot',e)}
           />

@@ -15,7 +15,7 @@ const Page500 = React.lazy(() => import('./views/pages/page500/Page500'))
 import ProtectedRoute from './components/ProtectedRoute'
 import { injectTheme } from './Constant/Themes'
 import SupplierApp from './components/PharmacyManagement/Reorder/SupplierApp'
-import { listenNotification } from './firebase'
+// import { listenNotification } from './firebase'
 import { LogoLoader } from './Utils/LogoLoder'
 
 const App = () => {
@@ -30,9 +30,9 @@ const App = () => {
     setColorMode('light')
   }, [])
 
-  useEffect(() => {
-    listenNotification()
-  }, [])
+  // useEffect(() => {
+  //   listenNotification()
+  // }, [])
 
   return (
     <Suspense fallback={<LogoLoader />}>

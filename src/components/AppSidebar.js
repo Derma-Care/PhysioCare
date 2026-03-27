@@ -59,21 +59,21 @@ const AppSidebar = () => {
               }}
             />
           ) : (
-             <div
-             //TODO: need to change the icon
-    style={{
-      width: '80px',
-      height: '80px',
-      borderRadius: '50%',
-      backgroundColor: '#e9ecef',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: '8px',
-    }}
-  >
-    <CIcon icon={cilHospital} size="xl" />
-  </div>
+            <div
+              //TODO: need to change the icon
+              style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                backgroundColor: '#e9ecef',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '8px',
+              }}
+            >
+              <CIcon icon={cilHospital} size="xl" />
+            </div>
           )}
 
           <div

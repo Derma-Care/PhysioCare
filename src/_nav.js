@@ -57,13 +57,13 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
     },
-    {
-      component: CNavItem,
-      to: '/pharmacy-management',
-      name: 'Pharmacy Management',
-      as: NavLink,
-      icon: <CIcon icon={cilTablet} customClassName="nav-icon" />,
-    },
+    // {
+    //   component: CNavItem,
+    //   to: '/pharmacy-management',
+    //   name: 'Pharmacy Management',
+    //   as: NavLink,
+    //   icon: <CIcon icon={cilTablet} customClassName="nav-icon" />,
+    // },
     {
       component: CNavItem,
       to: '/report-management',
@@ -79,13 +79,13 @@ export const getNavigation = (permissions = {}) => {
       icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
     },
 
-    {
-      component: CNavItem,
-      to: '/Disease',
-      name: 'Disease-Management',
-      as: NavLink,
-      icon: <CIcon icon={cilWarning} customClassName="nav-icon" />,
-    },
+    // {
+    //   component: CNavItem,
+    //   to: '/Disease',
+    //   name: 'Disease-Management',
+    //   as: NavLink,
+    //   icon: <CIcon icon={cilWarning} customClassName="nav-icon" />,
+    // },
     {
       component: CNavItem,
       to: '/Tests',
@@ -136,7 +136,7 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
     },
-     {
+    {
       component: CNavItem,
       to: '/attendance',
       name: 'Attendance',

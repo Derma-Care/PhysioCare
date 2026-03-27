@@ -92,7 +92,7 @@ const Login = () => {
         })
         res = resposnse
       } else {
-        const resposnse = await http.post(`/loginUsingRoles`, loginBody, {
+        const resposnse = await http.post(`/login`, loginBody, {
           headers: { 'Content-Type': 'application/json' },
         })
         res = resposnse.data
@@ -179,7 +179,43 @@ const Login = () => {
           localStorage.setItem('HospitalId', HospitalId)
           await fetchAllData(HospitalId)
           showCustomToast(res.data?.message || 'Login successful!', 'success')
-          navigate('/dashboard') // immediately navigates to dashboard with context updated
+          // const physioType = res.data.physioType
+          // const therapistId = res.data.therapistId
+          // const therapistName = res.data.therapistName
+          // const permissions = res.data.permissions
+          // const theraphPayload = {
+          //   therapistId,
+          //   therapistName,
+          //   physioType,
+          //   permissions,
+          // }
+      if (
+  role.toLowerCase() === "therapist" ||
+  role.toLowerCase() === "intern"
+) {
+
+  const theraphPayload = {
+    therapistId: payload.therapistId,
+    therapistName: payload.therapistName,
+    physioType: payload.physioType,
+    permissions: payload.permissions,
+    branchId: payload.branchId,
+    clinicId: payload.clinicId,
+  }
+
+  // save also in localStorage
+  localStorage.setItem(
+    "therapistData",
+    JSON.stringify(theraphPayload)
+  )
+
+  navigate("/therapist", {
+    state: theraphPayload,
+  })
+
+} else {
+  navigate("/dashboard")
+}
         }
       }
     } catch (err) {
@@ -320,9 +356,10 @@ const Login = () => {
                         >
                           <option value="admin">Admin</option>
                           <option value="receptionist">Receptionist</option>
-                          <option value="nurse">Nurse</option>
-                          <option value="lab_technician">Lab Technician</option>
-                          <option value="pharmacist">Pharmacist</option>
+                          <option value="therapist">Therapist</option>
+                          <option value="intern">Intern</option>
+                          {/* <option value="lab_technician">Lab Technician</option>
+                          <option value="pharmacist">Pharmacist</option> */}
                           {/* <option value="wardBoy">Ward Boy / Attendant</option>
                         <option value="security">Security Staff</option> */}
                         </CFormSelect>
