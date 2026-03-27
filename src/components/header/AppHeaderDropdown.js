@@ -47,7 +47,7 @@ const AppHeaderDropdown = () => {
               style={{
                 borderRadius: '50%',
                 cursor: 'pointer',
-                objectFit: 'cover',
+                objectFit: 'contain',
               }}
             />
           ) : (

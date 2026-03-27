@@ -599,14 +599,14 @@ const fetchPatients = useCallback(async (clinicId) => {
                 In-Clinic Consultation
               </button>
 
-              <button
+              {/* <button
                 onClick={() => toggleFilter('Tele Consultation')}
                 className={`btn ${
                   filterTypes.includes('Tele Consultation') ? 'btn-selected' : 'btn-unselected'
                 }`}
               >
                 Tele Consultation
-              </button>
+              </button> */}
             </div>
             {/* Right side reset button */}
             {/* {!showAppointments && (

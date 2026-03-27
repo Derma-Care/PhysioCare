@@ -53,8 +53,8 @@ const AppSidebar = () => {
               style={{
                 width: '80px',
                 height: '80px',
-                borderRadius: '50%',
-                objectFit: 'fill',
+                // borderRadius: '50%',
+                objectFit: 'contain',
                 marginBottom: '8px',
               }}
             />

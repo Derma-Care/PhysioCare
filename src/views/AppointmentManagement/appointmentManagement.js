@@ -318,14 +318,14 @@ const appointmentManagement = () => {
             In-Clinic Consultation
           </button>
 
-          <button
+          {/* <button
             onClick={() => toggleFilter('Tele Consultation')}
             className={`btn ${
               filterTypes.includes('Tele Consultation') ? 'btn-selected' : 'btn-unselected'
             }`}
           >
             Tele Consultation
-          </button>
+          </button> */}
         </div>
 
         <div className="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
