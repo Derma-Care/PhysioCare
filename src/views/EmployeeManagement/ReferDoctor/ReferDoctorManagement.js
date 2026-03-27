@@ -29,6 +29,7 @@ import { toast, ToastContainer } from 'react-toastify'
 import { useHospital } from '../../Usecontext/HospitalContext.js'
 import { showCustomToast } from '../../../Utils/Toaster.js'
 import Pagination from '../../../Utils/Pagination.js'
+import { useNavigate } from 'react-router-dom'
 
 const ReferDoctorManagement = () => {
   const [technicians, setTechnicians] = useState([])
@@ -43,7 +44,7 @@ const ReferDoctorManagement = () => {
   const [error, setError] = useState(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
-
+  const navigate = useNavigate()
   // ✅ Load from localStorage on mount
   const [modalData, setModalData] = useState(null) // store username & password
   const [modalTVisible, setModalTVisible] = useState(false)
@@ -152,6 +153,9 @@ const ReferDoctorManagement = () => {
             onClick={() => setModalVisible(true)}
           >
             Add Refer Doctor
+          </CButton>
+          <CButton onClick={() => navigate('/therapist')}>
+            Therapist
           </CButton>
         </div>
       )}

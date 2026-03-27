@@ -1,5 +1,6 @@
 import React from 'react'
 import NotificationPanel from './views/PushNotification/PushNotificationScreen'
+ 
 
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const Doctors = React.lazy(() => import('./views/Doctors/DoctorManagement'))
@@ -84,7 +85,8 @@ const LeaveRequest = React.lazy(() => import('./views/pages/attendance/LeaveRequ
 const LeaveList = React.lazy(() => import('./views/pages/attendance/LeaveList'))
 const LeaveApproval = React.lazy(() => import('./views/pages/attendance/LeaveApporal'))
 const AssignShift = React.lazy(() => import('./views/pages/attendance/ShiftAssign'))
-
+const SessionList = React.lazy(() => import('./views/EmployeeManagement/Therapist/SessionList'))
+const TherapistDashboard = React.lazy(() => import('./views/EmployeeManagement/Therapist/TherapistDashboard'))
 
 const routes = [
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
@@ -176,14 +178,17 @@ const routes = [
 
     
  ],
-}
-  // { path: "/attendance", element: AttendanceMenu },
+},
+  { path: "/session-list", element: SessionList },
+  { path: "/therapist", element: TherapistDashboard },
   // { path: '/employee-list', element: EmployeeList },
   // { path: '/shift-list', element: ShiftMaster },
   // { path: '/attendance-entry', element: AttendanceEntry },
   // { path: '/attendance-list', element: AttendanceList },
   // { path: '/report', element: AttendanceReport },
   // { path: '/monthly', element: MonthlyReport },
+
+  
 ]
 
 export default routes
