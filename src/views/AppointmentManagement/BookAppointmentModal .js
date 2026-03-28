@@ -70,11 +70,12 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const navigate = useNavigate()
   const [slots, setSlots] = useState([])
   const [referDoctor, setReferDoctor] = useState([])
+  const[loading,setLoading] = useState(false)
 
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [mvisible, setMVisible] = useState(false)
   const [part, setPart] = useState([])
-  const [theraphyQuestions, setTheraphyQuestions] = useState([])
+ const [theraphyQuestions, setTheraphyQuestions] = useState({});
   const [markedImage, setMarkedImage] = useState('')
 
   const [showAllSlots, setShowAllSlots] = useState(false)
@@ -90,7 +91,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const [categories, setCategories] = useState([])
   const [selectedProcedure, setSelectedProcedure] = useState('')
   const [procedures, setProcedures] = useState([]) // for sub-services
-  const [loading, setLoading] = useState([])
+  const [saveloading, setSaveLoading] = useState(false)
 
   const [services, setServices] = useState([])
   const [subServices, setSubServices] = useState([])
@@ -146,6 +147,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     symptomsDuration: '',
     problem: '',
     foc: '',
+    // parts:part,
 
     attachments: [],
     freeFollowUps: selectedHospital.data.freeFollowUps,
@@ -954,13 +956,14 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     console.log('Payload without slot:', combinedSymptomsDuration)
     console.log('Payload without combinedName:', combinedName)
     console.log('Validating bookingDetails...', bookingDetails)
+    console.log('Validating bookingDetails...', part)
 
     if (!validate()) {
       // showCustomToast('Please fix the errors before submitting.', 'error')
       return
     }
-
     try {
+      setSaveLoading(true)
       // Build payload explicitly, excluding 'slot'
       const { unit, address, slot, ...rest } = bookingDetails
 
@@ -1033,6 +1036,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       else if (err.message?.includes('timeout'))
         showCustomToast('Request timed out. Please try again.', 'error')
       else showCustomToast('Failed to submit booking. Please try again.', 'error')
+    }finally{
+      setSaveLoading(false)
     }
   }
 
@@ -1081,7 +1086,19 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       // showCustomToast('Failed to submit follow-up booking', 'error')
     }
   }
+const parseAddress = (addressStr = "") => {
+  const parts = addressStr.split(",");
 
+  return {
+    houseNo: parts[0]?.trim() || "",
+    street: parts[1]?.trim() || "",
+    landmark: parts[2]?.trim() || "",
+    city: parts[3]?.trim() || "",
+    state: parts[4]?.trim() || "",
+    postalCode: parts[5]?.trim() || "",
+    country: parts[6]?.trim() || "India",
+  };
+};
   useEffect(() => {
     if (selectedBooking) {
       setBookingDetails((prev) => ({
@@ -1094,7 +1111,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         patientMobileNumber: selectedBooking.mobileNumber || '',
         // followupsLeft: selectedBooking.followupsLeft || '',
         // freeFollowupsLeft: selectedBooking.freeFollowupsLeft || '',
-        address: selectedBooking.patientAddress,
+        address: parseAddress(selectedBooking.patientAddress),
       }))
     }
   }, [selectedBooking, setBookingDetails])
@@ -1102,16 +1119,82 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   console.log(`appointmenttype ${appointmentType}`)
 
   // const [part, setPart] = useState("");
+ const convertToBase64 = async (image) => {
+  try {
+    // ✅ already base64
+    if (typeof image === "string" && image.startsWith("data:image")) {
+      return image.split(",")[1]
+    }
 
-  const handlePartClick = (data) => {
-    console.log(data.parts)
-    console.log(data.image)
-    console.log(data.answerData)
+    // ✅ File / Blob
+    if (image instanceof File || image instanceof Blob) {
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.readAsDataURL(image)
+        reader.onloadend = () => resolve(reader.result.split(",")[1])
+        reader.onerror = reject
+      })
+    }
 
-    setPart(data.parts)
-    setMarkedImage(data.image)
-    setTheraphyQuestions(data.answerData)
+    // ✅ URL / blob URL
+    if (typeof image === "string") {
+      const res = await fetch(image)
+      const blob = await res.blob()
+
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.readAsDataURL(blob)
+        reader.onloadend = () => resolve(reader.result.split(",")[1])
+        reader.onerror = reject
+      })
+    }
+
+    return ""
+  } catch (err) {
+    console.error("Base64 error:", err)
+    return ""
   }
+}
+
+const handlePartClick = async (data) => {
+  console.log("RAW DATA:", data)
+
+  let actualData = data
+
+  // 🔥 unwrap if array
+  if (Array.isArray(data.answerData)) {
+    actualData = data.answerData[0]
+  }
+
+  console.log("FIXED DATA:", actualData)
+
+  // ✅ Convert image to base64
+  let base64Image = ""
+  if (data.image) {
+    base64Image = await convertToBase64(data.image)
+  }
+
+  setPart(actualData.parts || [])
+  setMarkedImage(base64Image) // ✅ now always base64
+  setTheraphyQuestions(actualData.answerData || {})
+}
+
+// const handlePartClick = (data) => {
+//   console.log("RAW DATA:", data);
+
+//   let actualData = data;
+
+//   // 🔥 FIX: unwrap if array
+//   if (Array.isArray(data.answerData)) {
+//     actualData = data.answerData[0];
+//   }
+
+//   console.log("FIXED DATA:", actualData);
+
+//   setPart(actualData.parts || []);
+//   setMarkedImage(data.image);
+//   setTheraphyQuestions(actualData.answerData || {});
+// };
   return (
     <COffcanvas
       placement="end"
@@ -2308,8 +2391,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             <CButton
               onClick={handleSubmit} // ✅ call normal booking function
               style={{ backgroundColor: 'var(--color-bgcolor)', color: 'var(--color-black)' }}
+              disabled={saveloading}
             >
-              Submit
+             {saveloading ? "Submiting ..." : "Submit"} 
             </CButton>
           )}
         </div>

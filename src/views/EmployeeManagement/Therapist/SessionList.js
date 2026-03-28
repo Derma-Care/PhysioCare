@@ -24,7 +24,7 @@ export default function SessionList() {
 
   const [selected, setSelected] = useState(null)
 
-
+console.log(patient)
   // update after modal save
   const handleUpdate = (updated) => {
 
@@ -47,19 +47,27 @@ export default function SessionList() {
 
       <CCardBody>
 
-        <h4>{patient.name}</h4>
+        <h4 className="fw-bold">{patient.name}</h4>
+        <div> <strong>Therapy Name:</strong> {patient.therapy}</div>
+        <div> <strong>Assigned By: </strong> {patient.doctorName}</div>
+        {/* {sessions.map((s)=>(
+          <div>
+            <p>modalitiesUsed: {s.modalities}</p>
+            <p>exercisesDone: {s.exercises}</p>
+            
+          </div>
+        )
 
-        <p>Therapy: {patient.therapy}</p>
+        )} */}
 
-        <p>Disease: {patient.disease}</p>
-
-
-        <CTable bordered>
+        <CTable bordered className="pink-table mt-3">
 
           <thead>
             <tr>
               <th>Date</th>
               <th>Duration</th>
+              <th>modalitiesUsed</th>
+              <th>exercisesDone</th>
               <th>Status</th>
               <th>Action</th>
             </tr>
@@ -74,6 +82,9 @@ export default function SessionList() {
                 <td>{s.date}</td>
 
                 <td>{s.duration}</td>
+                <td>{s.modalities}</td>
+                <td>{s.exercises}</td>
+ 
 
                 <td>
 

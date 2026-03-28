@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   CModal,
   CModalHeader,
@@ -10,8 +10,10 @@ import {
   CFormInput,
   CFormCheck,
 } from "@coreui/react";
+import axios from "axios";
+import { getQuestionsByKey } from "../EmployeeManagement/Therapist/therapistApi";
 
-import { questionsByPart } from "./questions";
+// import { questionsByPart } from "./questions";
 
 export default function QuestionModal({
   visible,
@@ -23,44 +25,106 @@ export default function QuestionModal({
   const partIds = Array.isArray(partId) ? partId : [partId];
 
   const [answers, setAnswers] = useState({});
-
+  console.log(partIds)
+ 
+const [questionsByPart, setQuestionsByPart] = useState({});
   const handleChange = (key, value) => {
     setAnswers((prev) => ({
       ...prev,
       [key]: value,
     }));
   };
+useEffect(() => {
+  if (partId) {
+    fetchQuestions();
+  }
+}, [partId]);
 
+const fetchQuestions = async () => {
+  if (!partId || partId.length === 0) return;
+  try {
+
+    const parts = Array.isArray(partId)
+      ? partId
+      : [partId];
+
+    const res = await getQuestionsByKey(parts);
+
+if (res?.data) {
+
+  setQuestionsByPart(
+    res.data   // ✅ correct
+  );
+
+}
+
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+// const handleSave = () => {
+
+//   const therapyQuestion = partIds.map((part) => {
+
+//     const questions = questionsByPart[part] || [];
+
+//     const ans = questions.map((q) => {
+
+//       const key = part + "_" + q.questionId;
+
+//       return {
+//         questionId: q.questionId,
+//         answer: answers[key] || "",
+//       };
+
+//     });
+
+//     return {
+//       bodyPart: part,
+//       answers: ans,
+//     };
+
+//   });
+
+//   onSave({
+//     therapyQuestion,
+//   });
+
+// };
 const handleSave = () => {
 
   const therapyQuestion = partIds.map((part) => {
-
-    const questions = questionsByPart[part] || [];
+    const questions = questionsByPart?.[part] || [];
 
     const ans = questions.map((q) => {
-
       const key = part + "_" + q.questionId;
 
       return {
         questionId: q.questionId,
         answer: answers[key] || "",
       };
-
     });
 
     return {
       bodyPart: part,
       answers: ans,
     };
-
   });
 
+  // ✅ convert to backend format
+  const formattedAnswers = {};
+
+  therapyQuestion.forEach((item) => {
+    formattedAnswers[item.bodyPart] = item.answers;
+  });
+
+  // ✅ FINAL CORRECT STRUCTURE
   onSave({
-    therapyQuestion,
+    parts: partIds,               // ✅ FIX (was missing / empty)
+    answerData: formattedAnswers, // ✅ NOT array
   });
-
 };
-
   return (
     <CModal visible={visible} onClose={onClose} size="lg">
 

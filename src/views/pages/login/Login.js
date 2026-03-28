@@ -190,17 +190,19 @@ const Login = () => {
           //   permissions,
           // }
       if (
-  role.toLowerCase() === "therapist" ||
+  role.toLowerCase() === "physiotherapist" ||
   role.toLowerCase() === "intern"
 ) {
 
   const theraphPayload = {
-    therapistId: payload.therapistId,
-    therapistName: payload.therapistName,
-    physioType: payload.physioType,
+    therapistId: payload.staffId,
+    therapistName: payload.staffName,
+    // physioType: payload.physioType,
     permissions: payload.permissions,
     branchId: payload.branchId,
-    clinicId: payload.clinicId,
+    clinicId: payload.hospitalId,
+    role:role,
+    branchName: branchName
   }
 
   // save also in localStorage
@@ -356,7 +358,7 @@ const Login = () => {
                         >
                           <option value="admin">Admin</option>
                           <option value="receptionist">Receptionist</option>
-                          <option value="therapist">Therapist</option>
+                          <option value="physiotherapist">Therapist</option>
                           <option value="intern">Intern</option>
                           {/* <option value="lab_technician">Lab Technician</option>
                           <option value="pharmacist">Pharmacist</option> */}

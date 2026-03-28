@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
+
 import {
   CButton,
   CCard,
@@ -21,9 +22,24 @@ import {
   CFormLabel,
   CImage,
 } from "@coreui/react"
+
 import { showCustomToast } from "../../../Utils/Toaster"
+import { createTherapyExercise ,updateTherapyExercise, deleteTherapyExercise, getTherapyExercise} from "./TheraphyApi"
+import ConfirmationModal from "../../../components/ConfirmationModal"
+import { Edit2, Trash2 } from "lucide-react"
+
+// import {
+//   createTherapyExercise,
+//   updateTherapyExercise,
+//   deleteTherapyExercise,
+//   getTherapyExercise,
+// } from "./TheraphyApi"
 
 export default function ExerciseTable() {
+
+  const clinicId = localStorage.getItem("HospitalId")
+  const branchId = localStorage.getItem("branchId")
+ 
 
   const emptyExercise = {
     name: "",
@@ -32,188 +48,341 @@ export default function ExerciseTable() {
     duration: "",
     frequency: "",
     notes: "",
-    image: null,
+    image: "",
     imagePreview: "",
+ 
   }
 
   const [exercises, setExercises] = useState([])
   const [form, setForm] = useState(emptyExercise)
   const [visible, setVisible] = useState(false)
   const [editIndex, setEditIndex] = useState(null)
+const [loading, setLoading] = useState(false)
+const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false)
+const [exerciseIdToDelete, setExerciseIdToDelete] = useState(null)
+const [delloading, setDelLoading] = useState(false)
+  // ================= GET =================
 
-  // ✅ open modal
-  const handleAdd = () => {
-    setForm(emptyExercise)
-    setEditIndex(null)
-    setVisible(true)
+const loadExercises = async () => {
+
+  try {
+
+    setLoading(true)
+
+    const res = await getTherapyExercise(
+      clinicId,
+      branchId
+    )
+
+    setExercises(res.data || [])
+
+  } catch (err) {
+
+    showCustomToast("Load failed", "error")
+
+  } finally {
+
+    setLoading(false)
+
   }
+}
 
-  // ✅ validation
+  useEffect(() => {
+    loadExercises()
+  }, [])
+
   const validateForm = () => {
 
-    if (!form.name) {
-      showCustomToast("Exercise name required", "error")
-      return false
-    }
-
-    if (!form.session) {
-      showCustomToast("Session required", "error")
-      return false
-    }
-
-    if (!form.duration) {
-      showCustomToast("Duration required", "error")
-      return false
-    }
-
-    if (!form.frequency) {
-      showCustomToast("Frequency required", "error")
-      return false
-    }
-
-    if (!form.notes) {
-      showCustomToast("Notes required", "error")
-      return false
-    }
-
-    if (!form.image) {
-      showCustomToast("Image required", "error")
-      return false
-    }
-
-    return true
+  if (!form.name) {
+    showCustomToast("Name required", "error")
+    return false
   }
 
-  // ✅ save
-  const handleSave = () => {
-
-    if (!validateForm()) return
-
-    if (editIndex !== null) {
-      const updated = [...exercises]
-      updated[editIndex] = form
-      setExercises(updated)
-
-      showCustomToast("Exercise updated", "success")
-    } else {
-      setExercises([...exercises, form])
-
-      showCustomToast("Exercise added", "success")
-    }
-
-    setVisible(false)
+  if (!form.session) {
+    showCustomToast("Session required", "error")
+    return false
   }
 
-  // ✅ edit
+  if (!form.duration) {
+    showCustomToast("Duration required", "error")
+    return false
+  }
+
+  if (!form.frequency) {
+    showCustomToast("Frequency required", "error")
+    return false
+  }
+
+  if (!form.notes) {
+    showCustomToast("Notes required", "error")
+    return false
+  }
+
+  if (!form.image) {
+    showCustomToast("Image required", "error")
+    return false
+  }
+
+  // optional video validation
+
+  if (form.video && !form.video.startsWith("http")) {
+    showCustomToast("Invalid video link", "error")
+    return false
+  }
+
+  return true
+}
+
+  // ================= SAVE =================
+
+  const handleSave = async () => {
+if (!validateForm()) return
+    const payload = {
+      ...form,
+      clinicId,
+      branchId,
+    }
+
+    try {
+setLoading(true)
+      if (editIndex !== null) {
+
+        const id =
+          exercises[editIndex].therapyExercisesId
+
+        await updateTherapyExercise(id, payload)
+
+        showCustomToast("Updated", "success")
+
+      } else {
+
+        await createTherapyExercise(payload)
+
+        showCustomToast("Created", "success")
+      }
+
+      setVisible(false)
+
+      loadExercises()
+
+    } catch (err) {
+
+      showCustomToast("Error", "error")
+
+    }finally{
+        setLoading(false)
+    }
+  }
+
+  // ================= DELETE =================
+const openDeleteModal = (index) => {
+
+  const id =
+    exercises[index].therapyExercisesId
+
+  setExerciseIdToDelete(id)
+
+  setIsDeleteModalVisible(true)
+
+}
+const confirmDeleteExercise = async () => {
+
+  if (!exerciseIdToDelete) return
+
+  try {
+
+    setDelLoading(true)
+
+    await deleteTherapyExercise(
+      exerciseIdToDelete
+    )
+
+    showCustomToast(
+      "Exercise deleted",
+      "success"
+    )
+
+    setIsDeleteModalVisible(false)
+
+    setExerciseIdToDelete(null)
+
+    loadExercises()
+
+  } catch (err) {
+
+    showCustomToast(
+      "Delete failed",
+      "error"
+    )
+
+  } finally {
+
+    setDelLoading(false)
+
+  }
+}
+  const handleDelete = async (index) => {
+
+    const id =
+      exercises[index].therapyExercisesId
+
+    await deleteTherapyExercise(id)
+
+    loadExercises()
+  }
+
+  // ================= EDIT =================
+
   const handleEdit = (index) => {
-    setForm(exercises[index])
+
+    const ex = exercises[index]
+
+    setForm({
+      ...ex,
+      imagePreview: ex.image,
+    })
+
     setEditIndex(index)
+
     setVisible(true)
   }
 
-  // ✅ delete
-  const handleDelete = (index) => {
-    const updated = exercises.filter((_, i) => i !== index)
-    setExercises(updated)
+  // ================= ADD =================
 
-    showCustomToast("Exercise deleted", "success")
+  const handleAdd = () => {
+
+    setForm(emptyExercise)
+
+    setEditIndex(null)
+
+    setVisible(true)
   }
 
-  // ✅ view
-  const handleView = (index) => {
-    console.log(exercises[index])
-    showCustomToast("Check console", "info")
-  }
+  // ================= IMAGE =================
 
-  // ✅ image
-  const handleImage = (file) => {
+const handleImage = (file) => {
 
-    const preview = URL.createObjectURL(file)
+  const reader = new FileReader()
+
+  reader.readAsDataURL(file)
+
+  reader.onload = () => {
 
     setForm({
       ...form,
-      image: file,
-      imagePreview: preview,
+      image: reader.result,
+      imagePreview: reader.result,
     })
+
   }
 
+}
+{loading && (
+  <div className="text-center mb-2">
+    Loading...
+  </div>
+)}
+
   return (
+    <>
+ 
+
     <CCard>
+
       <CCardBody>
 
         <div className="d-flex justify-content-between mb-3">
+
           <h5>Exercises</h5>
 
-          <CButton color="primary" onClick={handleAdd}>
-            + Add Exercise
-          </CButton>
+         <CButton
+ style={{backgroundColor:"var(--color-bgcolor)",color:"var(--color-black)"}}
+  onClick={handleAdd}
+  disabled={loading}
+>
+  + Add Exercise
+</CButton>
+
         </div>
 
-        {/* TABLE */}
 
-        <CTable bordered>
+        <CTable bordered className="pink-table">
 
           <CTableHead>
             <CTableRow>
+
+              <CTableHeaderCell>S.No</CTableHeaderCell>
               <CTableHeaderCell>Image</CTableHeaderCell>
               <CTableHeaderCell>Name</CTableHeaderCell>
               <CTableHeaderCell>Session</CTableHeaderCell>
               <CTableHeaderCell>Duration</CTableHeaderCell>
               <CTableHeaderCell>Frequency</CTableHeaderCell>
-              <CTableHeaderCell>YouTube Url</CTableHeaderCell>
+              <CTableHeaderCell>Video</CTableHeaderCell>
               <CTableHeaderCell>Action</CTableHeaderCell>
+
             </CTableRow>
           </CTableHead>
 
+
           <CTableBody>
 
-            {exercises.map((ex, index) => (
+            {exercises.map((ex, i) => (
 
-              <CTableRow key={index}>
+              <CTableRow key={i}>
 
+                <CTableDataCell>{i+1}</CTableDataCell>
                 <CTableDataCell>
-                  {ex.imagePreview && (
-                    <CImage
-                      src={ex.imagePreview}
-                      width={50}
-                      height={50}
-                    />
+                
+
+                  {ex.image && (
+                    <CImage src={ex.image} width={50} />
                   )}
+
                 </CTableDataCell>
 
                 <CTableDataCell>{ex.name}</CTableDataCell>
                 <CTableDataCell>{ex.session}</CTableDataCell>
                 <CTableDataCell>{ex.duration}</CTableDataCell>
                 <CTableDataCell>{ex.frequency}</CTableDataCell>
-                <CTableDataCell>{ex.video}</CTableDataCell>
+                <CTableDataCell>
+
+<CTableDataCell>
+
+  {ex.video ? (
+    <a
+      href={ex.video}
+      target="_blank"
+      rel="noreferrer"
+    >
+      Open Video
+    </a>
+  ) : (
+    <span style={{ color: "gray" }}>
+      No Video
+    </span>
+  )}
+
+</CTableDataCell>
+
+</CTableDataCell>
 
                 <CTableDataCell>
 
-                  <CButton
+                  <button
                     size="sm"
-                    color="info"
-                    onClick={() => handleView(index)}
+                    className="actionBtn"
+                    onClick={() => handleEdit(i)}
                   >
-                    View
-                  </CButton>
+                    <Edit2 size={18} />
+                  </button>
 
-                  <CButton
+                  <button
                     size="sm"
-                    color="warning"
-                    className="ms-2"
-                    onClick={() => handleEdit(index)}
+                    className="ms-2 actionBtn"  
+                  onClick={() => openDeleteModal(i)}
                   >
-                    Edit
-                  </CButton>
-
-                  <CButton
-                    size="sm"
-                    color="danger"
-                    className="ms-2"
-                    onClick={() => handleDelete(index)}
-                  >
-                    Delete
-                  </CButton>
+                    <Trash2 size={18} />
+                  </button>
 
                 </CTableDataCell>
 
@@ -229,12 +398,13 @@ export default function ExerciseTable() {
 
       {/* MODAL */}
 
-      <CModal visible={visible} onClose={() => setVisible(false)}>
+      <CModal
+        visible={visible}
+        onClose={() => setVisible(false)} className="custom-modal" backdrop="static"
+      >
 
         <CModalHeader>
-          <CModalTitle>
-            {editIndex !== null ? "Edit Exercise" : "Add Exercise"}
-          </CModalTitle>
+          <CModalTitle>Exercise</CModalTitle>
         </CModalHeader>
 
         <CModalBody>
@@ -242,73 +412,96 @@ export default function ExerciseTable() {
           <CRow>
 
             <CCol md={6}>
-              <CFormLabel>Name *</CFormLabel>
+              <CFormLabel>Name</CFormLabel>
               <CFormInput
                 value={form.name}
                 onChange={(e) =>
-                  setForm({ ...form, name: e.target.value })
+                  setForm({
+                    ...form,
+                    name: e.target.value,
+                  })
                 }
               />
             </CCol>
 
             <CCol md={6}>
-              <CFormLabel>YouTube</CFormLabel>
+              <CFormLabel>Video</CFormLabel>
               <CFormInput
                 value={form.video}
                 onChange={(e) =>
-                  setForm({ ...form, video: e.target.value })
+                  setForm({
+                    ...form,
+                    video: e.target.value,
+                  })
                 }
               />
             </CCol>
 
             <CCol md={4}>
-              <CFormLabel>Session *</CFormLabel>
+              <CFormLabel>Session</CFormLabel>
               <CFormInput
                 value={form.session}
                 onChange={(e) =>
-                  setForm({ ...form, session: e.target.value })
+                  setForm({
+                    ...form,
+                    session: e.target.value,
+                  })
                 }
               />
             </CCol>
 
             <CCol md={4}>
-              <CFormLabel>Duration *</CFormLabel>
+              <CFormLabel>Duration</CFormLabel>
               <CFormInput
                 value={form.duration}
                 onChange={(e) =>
-                  setForm({ ...form, duration: e.target.value })
+                  setForm({
+                    ...form,
+                    duration: e.target.value,
+                  })
                 }
               />
             </CCol>
 
             <CCol md={4}>
-              <CFormLabel>Frequency *</CFormLabel>
+              <CFormLabel>Frequency</CFormLabel>
               <CFormInput
                 value={form.frequency}
                 onChange={(e) =>
-                  setForm({ ...form, frequency: e.target.value })
+                  setForm({
+                    ...form,
+                    frequency: e.target.value,
+                  })
                 }
               />
             </CCol>
 
             <CCol md={12}>
-              <CFormLabel>Notes *</CFormLabel>
+              <CFormLabel>Notes</CFormLabel>
               <CFormInput
                 value={form.notes}
                 onChange={(e) =>
-                  setForm({ ...form, notes: e.target.value })
+                  setForm({
+                    ...form,
+                    notes: e.target.value,
+                  })
                 }
               />
             </CCol>
 
             <CCol md={12}>
-              <CFormLabel>Image *</CFormLabel>
+              <CFormLabel>Image</CFormLabel>
               <CFormInput
                 type="file"
                 onChange={(e) =>
-                  handleImage(e.target.files[0])
+                  handleImage(
+                    e.target.files[0]
+                  )
                 }
               />
+              {form.imagePreview && (
+  <CImage src={form.imagePreview} width={80} className="mt-2"/>
+)}
             </CCol>
 
           </CRow>
@@ -324,14 +517,34 @@ export default function ExerciseTable() {
             Cancel
           </CButton>
 
-          <CButton color="success" onClick={handleSave}>
-            Save
-          </CButton>
+      <CButton
+  color="success"
+  onClick={handleSave}
+  disabled={loading}
+>
+  {loading ? "Saving..." : "Save"}
+</CButton>
 
         </CModalFooter>
 
       </CModal>
 
     </CCard>
+       <ConfirmationModal
+  isVisible={isDeleteModalVisible}
+  title="Delete Exercise"
+  message="Are you sure you want to delete this exercise? This action cannot be undone."
+  isLoading={delloading}
+  confirmText="Yes, Delete"
+  cancelText="Cancel"
+  confirmColor="danger"
+  cancelColor="secondary"
+  onConfirm={confirmDeleteExercise}
+  onCancel={() => {
+    setIsDeleteModalVisible(false)
+    setExerciseIdToDelete(null)
+  }}
+/>
+    </>
   )
 }

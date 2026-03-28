@@ -74,7 +74,7 @@ export const getNavigation = (permissions = {}) => {
     {
       component: CNavItem,
       to: '/package-management',
-      name: 'Package Management',
+      name: 'Therapy Programs',
       as: NavLink,
       icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
     },
@@ -103,7 +103,16 @@ export const getNavigation = (permissions = {}) => {
     {
       component: CNavItem,
       to: '/Procedure-Management',
-      name: 'Procedure Management',
+      name: 'Therapy Management',
+
+      as: NavLink,
+      icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
+    },
+      {
+      component: CNavItem,
+      to: '/exercises',
+      name: 'Exercises',
+
       as: NavLink,
       icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
     },

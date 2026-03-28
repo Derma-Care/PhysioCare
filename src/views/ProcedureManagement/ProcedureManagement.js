@@ -1131,7 +1131,7 @@ const ServiceManagement = () => {
 
       <div>
         <CForm className="d-flex justify-content-end mb-3">
-          {can('Procedure Management', 'create') && (
+          {can('Therapy Management', 'create') && (
             <div
               className=" w-100"
               style={{
@@ -1148,7 +1148,7 @@ const ServiceManagement = () => {
                 }}
                 onClick={() => openAddModal()}
               >
-                Add Procedure Details
+                Add Theraphy Details
               </CButton>
             </div>
           )}
