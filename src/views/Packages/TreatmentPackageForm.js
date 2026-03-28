@@ -9,7 +9,8 @@ import {
   CFormSelect,
 } from '@coreui/react'
 
-const TreatmentPackageForm = ({ data, onSave }) => {
+
+const TreatmentPackageForm = ({ data, onSave,therapyOptions  }) => {
   const [form, setForm] = useState({
     name: '',
     price: '',
@@ -44,6 +45,7 @@ const TreatmentPackageForm = ({ data, onSave }) => {
       })
     }
   }, [data])
+  
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -163,33 +165,62 @@ const TreatmentPackageForm = ({ data, onSave }) => {
       {/* ================= THERAPIES ================= */}
       <h5 className="mb-3">Therapies</h5>
 
-      {form.therapies.map((t, i) => (
-        <CRow key={i} className="mb-2">
-          <CCol md={3}>
-            <CFormLabel>Therapy Name</CFormLabel>
-            <CFormInput value={t.name}
-              onChange={(e) => handleTherapyChange(i, 'name', e.target.value)} />
-          </CCol>
+   {form.therapies.map((t, i) => (
+  <CRow key={i} className="mb-2">
 
-          <CCol md={3}>
-            <CFormLabel>Sessions</CFormLabel>
-            <CFormInput type="number" value={t.sessions}
-              onChange={(e) => handleTherapyChange(i, 'sessions', e.target.value)} />
-          </CCol>
+    <CCol md={3}>
+      <CFormLabel>Therapy Name</CFormLabel>
+      <CFormSelect
+        value={t.name}
+        onChange={(e) => {
+          const selectedName = e.target.value
 
-          <CCol md={3}>
-            <CFormLabel>Duration (mins/hrs)</CFormLabel>
-            <CFormInput type="text" value={t.sessionDuration}
-              onChange={(e) => handleTherapyChange(i, 'sessionDuration', e.target.value)} />
-          </CCol>
+          const selectedTherapy = therapyOptions.find(
+            (opt) => opt.name === selectedName
+          )
 
-          <CCol md={3}>
-            <CFormLabel>Validity (days)</CFormLabel>
-            <CFormInput type="number" value={t.validity}
-              onChange={(e) => handleTherapyChange(i, 'validity', e.target.value)} />
-          </CCol>
-        </CRow>
-      ))}
+          const updated = [...form.therapies]
+          updated[i].name = selectedName
+
+          if (selectedTherapy) {
+            updated[i].sessions = selectedTherapy.sessions || ''
+            updated[i].sessionDuration = selectedTherapy.sessionDuration || ''
+            updated[i].validity = selectedTherapy.validity || ''
+          }
+
+          setForm({ ...form, therapies: updated })
+        }}
+      >
+        <option value="">Select Therapy</option>
+        {therapyOptions.map((opt, idx) => (
+          <option key={idx} value={opt.name}>
+            {opt.name}
+          </option>
+        ))}
+      </CFormSelect>
+    </CCol>
+
+    {/* ✅ INSIDE map */}
+    {t.name && (
+      <>
+        <CCol md={3}>
+          <CFormLabel>Sessions</CFormLabel>
+          <CFormInput type="number" value={t.sessions} readOnly />
+        </CCol>
+
+        <CCol md={3}>
+          <CFormLabel>Duration</CFormLabel>
+          <CFormInput value={t.sessionDuration} readOnly />
+        </CCol>
+
+        <CCol md={3}>
+          <CFormLabel>Validity</CFormLabel>
+          <CFormInput type="number" value={t.validity} readOnly />
+        </CCol>
+      </>
+    )}
+  </CRow>
+))}
 
       <CButton className="mb-3" onClick={addTherapy}>
         + Add Therapy
@@ -198,7 +229,7 @@ const TreatmentPackageForm = ({ data, onSave }) => {
       {/* ================= SUBMIT ================= */}
       <div className="text-end">
         <CButton onClick={handleSubmit}>
-          {data ? 'Update Package' : 'Save Package'}
+          {data ? 'Update Program' : 'Save Program'}
         </CButton>
       </div>
     </>

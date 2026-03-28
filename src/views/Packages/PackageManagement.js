@@ -31,13 +31,25 @@ const TreatmentPackages = () => {
   const [viewMode, setViewMode] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
 const [deleteId, setDeleteId] = useState(null)
+const [therapyOptions, setTherapyOptions] = useState([])
+
+
 const clinicId = localStorage.getItem('HospitalId')
 const branchId = localStorage.getItem('branchId')
 
 const fetchPackages = async () => {
   try {
-    const res = await getAllPackages(clinicId, branchId)
-    setPackages(Array.isArray(res.data?.data) ? res.data.data : [])
+    const res = await getAllPackages()
+
+    const packages = res.data.data || []
+
+    const therapies = packages.flatMap(pkg => pkg.therapies || [])
+
+    const uniqueTherapies = [
+      ...new Map(therapies.map(t => [t.name, t])).values()
+    ]
+
+    setTherapyOptions(uniqueTherapies)
   } catch (err) {
     console.error(err)
   }
@@ -112,7 +124,7 @@ useEffect(() => {
             setModalVisible(true)
           }}
         >
-           Add Package
+           Add Program
         </CButton>
       </div>
 
@@ -187,10 +199,10 @@ useEffect(() => {
       <CModal visible={modalVisible} onClose={() => setModalVisible(false)} size="lg" backdrop="static">
         <CModalHeader>
           {viewMode
-            ? 'Package Details'
+            ? 'Program Details'
             : selectedPackage
-            ? 'Edit Package'
-            : 'Add Package'}
+            ? 'Edit Program'
+            : 'Add Program'}
         </CModalHeader>
 
         <CModalBody>
@@ -261,7 +273,7 @@ useEffect(() => {
           </CCol>
 
           <CCol md={3}>
-            <Field label="Duration" value={t.sessionDuration} />
+            <Field label="Duration" value={`${t.sessionDuration} mins`} />
           </CCol>
 
           <CCol md={3}>
@@ -282,6 +294,7 @@ useEffect(() => {
               data={selectedPackage}
               onSave={handleSave}
               viewMode={false}
+              therapyOptions={therapyOptions} 
             />
           )}
         </CModalBody>

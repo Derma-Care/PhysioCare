@@ -276,6 +276,10 @@ const [physioToDelete, setPhysioToDelete] = useState(null)
       <CTable striped className='pink-table'>
         <CTableHead>
           <CTableRow>
+            <CTableHeaderCell>#</CTableHeaderCell>
+
+            <CTableHeaderCell>Photo</CTableHeaderCell>
+
             <CTableHeaderCell>Name</CTableHeaderCell>
             <CTableHeaderCell>Contact</CTableHeaderCell>
             <CTableHeaderCell>Qualification</CTableHeaderCell>
@@ -285,8 +289,32 @@ const [physioToDelete, setPhysioToDelete] = useState(null)
         </CTableHead>
 
         <CTableBody>
-          {physios.map((p) => (
+          {physios.map((p,index) => (
             <CTableRow key={p.id}>
+               <CTableDataCell>
+        {index + 1}
+      </CTableDataCell>
+              
+              <CTableDataCell>
+  <div className="d-flex align-items-center gap-2">
+    <img
+      src={
+        p.documents?.profilePhoto
+          ? `data:image/jpeg;base64,${p.documents.profilePhoto}`
+          : '/assets/images/default-avatar.png'
+      }
+      alt={p.fullName}
+      width="40"
+      height="40"
+      style={{
+        borderRadius: '50%',
+        objectFit: 'cover',
+        border: '1px solid #ccc',
+      }}
+    />
+  </div>
+</CTableDataCell>
+              
               <CTableDataCell>{p.fullName}</CTableDataCell>
               <CTableDataCell>{p.contactNumber}</CTableDataCell>
               <CTableDataCell>{p.qualification}</CTableDataCell>

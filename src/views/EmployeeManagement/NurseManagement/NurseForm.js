@@ -63,6 +63,7 @@ const dayOptions = [
     role: 'physiotherapist',      // ✅ fixed value 
     fullName: '',
     contactNumber: '',
+    emailId: '',
     gender: '',
     dateOfBirth: '',
     qualification: '',
@@ -83,7 +84,6 @@ const dayOptions = [
       profilePhoto: '',
     },
     languages: [],
-    role: 'physiotherapist',
     physioType: '',
   }
 
@@ -104,9 +104,20 @@ const dayOptions = [
     newErrors.gender = 'Select gender'
   }
 
-  if (!formData.dateOfBirth) {
-    newErrors.dateOfBirth = 'Select DOB'
+if (!formData.dateOfBirth) {
+  newErrors.dateOfBirth = 'Select DOB'
+} else {
+  const selectedDOB = new Date(formData.dateOfBirth)
+  const maxDate = new Date(
+    new Date().getFullYear() - 18,
+    new Date().getMonth(),
+    new Date().getDate()
+  )
+
+  if (selectedDOB > maxDate) {
+    newErrors.dateOfBirth = 'Age must be at least 18 years'
   }
+}
 
   if (!formData.qualification) {
     newErrors.qualification = 'Select qualification'
@@ -160,7 +171,12 @@ const dayOptions = [
 }
 
   useEffect(() => {
-    if (initialData) setFormData(initialData)
+    if (initialData) {
+  setFormData({
+    ...emptyForm,
+    ...initialData,
+  })
+}
     else setFormData(emptyForm)
   }, [initialData])
 
@@ -181,6 +197,56 @@ const dayOptions = [
     setLanguageInput('')
   }
 }
+const convertToBase64 = async (image) => {
+  try {
+    // ✅ already base64
+    if (typeof image === "string" && image.startsWith("data:image")) {
+      return image.split(",")[1]
+    }
+
+    // ✅ File / Blob
+    if (image instanceof File || image instanceof Blob) {
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.readAsDataURL(image)
+        reader.onloadend = () => resolve(reader.result.split(",")[1])
+        reader.onerror = reject
+      })
+    }
+
+    // ✅ URL / blob URL
+    if (typeof image === "string") {
+      const res = await fetch(image)
+      const blob = await res.blob()
+
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.readAsDataURL(blob)
+        reader.onloadend = () => resolve(reader.result.split(",")[1])
+        reader.onerror = reject
+      })
+    }
+
+    return ""
+  } catch (err) {
+    console.error("Base64 error:", err)
+    return ""
+  }
+}
+const handleFileChange = async (field, file) => {
+  if (!file) return
+
+  const base64 = await convertToBase64(file)
+
+  setFormData((prev) => ({
+    ...prev,
+    documents: {
+      ...prev.documents,
+      [field]: base64, // ✅ base64 string
+    },
+  }))
+}
+
 
 const handleRemoveLanguage = (lang) => {
   handleChange(
@@ -320,9 +386,9 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
   onSave(payload)
 }
   return (
-    <CModal visible={visible} onClose={onClose} size="lg">
+    <CModal visible={visible} onClose={onClose} size="lg" className='custom-modal'>
       <CModalHeader>
-        <CModalTitle>{isView ? 'View Physio' : 'Add / Edit Physio'}</CModalTitle>
+        <CModalTitle>{isView ? 'View Therapist' : 'Add / Edit Therapist'}</CModalTitle>
       </CModalHeader>
 
       <CModalBody>
@@ -334,22 +400,26 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
               <div className="d-flex flex-column flex-md-row align-items-center">
 
                 <div className="text-center me-md-4 mb-3 mb-md-0">
-                  <img
-                    src={formData.documents?.profilePhoto || '/assets/images/default-avatar.png'}
-                    alt={formData.fullName}
-                    width="100"
-                    height="100"
-                    className="rounded-circle border"
-                    style={{ objectFit: 'cover' }}
-                  />
-                </div>
+  <img
+    src={
+      formData.documents?.profilePhoto
+        ? `data:image/jpeg;base64,${formData.documents.profilePhoto}`
+        : '/assets/images/default-avatar.png'
+    }
+    alt={formData.fullName}
+    width="100"
+    height="100"
+    className="rounded-circle border"
+    style={{ objectFit: 'cover' }}
+  />
+</div>
 
                 <div className="flex-grow-1 text-center text-md-start">
                   <h4 className="fw-bold">{formData.fullName}</h4>
                   <p><strong>Contact:</strong> {formData.contactNumber}</p>
                   <p><strong>Qualification:</strong> {formData.qualification}</p>
                   <span className="badge bg-secondary">
-                    ID: {formData.id || 'N/A'}
+                    ID: {formData.therapistId || 'N/A'}
                   </span>
                 </div>
 
@@ -366,6 +436,9 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
                 </div>
                 <div className="col-md-4">
                   <b>Contact</b><br />{formData.contactNumber}
+                </div>
+                 <div className="col-md-4">
+                  <b>Email</b><br />{formData.emailId}
                 </div>
                 <div className="col-md-4">
                   <b>Gender</b><br />{formData.gender}
@@ -411,11 +484,15 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
             {/* AVAILABILITY */}
             <div className="card p-3 mb-4 shadow-sm border-light">
               <h5 className="mb-3 border-bottom pb-2">Availability</h5>
-              <p>
-                {formData.availability?.startDay} - {formData.availability?.endDay}
-                <br />
-                {formData.availability?.startTime} - {formData.availability?.endTime}
-              </p>
+             <p>
+  {formData.availability?.days?.length > 0
+    ? formData.availability.days
+        .map((d) => d.charAt(0).toUpperCase() + d.slice(1))
+        .join(', ')
+    : 'N/A'}
+  <br />
+  {formData.availability?.startTime} - {formData.availability?.endTime}
+</p>
             </div>
 
             {/* BIO */}
@@ -428,9 +505,27 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
             <div className="card p-3 mb-4 shadow-sm border-light">
               <h5 className="mb-3 border-bottom pb-2">Documents</h5>
 
-              <p>License Certificate: {formData.documents?.licenseCertificate ? 'Uploaded' : 'Not Provided'}</p>
-              <p>Degree Certificate: {formData.documents?.degreeCertificate ? 'Uploaded' : 'Not Provided'}</p>
-              <p>Profile Photo: {formData.documents?.profilePhoto ? 'Uploaded' : 'Not Provided'}</p>
+             <p><b>License Certificate:</b></p>
+{formData.documents?.licenseCertificate ? (
+  <iframe
+    src={`data:application/pdf;base64,${formData.documents.licenseCertificate}`}
+    width="100%"
+    height="300px"
+  />
+) : (
+  <p>Not Provided</p>
+)}
+              <p><b>Degree Certificate:</b></p>
+{formData.documents?.degreeCertificate ? (
+  <iframe
+    src={`data:application/pdf;base64,${formData.documents.degreeCertificate}`}
+    width="100%"
+    height="300px"
+  />
+) : (
+  <p>Not Provided</p>
+)}
+           
             </div>
 
           </div>
@@ -470,7 +565,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
 </CRow>
 
 <CRow className="mb-3">
-  <CCol md={6}>
+  <CCol md={4}>
     <CFormLabel>Full Name</CFormLabel>
    <CFormInput
   value={formData.fullName}
@@ -481,7 +576,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
 {errors.fullName && <div className="text-danger small">{errors.fullName}</div>}
   </CCol>
 
-  <CCol md={6}>
+  <CCol md={4}>
     <CFormLabel>Contact Number</CFormLabel>
    <CFormInput
   value={formData.contactNumber}
@@ -492,6 +587,19 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
 />
 {errors.contactNumber && (
   <div className="text-danger small">{errors.contactNumber}</div>
+)}
+  </CCol>
+  <CCol md={4}>
+    <CFormLabel>Email </CFormLabel>
+   <CFormInput
+  value={formData.emailId}
+  disabled={isView}
+  maxLength={10}
+  onChange={(e) => handleChange('emailId', e.target.value)}
+  invalid={!!errors.emailId}
+/>
+{errors.emailId && (
+  <div className="text-danger small">{errors.emailId}</div>
 )}
   </CCol>
 </CRow>
@@ -512,17 +620,31 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
     {errors.gender && <div className="text-danger small">{errors.gender}</div>}
   </CCol>
 
-  <CCol md={4}>
-    <CFormLabel>Date of Birth</CFormLabel>
-    <CFormInput
-  type="date"
-  value={formData.dateOfBirth}
-  disabled={isView}
-  onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-  invalid={!!errors.dateOfBirth}
-/>
-{errors.dateOfBirth && <div className="text-danger small">{errors.dateOfBirth}</div>}
-  </CCol>
+ <CCol md={4}>
+  <CFormLabel>Date of Birth</CFormLabel>
+
+  <CFormInput
+    type="date"
+    value={formData.dateOfBirth}
+    disabled={isView}
+    max={
+      new Date(
+        new Date().getFullYear() - 18,
+        new Date().getMonth(),
+        new Date().getDate()
+      )
+        .toISOString()
+        .split('T')[0]
+    }
+    min="1950-01-01"  // optional (to avoid very old dates)
+    onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+    invalid={!!errors.dateOfBirth}
+  />
+
+  {errors.dateOfBirth && (
+    <div className="text-danger small">{errors.dateOfBirth}</div>
+  )}
+</CCol>
 
   <CCol md={4}>
     <CFormLabel>Qualification</CFormLabel>
@@ -719,17 +841,35 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
 <CRow className="mb-3">
   <CCol md={4}>
     <CFormLabel>License Certificate</CFormLabel>
-    <CFormInput type="file" disabled={isView} />
+    <CFormInput
+      type="file"
+      disabled={isView}
+      onChange={(e) =>
+        handleFileChange('licenseCertificate', e.target.files[0])
+      }
+    />
   </CCol>
 
   <CCol md={4}>
     <CFormLabel>Degree Certificate</CFormLabel>
-    <CFormInput type="file" disabled={isView} />
+    <CFormInput
+      type="file"
+      disabled={isView}
+      onChange={(e) =>
+        handleFileChange('degreeCertificate', e.target.files[0])
+      }
+    />
   </CCol>
 
   <CCol md={4}>
     <CFormLabel>Profile Photo</CFormLabel>
-    <CFormInput type="file" disabled={isView} />
+    <CFormInput
+      type="file"
+      disabled={isView}
+      onChange={(e) =>
+        handleFileChange('profilePhoto', e.target.files[0])
+      }
+    />
   </CCol>
 </CRow>
 
