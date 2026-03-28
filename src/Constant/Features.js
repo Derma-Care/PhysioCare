@@ -14,7 +14,7 @@ export const features = [
   'Disease-Management',
   'Tests',
   'Treatments',
-  'Procedure Management',
+  'Therapy Management',
   'Payouts',
   'Help',
   'Customer Management',

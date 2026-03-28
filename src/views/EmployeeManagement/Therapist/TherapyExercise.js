@@ -317,7 +317,7 @@ const handleImage = (file) => {
               <CTableHeaderCell>Session</CTableHeaderCell>
               <CTableHeaderCell>Duration</CTableHeaderCell>
               <CTableHeaderCell>Frequency</CTableHeaderCell>
-              <CTableHeaderCell>Video</CTableHeaderCell>
+              <CTableHeaderCell>Video URL</CTableHeaderCell>
               <CTableHeaderCell>Action</CTableHeaderCell>
 
             </CTableRow>
@@ -425,7 +425,7 @@ const handleImage = (file) => {
             </CCol>
 
             <CCol md={6}>
-              <CFormLabel>Video</CFormLabel>
+              <CFormLabel>Video URL</CFormLabel>
               <CFormInput
                 value={form.video}
                 onChange={(e) =>

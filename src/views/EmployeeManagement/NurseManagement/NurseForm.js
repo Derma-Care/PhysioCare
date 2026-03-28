@@ -594,7 +594,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
    <CFormInput
   value={formData.emailId}
   disabled={isView}
-  maxLength={10}
+  maxLength={20}
   onChange={(e) => handleChange('emailId', e.target.value)}
   invalid={!!errors.emailId}
 />

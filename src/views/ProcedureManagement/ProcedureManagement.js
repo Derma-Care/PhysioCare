@@ -1148,7 +1148,7 @@ const ServiceManagement = () => {
                 }}
                 onClick={() => openAddModal()}
               >
-                Add Theraphy Details
+                Add Therapy Details
               </CButton>
             </div>
           )}
@@ -1462,7 +1462,7 @@ const ServiceManagement = () => {
             <CRow className="mb-4">
               <CCol md={4}>
                 <h6>
-                  Theraphy Image <span className="text-danger">*</span>
+                  Therapy Image <span className="text-danger">*</span>
                 </h6>
 
                 <CFormInput
@@ -1504,7 +1504,7 @@ const ServiceManagement = () => {
 
               <CCol md={4}>
                 <h6>
-                  Theraphy Description <span className="text-danger">*</span>
+                  Therapy Description <span className="text-danger">*</span>
                 </h6>
                 <CFormTextarea
                   type="text"
@@ -1611,7 +1611,7 @@ const ServiceManagement = () => {
             <CRow className="mb-4">
               <CCol md={3}>
                 <h6>
-                  Theraphy Fee <span className="text-danger">*</span>
+                  Therapy Fee <span className="text-danger">*</span>
                 </h6>
                 <CFormInput
                   type="text"
@@ -1736,8 +1736,8 @@ const ServiceManagement = () => {
           <CTableHead className="pink-table w-auto">
             <CTableRow>
               <CTableHeaderCell style={{ paddingLeft: '40px' }}>S.No</CTableHeaderCell>
-              <CTableHeaderCell>Procedure Name</CTableHeaderCell>
-              <CTableHeaderCell>Servic eName</CTableHeaderCell>
+              <CTableHeaderCell>Therapy Name</CTableHeaderCell>
+              <CTableHeaderCell>Service Name</CTableHeaderCell>
               <CTableHeaderCell>Category Name</CTableHeaderCell>
               <CTableHeaderCell>Price</CTableHeaderCell>
               <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
@@ -1756,7 +1756,7 @@ const ServiceManagement = () => {
                   <CTableDataCell>₹{test.price || 'NA'}</CTableDataCell>
                   <CTableDataCell className="text-end">
                     <div className="d-flex justify-content-end gap-2  ">
-                      {can('Procedure Management', 'read') && (
+                      {can('Therapy Management', 'read') && (
                         <button
                           className="actionBtn"
                           onClick={() => setViewService(test)}
@@ -1765,7 +1765,7 @@ const ServiceManagement = () => {
                           <Eye size={18} />
                         </button>
                       )}
-                      {can('Procedure Management', 'update') && (
+                      {can('Therapy Management', 'update') && (
                         <button
                           className="actionBtn"
                           onClick={() => openEditModal(test)}
@@ -1775,7 +1775,7 @@ const ServiceManagement = () => {
                         </button>
                       )}
 
-                      {can('Procedure Management', 'delete') && (
+                      {can('Therapy Management', 'delete') && (
                         <button
                           className="actionBtn"
                           onClick={() => handleServiceDelete(test)}

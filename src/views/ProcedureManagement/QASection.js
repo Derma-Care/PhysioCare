@@ -203,21 +203,21 @@ const ProcedureQA = ({
   return (
     <CAccordion default>
       <CAccordionItem itemKey={1}>
-        <CAccordionHeader>Pre-Theraphy</CAccordionHeader>
+        <CAccordionHeader>Pre-Therapy</CAccordionHeader>
         <CAccordionBody>
           <QASection title="Pre-Procedure" qaList={preQAList} setQAList={setPreQAList} />
         </CAccordionBody>
       </CAccordionItem>
 
       <CAccordionItem itemKey={2}>
-        <CAccordionHeader>Theraphy</CAccordionHeader>
+        <CAccordionHeader>Therapy</CAccordionHeader>
         <CAccordionBody>
           <QASection title="Procedure" qaList={procedureQAList} setQAList={setProcedureQAList} />
         </CAccordionBody>
       </CAccordionItem>
 
       <CAccordionItem itemKey={3}>
-        <CAccordionHeader>Post-Theraphy</CAccordionHeader>
+        <CAccordionHeader>Post-Therapy</CAccordionHeader>
         <CAccordionBody>
           <QASection title="Post-Procedure" qaList={postQAList} setQAList={setPostQAList} />
         </CAccordionBody>
