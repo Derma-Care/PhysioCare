@@ -76,12 +76,12 @@ export const getAllPatients = () => {
       therapy: p?.therapy,
       duration: p?.duration,
       doctorName: p?.treatmentPlan?.doctorName,
-
+overallStatus:p?.overallStatus ||"Pending",
       status:
         completed === total
           ? "Completed"
           : completed > 0
-          ? "In Progress"
+          ? "Active"
           : "Pending",
     }
   })

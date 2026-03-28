@@ -179,16 +179,7 @@ const Login = () => {
           localStorage.setItem('HospitalId', HospitalId)
           await fetchAllData(HospitalId)
           showCustomToast(res.data?.message || 'Login successful!', 'success')
-          // const physioType = res.data.physioType
-          // const therapistId = res.data.therapistId
-          // const therapistName = res.data.therapistName
-          // const permissions = res.data.permissions
-          // const theraphPayload = {
-          //   therapistId,
-          //   therapistName,
-          //   physioType,
-          //   permissions,
-          // }
+      
       if (
   role.toLowerCase() === "physiotherapist" ||
   role.toLowerCase() === "intern"

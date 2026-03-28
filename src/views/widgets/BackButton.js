@@ -8,8 +8,10 @@ const BackButton = () => {
   const [isHovered, setIsHovered] = useState(false)
   const [isAHovered, setIsAHovered] = useState(false)
   const navigate = useNavigate()
+  const istheraphist = localStorage.getItem('role')
   return (
     <>
+    {istheraphist === 'physiotherapist' || "intern" ? "" : 
     <CButton
       variant="outline"
       onClick={goBack} // go back one step in stack
@@ -24,6 +26,7 @@ const BackButton = () => {
     >
       Back
     </CButton>
+    } 
      <CButton variant="outline" style={{
         borderColor: 'var(--color-black)',
         color: isAHovered ? 'white' : 'var(--color-black)',

@@ -192,7 +192,7 @@ export const physiotherapyFullDummy = {
       sessionId: 1,
       date: new Date().toISOString().split("T")[0],
       duration: "30 min",
-      status: "Completed",
+      status: "Pending",
       completedTime: "10:30 AM",
       modalities: ["IFT", "Hot Pack"],
       exercises: "Pelvic tilt, knee to chest",
@@ -203,7 +203,7 @@ export const physiotherapyFullDummy = {
       sessionId: 2,
       date: "2026-03-22",
       duration: "30 min",
-      status: "Completed",
+      status: "Pending",
       completedTime: "11:00 AM",
       modalities: ["Ultrasound Therapy"],
       exercises: "Bridging exercise",
@@ -223,7 +223,7 @@ export const physiotherapyFullDummy = {
     },
   ],
 
-  overallStatus: "In Progress",
+  overallStatus: "Pending",
 
   // 🏋️ EXERCISE PLAN
   exercisePlan: {

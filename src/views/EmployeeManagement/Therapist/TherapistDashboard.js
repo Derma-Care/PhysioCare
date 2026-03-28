@@ -35,7 +35,7 @@ export default function TherapyDashboard() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const storedData = localStorage.getItem('loginPayload')
+  const storedData = localStorage.getItem('therapistData')
   const data = location.state || (storedData ? JSON.parse(storedData) : {})
 
   const clinicId = data?.clinicId
@@ -70,6 +70,14 @@ export default function TherapyDashboard() {
   const list = therapyData || []
 const patientList = getAllPatients()
 console.log(patientList)
+
+const filteredPatients = patientList.filter((p) => {
+  if (tab === 1) return p.overallStatus === "Pending"
+  if (tab === 2) return p.overallStatus === "Active"
+  if (tab === 3) return p.overallStatus === "Completed"
+  return true
+})
+
   return (
 
     <>
@@ -197,7 +205,7 @@ console.log(patientList)
         
 
           {/* Sessions */}
-          <CCard className="mt-4">
+          <CCard className="mt-4" style={{cursor:"pointer"}}>
             <CCardBody>
               <CNav variant="tabs" className="mb-3">
                 <CNavItem>
@@ -250,60 +258,64 @@ console.log(patientList)
 
 <h5>Patients</h5>
 
-{patientList.map((p) => (
-  <CCard key={p.patientId} className="mb-3">
-    <CCardBody>
-      <b>Patient: {p.name}</b>
-      <br />
+{filteredPatients.length === 0 ? (
+  <p>No Data Found</p>
+) : (
+  filteredPatients.map((p) => (
+    <CCard key={p.patientId} className="mb-3" >
+      <CCardBody>
+        <b>Patient: {p.name}</b>
+        <br />
 
-      Therapy: {p.therapy}
-      <br />
+        Therapy: {p.therapy}
+        <br />
 
-      Duration: {p.duration}
-      <br />
+        Duration: {p.duration}
+        <br />
 
-      <CBadge
-        color={
-          p.status === "Completed"
-            ? "success"
-            : p.status === "In Progress"
-            ? "warning"
-            : "secondary"
-        }
-      >
-        {p.status}
-      </CBadge>
+        <CBadge
+          color={
+            p.overallStatus === "Completed"
+              ? "success"
+              : p.overallStatus === "Active"
+              ? "warning"
+              : "secondary"
+          }
+        >
+          {p.overallStatus}
+        </CBadge>
 
-      <br /><br />
+        <br /><br />
+ <CButton
+          size="sm"
+          color="info" style={{color:"white"}} className="me-2"
+          onClick={() => setSelected(p)}
+        >
+          View Details
+        </CButton>
+        <CButton
+          size="sm"
+          color="primary"
+          className="me-2"
+          onClick={() => {
+            navigate("/session-list", {
+              state: {
+                name: p.name,
+                therapy: p.therapy,
+                doctorName: p.doctorName,
+                sessions: p.sessions,
+              },
+            })
+          }}
+        >
+          Sessions
+        </CButton>
 
-   <CButton
-  size="sm"
-  color="primary"
-  className="me-2"
-  onClick={() => {
-    navigate("/session-list", {
-      state: {
-        name: p.name,
-        therapy: p.therapy,
-        doctorName: p.doctorName,
-        sessions: p.sessions,
-      },
-    })
-  }}
->
-  Sessions
-</CButton>
-
-<CButton
-  size="sm"
-  color="info"
-  onClick={() => setSelected(p)} // ✅ now full data
->
-  View
-</CButton>
-    </CCardBody>
-  </CCard>
-))}
+       
+      </CCardBody>
+    </CCard>
+  ))
+)}
             </CCardBody>
           </CCard>
         </>

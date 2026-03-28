@@ -66,8 +66,8 @@ console.log(patient)
             <tr>
               <th>Date</th>
               <th>Duration</th>
-              <th>modalitiesUsed</th>
-              <th>exercisesDone</th>
+              <th>Modalities Used</th>
+              <th>Exercises</th>
               <th>Status</th>
               <th>Action</th>
             </tr>
@@ -98,48 +98,38 @@ console.log(patient)
 
                  
 
-       {!s.completedTime && (
-
-<CButton
-size="sm"
-color="success"
-onClick={() => {
-
-setSelected({
-  ...s,
-  mode: "complete",
-  patientName: patient.name,
-  therapy: patient.therapy,
-  disease: patient.disease,
-})
-
-}}
->
-Complete
-</CButton>
-
-)}
-
-{s.completedTime && (
-
-<CButton
-size="sm"
-color="primary"
-onClick={() => {
-
-setSelected({
-  ...s,
-  mode: "view",
-  patientName: patient.name,
-  therapy: patient.therapy,
-  disease: patient.disease,
-})
-
-}}
->
-View
-</CButton>
-
+{s.status !== "completed" ? (
+  <CButton
+    size="sm"
+    color="success"
+    onClick={() => {
+      setSelected({
+        ...s,
+        mode: "complete",
+        patientName: patient.name,
+        therapy: patient.therapy,
+        disease: patient.disease,
+      })
+    }}
+  >
+    Complete
+  </CButton>
+) : (
+  <CButton
+    size="sm"
+    color="primary"
+    onClick={() => {
+      setSelected({
+        ...s,
+        mode: "view",
+        patientName: patient.name,
+        therapy: patient.therapy,
+        disease: patient.disease,
+      })
+    }}
+  >
+    View
+  </CButton>
 )}
 
                 </td>

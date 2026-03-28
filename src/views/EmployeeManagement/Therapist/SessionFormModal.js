@@ -37,17 +37,23 @@ export default function SessionFormModal({
 
   const save = () => {
 
-    let err = {}
+  let err = {}
 
-    if (!notes) err.notes = true
-    if (!before) err.before = true
-    if (!after) err.after = true
-    if (!painBefore) err.painBefore = true
-    if (!painAfter) err.painAfter = true
+  if (!notes) err.notes = "Notes required"
+  if (!before) err.before = "Before image required"
+  if (!after) err.after = "After image required"
 
-    setError(err)
+  // if (!beforeVideo) err.beforeVideo = "Before video required"
+  // if (!afterVideo) err.afterVideo = "After video required"
 
-    if (Object.keys(err).length > 0) return
+  if (!painBefore) err.painBefore = "Select pain before"
+  if (!painAfter) err.painAfter = "Select pain after"
+
+  if (!result) err.result = "Select result"
+
+  setError(err)
+
+  if (Object.keys(err).length > 0) return
 
     const now = new Date()
 
@@ -84,6 +90,7 @@ export default function SessionFormModal({
       completedDate: now.toLocaleDateString(),
 
     }
+    console.log(updated)
 
     onSave(updated)
     onClose()
@@ -144,12 +151,15 @@ export default function SessionFormModal({
         <CFormTextarea
           label="Therapist Notes"
           value={notes}
-          onChange={(e) =>
-            setNotes(e.target.value)
-          }
-          invalid={error.notes}
+          onChange={(e) => {
+    setNotes(e.target.value)
+    setError((prev) => ({ ...prev, notes: "" })) // ✅ clear error
+  }}
+  invalid={!!error.notes}
         />
-
+{error.notes && (
+  <small style={{ color: "red" }}>{error.notes}</small>
+)}
         {/* Pain scale */}
 
         <CRow className="mt-3">
@@ -160,9 +170,12 @@ export default function SessionFormModal({
 
             <CFormSelect
               value={painBefore}
-              onChange={(e) =>
-                setPainBefore(e.target.value)
-              }
+            onChange={(e) => {
+    setPainBefore(e.target.value)
+    setError((prev) => ({ ...prev, painBefore: "" }))
+  }}
+  invalid={!!error.painBefore}
+              
             >
               <option value="">Select</option>
               <option>1</option>
@@ -176,8 +189,11 @@ export default function SessionFormModal({
               <option>9</option>
               <option>10</option>
             </CFormSelect>
-
+          {error.painBefore && (
+  <small style={{ color: "red" }}>{error.painBefore}</small>
+)}
           </CCol>
+
 
           <CCol md={6}>
 
@@ -185,9 +201,11 @@ export default function SessionFormModal({
 
             <CFormSelect
               value={painAfter}
-              onChange={(e) =>
-                setPainAfter(e.target.value)
-              }
+      onChange={(e) => {
+    setPainAfter(e.target.value)
+    setError((prev) => ({ ...prev, painAfter: "" }))
+  }}
+  invalid={!!error.painAfter}
             >
               <option value="">Select</option>
               <option>1</option>
@@ -201,7 +219,9 @@ export default function SessionFormModal({
               <option>9</option>
               <option>10</option>
             </CFormSelect>
-
+{error.painBefore && (
+  <small style={{ color: "red" }}>{error.painBefore}</small>
+)}
           </CCol>
 
         </CRow>
@@ -214,9 +234,11 @@ export default function SessionFormModal({
 
         <CFormSelect
           value={result}
-          onChange={(e) =>
-            setResult(e.target.value)
-          }
+        onChange={(e) => {
+    setResult(e.target.value)
+    setError((prev) => ({ ...prev, result: "" }))
+  }}
+  invalid={!!error.result}
         >
           <option value="">Select</option>
           <option>Completed</option>
@@ -224,7 +246,9 @@ export default function SessionFormModal({
           <option>Skipped</option>
           <option>Patient not available</option>
         </CFormSelect>
-
+{error.result && (
+  <small style={{ color: "red" }}>{error.result}</small>
+)}
         <hr />
 
         {/* Next plan */}
@@ -236,7 +260,7 @@ export default function SessionFormModal({
             setNextPlan(e.target.value)
           }
         />
-
+ 
         <hr />
 
         {/* Images */}
@@ -249,11 +273,18 @@ export default function SessionFormModal({
 
             <CFormInput
               type="file"
-              onChange={(e) =>
-                setBefore(e.target.files[0])
-              }
+             onChange={(e) => {
+    setBefore(e.target.files[0])
+    setError((prev) => ({ ...prev, before: "" }))
+  }}
+  invalid={!!error.before}
             />
-
+{error.before && (
+  <small style={{ color: "red" }}>{error.before}</small>
+)}
+{/* if (before && !before.type.startsWith("image/")) {
+  error.before = "Only image allowed"
+} */}
           </CCol>
 
           <CCol md={6}>
@@ -262,11 +293,15 @@ export default function SessionFormModal({
 
             <CFormInput
               type="file"
-              onChange={(e) =>
-                setAfter(e.target.files[0])
-              }
+              onChange={(e) => {
+    setAfter(e.target.files[0])
+    setError((prev) => ({ ...prev, after: "" }))
+  }}
+  invalid={!!error.after}
             />
-
+{/* {error.before && (
+  <small style={{ color: "red" }}>{error.afterImage}</small>
+)} */}
           </CCol>
 
         </CRow>
@@ -287,6 +322,10 @@ export default function SessionFormModal({
                 setBeforeVideo(e.target.files[0])
               }
             />
+
+            {/* if (beforeVideo && !beforeVideo.type.startsWith("video/")) {
+  error.beforeVideo = "Only video allowed"
+} */}
 
           </CCol>
 

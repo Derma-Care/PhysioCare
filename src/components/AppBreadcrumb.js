@@ -32,11 +32,18 @@ const AppBreadcrumb = () => {
   }
 
   const breadcrumbs = getBreadcrumbs(currentLocation)
+ const istheraphist = localStorage.getItem('role')
 
   return (
     <div className="d-flex justify-content-between align-items-center align-content-center  w-100">
       <CBreadcrumb className="my-0 custom-breadcrumb mb-0">
-        <CBreadcrumbItem href="/">Home</CBreadcrumbItem>
+        {
+          istheraphist === 'physiotherapist' || "intern" ?  
+          <CBreadcrumbItem href="/therapist" style={{ color: 'var(--color-black)' }}>
+            Dashboard
+          </CBreadcrumbItem> :<CBreadcrumbItem href="/">Home</CBreadcrumbItem>
+        }
+        
         {breadcrumbs.map((breadcrumb, index) => (
           <CBreadcrumbItem
             key={index}
