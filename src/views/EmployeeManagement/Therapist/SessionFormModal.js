@@ -15,6 +15,7 @@ import {
 import { createTherapyNotes, getDashboard } from "./TheraphyApi"
 import { convertToBase64 } from "../../../Utils/Base64Convert"
 import { showCustomToast } from "../../../Utils/Toaster"
+import { useNavigate } from "react-router-dom"
 
 export default function SessionFormModal({
   visible,
@@ -22,7 +23,7 @@ export default function SessionFormModal({
   onClose,
   onSave,
 }) {
-
+const navigate = useNavigate()
   const [notes, setNotes] = useState("")
   const [before, setBefore] = useState(null)
   const [after, setAfter] = useState(null)
@@ -45,12 +46,12 @@ export default function SessionFormModal({
   const clinicId = theraphydata?.clinicId
   const branchId = theraphydata?.branchId
   const therapistId = theraphydata?.therapistId
-    const fetchTheraphyAssignData = async () => {
-    const data = await getDashboard(clinicId, branchId, therapistId)
-console.log("DASHBOARD DATA:", data)
-    setDashboard(data)
-    setRecords(data?.records || [])
-  }
+//     const fetchTheraphyAssignData = async () => {
+//     const data = await getDashboard(clinicId, branchId, therapistId)
+// console.log("DASHBOARD DATA:", data)
+//     setDashboard(data)
+//     setRecords(data?.records || [])
+//   }
 const save = async () => {
   let err = {}
 
@@ -122,12 +123,15 @@ const save = async () => {
     const res = await createTherapyNotes(payload)
 
     console.log("SUCCESS", res)
+if(res.statusCode === 201 || res.statusCode === 200){
 
-    // ✅ Success toast (from backend if available)
-    showCustomToast(res?.message || "Saved successfully!")
-if(res){
-  fetchTheraphyAssignData()
+  showCustomToast(res?.message || "Saved successfully!")
+  navigate("/therapist")
 }
+    // ✅ Success toast (from backend if available)
+// if(res){
+//   fetchTheraphyAssignData()
+// }
     // onSave(res)
 //     onSave({
 // //   ...payload, // original session
@@ -157,6 +161,82 @@ if(res){
   }
 }
 
+ 
+const [errors, setErrors] = useState({})
+
+const handleBeforeVideo = (file) => {
+  let err = { ...errors }
+
+  if (!file) return
+
+  // Type check
+  if (!file.type.startsWith("video/")) {
+    err.beforeVideo = "Only video files are allowed"
+  }
+  // Size check (2MB)
+  else if (file.size > 2 * 1024 * 1024) {
+    err.beforeVideo = "Video must be less than 2MB"
+  } else {
+    delete err.beforeVideo
+    setBeforeVideo(file)
+  }
+
+  setErrors(err)
+}
+
+const handleAfterVideo = (file) => {
+  let err = { ...errors }
+
+  if (!file) return
+
+  if (!file.type.startsWith("video/")) {
+    err.afterVideo = "Only video files are allowed"
+  } else if (file.size > 2 * 1024 * 1024) {
+    err.afterVideo = "Video must be less than 2MB"
+  } else {
+    delete err.afterVideo
+    setAfterVideo(file)
+  }
+
+  setErrors(err)
+}
+
+const handleBeforeImage = (file) => {
+  let err = { ...error }
+
+  if (!file) return
+
+  // Type check
+  if (!file.type.startsWith("image/")) {
+    err.before = "Only image files are allowed"
+  }
+  // Size check (1MB)
+  else if (file.size > 1 * 1024 * 1024) {
+    err.before = "Image must be less than 1MB"
+  } else {
+    delete err.before
+    setBefore(file)
+  }
+
+  setError(err)
+}
+
+const handleAfterImage = (file) => {
+  let err = { ...error }
+
+  if (!file) return
+
+  if (!file.type.startsWith("image/")) {
+    err.after = "Only image files are allowed"
+  } else if (file.size > 1 * 1024 * 1024) {
+    err.after = "Image must be less than 1MB"
+  } else {
+    delete err.after
+    setAfter(file)
+  }
+
+  setError(err)
+}
 
   return (
 
@@ -332,84 +412,67 @@ if(res){
 
         {/* Images */}
 
-        <CRow>
+      <CRow>
+  <CCol md={6}>
+    <label>Before Image</label>
 
-          <CCol md={6}>
+    <CFormInput
+      type="file"
+      accept="image/*" // 🔥 only image picker
+      onChange={(e) => handleBeforeImage(e.target.files[0])}
+      invalid={!!error.before}
+    />
 
-            <label>Before Image</label>
+    {error.before && (
+      <small style={{ color: "red" }}>{error.before}</small>
+    )}
+  </CCol>
 
-            <CFormInput
-              type="file"
-             onChange={(e) => {
-    setBefore(e.target.files[0])
-    setError((prev) => ({ ...prev, before: "" }))
-  }}
-  invalid={!!error.before}
-            />
-{error.before && (
-  <small style={{ color: "red" }}>{error.before}</small>
-)}
-{/* if (before && !before.type.startsWith("image/")) {
-  error.before = "Only image allowed"
-} */}
-          </CCol>
+  <CCol md={6}>
+    <label>After Image</label>
 
-          <CCol md={6}>
+    <CFormInput
+      type="file"
+      accept="image/*"
+      onChange={(e) => handleAfterImage(e.target.files[0])}
+      invalid={!!error.after}
+    />
 
-            <label>After Image</label>
-
-            <CFormInput
-              type="file"
-              onChange={(e) => {
-    setAfter(e.target.files[0])
-    setError((prev) => ({ ...prev, after: "" }))
-  }}
-  invalid={!!error.after}
-            />
-{/* {error.before && (
-  <small style={{ color: "red" }}>{error.afterImage}</small>
-)} */}
-          </CCol>
-
-        </CRow>
+    {error.after && (
+      <small style={{ color: "red" }}>{error.after}</small>
+    )}
+  </CCol>
+</CRow>
 
         <hr />
 
         {/* Videos */}
 
-        <CRow>
+    <CRow>
+  <CCol md={6}>
+    <label>Before Video</label>
+    <CFormInput
+      type="file"
+      accept="video/*" // 🔥 restrict file picker to videos
+      onChange={(e) => handleBeforeVideo(e.target.files[0])}
+    />
+    {errors.beforeVideo && (
+      <small style={{ color: "red" }}>{errors.beforeVideo}</small>
+    )}
+  </CCol>
 
-          <CCol md={6}>
-
-            <label>Before Video</label>
-
-            <CFormInput
-              type="file"
-              onChange={(e) =>
-                setBeforeVideo(e.target.files[0])
-              }
-            />
-
-            {/* if (beforeVideo && !beforeVideo.type.startsWith("video/")) {
-  error.beforeVideo = "Only video allowed"
-} */}
-
-          </CCol>
-
-          <CCol md={6}>
-
-            <label>After Video</label>
-
-            <CFormInput
-              type="file"
-              onChange={(e) =>
-                setAfterVideo(e.target.files[0])
-              }
-            />
-
-          </CCol>
-
-        </CRow>
+  <CCol md={6}>
+    <label>After Video</label>
+    <CFormInput
+      type="file"
+      accept="video/*"
+      onChange={(e) => handleAfterVideo(e.target.files[0])}
+    />
+    {errors.afterVideo && (
+      <small style={{ color: "red" }}>{errors.afterVideo}</small>
+    )}
+  </CCol>
+</CRow>
 
         <hr />
 <div className="d-flex justify-content-end w-100">

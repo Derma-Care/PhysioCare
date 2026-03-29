@@ -18,7 +18,7 @@ export default function SessionList() {
   const location = useLocation()
 
   const patient = location.state || {}
-
+const [loadingId, setLoadingId] = useState(null)
   const [sessions, setSessions] = useState(
     patient.sessions || []
   )
@@ -40,32 +40,63 @@ const handleUpdate = (updated) => {
 const [selectedSession, setSelectedSession] = useState(null)
  
 
-const handleView = async (item,therapistRecordId) => {
-  const storedData = localStorage.getItem('therapistData')
-  const raw = JSON.parse(storedData) || {}
+// const handleView = async (item,therapistRecordId) => {
+//   const storedData = localStorage.getItem('therapistData')
+//   const raw = JSON.parse(storedData) || {}
 
-  console.log("RAW DATA:", raw)
+//   console.log("RAW DATA:", raw)
 
-  const clinicId = raw?.clinicId || raw?.data?.clinicId
-  const branchId = raw?.branchId || raw?.data?.branchId
+//   const clinicId = raw?.clinicId || raw?.data?.clinicId
+//   const branchId = raw?.branchId || raw?.data?.branchId
   
-  console.log("IDs:", clinicId, branchId, therapistRecordId)
+//   console.log("IDs:", clinicId, branchId, therapistRecordId)
 
-  if (!clinicId || !branchId || !therapistRecordId) {
-    console.error("Missing required IDs")
-    return
-  }
+//   if (!clinicId || !branchId || !therapistRecordId) {
+//     console.error("Missing required IDs")
+//     return
+//   }
 
-  const res = await getSessionDetails(
-    clinicId,
-    branchId,
-    therapistRecordId,
-    item.sessionId
-  )
+//   const res = await getSessionDetails(
+//     clinicId,
+//     branchId,
+//     therapistRecordId,
+//     item.sessionId
+//   )
 
-  if (res) {
-    setSelectedSession(res.data || res)
+//   if (res) {
+//     setSelectedSession(res.data || res)
   
+//   }
+// }
+const handleView = async (item, therapistRecordId) => {
+  setLoadingId(item.sessionId) // ✅ start loading
+
+  try {
+    const storedData = localStorage.getItem('therapistData')
+    const raw = JSON.parse(storedData) || {}
+
+    const clinicId = raw?.clinicId || raw?.data?.clinicId
+    const branchId = raw?.branchId || raw?.data?.branchId
+
+    if (!clinicId || !branchId || !therapistRecordId) {
+      console.error("Missing required IDs")
+      return
+    }
+
+    const res = await getSessionDetails(
+      clinicId,
+      branchId,
+      therapistRecordId,
+      item.sessionId
+    )
+
+    if (res) {
+      setSelectedSession(res.data || res)
+    }
+  } catch (err) {
+    console.error(err)
+  } finally {
+    setLoadingId(null) // ✅ stop loading
   }
 }
 
@@ -146,27 +177,34 @@ const handleView = async (item,therapistRecordId) => {
     Complete
   </CButton>
 ) : (
-  <CButton
-    size="sm"
-    color="primary"
-    onClick={async () => {
-  await handleView(s, patient.therapistRecordId)
+<CButton
+  size="sm"
+  color="primary"
+  disabled={loadingId === s.sessionId} // ✅ disable
+  onClick={async () => {
+    await handleView(s, patient.therapistRecordId)
 
-  setSelected({
-    ...s,
-    mode: "view",
-    patientName: patient.name,
-    bookingId: patient.bookingId,
-    patientId: patient.patientId,
-    therapy: patient.therapy,
-    disease: patient.disease,
-    therapistRecordId: patient.therapistRecordId
-  })
-}}
-    
-  >
-    View
-  </CButton>
+    setSelected({
+      ...s,
+      mode: "view",
+      patientName: patient.name,
+      bookingId: patient.bookingId,
+      patientId: patient.patientId,
+      therapy: patient.therapy,
+      disease: patient.disease,
+      therapistRecordId: patient.therapistRecordId
+    })
+  }}
+>
+  {loadingId === s.sessionId ? (
+    <>
+      <span className="spinner-border spinner-border-sm me-1" />
+      Opening...
+    </>
+  ) : (
+    "View"
+  )}
+</CButton>
 )}
 
                 </td>
