@@ -11,6 +11,7 @@ import { useLocation } from "react-router-dom"
 import SessionModal from "./SessionModal"
 import SessionViewModal from "./SessionViewModal"
 import SessionFormModal from "./SessionFormModal"
+import { getSessionDetails } from "./TheraphyApi"
 
 export default function SessionList() {
 
@@ -26,20 +27,47 @@ export default function SessionList() {
 
 console.log(patient)
   // update after modal save
-  const handleUpdate = (updated) => {
+const handleUpdate = (updated) => {
+  const newList = sessions.map((s) =>
+    s.sessionId === updated.sessionId
+      ? { ...s, ...updated } // ✅ merge
+      : s
+  )
 
-    const newList = sessions.map((s) =>
+  setSessions(newList)
+}
 
-      s.sessionId === updated.sessionId
-        ? updated
-        : s
+const [selectedSession, setSelectedSession] = useState(null)
+ 
 
-    )
+const handleView = async (item,therapistRecordId) => {
+  const storedData = localStorage.getItem('therapistData')
+  const raw = JSON.parse(storedData) || {}
 
-    setSessions(newList)
+  console.log("RAW DATA:", raw)
 
+  const clinicId = raw?.clinicId || raw?.data?.clinicId
+  const branchId = raw?.branchId || raw?.data?.branchId
+  
+  console.log("IDs:", clinicId, branchId, therapistRecordId)
+
+  if (!clinicId || !branchId || !therapistRecordId) {
+    console.error("Missing required IDs")
+    return
   }
 
+  const res = await getSessionDetails(
+    clinicId,
+    branchId,
+    therapistRecordId,
+    item.sessionId
+  )
+
+  if (res) {
+    setSelectedSession(res.data || res)
+  
+  }
+}
 
   return (
 
@@ -79,11 +107,11 @@ console.log(patient)
 
               <tr key={s.sessionId}>
 
-                <td>{s.date}</td>
+                <td>{s.sessionDate}</td> 
 
                 <td>{s.duration}</td>
-                <td>{s.modalities}</td>
-                <td>{s.exercises}</td>
+                <td>{s.modalitiesUsed}</td>
+                <td>{s.exercisesDone}</td>
  
 
                 <td>
@@ -98,7 +126,7 @@ console.log(patient)
 
                  
 
-{s.status !== "completed" ? (
+{s.status?.toLowerCase() !== "completed" ? (
   <CButton
     size="sm"
     color="success"
@@ -107,8 +135,11 @@ console.log(patient)
         ...s,
         mode: "complete",
         patientName: patient.name,
+        bookingId: patient.bookingId,
+        patientId: patient.patientId,
         therapy: patient.therapy,
         disease: patient.disease,
+        therapistRecordId:patient.therapistRecordId
       })
     }}
   >
@@ -118,15 +149,21 @@ console.log(patient)
   <CButton
     size="sm"
     color="primary"
-    onClick={() => {
-      setSelected({
-        ...s,
-        mode: "view",
-        patientName: patient.name,
-        therapy: patient.therapy,
-        disease: patient.disease,
-      })
-    }}
+    onClick={async () => {
+  await handleView(s, patient.therapistRecordId)
+
+  setSelected({
+    ...s,
+    mode: "view",
+    patientName: patient.name,
+    bookingId: patient.bookingId,
+    patientId: patient.patientId,
+    therapy: patient.therapy,
+    disease: patient.disease,
+    therapistRecordId: patient.therapistRecordId
+  })
+}}
+    
   >
     View
   </CButton>
@@ -143,25 +180,24 @@ console.log(patient)
         </CTable>
 
 
-        {selected?.mode === "complete" && (
-
+{selected && selected.mode === "complete" && (
   <SessionFormModal
-    visible
+    visible={true}
     data={selected}
     onClose={() => setSelected(null)}
     onSave={handleUpdate}
   />
-
 )}
 
-{selected?.mode === "view" && (
-
+{selected && selected.mode === "view" && (
   <SessionViewModal
-    visible
-    data={selected}
-    onClose={() => setSelected(null)}
+    visible={true}
+    data={selectedSession}
+    onClose={() => {
+      setSelected(null)
+ 
+    }}
   />
-
 )}
 
       </CCardBody>

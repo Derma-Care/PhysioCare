@@ -9,192 +9,148 @@ export default function SessionViewModal({ visible, data, onClose }) {
 
   if (!data) return null
 
+  const base64ToBlob = (base64, mime) => {
+  const byteChars = atob(base64)
+  const byteNumbers = new Array(byteChars.length)
+
+  for (let i = 0; i < byteChars.length; i++) {
+    byteNumbers[i] = byteChars.charCodeAt(i)
+  }
+
+  const byteArray = new Uint8Array(byteNumbers)
+  return new Blob([byteArray], { type: mime })
+}
+const getVideoUrl = (base64) => {
+  if (!base64) return null
+  const blob = base64ToBlob(base64, "video/mp4")
+  return URL.createObjectURL(blob)
+}
   return (
     <>
       <CModal visible={visible} onClose={onClose} size="lg" backdrop="static" className='custom-modal'>
         <CModalHeader>Session Details</CModalHeader>
 
-        <CModalBody>
-          <b>Patient :</b> {data.patientName}
-          <br />
-          <b>Therapy :</b> {data.therapy}
-          <br />
-          <b>Date :</b> {data.date}
-          <br />
-          <b>Time :</b> {data.completedTime}
-          <br />
-          <hr />
-          <b>Doctor Notes</b>
-          <div>{data.doctorNotes}</div>
-          <hr />
-          <b>Therapist Notes</b>
-          <div>{data.therapistNotes}</div>
-          <hr />
-          <CRow>
+       <CModalBody>
 
-<CCol md={6}>
-<b>Pain Before :</b> {data.painBefore || "-"}
-</CCol>
+  {/* 🔷 HEADER */}
+  <h5 className="section-title">Session Information</h5>
 
-<CCol md={6}>
-<b>Pain After :</b> {data.painAfter || "-"}
-</CCol>
+  <CRow className="mb-3">
+    {[
+      { label: "Patient", value: data.patientName },
+      { label: "Therapy", value: data.therapy },
+      { label: "Date", value: data.date },
+      { label: "Time", value: data.completedTime },
+      { label: "Patient ID", value: data.patientId },
+      { label: "Booking ID", value: data.bookingId },
+      { label: "Therapist ID", value: data.therapistId },
+      { label: "Session ID", value: data.sessionId },
+    ].map((item, i) => (
+      <CCol md={6} key={i}>
+        <div className="info-box">
+          <span className="label">{item.label}</span>
+          <span className="value">{item.value || "-"}</span>
+        </div>
+      </CCol>
+    ))}
+  </CRow>
 
-<CCol md={6}>
-<b>Result :</b> {data.result || "-"}
-</CCol>
+  {/* 🔷 NOTES */}
+  <h6 className="section-title">Notes</h6>
 
-<CCol md={6}>
-<b>Duration :</b> {data.duration || "-"} min
-</CCol>
+  {/* <div className="note-box">
+    <b>Doctor Notes</b>
+    <p>{data.doctorNotes || "-"}</p>
+  </div> */}
 
-<CCol md={12}>
-<b>Next Plan :</b>
-<div>
-{data.nextPlan || "-"}
-</div>
-</CCol>
+  <div className="note-box">
+    <b>Therapist Notes</b>
+    <p>{data.therapistNotes || "-"}</p>
+  </div>
 
-<CCol md={6}>
-<b>Completed Date :</b> {data.completedDate || "-"}
-</CCol>
+  {/* 🔷 SESSION DETAILS */}
+  <h6 className="section-title">Session Details</h6>
 
-<CCol md={6}>
-<b>Completed Time :</b> {data.completedTime || "-"}
-</CCol>
+  <CRow>
+    <CCol md={6}><b>Pain Before:</b> {data.painBefore || "-"}</CCol>
+    <CCol md={6}><b>Pain After:</b> {data.painAfter || "-"}</CCol>
+    <CCol md={6}><b>Result:</b> {data.result || "-"}</CCol>
+    <CCol md={6}><b>Duration:</b> {data.duration || "-"}  </CCol>
+    <CCol md={12}>
+      <b>Next Plan:</b>
+      <div>{data.nextPlan || "-"}</div>
+    </CCol>
+  </CRow>
 
-</CRow>
-        <hr />
+  {/* 🔷 MEDIA */}
+  <h6 className="section-title">Media</h6>
 
-<CRow>
+  <CRow>
 
-<CCol md={6}>
-
-<b>Before Image</b>
-
-<div className="mt-2">
-
-{data.beforeImage ? (
-
-<img
-src={data.beforeImage}
-className="img-fluid rounded border"
-style={{ cursor: "pointer", maxHeight: 120 }}
-onClick={() => setPreview(data.beforeImage)}
+    {/* Images */}
+    <CCol md={6}>
+      <b>Before Image</b>
+      <div  >
+        {data.beforeImage ? (
+         <img
+  src={`data:image/jpeg;base64,${data.beforeImage}`}
+  className="img-fluid rounded border"
+  style={{ cursor: "pointer", maxHeight: 120 }}
+  onClick={() => setPreview(`data:image/jpeg;base64,${data.beforeImage}`)}
 />
+        ) : <span>No Image</span>}
+      </div>
+    </CCol>
 
-) : (
-
-<div className="text-muted">
-No Image
-</div>
-
-)}
-
-</div>
-
-</CCol>
-
-
-<CCol md={6}>
-
-<b>After Image</b>
-
-<div className="mt-2">
-
-{data.afterImage ? (
-
-<img
-src={data.afterImage}
-className="img-fluid rounded border"
-style={{ cursor: "pointer", maxHeight: 120 }}
-onClick={() => setPreview(data.afterImage)}
+    <CCol md={6}>
+      <b>After Image</b>
+      <div  >
+        {data.afterImage ? (
+          <img
+  src={`data:image/jpeg;base64,${data.afterImage}`}
+  className="img-fluid rounded border"
+  style={{ cursor: "pointer", maxHeight: 120 }}
+  onClick={() => setPreview(`data:image/jpeg;base64,${data.afterImage}`)}
 />
+        ) : <span>No Image</span>}
+      </div>
+    </CCol>
 
-) : (
-
-<div className="text-muted">
-No Image
-</div>
-
-)}
-
-</div>
-
-</CCol>
-
-</CRow>
-          <hr />
- 
-
-<hr />
-
-<CRow>
-
-<CCol md={6}>
-
-<b>Before Video</b>
-
-<div className="mt-2">
-
-{data.beforeVideo ? (
-
-<video
-src={data.beforeVideo}
-className="img-fluid border rounded"
-style={{ maxHeight: 150, cursor: "pointer" }}
-controls
-onClick={() => setPreview(data.beforeVideo)}
+    {/* Videos */}
+    <CCol md={6} className="mt-3">
+      <b>Before Video</b>
+      <div className="media-box">
+        {data.beforeVideo ? (
+        <video
+  src={getVideoUrl(data.beforeVideo)}
+  controls
+  style={{ maxHeight: 150 }}
 />
+        ) : <span>No Video</span>}
+      </div>
+    </CCol>
 
-) : (
-
-<div className="text-muted">
-No Video
-</div>
-
-)}
-
-</div>
-
-</CCol>
-
-
-<CCol md={6}>
-
-<b>After Video</b>
-
-<div className="mt-2">
-
-{data.afterVideo ? (
-
-<video
-src={data.afterVideo}
-className="img-fluid border rounded"
-style={{ maxHeight: 150, cursor: "pointer" }}
-controls
-onClick={() => setPreview(data.afterVideo)}
+    <CCol md={6} className="mt-3">
+      <b>After Video</b>
+      <div className="media-box">
+        {data.afterVideo ? (
+          <video
+  src={`data:video/mp4;base64,${data.afterVideo}`}
+  controls
+  onClick={() => setPreview(`data:video/mp4;base64,${data.afterVideo}`)}
 />
+        ) : <span>No Video</span>}
+      </div>
+    </CCol>
 
-) : (
+  </CRow>
 
-<div className="text-muted">
-No Video
-</div>
-
-)}
-
-</div>
-
-</CCol>
-
-</CRow>
-        </CModalBody>
+</CModalBody>
       </CModal>
 
       {/* Full screen preview */}
 
-     {preview && (
+     {/* {preview && (
   <CModal visible size="xl" onClose={() => setPreview(null)}>
     <CModalBody style={{ textAlign: "center" }}>
       {preview.endsWith(".mp4") ||
@@ -214,7 +170,45 @@ No Video
         )}
     </CModalBody>
   </CModal>
+)} */}
+{preview && (
+  <CModal visible size="xl" onClose={() => setPreview(null)}>
+    <CModalBody style={{ textAlign: "center" }}>
+      {preview.startsWith("data:video") ? (
+        <video src={preview} controls style={{ width: "100%" }} />
+      ) : (
+        <img src={preview} style={{ width: "100%" }} />
+      )}
+    </CModalBody>
+  </CModal>
 )}
+
+<style>
+  {
+    `
+    .info-box {
+  background: #f8f9fa;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.value {
+  font-weight: 600;
+  font-size: 14px;
+  color: #212529;
+}
+    `
+  }
+</style>
     </>
   )
 }

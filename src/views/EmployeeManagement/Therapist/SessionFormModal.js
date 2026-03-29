@@ -12,6 +12,9 @@ import {
   CRow,
   CCol,
 } from "@coreui/react"
+import { createTherapyNotes } from "./TheraphyApi"
+import { convertToBase64 } from "../../../Utils/Base64Convert"
+import { showCustomToast } from "../../../Utils/Toaster"
 
 export default function SessionFormModal({
   visible,
@@ -23,6 +26,7 @@ export default function SessionFormModal({
   const [notes, setNotes] = useState("")
   const [before, setBefore] = useState(null)
   const [after, setAfter] = useState(null)
+  const[loading, setLoading]=useState(false)
 
   const [beforeVideo, setBeforeVideo] = useState(null)
   const [afterVideo, setAfterVideo] = useState(null)
@@ -34,68 +38,111 @@ export default function SessionFormModal({
   const [nextPlan, setNextPlan] = useState("")
 
   const [error, setError] = useState({})
+ 
 
-  const save = () => {
-
+const save = async () => {
   let err = {}
 
   if (!notes) err.notes = "Notes required"
   if (!before) err.before = "Before image required"
   if (!after) err.after = "After image required"
-
-  // if (!beforeVideo) err.beforeVideo = "Before video required"
-  // if (!afterVideo) err.afterVideo = "After video required"
-
   if (!painBefore) err.painBefore = "Select pain before"
   if (!painAfter) err.painAfter = "Select pain after"
-
   if (!result) err.result = "Select result"
 
   setError(err)
-
   if (Object.keys(err).length > 0) return
+
+  try {
+    setLoading(true) // 🔥 start loader
+
+    const beforeBase64 = await convertToBase64(before)
+    const afterBase64 = await convertToBase64(after)
+
+    const beforeVideoBase64 = beforeVideo
+      ? await convertToBase64(beforeVideo)
+      : ""
+
+    const afterVideoBase64 = afterVideo
+      ? await convertToBase64(afterVideo)
+      : ""
 
     const now = new Date()
 
-    const updated = {
+    const theraphydata = JSON.parse(localStorage.getItem("therapistData"))
 
-      ...data,
+    const payload = {
+      therapistRecordId:data.therapistRecordId,// "69c7fb9e12a2888ad282076d",
+      clinicId: theraphydata?.clinicId,
+      branchId: theraphydata?.branchId,
+      patientId:data.patientId,// "000201_PT_9BBAE3",
+      bookingId:data.bookingId ,//"69c7ae8e0f1d067d87a8b070",
+      therapistId: theraphydata?.therapistId,
+      sessionId: data.sessionId,
 
-      status: "completed",
+      patientName: data.patientName,
+      therapy: data.therapy,
 
-      therapistNotes: notes,
+      date: data.sessionDate,
+      completedDate: now.toLocaleDateString(),
+      completedTime: now.toLocaleTimeString(),
+
+      duration: data.duration,
+      // exercises: data.exercises,
 
       painBefore,
       painAfter,
 
+      therapistNotes: notes,
+      // patientResponse: data.patientResponse,
+
       result,
+      mode: "complete",
       nextPlan,
 
-      duration: data.duration,
-
-      beforeImage: URL.createObjectURL(before),
-
-      afterImage: URL.createObjectURL(after),
-
-      beforeVideo: beforeVideo
-        ? URL.createObjectURL(beforeVideo)
-        : data.beforeVideo,
-
-      afterVideo: afterVideo
-        ? URL.createObjectURL(afterVideo)
-        : data.afterVideo,
-
-      completedTime: now.toLocaleTimeString(),
-
-      completedDate: now.toLocaleDateString(),
-
+      beforeImage: beforeBase64,
+      afterImage: afterBase64,
+      beforeVideo: beforeVideoBase64,
+      afterVideo: afterVideoBase64,
     }
-    console.log(updated)
 
-    onSave(updated)
+    console.log("FINAL PAYLOAD", payload)
+
+    const res = await createTherapyNotes(payload)
+
+    console.log("SUCCESS", res)
+
+    // ✅ Success toast (from backend if available)
+    showCustomToast(res?.message || "Saved successfully!")
+
+    // onSave(res)
+    onSave({
+//   ...payload, // original session
+  status: "Completed", // 🔥 force update
+//   // painBefore,
+//   // painAfter,
+//   // therapistNotes: notes,
+//   // result,
+//   //  nextPlan, 
+//   beforeVideo:   beforeVideo,
+//       afterVideo: afterVideo,
+//   // // beforeImage: beforeBase64,
+//   // afterImage: afterBase64,
+//    beforeImage: `data:image/jpeg;base64,${beforeBase64}`, // ✅ FIX
+//   afterImage: `data:image/jpeg;base64,${afterBase64}`,   // ✅ FIX
+})
     onClose()
+  } catch (err) {
+    console.log("FAILED", err?.response?.data || err.message)
 
+    // ❌ Error toast
+    toast.error(
+      err?.response?.data?.message || "Something went wrong!"
+    )
+  } finally {
+    setLoading(false) // 🔥 stop loader
   }
+}
 
   return (
 
@@ -131,7 +178,13 @@ export default function SessionFormModal({
           <CCol md={6}>
             <b>Time :</b> {new Date().toLocaleTimeString()}
           </CCol>
-
+           <CCol md={6}>
+            <b>SessionId :</b> {data.sessionId}
+          </CCol>
+            <CCol md={6}>
+            <b>Therapist RecordId :</b> {data.therapistRecordId}
+          </CCol>
+ 
         </CRow>
 
         <hr />
@@ -345,14 +398,14 @@ export default function SessionFormModal({
         </CRow>
 
         <hr />
-
+<div className="d-flex justify-content-end w-100">
         <CButton
-          color="success"
+          color="success" 
           onClick={save}
         >
-          Save Session
+         {loading ? "Saving...":"Save Session"} 
         </CButton>
-
+</div>
       </CModalBody>
 
     </CModal>

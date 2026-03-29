@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 
 import axios from "axios"
-import { BASE_URL } from "../../../baseUrl"
+import { BASE_URL, wifiUrl } from "../../../baseUrl"
  
  
 
@@ -108,3 +108,47 @@ export const getClinicData = async (clinicId, branchId, therapistId) => {
     throw error;
   }
 };
+
+
+export const createTherapyNotes = async (data) => {
+  console.log(data)
+  try {
+    const res = await axios.post(
+      `${BASE_URL}/saveRecord`,
+      data
+    )
+    return res.data
+  } catch (error) {
+    console.log("saveRecord error", error)
+    throw error
+  }
+}
+
+ 
+
+// ✅ DASHBOARD API
+export const getDashboard = async (clinicId, branchId, therapistId) => {
+  try {
+    const res = await axios.get(
+      `${wifiUrl}/api/physiotherapy-doctor/physiotherapy-record/dashboard/${clinicId}/${branchId}/${therapistId}`
+    )
+    return res.data?.data
+  } catch (err) {
+    console.error("Dashboard API Error:", err)
+    return null
+  }
+}
+
+ 
+
+export const getSessionDetails = async (clinicId, branchId, therapistId, sessionId) => {
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/getRecordByClinicIdBranchIdtherapistRecordIdAndSessionId/${clinicId}/${branchId}/${therapistId}/${sessionId}`
+    )
+    return res.data
+  } catch (err) {
+    console.error("API Error:", err)
+    return null
+  }
+}

@@ -51,7 +51,7 @@ const AppSidebar = () => {
               }
               alt={hospitalName}
               style={{
-                width: '80px',
+                width: '180px',
                 height: '80px',
                 // borderRadius: '50%',
                 objectFit: 'contain',
@@ -78,7 +78,14 @@ const AppSidebar = () => {
 
           <div
             className="clinic-header"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => {
+              const role = localStorage.getItem('role')
+              if(role === 'physiotherapist' || role === 'intern'){
+                navigate('/therapist')
+              }else{
+
+                navigate('/dashboard')}}
+              }
             style={{
               width: '80%',
               wordWrap: 'break-word',

@@ -9,9 +9,34 @@ const BackButton = () => {
   const [isAHovered, setIsAHovered] = useState(false)
   const navigate = useNavigate()
   const istheraphist = localStorage.getItem('role')
+ 
+
+const goBackTherapist = () => {
+  if (window.history.length > 1) {
+    navigate(-1) // go back
+  } else {
+    navigate("/therapist") // fallback route
+  }
+}
+
   return (
     <>
-    {istheraphist === 'physiotherapist' || "intern" ? "" : 
+    {istheraphist === 'physiotherapist' || "intern" ? 
+    <CButton
+  variant="outline"
+  onClick={goBackTherapist}
+  onMouseEnter={() => setIsHovered(true)}
+  onMouseLeave={() => setIsHovered(false)}
+  style={{
+    borderColor: 'var(--color-black)',
+    color: isHovered ? 'white' : 'var(--color-black)',
+    backgroundColor: isHovered ? 'var(--color-black)' : 'transparent',
+    transition: 'all 0.3s ease',
+    marginRight: '10px'
+  }}
+>
+  Back
+</CButton> : 
     <CButton
       variant="outline"
       onClick={goBack} // go back one step in stack

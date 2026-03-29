@@ -9,10 +9,17 @@ import {
   CCardBody,
   CBadge,
 } from "@coreui/react"
+import { convertToBase64 } from "../../../Utils/Base64Convert"
+import { useState } from "react"
 
 export default function PatientViewModal({ visible, data, onClose }) {
   if (!data) return null
-
+const [showImage, setShowImage] = useState(false)
+const [selectedImage, setSelectedImage] = useState(null)
+const handleImageClick = (img) => {
+  setSelectedImage(img)
+  setShowImage(true)
+}
   return (
     <CModal visible={visible} onClose={onClose} size="xl" backdrop="static" className="custom-modal">
       <CModalHeader>
@@ -88,27 +95,45 @@ export default function PatientViewModal({ visible, data, onClose }) {
     <h6>Pain Assessment</h6>
 
     {data?.complaints?.painAssessmentImage ? (
-      <div style={{ textAlign: "center" }}>
-        <img
-          src={data.complaints.painAssessmentImage}
-          alt="Pain Assessment"
-          style={{
-            width: "250px",
-            borderRadius: "10px",
-            border: "1px solid #ddd",
-            cursor: "pointer",
-          }}
-          onClick={() =>
-            window.open(data.complaints.painAssessmentImage, "_blank")
-          }
-        />
-        <p style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
-          Click to enlarge
-        </p>
-      </div>
-    ) : (
-      <p>No pain image available</p>
+  <div style={{ textAlign: "center" }}>
+   <img
+  src={`data:image/jpeg;base64,${data?.complaints?.painAssessmentImage}`}
+  style={{
+    width: "250px",
+    borderRadius: "10px",
+    cursor: "pointer",
+  }}
+  onClick={() =>
+    handleImageClick(data?.complaints?.painAssessmentImage)
+  }
+/>
+    <p style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
+      Click to enlarge
+    </p>
+  </div>
+) : (
+  <p>No pain image available</p>
+)}
+
+<CModal visible={showImage} onClose={() => setShowImage(false)} size="lg">
+  <CModalHeader>
+    <CModalTitle>Pain Assessment Image</CModalTitle>
+  </CModalHeader>
+
+  <CModalBody style={{ textAlign: "center" }}>
+    {selectedImage && (
+      <img
+        src={`data:image/jpeg;base64,${selectedImage}`}
+        style={{
+          width: "100%",
+          maxHeight: "80vh",
+          objectFit: "contain",
+          borderRadius: "10px",
+        }}
+      />
     )}
+  </CModalBody>
+</CModal>
   </CCardBody>
 </CCard>
 
@@ -164,9 +189,9 @@ export default function PatientViewModal({ visible, data, onClose }) {
           <CCardBody>
             <h6>Sessions</h6>
 
-            {data?.sessions?.map((s) => (
+            {data?.therapySessions?.map((s) => (
               <div key={s.sessionId} style={{ marginBottom: "10px" }}>
-                <b>{s.date}</b> - {s.duration}{" "}
+                <b>{s.sessionDate}</b> - {s.duration}{" "}
                 <CBadge
                   color={
                     s.status === "Completed"

@@ -20,12 +20,12 @@ import {
 
 import { getAllPatients, getPatientBySession, getStats, getTodaySessions } from './therapistService'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { getClinicData } from './TheraphyApi'
+import { getClinicData, getDashboard } from './TheraphyApi'
 import PatientViewModal from './PatientViewModal'
+import capitalizeWords from '../../../Utils/capitalizeWords'
 
 export default function TherapyDashboard() {
-  const stats = getStats()
-  const today = getTodaySessions()
+
   // const [selected, setSelected] = useState(null)
   const [tab, setTab] = useState(1)
   const [therapyData, setTherapyData] = useState([])
@@ -37,7 +37,8 @@ export default function TherapyDashboard() {
 
   const storedData = localStorage.getItem('therapistData')
   const data = location.state || (storedData ? JSON.parse(storedData) : {})
-
+  const [dashboard, setDashboard] = useState(null)
+const [records, setRecords] = useState([])
   const clinicId = data?.clinicId
   const branchId = data?.branchId
   const therapistId = data?.therapistId
@@ -60,24 +61,35 @@ export default function TherapyDashboard() {
       setLoading(false)
     }
   }
+    const fetchTheraphyAssignData = async () => {
+    const data = await getDashboard(clinicId, branchId, therapistId)
+console.log("DASHBOARD DATA:", data)
+    setDashboard(data)
+    setRecords(data?.records || [])
+  }
 
   useEffect(() => {
     if (clinicId && branchId && therapistId) {
       fetchData()
+       fetchTheraphyAssignData()
     }
   }, [clinicId, branchId, therapistId])
 
-  const list = therapyData || []
-const patientList = getAllPatients()
-console.log(patientList)
 
+ 
+
+  const list = therapyData || []
+const patientList = getAllPatients(records)
+console.log(patientList)
+  const stats = getStats(dashboard)
+  const today = getTodaySessions(records)
 const filteredPatients = patientList.filter((p) => {
   if (tab === 1) return p.overallStatus === "Pending"
   if (tab === 2) return p.overallStatus === "Active"
   if (tab === 3) return p.overallStatus === "Completed"
   return true
 })
-
+console.log(selected)
   return (
 
     <>
@@ -135,7 +147,7 @@ const filteredPatients = patientList.filter((p) => {
 
                 <CCol xs={8}>
                   <h6 style={{ margin: 0 }}>
-                    {item?.fullName}
+                    {capitalizeWords(item?.fullName)}
                   </h6>
 
                   <small>{item?.qualification}</small>
@@ -173,8 +185,9 @@ const filteredPatients = patientList.filter((p) => {
     <CCard color="primary" textColor="white" className="w-100 h-100">
       <CCardBody className="d-flex flex-column justify-content-center text-center">
         <h6>Today Assigned</h6>
-        <h2>{stats.todayCount}</h2>
-        <small>{stats.todayTime} min</small>
+        {/* <h2>{stats.todayPatientCount || 0 }</h2> */}
+        <h2>{records.length || 0 }</h2>
+        <small>{stats.todayWorkingMinutes || 0} min</small>
       </CCardBody>
     </CCard>
   </CCol>
@@ -183,8 +196,8 @@ const filteredPatients = patientList.filter((p) => {
     <CCard color="success" textColor="white" className="w-100 h-100">
       <CCardBody className="d-flex flex-column justify-content-center text-center">
         <h6>Week Assigned</h6>
-        <h2>{stats.weekCount}</h2>
-        <small>{stats.weekTime} min</small>
+        <h2>{stats.weeklyPatientCount || 0}</h2>
+        <small>{stats.weeklyWorkingMinutes || 0} min</small>
       </CCardBody>
     </CCard>
   </CCol>
@@ -193,8 +206,8 @@ const filteredPatients = patientList.filter((p) => {
     <CCard color="warning" textColor="white" className="w-100 h-100">
       <CCardBody className="d-flex flex-column justify-content-center text-center">
         <h6>Month Assigned</h6>
-        <h2>{stats.monthCount}</h2>
-        <small>{stats.monthTime} min</small>
+        <h2>{stats.monthlyPatientCount || 0}</h2>
+        <small>{stats.monthlyWorkingMinutes || 0} min</small>
       </CCardBody>
     </CCard>
   </CCol>
@@ -262,58 +275,71 @@ const filteredPatients = patientList.filter((p) => {
   <p>No Data Found</p>
 ) : (
   filteredPatients.map((p) => (
-    <CCard key={p.patientId} className="mb-3" >
-      <CCardBody>
+<CCard key={p.patientId} className="mb-3">
+  <CCardBody>
+
+    {/* 🔷 Top Row (Patient + View Button) */}
+    <div className="d-flex justify-content-between align-items-center ">
+
+      <div>
         <b>Patient: {p.name}</b>
         <br />
-
         Therapy: {p.therapy}
         <br />
-
-        Duration: {p.duration}
+        No of Sessions: {p.therapySessions.length}
         <br />
 
-        <CBadge
-          color={
-            p.overallStatus === "Completed"
-              ? "success"
-              : p.overallStatus === "Active"
-              ? "warning"
-              : "secondary"
-          }
-        >
-          {p.overallStatus}
-        </CBadge>
+    <CBadge
+  color={
+    p.overallStatus?.toLowerCase() === "completed"
+      ? "success"
+      : p.overallStatus?.toLowerCase() === "active"
+      ? "warning"
+      : "secondary"
+  }
+>
+  {p.overallStatus}
+</CBadge>
+      </div>
+<div className="d-flex flex-column justify-content-center align-items-center ">
+      {/* 🔥 View Button (Top Right) */}
+      <CButton
+        size="sm"
+        color="info"
+        style={{ color: "white" }}
+        className='mb-2'
+        onClick={() => setSelected(p)}
+      >
+        View Details
+      </CButton>
+       {/* 🔷 Bottom Row (Sessions Button Right) */}
+            <CButton
+        size="sm"
+        color="primary"
+        onClick={() => {
+          navigate("/session-list", {
+            state: {
+              name: p.name,
+              therapy: p.therapy,
+              doctorName: p.doctorName,
+              sessions: p.therapySessions,
+              therapistRecordId: p.therapistRecordId,
+              patientId: p.patientId,
+              bookingId: p.bookingId,
+            },
+          })
+        }}
+      >
+        Sessions
+      </CButton>
+</div>
+    </div>
 
-        <br /><br />
- <CButton
-          size="sm"
-          color="info" style={{color:"white"}} className="me-2"
-          onClick={() => setSelected(p)}
-        >
-          View Details
-        </CButton>
-        <CButton
-          size="sm"
-          color="primary"
-          className="me-2"
-          onClick={() => {
-            navigate("/session-list", {
-              state: {
-                name: p.name,
-                therapy: p.therapy,
-                doctorName: p.doctorName,
-                sessions: p.sessions,
-              },
-            })
-          }}
-        >
-          Sessions
-        </CButton>
+   
+ 
 
-       
-      </CCardBody>
-    </CCard>
+  </CCardBody>
+</CCard>
   ))
 )}
             </CCardBody>
