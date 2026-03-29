@@ -405,6 +405,7 @@ const AppointmentDetails = () => {
               <CFormInput
                 label="Height"
                 name="height"
+                 placeholder="Enter height (e.g., 170 cm)"
                 value={formData.height}
                 onChange={handleChange}
                 className="mb-2"
@@ -416,6 +417,7 @@ const AppointmentDetails = () => {
               <CFormInput
                 label="Weight"
                 name="weight"
+                 placeholder="Enter weight (e.g., 65 kg)"
                 value={formData.weight}
                 onChange={handleChange}
                 className="mb-2"
@@ -427,6 +429,7 @@ const AppointmentDetails = () => {
               <CFormInput
                 label="Blood Pressure"
                 name="bloodPressure"
+                  placeholder="Enter BP (e.g., 120/80 mmHg)"
                 value={formData.bloodPressure}
                 onChange={handleChange}
                 className="mb-2"
@@ -438,6 +441,7 @@ const AppointmentDetails = () => {
               <CFormInput
                 label="Temperature"
                 name="temperature"
+                 placeholder="Enter temperature (e.g., 98.6 °F)"
                 value={formData.temperature}
                 onChange={handleChange}
                 className="mb-2"
@@ -449,6 +453,7 @@ const AppointmentDetails = () => {
               <CFormInput
                 label="BMI"
                 name="bmi"
+                 placeholder="Enter BMI (e.g., 22.5)"
                 value={formData.bmi}
                 onChange={handleChange}
                 className="mb-2"

@@ -12,7 +12,7 @@ import {
   CRow,
   CCol,
 } from "@coreui/react"
-import { createTherapyNotes } from "./TheraphyApi"
+import { createTherapyNotes, getDashboard } from "./TheraphyApi"
 import { convertToBase64 } from "../../../Utils/Base64Convert"
 import { showCustomToast } from "../../../Utils/Toaster"
 
@@ -39,7 +39,18 @@ export default function SessionFormModal({
 
   const [error, setError] = useState({})
  
-
+  const storedData = localStorage.getItem('therapistData')
+  const theraphydata = location.state || (storedData ? JSON.parse(storedData) : {})
+  const [dashboard, setDashboard] = useState(null)
+  const clinicId = theraphydata?.clinicId
+  const branchId = theraphydata?.branchId
+  const therapistId = theraphydata?.therapistId
+    const fetchTheraphyAssignData = async () => {
+    const data = await getDashboard(clinicId, branchId, therapistId)
+console.log("DASHBOARD DATA:", data)
+    setDashboard(data)
+    setRecords(data?.records || [])
+  }
 const save = async () => {
   let err = {}
 
@@ -114,23 +125,25 @@ const save = async () => {
 
     // ✅ Success toast (from backend if available)
     showCustomToast(res?.message || "Saved successfully!")
-
+if(res){
+  fetchTheraphyAssignData()
+}
     // onSave(res)
-    onSave({
-//   ...payload, // original session
-  status: "Completed", // 🔥 force update
-//   // painBefore,
-//   // painAfter,
-//   // therapistNotes: notes,
-//   // result,
-//   //  nextPlan, 
-//   beforeVideo:   beforeVideo,
-//       afterVideo: afterVideo,
-//   // // beforeImage: beforeBase64,
-//   // afterImage: afterBase64,
-//    beforeImage: `data:image/jpeg;base64,${beforeBase64}`, // ✅ FIX
-//   afterImage: `data:image/jpeg;base64,${afterBase64}`,   // ✅ FIX
-})
+//     onSave({
+// //   ...payload, // original session
+//   status: "Completed", // 🔥 force update
+// //   // painBefore,
+// //   // painAfter,
+// //   // therapistNotes: notes,
+// //   // result,
+// //   //  nextPlan, 
+// //   beforeVideo:   beforeVideo,
+// //       afterVideo: afterVideo,
+// //   // // beforeImage: beforeBase64,
+// //   // afterImage: afterBase64,
+// //    beforeImage: `data:image/jpeg;base64,${beforeBase64}`, // ✅ FIX
+// //   afterImage: `data:image/jpeg;base64,${afterBase64}`,   // ✅ FIX
+// })
     onClose()
   } catch (err) {
     console.log("FAILED", err?.response?.data || err.message)
@@ -143,6 +156,7 @@ const save = async () => {
     setLoading(false) // 🔥 stop loader
   }
 }
+
 
   return (
 
@@ -402,6 +416,7 @@ const save = async () => {
         <CButton
           color="success" 
           onClick={save}
+          disabled={loading} // 🔥 disable while loading
         >
          {loading ? "Saving...":"Save Session"} 
         </CButton>

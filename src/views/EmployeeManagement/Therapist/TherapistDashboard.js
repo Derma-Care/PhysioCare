@@ -35,10 +35,10 @@ export default function TherapyDashboard() {
   const location = useLocation()
   const navigate = useNavigate()
 
+  const [records, setRecords] = useState([])
   const storedData = localStorage.getItem('therapistData')
   const data = location.state || (storedData ? JSON.parse(storedData) : {})
   const [dashboard, setDashboard] = useState(null)
-const [records, setRecords] = useState([])
   const clinicId = data?.clinicId
   const branchId = data?.branchId
   const therapistId = data?.therapistId
