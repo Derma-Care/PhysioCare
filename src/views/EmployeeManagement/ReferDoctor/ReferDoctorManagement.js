@@ -154,9 +154,9 @@ const ReferDoctorManagement = () => {
           >
             Add Refer Doctor
           </CButton>
-          <CButton onClick={() => navigate('/therapist')}>
+          {/* <CButton onClick={() => navigate('/therapist')}>
             Therapist
-          </CButton>
+          </CButton> */}
         </div>
       )}
       {/* <CModal visible={modalTVisible} backdrop="static" keyboard={false}>

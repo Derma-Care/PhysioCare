@@ -10,7 +10,7 @@ import {
 } from '@coreui/react'
 
 
-const TreatmentPackageForm = ({ data, onSave,therapyOptions  }) => {
+const TreatmentPackageForm = ({ data, onSave,therapyOptions,onCancel  }) => {
   const [form, setForm] = useState({
     name: '',
     price: '',
@@ -227,11 +227,25 @@ const TreatmentPackageForm = ({ data, onSave,therapyOptions  }) => {
       </CButton>
 
       {/* ================= SUBMIT ================= */}
-      <div className="text-end">
-        <CButton onClick={handleSubmit}>
-          {data ? 'Update Program' : 'Save Program'}
-        </CButton>
-      </div>
+    <div className="text-end d-flex justify-content-end gap-2">
+  
+  {/* Cancel Button */}
+     <CButton color="secondary" onClick={() => setShowModal(false)}>
+              Cancel
+            </CButton>
+
+  {/* Save / Update Button */}
+  <CButton
+    onClick={handleSubmit}
+    style={{
+      backgroundColor: 'var(--color-bgcolor)',
+      color: 'var(--color-black)',
+    }}
+  >
+    {data ? 'Update' : 'Save'}
+  </CButton>
+
+</div>
     </>
   )
 }

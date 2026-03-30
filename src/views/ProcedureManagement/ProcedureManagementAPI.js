@@ -8,7 +8,7 @@ import {
   updateService,
   deleteService,
   MainAdmin_URL,
-  // subService_URL,
+  // subService_URL,  
   subservice,
   getadminSubServicesbyserviceId,
   getService_ByClinicId,
@@ -85,6 +85,7 @@ export const getSubServiceById = async (hospitalId, subServiceId) => {
 export const GetSubServices_ByClinicId = async (hospitalId) => {
   try {
     const response = await http.get(`/${getService_ByClinicId}/${hospitalId}`)
+    console.log(response.data?.data)
     return response.data?.data
   } catch (error) {
     if (error.response) {

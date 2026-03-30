@@ -1384,7 +1384,7 @@ const ServiceManagement = () => {
       >
         <CModalHeader>
           <CModalTitle style={{ textAlign: 'center', width: '100%' }}>
-            {modalMode === 'edit' ? 'Edit Procedure Details' : 'Add New Procedure Details'}
+            {modalMode === 'edit' ? 'Edit Therapy Details' : 'Add New Therapy Details'}
           </CModalTitle>
         </CModalHeader>
         <CModalBody>
@@ -1544,7 +1544,7 @@ const ServiceManagement = () => {
                 >
                   <option value="">Select consentFormType</option>
                   <option value="1">Generic ConsentForm</option>
-                  <option value="2">Procedure ConsentForm</option>
+                  <option value="2">Therapy ConsentForm</option>
                 </CFormSelect>
                 {errors.consentFormType && (
                   <CFormText className="text-danger">{errors.consentFormType}</CFormText>
@@ -1615,7 +1615,7 @@ const ServiceManagement = () => {
                 </h6>
                 <CFormInput
                   type="text"
-                  placeholder="Procedure Price"
+                  placeholder="Therapy Fee"
                   name="price"
                   value={newService.price || ''}
                   onChange={handleChange}

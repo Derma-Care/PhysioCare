@@ -40,6 +40,7 @@ const branchId = localStorage.getItem('branchId')
 const fetchPackages = async () => {
   try {
     const res = await getAllPackages()
+    console.log(res.data.data)
 
     const packages = res.data.data || []
 
@@ -50,10 +51,12 @@ const fetchPackages = async () => {
     ]
 
     setTherapyOptions(uniqueTherapies)
+    setPackages(packages)
   } catch (err) {
     console.error(err)
   }
 }
+
 
 useEffect(() => {
   fetchPackages()
