@@ -386,7 +386,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
   onSave(payload)
 }
   return (
-    <CModal visible={visible} onClose={onClose} size="lg" className='custom-modal'>
+    <CModal visible={visible} onClose={onClose} size="lg"  backdropclassName='custom-modal' backdrop="static">
       <CModalHeader>
         <CModalTitle>{isView ? 'View Therapist' : 'Add / Edit Therapist'}</CModalTitle>
       </CModalHeader>
@@ -594,7 +594,6 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
    <CFormInput
   value={formData.emailId}
   disabled={isView}
-  maxLength={20}
   onChange={(e) => handleChange('emailId', e.target.value)}
   invalid={!!errors.emailId}
 />
