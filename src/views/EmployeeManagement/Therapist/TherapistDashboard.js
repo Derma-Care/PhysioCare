@@ -181,36 +181,41 @@ console.log(selected)
   )}
 
   {/* ✅ STATS CARDS */}
-  <CCol md={3} className="d-flex">
-    <CCard color="primary" textColor="white" className="w-100 h-100">
-      <CCardBody className="d-flex flex-column justify-content-center text-center">
-        <h6>Today's Appointments</h6>
-        {/* <h2>{stats.todayPatientCount || 0 }</h2> */}
-        <h2>{records.length || 0 }</h2>
-        <small>{stats.todayWorkingMinutes || 0} min</small>
-      </CCardBody>
-    </CCard>
-  </CCol>
+ <CCol md={3} className="d-flex">
+  <CCard color="primary" textColor="white" className="w-100 h-100">
+    <CCardBody className="d-flex flex-column justify-content-center text-center">
+      <h6>Today's Appointments</h6>
 
-  <CCol md={3} className="d-flex">
-    <CCard color="success" textColor="white" className="w-100 h-100">
-      <CCardBody className="d-flex flex-column justify-content-center text-center">
-        <h6>Weekly Appointments</h6>
-        <h2>{stats.weeklyPatientCount || 0}</h2>
-        <small>{stats.weeklyWorkingMinutes || 0} min</small>
-      </CCardBody>
-    </CCard>
-  </CCol>
+      {/* ✅ Correct */}
+      <h2>{stats.todayCount || 0}</h2>
 
-  <CCol md={3} className="d-flex">
-    <CCard color="warning" textColor="white" className="w-100 h-100">
-      <CCardBody className="d-flex flex-column justify-content-center text-center">
-        <h6>Monthly Appointments</h6>
-        <h2>{stats.monthlyPatientCount || 0}</h2>
-        <small>{stats.monthlyWorkingMinutes || 0} min</small>
-      </CCardBody>
-    </CCard>
-  </CCol>
+      {/* ✅ Correct */}
+      <small>{stats.todayTime || 0} min</small>
+    </CCardBody>
+  </CCard>
+</CCol>
+
+ <CCol md={3} className="d-flex">
+  <CCard color="success" textColor="white" className="w-100 h-100">
+    <CCardBody className="d-flex flex-column justify-content-center text-center">
+      <h6>Weekly Appointment</h6>
+      <h2>{stats.weekCount || 0}</h2>
+      <small>{stats.weekTime || 0} min</small>
+    </CCardBody>
+  </CCard>
+</CCol>
+
+<CCol md={3} className="d-flex">
+  <CCard color="warning" textColor="white" className="w-100 h-100">
+    <CCardBody className="d-flex flex-column justify-content-center text-center">
+      <h6>Monthly Appointments</h6>
+      <h2>{stats.monthCount || 0}</h2>
+      <small>{stats.monthTime || 0} min</small>
+    </CCardBody>
+  </CCard>
+</CCol>
+
+ 
 
 </CRow>
 

@@ -39,6 +39,7 @@ const BookingSearch = ({
 
       setBookingData(res?.data?.data || [])
       console.log('Fetched bookings:', res?.data?.data || [])
+      console.log('Fetched bookings:', res|| [])
     } catch (err) {
       console.error('Error fetching bookings:', err)
       setBookingData([])
@@ -61,7 +62,8 @@ const BookingSearch = ({
     if (visitType === 'followup') {
       await fetchBookings(getInProgressfollowupBookings, patientSearch)
     } else {
-      await fetchBookings(getBookingsByPatientId, patientSearch)
+  await fetchBookings(getBookingsByPatientId, patientSearch)
+  
     }
   }
 
@@ -156,53 +158,30 @@ const BookingSearch = ({
       </CRow>
 
       {/* 📋 Booking List */}
-      {Array.isArray(bookingData) && bookingData.length > 0
-        ? !selectedBooking &&
-          Array.isArray(bookingData) &&
-          bookingData.length > 0 && (
-            <CListGroup className="shadow-sm mb-4">
-              {bookingData.map((item) => (
-                <CListGroupItem
-                  key={item.bookingId}
-                  action
-                  onClick={() => handleSelectBooking(item)}
-                  style={{
-                    cursor: 'pointer',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <strong>{item.name}</strong>
-                  <span className="text-muted">{item.patientId}</span>
-                  <span className="text-muted">{item.doctorName}</span>
-                  <span className="text-muted">{item.branchname}</span>
-                </CListGroupItem>
-              ))}
-            </CListGroup>
-          )
-        : !loading &&
-          patientSearch && (
-            <p className="text-muted">
-              {visitType === 'followup'
-                ? `No bookings found for ${patientSearch}`
-                : `No Patient details found for ${patientSearch}`}
-            </p>
-          )}
-      {/* {visitType === 'followup' && (
-        <div className="mt-4 text-end d-flex justify-content-end gap-2">
-          <CButton color="secondary" onClick={onClose}>
-            Cancel
-          </CButton>
+    {bookingData && !selectedBooking && (
+  <CListGroup className="shadow-sm mb-4">
+    {[bookingData].map((item) => (
+      <CListGroupItem
+        key={item.patientId}
+        action
+        onClick={() => handleSelectBooking(item)}
+        style={{
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <strong>{item.name}</strong>
+        <span className="text-muted">{item.patientId}</span>
 
-          <CButton
-            onClick={() => handleFollowUpSubmit(selectedBooking)}
-            style={{ backgroundColor: 'var(--color-bgcolor)', color: 'var(--color-black)' }}
-          >
-            Submit
-          </CButton>
-        </div>
-      )} */}
+        {/* ❗ These are not in API */}
+        <span className="text-muted">{item.doctorName || '-'}</span>
+        <span className="text-muted">{item.branchname || '-'}</span>
+      </CListGroupItem>
+    ))}
+  </CListGroup>
+)}
 
       {/* 🧾 Modal */}
       <CModal

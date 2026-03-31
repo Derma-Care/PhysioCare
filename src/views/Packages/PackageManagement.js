@@ -231,28 +231,26 @@ useEffect(() => {
 
         <CModalBody>
           {viewMode ? (
-    <div className="p-3">
+   <div className="p-3">
 
   {/* ================= BASIC ================= */}
   <div className="mb-4">
-    <h6 className="fw-bold mb-3" >
-      Basic Information
-    </h6>
+    <h6 className="fw-bold mb-3 border-bottom pb-2">Basic Information</h6>
 
-    <CRow className="mb-2">
+    <CRow className="g-3">
       <CCol md={6}>
         <Field label="Program Name" value={selectedPackage?.packageName} />
       </CCol>
-    </CRow>
 
-    <Field label="Description" value={selectedPackage?.description} />
+      <CCol md={6}>
+        <Field label="Description" value={selectedPackage?.description} />
+      </CCol>
+    </CRow>
   </div>
 
   {/* ================= PRICING ================= */}
   <div className="mb-4">
-    <h6 className="fw-bold mb-3" >
-      Pricing Details
-    </h6>
+    <h6 className="fw-bold mb-3 border-bottom pb-2">Pricing Details</h6>
 
     <CRow className="g-3">
       <CCol md={3}>
@@ -275,18 +273,18 @@ useEffect(() => {
 
   {/* ================= PAYMENT ================= */}
   <div className="mb-4">
-    <h6 className="fw-bold mb-3" >
-      Payment Details
-    </h6>
+    <h6 className="fw-bold mb-3 border-bottom pb-2">Payment Details</h6>
 
-    <Field label="Payment Type" value={selectedPackage?.paymentType} />
+    <CRow className="g-3">
+      <CCol md={6}>
+        <Field label="Payment Type" value={selectedPackage?.paymentType} />
+      </CCol>
+    </CRow>
   </div>
 
   {/* ================= OFFER ================= */}
   <div className="mb-4">
-    <h6 className="fw-bold mb-3" >
-      Offer Period
-    </h6>
+    <h6 className="fw-bold mb-3 border-bottom pb-2">Offer Period</h6>
 
     <CRow className="g-3">
       <CCol md={6}>
@@ -301,9 +299,7 @@ useEffect(() => {
 
   {/* ================= THERAPIES ================= */}
   <div className="mb-3">
-    <h6 className="fw-bold mb-3">
-      Therapies Included
-    </h6>
+    <h6 className="fw-bold mb-3 border-bottom pb-2">Therapies Included</h6>
 
     {selectedPackage?.therapies?.length ? (
       selectedPackage.therapies.map((t, i) => (
@@ -312,7 +308,7 @@ useEffect(() => {
           className="border rounded p-3 mb-3"
           style={{ backgroundColor: "#f9fafb" }}
         >
-          <CRow className="g-3">
+          <CRow className="g-3 align-items-start">
             <CCol md={3}>
               <Field label="Therapy" value={t.name} />
             </CCol>
