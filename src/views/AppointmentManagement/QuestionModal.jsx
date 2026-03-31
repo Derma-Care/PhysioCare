@@ -9,6 +9,7 @@ import {
   CButton,
   CFormInput,
   CFormCheck,
+  CSpinner,
 } from "@coreui/react";
 import axios from "axios";
 import { getQuestionsByKey } from "../EmployeeManagement/Therapist/therapistApi";
@@ -26,7 +27,7 @@ export default function QuestionModal({
 
   const [answers, setAnswers] = useState({});
   console.log(partIds)
- 
+ const [loadingQuestions, setLoadingQuestions] = useState(false)
 const [questionsByPart, setQuestionsByPart] = useState({});
   const handleChange = (key, value) => {
     setAnswers((prev) => ({
@@ -34,34 +35,25 @@ const [questionsByPart, setQuestionsByPart] = useState({});
       [key]: value,
     }));
   };
-useEffect(() => {
-  if (partId) {
-    fetchQuestions();
-  }
-}, [partId]);
+
 
 const fetchQuestions = async () => {
-  if (!partId || partId.length === 0) return;
+  if (!partIds || partIds.length === 0) return;
+
   try {
+    setLoadingQuestions(true)
 
-    const parts = Array.isArray(partId)
-      ? partId
-      : [partId];
+    const res = await getQuestionsByKey(partIds)
 
-    const res = await getQuestionsByKey(parts);
-
-if (res?.data) {
-
-  setQuestionsByPart(
-    res.data   // ✅ correct
-  );
-
-}
-
+    if (res?.data) {
+      setQuestionsByPart(res.data)
+    }
   } catch (err) {
-    console.log(err);
+    console.log(err)
+  } finally {
+    setLoadingQuestions(false)
   }
-};
+}
 
 // const handleSave = () => {
 
@@ -125,6 +117,12 @@ const handleSave = () => {
     answerData: formattedAnswers, // ✅ NOT array
   });
 };
+useEffect(() => {
+  if (partId) {
+    setQuestionsByPart({})   // ✅ clear old data FIRST
+    fetchQuestions()         // ✅ then fetch
+  }
+}, [partId])
   return (
     <CModal visible={visible} onClose={onClose} size="lg">
 
@@ -145,9 +143,11 @@ const handleSave = () => {
 
               <h5>{part.toUpperCase()}</h5>
 
-              {questions.length === 0 && (
-                <p>No questions</p>
-              )}
+           {loadingQuestions ? (
+  <p><CSpinner size="sm" />Loading questions...</p>   // 🔄 loading state
+) : questions.length === 0 ? (
+  <p>No questions</p>          // ❌ only if truly empty
+) : null}
 
               {questions.map((q) => {
 

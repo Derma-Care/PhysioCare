@@ -2334,7 +2334,13 @@ const handlePartClick = async (data) => {
 
           <BodyAssessment onPartClick={handlePartClick} />
 
-          {markedImage && <img src={markedImage} width={200} crossOrigin="anonymous" />}
+         {markedImage && (
+  <img
+    src={`data:image/png;base64,${markedImage}`}
+    width={200}
+    alt="preview"
+  />
+)}
 
           {/* <h3>Selected: {part}</h3> */}
         </div>

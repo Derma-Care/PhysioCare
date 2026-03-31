@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { CSpinner, useColorModes } from '@coreui/react'
@@ -17,6 +17,12 @@ import { injectTheme } from './Constant/Themes'
 import SupplierApp from './components/PharmacyManagement/Reorder/SupplierApp'
 // import { listenNotification } from './firebase'
 import { LogoLoader } from './Utils/LogoLoder'
+import useOnlineStatus from './views/pages/page500/useOnlineStatus'
+import NoInternet from './views/pages/page500/NoInternet'
+import ErrorScreen from './views/pages/page500/ErrorScreen'
+import { setErrorHandler } from './Utils/Interceptors'
+ 
+ 
 
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
@@ -33,6 +39,56 @@ const App = () => {
   // useEffect(() => {
   //   listenNotification()
   // }, [])
+  const isOnline = useOnlineStatus()
+
+  const handleRetry = () => {
+    if (navigator.onLine) {
+      window.location.reload()
+    }
+  }
+
+  if (!isOnline) {
+    return <NoInternet onRetry={handleRetry} />
+  }
+window.addEventListener("offline", () => {
+  showCustomToast("No internet connection")
+})
+if (!isOnline) {
+  return (
+    <ErrorScreen
+      type="network"
+      onRetry={() => window.location.reload()}
+    />
+  )
+}
+ const [errorType, setErrorType] = useState(null)
+
+  useEffect(() => {
+    setErrorHandler(setErrorType)
+  }, [])
+
+ 
+  if (errorType === "NO_INTERNET") {
+    return <NoInternet onRetry={handleRetry} />
+  }
+
+  if (errorType === "SERVER_DOWN") {
+    return (
+      <ErrorScreen
+        message="Server is not responding (503)"
+        onRetry={handleRetry}
+      />
+    )
+  }
+
+  if (errorType === "TIMEOUT") {
+    return (
+      <ErrorScreen
+        message="Request timeout. Try again."
+        onRetry={handleRetry}
+      />
+    )
+  }
 
   return (
     <Suspense fallback={<LogoLoader />}>
