@@ -39,57 +39,8 @@ const App = () => {
   // useEffect(() => {
   //   listenNotification()
   // }, [])
-  const isOnline = useOnlineStatus()
-
-  const handleRetry = () => {
-    if (navigator.onLine) {
-      window.location.reload()
-    }
-  }
-
-  if (!isOnline) {
-    return <NoInternet onRetry={handleRetry} />
-  }
-window.addEventListener("offline", () => {
-  showCustomToast("No internet connection")
-})
-if (!isOnline) {
-  return (
-    <ErrorScreen
-      type="network"
-      onRetry={() => window.location.reload()}
-    />
-  )
-}
- const [errorType, setErrorType] = useState(null)
-
-  useEffect(() => {
-    setErrorHandler(setErrorType)
-  }, [])
-
  
-  if (errorType === "NO_INTERNET") {
-    return <NoInternet onRetry={handleRetry} />
-  }
-
-  if (errorType === "SERVER_DOWN") {
-    return (
-      <ErrorScreen
-        message="Server is not responding (503)"
-        onRetry={handleRetry}
-      />
-    )
-  }
-
-  if (errorType === "TIMEOUT") {
-    return (
-      <ErrorScreen
-        message="Request timeout. Try again."
-        onRetry={handleRetry}
-      />
-    )
-  }
-
+ 
   return (
     <Suspense fallback={<LogoLoader />}>
     {/* <Suspense> */}
