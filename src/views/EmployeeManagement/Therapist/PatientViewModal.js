@@ -133,7 +133,6 @@ export default function PatientViewModal({ visible, data, onClose }) {
   </CCardBody>
 </CCard>
 
-          {/* 🔍 ASSESSMENT */}
           {/* 🔍 ASSESSMENT (FULL DATA) */}
 <CCard className="mb-3">
   <CCardBody>
@@ -429,7 +428,7 @@ export default function PatientViewModal({ visible, data, onClose }) {
       
 
       {/* 🔍 IMAGE MODAL (UNCHANGED) */}
-      <CModal visible={showImage} onClose={() => setShowImage(false)} size="lg">
+      <CModal visible={showImage} onClose={() => setShowImage(false)} size="lg" className="custom-modal">
         <CModalHeader>
           <CModalTitle>Pain Image</CModalTitle>
         </CModalHeader>

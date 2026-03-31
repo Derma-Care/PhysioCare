@@ -386,9 +386,9 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
   onSave(payload)
 }
   return (
-    <CModal visible={visible} onClose={onClose} size="lg"  backdropclassName='custom-modal' backdrop="static">
+    <CModal visible={visible} onClose={onClose} size="lg"  className='custom-modal' backdrop="static">
       <CModalHeader>
-        <CModalTitle>{isView ? 'View Therapist' : 'Add / Edit Therapist'}</CModalTitle>
+        <CModalTitle style={{ color: 'var(--color-black)'}}>{isView ? 'View Therapist' : 'Add / Edit Therapist'}</CModalTitle>
       </CModalHeader>
 
       <CModalBody>
@@ -535,7 +535,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
 
   {/* BASIC */}
 
-<h5 className="mb-3">Basic Information</h5>
+{/* <h5 className="mb-3">Basic Information</h5> */}
 <CRow className="mb-3">
 
   <CCol md={4}>
@@ -726,7 +726,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
 
 
 {/* AVAILABILITY */}
-<h5 className="mt-4 mb-3">Availability</h5>
+{/* <h5 className="mt-4 mb-3">Availability</h5> */}
 
 <CRow className="mb-3">
   <CCol md={6}>
@@ -835,7 +835,7 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
 </CRow>
 
 {/* DOCUMENTS */}
-<h5 className="mt-4 mb-3">Documents</h5>
+{/* <h5 className="mt-4 mb-3">Documents</h5> */}
 
 <CRow className="mb-3">
   <CCol md={4}>
@@ -878,14 +878,36 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
       
 
       <CModalFooter>
-        {isView ? (
-          <CButton onClick={onClose}>Close</CButton>
-        ) : (
-          <>
-            <CButton onClick={onClose}>Cancel</CButton>
-            <CButton onClick={handleSubmit}>Save</CButton>
-          </>
-        )}
+       {isView ? (
+  <CButton
+    onClick={onClose}
+    style={{
+      backgroundColor: "var(--btn-secondary-bg)",
+      color: "var(--btn-secondary-text)",
+      border: "none",
+      fontWeight: "600",
+      padding: "6px 16px",
+    }}
+  >
+    Close
+  </CButton>
+) : (
+ <div className="d-flex gap-2">
+  <CButton onClick={onClose} color="secondary">
+    Cancel
+  </CButton>
+
+  <CButton
+    onClick={handleSubmit}
+     style={{
+      backgroundColor: 'var(--color-bgcolor)',
+      color: 'var(--color-black)',
+    }}
+  >
+    Save
+  </CButton>
+</div>
+)}
       </CModalFooter>
     </CModal>
   )

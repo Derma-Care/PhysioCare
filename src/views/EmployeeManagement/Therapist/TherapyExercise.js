@@ -404,7 +404,7 @@ const handleImage = (file) => {
       >
 
         <CModalHeader>
-          <CModalTitle>Exercise</CModalTitle>
+          <CModalTitle>Add Exercise</CModalTitle>
         </CModalHeader>
 
         <CModalBody>
@@ -518,7 +518,7 @@ const handleImage = (file) => {
           </CButton>
 
       <CButton
-  color="success"
+            
   onClick={handleSave}
   disabled={loading}
 >

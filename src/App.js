@@ -17,10 +17,7 @@ import { injectTheme } from './Constant/Themes'
 import SupplierApp from './components/PharmacyManagement/Reorder/SupplierApp'
 // import { listenNotification } from './firebase'
 import { LogoLoader } from './Utils/LogoLoder'
-import useOnlineStatus from './views/pages/page500/useOnlineStatus'
-import NoInternet from './views/pages/page500/NoInternet'
-import ErrorScreen from './views/pages/page500/ErrorScreen'
-import { setErrorHandler } from './Utils/Interceptors'
+
  
  
 
