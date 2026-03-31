@@ -28,7 +28,7 @@ const ConsentTabs = () => {
               onClick={() => setActiveKey(2)}
               style={{ color: 'var(--color-black)' }}
             >
-              Procedure Consent Form
+              Therapy Consent Form
             </CNavLink>
           </CNavItem>
           <CNavItem>

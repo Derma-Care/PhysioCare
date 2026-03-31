@@ -1256,7 +1256,7 @@ const handlePartClick = async (data) => {
               <CCol md={6}>
                 <CFormCheck
                   type="radio"
-                  label="Services & Treatment"
+                  label="Therapy"
                   name="appointmentTypeRadio"
                   value="services"
                   checked={appointmentType === 'services'}
@@ -1641,7 +1641,7 @@ const handlePartClick = async (data) => {
 
               <CCol md={4}>
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
-                  Procedure Name <span className="text-danger">*</span>
+                  Therapy Name <span className="text-danger">*</span>
                 </CFormLabel>
                 <CFormSelect
                   value={selectedSubService}
@@ -1812,7 +1812,8 @@ const handlePartClick = async (data) => {
                           disabled={!doc.doctorAvailabilityStatus}
                           style={{ color: doc.doctorAvailabilityStatus ? 'inherit' : '#aaa' }}
                         >
-                          {doc.doctorName} - ₹{fee}
+                          {/* {doc.doctorName} - ₹{fee} */}
+                          {doc.doctorName}
                           {!doc.doctorAvailabilityStatus ? ' (Not Available)' : ''}
                         </option>
                       )
@@ -1840,7 +1841,7 @@ const handlePartClick = async (data) => {
               </CCol>
               <CCol md={4}>
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
-                  Service & Treatment Cost<span className="text-danger">*</span>
+                 Therapy Fee<span className="text-danger">*</span>
                 </CFormLabel>
                 <CFormInput type="number" value={bookingDetails.servicecost || 0} disabled />
               </CCol>

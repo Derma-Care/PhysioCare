@@ -13,6 +13,7 @@ import {
   CModalBody,
   CRow,
   CCol,
+  CModalTitle,
 } from '@coreui/react'
 
 import { Eye, Edit2, Trash2 } from 'lucide-react'
@@ -135,10 +136,12 @@ useEffect(() => {
       <CTable bordered className="pink-table">
         <CTableHead>
           <CTableRow>
+            <CTableHeaderCell>S.No</CTableHeaderCell>
             <CTableHeaderCell>Name</CTableHeaderCell>
-            <CTableHeaderCell>Sessions</CTableHeaderCell>
-            <CTableHeaderCell>Price</CTableHeaderCell>
-            <CTableHeaderCell>Validity</CTableHeaderCell>
+            <CTableHeaderCell>Program Price</CTableHeaderCell>
+            <CTableHeaderCell>Discount %</CTableHeaderCell>
+            <CTableHeaderCell>Discounted Price</CTableHeaderCell>
+            <CTableHeaderCell>Final Price <br/> <small>(include all Tax)</small></CTableHeaderCell>
             <CTableHeaderCell className="text-center">
               Actions
             </CTableHeaderCell>
@@ -146,12 +149,14 @@ useEffect(() => {
         </CTableHead>
 
         <CTableBody>
-          {packages.map((pkg) => (
+          {packages.map((pkg,index) => (
             <CTableRow key={pkg.id}>
+              <CTableDataCell>{index+1}</CTableDataCell>
               <CTableDataCell>{pkg.packageName}</CTableDataCell>
-              <CTableDataCell>{pkg.therapies[0]?.sessions || 'N/A'}</CTableDataCell>
-              <CTableDataCell>₹{pkg.packagePrice}</CTableDataCell>
-              <CTableDataCell>{pkg.validity} days</CTableDataCell>
+              <CTableDataCell>₹ {pkg.packagePrice}</CTableDataCell>
+              <CTableDataCell>₹ {pkg.discount || 'N/A'}</CTableDataCell>
+              <CTableDataCell>₹ {pkg.afterDiscountPrice}</CTableDataCell>
+              <CTableDataCell>₹ {pkg.finalPrice}</CTableDataCell>
 
               <CTableDataCell className="text-center">
                 <div className="d-flex justify-content-center gap-2">
@@ -199,7 +204,9 @@ useEffect(() => {
       </CTable>
 
       {/* MODAL */}
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} size="lg" backdrop="static">
+      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} size="lg" backdrop="static" className='custom-modal'>
+        {/* <CModalTitle>{viewMode ? 'Personal Information' : 'Add / Edit Receptionist'}</CModalTitle> */}
+       
         <CModalHeader>
           {viewMode
             ? 'Program Details'
@@ -217,7 +224,7 @@ useEffect(() => {
   <h6>Basic Information</h6>
   <CRow>
     <CCol md={6}>
-      <Field label="Package Name" value={selectedPackage?.packageName} />
+      <Field label="Program Name" value={selectedPackage?.packageName} />
     </CCol>
   </CRow>
 
@@ -298,6 +305,7 @@ useEffect(() => {
               onSave={handleSave}
               viewMode={false}
               therapyOptions={therapyOptions} 
+              onCancel={false}
             />
           )}
         </CModalBody>

@@ -25,7 +25,7 @@ import Slider from 'react-slick'
 import { getStyle } from '@coreui/utils'
 import { CChartLine } from '@coreui/react-chartjs'
 import CIcon from '@coreui/icons-react'
-import { cilOptions } from '@coreui/icons'
+import { cilArrowRight, cilOptions } from '@coreui/icons'
 import 'slick-carousel/slick/slick.css'
 import 'slick-carousel/slick/slick-theme.css'
 import axios from 'axios'
@@ -412,144 +412,229 @@ const fetchPatients = useCallback(async (clinicId) => {
     <>
       {/*to display cards*/}
       <CRow className={props.className} xs={{ gutter: 4 }}>
-        <CCol sm={6} xl={4}>
-          <CWidgetStatsA
-            color="info"
-            value={totalAppointmentsCount}
-            title="Total Appointments"
-            action={
-              <CDropdown alignment="end">
-                <CDropdownToggle color="transparent" caret={false} className="p-0">
-                  <CIcon icon={cilOptions} className="text-high-emphasis-inverse" />
-                </CDropdownToggle>
-                <CDropdownMenu>
-                  <CDropdownItem onClick={() => navigate('/appointment-management')}>
-                    View All Appointments
-                  </CDropdownItem>{' '}
-                  {/* Link to your appointments page */}
-                  <CDropdownItem>Export</CDropdownItem>
-                </CDropdownMenu>
-              </CDropdown>
-            }
-            chart={
-              <CChartLine
-                ref={widgetChartRef1}
-                className="mt-3 mx-3"
-                style={{ height: '70px' }}
-                data={{
-                  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                  datasets: [
-                    {
-                      label: 'Appointments',
-                      backgroundColor: 'transparent',
-                      borderColor: 'rgba(255,255,255,.55)',
-                      pointBackgroundColor: getStyle('--cui-primary'),
-                      data: [30, 50, 40, 60, 55, 65, 70],
-                    },
-                  ],
-                }}
-                options={{
-                  plugins: { legend: { display: false } },
-                  maintainAspectRatio: false,
-                  scales: { x: { display: false }, y: { display: false } },
-                  elements: { line: { tension: 0.4 }, point: { radius: 0 } },
-                }}
-              />
-            }
-          />
-        </CCol>
+         {/* <CCol sm={6} xl={3}>
+          <CCard>
+            <CCardBody style={{ textAlign: "center" }}>
+              <h5>🏥Chiselon Clinic Management System</h5>
 
-        <CCol sm={6} xl={4}>
+              <p style={{ margin: "5px 0" }}>
+                Developed by <strong>ss</strong>
+              </p>
+
+              <p style={{ margin: "5px 0" }}>
+                Company: <strong>BP Tech Solutions</strong>
+              </p>
+
+              <p style={{ margin: "5px 0" }}>
+                📧 support@bptech.com | 📞 +91 9876543210
+              </p>
+
+              <small style={{ color: "gray" }}>
+                © 2026 All Rights Reserved
+              </small>
+            </CCardBody>
+          </CCard>
+        </CCol> */}
+    <CCol sm={6} xl={4}>
+
+<CCard
+      onClick={() => navigate("/appointment-management")}
+      style={{
+        cursor: "pointer",
+        border: "1px solid #var(--color-black)",
+        borderRadius: "14px",
+        backgroundColor: "#ffffff",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        transition: "all 0.2s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-2px)"
+        e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)"
+        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
+      }}
+    >
+      <CCardBody
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "14px 18px",
+        }}
+      >
+        {/* 🔹 Left Side (Count + Text) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", }}>
+          
+          {/* 🔵 Rounded Count */}
+          <div
+            style={{
+              width: "42px",
+              height: "42px",
+              borderRadius: "50%",
+              backgroundColor: "#e7f1ff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: "bold",
+              color: "var(--color-black)",
+              fontSize: "16px",
+            }}
+          >
+            {totalAppointmentsCount}
+          </div>
+
+          {/* 📝 Text */}
+          <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
+           Total Appointments
+          </div>
+        </div>
+
+        {/* ➡️ Arrow */}
+        <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
+      </CCardBody>
+    </CCard>
+
+    
+    </CCol>
+
+       <CCol sm={6} xl={4}>
+
+
+<CCard
+      onClick={() => navigate("/patient-management")}
+      style={{
+        cursor: "pointer",
+       border: "1px solid #var(--color-black)",
+        borderRadius: "14px",
+        backgroundColor: "#ffffff",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        transition: "all 0.2s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-2px)"
+        e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)"
+        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
+      }}
+    >
+      <CCardBody
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "14px 18px",
+        }}
+      >
+        {/* 🔹 Left Side (Count + Text) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          
+          {/* 🔵 Rounded Count */}
+          <div
+            style={{
+              width: "42px",
+              height: "42px",
+              borderRadius: "50%",
+              backgroundColor: "#e7f1ff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: "bold",
+                            color: "var(--color-black)",
+
+              fontSize: "16px",
+            }}
+          >
+            {totalPatientsCount}
+          </div>
+
+          {/* 📝 Text */}
+          <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
+            Total Patients
+          </div>
+        </div>
+
+        {/* ➡️ Arrow */}
+        <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
+      </CCardBody>
+    </CCard>
+
+     
+    </CCol>
+
+        {/* <CCol sm={6} xl={4}>
           <CWidgetStatsA
             color="success"
             value={totalPatientsCount}
             title="Total Patients"
-            action={
-              <CDropdown alignment="end">
-                <CDropdownToggle color="transparent" caret={false} className="p-0">
-                  <CIcon icon={cilOptions} className="text-high-emphasis-inverse" />
-                </CDropdownToggle>
-                <CDropdownMenu>
-                  <CDropdownItem onClick={() => navigate('/patient-management')}>
-                    View All Patients
-                  </CDropdownItem>{' '}
-                  <CDropdownItem>Export</CDropdownItem>
-                </CDropdownMenu>
-              </CDropdown>
-            }
-            chart={
-              <CChartLine
-                ref={widgetChartRef2}
-                className="mt-3 mx-3"
-                style={{ height: '70px' }}
-                data={{
-                  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                  datasets: [
-                    {
-                      label: 'Patients',
-                      backgroundColor: 'transparent',
-                      borderColor: 'rgba(255,255,255,.55)',
-                      pointBackgroundColor: getStyle('--cui-success'),
-                       data: [100, 150, 130, 180, 170, 190, 200],
-                    },
-                  ],
-                }}
-                options={{
-                  plugins: { legend: { display: false } },
-                  maintainAspectRatio: false,
-                  scales: { x: { display: false }, y: { display: false } },
-                  elements: { line: { tension: 0.4 }, point: { radius: 0 } },
-                }}
-              />
-            }
-          />
-        </CCol>
 
-        <CCol sm={6} xl={4}>
-          <CWidgetStatsA
-            color="warning"
-            value={totalDoctorsCount}
-            title="Total Doctors"
-            action={
-              <CDropdown alignment="end">
-                <CDropdownToggle color="transparent" caret={false} className="p-0">
-                  <CIcon icon={cilOptions} className="text-high-emphasis-inverse" />
-                </CDropdownToggle>
-                <CDropdownMenu>
-                  <CDropdownItem onClick={() => navigate('/employee-management/doctor')}>
-                    View All Doctors
-                  </CDropdownItem>{' '}
-                  <CDropdownItem>Export</CDropdownItem>
-                </CDropdownMenu>
-              </CDropdown>
-            }
-            chart={
-              <CChartLine
-                ref={widgetChartRef3}
-                className="mt-3 mx-3"
-                style={{ height: '70px' }}
-                data={{
-                  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                  datasets: [
-                    {
-                      label: 'Doctors',
-                      backgroundColor: 'transparent',
-                      borderColor: 'rgba(255,255,255,.55)',
-                      pointBackgroundColor: getStyle('--cui-warning'),
-                      data: [10, 12, 13, 15, 14, 16, 17],
-                    },
-                  ],
-                }}
-                options={{
-                  plugins: { legend: { display: false } },
-                  maintainAspectRatio: false,
-                  scales: { x: { display: false }, y: { display: false } },
-                  elements: { line: { tension: 0.4 }, point: { radius: 0 } },
-                }}
-              />
-            }
           />
-        </CCol>
+        </CCol> */}
+            <CCol sm={6} xl={4}>
+   <CCard
+      onClick={() => navigate("/employee-management/doctor")}
+      style={{
+        cursor: "pointer",
+       border: "1px solid #var(--color-black)",
+        borderRadius: "14px",
+        backgroundColor: "#ffffff",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        transition: "all 0.2s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-2px)"
+        e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)"
+        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
+      }}
+    >
+      <CCardBody
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "14px 18px",
+        }}
+      >
+        {/* 🔹 Left Side (Count + Text) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          
+          {/* 🔵 Rounded Count */}
+          <div
+            style={{
+              width: "42px",
+              height: "42px",
+              borderRadius: "50%",
+              backgroundColor: "#e7f1ff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: "bold",
+                           color: "var(--color-black)",
+
+              fontSize: "16px",
+            }}
+          >
+            {totalDoctorsCount}
+          </div>
+
+          {/* 📝 Text */}
+          <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
+            Total Doctors
+          </div>
+        </div>
+
+        {/* ➡️ Arrow */}
+        <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
+      </CCardBody>
+    </CCard>
+    </CCol>
+ 
       </CRow>
 
       {/* Carousel Section */}

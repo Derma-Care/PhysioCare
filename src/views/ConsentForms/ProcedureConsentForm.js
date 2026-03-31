@@ -521,7 +521,7 @@ const ProcedureConsentForm = () => {
                 setEditIndex(null)
               }}
             >
-              + Add Procedure Form
+              + Add Therapy Form
             </CButton>
           </div>
           // <CButton
@@ -785,7 +785,7 @@ const ProcedureConsentForm = () => {
         )}
         {procedureForms.length > 0 && (
           <>
-            <h6>Saved Procedure Forms</h6>
+            <h6>Saved Therapy Forms</h6>
             <CAccordion>
               {currentForms.map((form, i) => (
                 <>
