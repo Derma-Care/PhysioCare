@@ -184,7 +184,7 @@ console.log(selected)
   <CCol md={3} className="d-flex">
     <CCard color="primary" textColor="white" className="w-100 h-100">
       <CCardBody className="d-flex flex-column justify-content-center text-center">
-        <h6>Today Assigned</h6>
+        <h6>Today's Appointments</h6>
         {/* <h2>{stats.todayPatientCount || 0 }</h2> */}
         <h2>{records.length || 0 }</h2>
         <small>{stats.todayWorkingMinutes || 0} min</small>
@@ -195,7 +195,7 @@ console.log(selected)
   <CCol md={3} className="d-flex">
     <CCard color="success" textColor="white" className="w-100 h-100">
       <CCardBody className="d-flex flex-column justify-content-center text-center">
-        <h6>Week Assigned</h6>
+        <h6>Weekly Appointments</h6>
         <h2>{stats.weeklyPatientCount || 0}</h2>
         <small>{stats.weeklyWorkingMinutes || 0} min</small>
       </CCardBody>
@@ -205,7 +205,7 @@ console.log(selected)
   <CCol md={3} className="d-flex">
     <CCard color="warning" textColor="white" className="w-100 h-100">
       <CCardBody className="d-flex flex-column justify-content-center text-center">
-        <h6>Month Assigned</h6>
+        <h6>Monthly Appointments</h6>
         <h2>{stats.monthlyPatientCount || 0}</h2>
         <small>{stats.monthlyWorkingMinutes || 0} min</small>
       </CCardBody>
