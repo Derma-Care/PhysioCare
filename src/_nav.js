@@ -159,6 +159,13 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
     },
+     {
+      component: CNavItem,
+      to: '/analytics',
+      name: 'Analytics',
+      as: NavLink,
+      icon: <CIcon icon={cilLightbulb} customClassName="nav-icon" />,
+    },
     {
       component: CNavItem,
       to: '/help',
@@ -166,6 +173,9 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilLightbulb} customClassName="nav-icon" />,
     },
+
+
+   
   ]
 
   // Only include items if permission exists

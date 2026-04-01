@@ -89,7 +89,11 @@ const SessionList = React.lazy(() => import('./views/EmployeeManagement/Therapis
 const TherapistDashboard = React.lazy(() => import('./views/EmployeeManagement/Therapist/TherapistDashboard'))
 const TherapistDetails = React.lazy(() => import('./views/EmployeeManagement/Therapist/TherapistDetails'))
 const ExerciseTable = React.lazy(() => import('./views/EmployeeManagement/Therapist/TherapyExercise'))
+const RevenueTable = React.lazy(() => import('./views/Analytics/Analytics'))
+const ExpenseForm = React.lazy(() => import('./views/Analytics/ExpenseForm'))
  
+
+
 const routes = [
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
   { path: '/employee-management/doctor', name: 'Doctors', element: Doctors },
@@ -193,7 +197,9 @@ const routes = [
   { path: "/session-list", element: SessionList },
   { path: "/therapist", element: TherapistDashboard },
   {path:"/therapist-details" , element:TherapistDetails },
-  {path:"/exercises" , element:ExerciseTable }
+  {path:"/exercises" , element:ExerciseTable },
+  {path:"/analytics" , element:RevenueTable },
+  {path:"/expenses" , element:ExpenseForm }
 
 
   // { path: "/attendance", element: AttendanceMenu },
