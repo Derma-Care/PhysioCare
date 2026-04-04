@@ -29,6 +29,7 @@ import { useHospital } from '../Usecontext/HospitalContext'
 import { GetProcedureFormData } from '../ConsentForms/ConsentFormsAPI'
 import ConsentFormHandler from '../ConsentForms/ConsentFormHandler'
 import { showCustomToast } from '../../Utils/Toaster'
+import PaymentAccordion from './PaymentProgram'
 
 const AppointmentDetails = () => {
   const { id } = useParams()
@@ -38,8 +39,8 @@ const AppointmentDetails = () => {
   const [doctor, setDoctor] = useState(null)
   const [vitals, setVitals] = useState(null)
   const [showModal, setShowModal] = useState(false)
-    const [loading, setLoading] = useState(false)
-  
+  const [loading, setLoading] = useState(false)
+
   const [formData, setFormData] = useState({
     height: '',
     weight: '',
@@ -121,7 +122,7 @@ const AppointmentDetails = () => {
     } catch (error) {
       console.error('Error fetching vitals:', error)
     }
-    
+
   }
 
   // Handle vitals form input
@@ -168,7 +169,7 @@ const AppointmentDetails = () => {
 
   const handleSubmitVitals = async () => {
     if (!validateVitals()) {
-      showCustomToast('Please fix validation errors before submitting.','error')
+      showCustomToast('Please fix validation errors before submitting.', 'error')
       return
     }
     console.log('Submitting vitals data:', formData)
@@ -184,7 +185,7 @@ const AppointmentDetails = () => {
     } catch (error) {
       // showCustomToast('Failed to add vitals','error')
     }
-    finally{
+    finally {
       setLoading(false)
     }
   }
@@ -405,7 +406,7 @@ const AppointmentDetails = () => {
               <CFormInput
                 label="Height"
                 name="height"
-                 placeholder="Enter height (e.g., 170 cm)"
+                placeholder="Enter height (e.g., 170 cm)"
                 value={formData.height}
                 onChange={handleChange}
                 className="mb-2"
@@ -417,7 +418,7 @@ const AppointmentDetails = () => {
               <CFormInput
                 label="Weight"
                 name="weight"
-                 placeholder="Enter weight (e.g., 65 kg)"
+                placeholder="Enter weight (e.g., 65 kg)"
                 value={formData.weight}
                 onChange={handleChange}
                 className="mb-2"
@@ -429,7 +430,7 @@ const AppointmentDetails = () => {
               <CFormInput
                 label="Blood Pressure"
                 name="bloodPressure"
-                  placeholder="Enter BP (e.g., 120/80 mmHg)"
+                placeholder="Enter BP (e.g., 120/80 mmHg)"
                 value={formData.bloodPressure}
                 onChange={handleChange}
                 className="mb-2"
@@ -441,7 +442,7 @@ const AppointmentDetails = () => {
               <CFormInput
                 label="Temperature"
                 name="temperature"
-                 placeholder="Enter temperature (e.g., 98.6 °F)"
+                placeholder="Enter temperature (e.g., 98.6 °F)"
                 value={formData.temperature}
                 onChange={handleChange}
                 className="mb-2"
@@ -453,7 +454,7 @@ const AppointmentDetails = () => {
               <CFormInput
                 label="BMI"
                 name="bmi"
-                 placeholder="Enter BMI (e.g., 22.5)"
+                placeholder="Enter BMI (e.g., 22.5)"
                 value={formData.bmi}
                 onChange={handleChange}
                 className="mb-2"
@@ -468,23 +469,23 @@ const AppointmentDetails = () => {
             <CButton color="secondary" onClick={() => setShowModal(false)}>
               Close
             </CButton>
-          <CButton
-  style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
-  onClick={handleSubmitVitals}
-  disabled={loading} // disable while loading
->
-  {loading ? (
-    <>
-      <span
-        className="spinner-border spinner-border-sm me-2 text-white"
-        role="status"
-      />
-      Saving...
-    </>
-  ) : (
-    'Save'
-  )}
-</CButton>
+            <CButton
+              style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+              onClick={handleSubmitVitals}
+              disabled={loading} // disable while loading
+            >
+              {loading ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2 text-white"
+                    role="status"
+                  />
+                  Saving...
+                </>
+              ) : (
+                'Save'
+              )}
+            </CButton>
 
           </CModalFooter>
         </CModal>
@@ -598,6 +599,8 @@ const AppointmentDetails = () => {
           </div>
         )}
 
+        <PaymentAccordion />
+
         {showConfirmedOrCompleted && doctor && (
           <>
             <div className="mt-4">
@@ -673,7 +676,7 @@ const AppointmentDetails = () => {
                             <small style={{ color: 'GrayText' }}>{appointment?.serviceDate}</small>
                           </div>
 
-                        <div className="d-flex gap-2 ">
+                          <div className="d-flex gap-2 ">
                             <CButton
                               style={{
                                 color: 'var(--color-black)',
@@ -783,7 +786,7 @@ const AppointmentDetails = () => {
                     })
                   }
                 >
-                    View Details
+                  View Details
                 </CButton>
               </div>
             </div>

@@ -12,7 +12,9 @@ import {
   CSpinner,
 } from "@coreui/react";
 import axios from "axios";
-import { getQuestionsByKey } from "../EmployeeManagement/Therapist/therapistApi";
+import { getQuestionsByKey } from "../EmployeeManagement/Therapist/TheraphyApi";
+ 
+ 
 
 // import { questionsByPart } from "./questions";
 

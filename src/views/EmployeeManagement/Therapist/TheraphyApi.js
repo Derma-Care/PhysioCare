@@ -2,8 +2,8 @@
 
 import axios from "axios"
 import { BASE_URL, wifiUrl } from "../../../baseUrl"
- 
- 
+
+
 
 
 
@@ -27,7 +27,7 @@ export const createTherapyExercise = async (data) => {
 export const getTherapyExercise = async (
   clinicId,
   branchId,
-  
+
 ) => {
   try {
     const res = await axios.get(
@@ -124,7 +124,7 @@ export const createTherapyNotes = async (data) => {
   }
 }
 
- 
+
 
 // ✅ DASHBOARD API
 export const getDashboard = async (clinicId, branchId, therapistId) => {
@@ -139,7 +139,7 @@ export const getDashboard = async (clinicId, branchId, therapistId) => {
   }
 }
 
- 
+
 
 export const getSessionDetails = async (clinicId, branchId, therapistId, sessionId) => {
   try {
@@ -152,3 +152,39 @@ export const getSessionDetails = async (clinicId, branchId, therapistId, session
     return null
   }
 }
+
+export const getQuestionsByKey = async (parts) => {
+  console.log("parts", parts);
+  try {
+    const res = await axios.post(
+      `${wifiUrl}/api/customer/physiotherapy/questions/getByKey`,
+      {
+        keys: parts
+      }
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+
+
+// GET exercises
+export const getExercises = (clinicId, branchId) => axios.get(`${BASE_URL}/getBytherapyExercisesClinicIdAndBranchId/${clinicId}/${branchId}`)
+
+// GET therapies
+export const getTherapies = () => axios.get(`${BASE_URL}/therapies`)
+
+// ADD
+export const addTherapy = (data) =>
+  axios.post(`${BASE_URL}/therapies`, data)
+
+// UPDATE
+export const updateTherapy = (id, data) =>
+  axios.put(`${BASE_URL}/therapies/${id}`, data)
+
+// DELETE
+export const deleteTherapy = (id) =>
+  axios.delete(`${BASE_URL}/therapies/${id}`)

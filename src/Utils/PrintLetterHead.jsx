@@ -102,8 +102,9 @@ const{selectedHospital} = useHospital()
 .print-letter {
   width: 100%;
   display: block;
-  padding-bottom: 80px; /* space for footer */
+  padding-bottom: 40px; /* space for footer */
 }
+
 
 .letter-header {
   display: flex;

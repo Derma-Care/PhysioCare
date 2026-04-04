@@ -35,10 +35,9 @@ import { getExercises } from "../EmployeeManagement/Therapist/TheraphyApi"
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { useHospital } from "../Usecontext/HospitalContext"
 import { Edit2, Eye, Trash2 } from "lucide-react"
-import { addTherapy, deleteTherapy, getTherapiesService, updateTherapy } from "./TherapyServiceApi"
 
 
-export default function TherapyManagement() {
+export default function Programs() {
   const [list, setList] = useState([])
   const [exerciseOptions, setExerciseOptions] = useState([])
   const [modal, setModal] = useState(false)
@@ -49,7 +48,6 @@ export default function TherapyManagement() {
   const [form, setForm] = useState({
     therapyName: "",
     exercisesIds: [],
-    exercises: [],
     consentType: "",
   })
 
@@ -62,9 +60,8 @@ export default function TherapyManagement() {
   }, [])
 
   const fetchData = async () => {
-    const res = await getTherapiesService(localStorage.getItem("HospitalId"), localStorage.getItem("branchId"))
-    console.log("Therapies", res.data)
-    setList(res?.data?.data || [])
+    const res = await GetSubServices_ByClinicId(localStorage.getItem("HospitalId"))
+    setList(res || [])
   }
 
   const handleCancelDelete = () => {
@@ -104,18 +101,15 @@ export default function TherapyManagement() {
     if (!validate()) return
 
     const payload = {
-      clinicId: localStorage.getItem("HospitalId"),
-      branchId: localStorage.getItem("branchId"),
       therapyName: form.therapyName,
-      exerciseIds: form.exercisesIds,
-
+      exercisesIds: form.exercisesIds,
       consentType: form.consentType,
     }
 
     if (editId) {
-      await updateTherapy(editId, payload)
+      await updateServiceData(editId, payload)
     } else {
-      await addTherapy(payload)
+      await postServiceData(payload)
     }
 
     resetForm()
@@ -128,7 +122,7 @@ export default function TherapyManagement() {
     const hospitalId = localStorage.getItem('HospitalId')
     try {
       setDelLoading(true)
-      const result = await deleteTherapy(serviceIdToDelete, hospitalId)
+      const result = await deleteServiceData(serviceIdToDelete, hospitalId)
       console.log('Service deleted:', result)
       showCustomToast('Procedure deleted successfully!', { position: 'top-right' }, 'success')
 
@@ -143,12 +137,11 @@ export default function TherapyManagement() {
 
   // ---------------- EDIT ----------------
   const handleEdit = (item) => {
-    console.log("Edit Item", item)
     setEditId(item.id)
     setForm({
       therapyName: item.therapyName,
       exercises: exerciseOptions.filter((opt) =>
-        (item.exercises || []).includes(opt.value)
+        item.exercises.includes(opt.value)
       ),
       consentType: item.consentType,
     })
@@ -181,27 +174,27 @@ export default function TherapyManagement() {
 
       <div>
         <CForm className="d-flex justify-content-end mb-3">
-          {can('Therapy Management', 'create') && (
-            <div
-              className=" w-100"
+          {/* {can('Therapy Management', 'create') && ( */}
+          <div
+            className=" w-100"
+            style={{
+              display: 'flex',
+              justifyContent: 'end',
+              alignContent: 'end',
+              alignItems: 'end',
+            }}
+          >
+            <CButton
               style={{
-                display: 'flex',
-                justifyContent: 'end',
-                alignContent: 'end',
-                alignItems: 'end',
+                color: 'var(--color-black)',
+                backgroundColor: 'var(--color-bgcolor)',
               }}
+              onClick={() => setModal(true)}
             >
-              <CButton
-                style={{
-                  color: 'var(--color-black)',
-                  backgroundColor: 'var(--color-bgcolor)',
-                }}
-                onClick={() => setModal(true)}
-              >
-                Add Therapy
-              </CButton>
-            </div>
-          )}
+              Add Programs
+            </CButton>
+          </div>
+          {/* )} */}
         </CForm>
       </div>
       {/* TABLE */}
@@ -210,8 +203,8 @@ export default function TherapyManagement() {
           <CTableRow>
             <CTableHeaderCell>S.No</CTableHeaderCell>
             <CTableHeaderCell>Therapy Name</CTableHeaderCell>
-            <CTableHeaderCell>No.Of Exercises</CTableHeaderCell>
-            <CTableHeaderCell>Consent</CTableHeaderCell>
+            <CTableHeaderCell>No.Of Therapy</CTableHeaderCell>
+            {/* <CTableHeaderCell>Consent</CTableHeaderCell> */}
             <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
@@ -220,39 +213,39 @@ export default function TherapyManagement() {
             <CTableRow key={item.id}>
               <CTableDataCell>{index + 1}</CTableDataCell>
               <CTableDataCell>{item.therapyName}</CTableDataCell>
-              <CTableDataCell>{item.noExerciseIdCount}</CTableDataCell>
-              <CTableDataCell>{item.consentType}</CTableDataCell>
+              <CTableDataCell>5</CTableDataCell>
+              {/* <CTableDataCell>{item.consentType}</CTableDataCell> */}
               <CTableDataCell className="text-end">
                 <div className="d-flex justify-content-end gap-2  ">
-                  {can('Therapy Management', 'read') && (
-                    <button
-                      className="actionBtn"
-                      onClick={() => setViewService(item)}
-                      title="View"
-                    >
-                      <Eye size={18} />
-                    </button>
-                  )}
-                  {can('Therapy Management', 'update') && (
-                    <button
-                      className="actionBtn"
-                      onClick={() => handleEdit(item)}
-                      title="Edit"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                  )}
+                  {/* {can('Therapy programs', 'read') && ( */}
+                  <button
+                    className="actionBtn"
+                    onClick={() => setViewService(item)}
+                    title="View"
+                  >
+                    <Eye size={18} />
+                  </button>
+                  {/* )}
+                  {can('Therapy programs', 'update') && ( */}
+                  <button
+                    className="actionBtn"
+                    onClick={() => handleEdit(item)}
+                    title="Edit"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                  {/* )}
 
-                  {can('Therapy Management', 'delete') && (
-                    <button
-                      className="actionBtn"
+                  {can('Therapy programs', 'delete') && ( */}
+                  <button
+                    className="actionBtn"
 
-                      onClick={() => handleServiceDelete(item.id)}
-                      title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
+                    onClick={() => handleServiceDelete(item.id)}
+                    title="Delete"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                  {/* )} */}
                   <ConfirmationModal
                     isVisible={isModalVisible}
                     title="Delete Procedure"
@@ -296,9 +289,9 @@ export default function TherapyManagement() {
       </CTable>
 
       {/* MODAL */}
-      <CModal visible={modal} onClose={resetForm} className="custom-modal" backdrop="static">
+      <CModal visible={modal} onClose={resetForm} className="custom-modal" backdrop="static" size="lg">
         <CModalHeader>
-          <CModalTitle>{editId ? "Edit" : "Add"} Therapy</CModalTitle>
+          <CModalTitle>{editId ? "Edit" : "Add"} Programs</CModalTitle>
         </CModalHeader>
 
         <CModalBody>
@@ -308,7 +301,7 @@ export default function TherapyManagement() {
               {/* Therapy Name */}
               <CCol md={12}>
                 <CFormInput
-                  placeholder="Therapy Name"
+                  placeholder="Programs Name"
                   value={form.therapyName}
                   onChange={(e) =>
                     setForm({ ...form, therapyName: e.target.value })
@@ -328,13 +321,9 @@ export default function TherapyManagement() {
                   isMulti
                   isSearchable
                   value={form.exercises}
-                  onChange={(val) => {
-                    setForm({
-                      ...form,
-                      exercises: val, // UI
-                      exercisesIds: val ? val.map((v) => String(v.value)) : [], // API
-                    })
-                  }}
+                  onChange={(val) =>
+                    setForm({ ...form, exercises: val })
+                  }
                 />
                 {errors.exercises && (
                   <CFormText className="text-danger">
@@ -344,7 +333,7 @@ export default function TherapyManagement() {
               </CCol>
 
               {/* Consent */}
-              <CCol md={12} className="mt-3">
+              {/* <CCol md={12} className="mt-3">
                 <CFormSelect
                   value={form.consentType}
                   onChange={(e) =>
@@ -360,7 +349,7 @@ export default function TherapyManagement() {
                     {errors.consentType}
                   </CFormText>
                 )}
-              </CCol>
+              </CCol> */}
 
             </CRow>
 

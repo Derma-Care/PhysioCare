@@ -47,7 +47,7 @@ import BookingSearch from '../widgets/BookingSearch '
 import LoadingIndicator from '../../Utils/loader'
 import { postBooking } from '../../APIs/BookServiceAPi'
 
-import { DoctorData } from '../Doctors/DoctorAPI'
+
 import { addCustomer } from '../customerManagement/CustomerManagementAPI'
 import { showCustomToast } from '../../Utils/Toaster'
 import imageCompression from 'browser-image-compression'
@@ -60,7 +60,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const [appointmentType, setAppointmentType] = useState('services') // services / inclinic / online
   const [patientSearch, setPatientSearch] = useState('')
   const [selectedPatient, setSelectedPatient] = useState(null)
-  const [doctorData, setDoctorData] = useState([]) // initialize as empty array
+
   const [slotsForSelectedDate, setSlotsForSelectedDate] = useState([])
   const [selectedSlots, setSelectedSlots] = useState([])
   const [selectedDate, setSelectedDate] = useState('')
@@ -70,19 +70,19 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const navigate = useNavigate()
   const [slots, setSlots] = useState([])
   const [referDoctor, setReferDoctor] = useState([])
-  const[loading,setLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [mvisible, setMVisible] = useState(false)
   const [part, setPart] = useState([])
- const [theraphyQuestions, setTheraphyQuestions] = useState({});
+  const [theraphyQuestions, setTheraphyQuestions] = useState({});
   const [markedImage, setMarkedImage] = useState('')
 
   const [showAllSlots, setShowAllSlots] = useState(false)
   const [subServiceInfo, setSubServiceInfo] = useState(null)
   const [selectedSubServiceInfo, setSelectedSubServiceInfo] = useState(null)
 
-  const { fetchHospital, selectedHospital } = useHospital()
+  const { fetchHospital, selectedHospital, fetchDoctors, doctorData } = useHospital()
   const [postOffices, setPostOffices] = useState([])
   const [selectedPO, setSelectedPO] = useState(null)
   const pincodeTimer = useRef(null)
@@ -146,7 +146,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     gender: '',
     symptomsDuration: '',
     problem: '',
-    foc: '',
+    foc: 'Paid',
     // parts:part,
 
     attachments: [],
@@ -157,7 +157,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
     serviceDate: '',
     servicetime: '',
-
+    referredByType: '',
+    referredByName: '',
     address: {
       houseNo: '',
       street: '',
@@ -174,52 +175,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
   const [errors, setErrors] = useState({})
 
-  // const handlePatientFollowupSearch = async () => {
-  //   if (!patientSearch.trim()) {
-  //     toast.error('Please enter a valid Patient ID / Name / Mobile')
-  //     alert('Please enter a valid Patient ID / Name / Mobile')
-  //     return
-  //   }
 
-  //   setSLoading(true)
-  //   try {
-  //     const res = await getInProgressfollowupBookings(patientSearch)
-  //     console.log(patientSearch)
-  //     setBookingData(res.data.data || [])
-  //     console.log(res.data.data)
-  //   } catch (err) {
-  //     console.error('Error fetching bookings:', err)
-  //     setBookingData([])
-  //   } finally {
-  //     setSLoading(false)
-  //   }
-  // }
-
-  //   const handlePatientSearch = async () => {
-  //   if (!patientSearch.trim()) {
-  //     toast.error('Please enter a valid Patient ID / Name / Mobile')
-  //     alert('Please enter a valid Patient ID / Name / Mobile')
-  //     return
-  //   }
-
-  //   setSLoading(true)
-  //   try {
-  //     const res = await getBookingsByPatientId(patientSearch)
-  //     console.log(patientSearch)
-  //     setBookingData(res.data.data || [])
-  //     console.log(res.data.data)
-  //   } catch (err) {
-  //     console.error('Error fetching bookings:', err)
-  //     setBookingData([])
-  //   } finally {
-  //     setSLoading(false)
-  //   }
-  // }
-
-  // const handleSelectBooking = (booking) => {
-  //   setSelectedBooking(booking)
-  //   setMVisible(true)
-  // }
 
   const formatDate = (date) => {
     if (!date) return null
@@ -227,20 +183,6 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     if (isNaN(d)) return null
     return d.toISOString().split('T')[0] // 'yyyy-mm-dd'
   }
-  // 'yyyy-mm-dd'
-
-  // useEffect(() => {
-  //   if (!patientSearch) return
-
-  //   getInProgressBookings(patientSearch)
-  //     .then((res) => {
-  //       setBookingData(res.data.data) // ✅ because response structure has { data: [...] }
-  //     })
-  //     .catch((err) => {
-  //       console.error('Error fetching bookings:', err)
-  //     })
-  //     .finally(() => setLoading(false))
-  // }, [patientSearch])
 
   // ✅ Fetch Categories
   useEffect(() => {
@@ -260,7 +202,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     fetchCategories()
   }, []) // fetch once on mount
 
-  // ✅ Fetch Services when Category changes
+
   useEffect(() => {
     if (!selectedCategory) {
       setServices([])
@@ -366,15 +308,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           }))
           setOriginalConsultationFee(subServiceInfo.consultationFee || 0)
         }
-        // setBookingDetails((prev) => ({
-        //   ...prev,
-        //   servicecost: subServiceInfo.price,
-        //   discountAmount: subServiceInfo.discountedCost || 0,
-        //   discountPercentage: subServiceInfo.discountPercentage || 0,
-        //   totalFee: subServiceInfo.finalCost, // Adjust formula as needed
-        // }))
 
-        // Optional: store the subservice info
       } catch (err) {
         console.error('Error fetching sub-service info:', err)
         setSubServices([])
@@ -455,50 +389,48 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   // ✅ Example: Fetch Doctors when Branch & SubService are chosen
   // ✅ Fetch Doctors when Branch & SubService are chosen
 
-  useEffect(() => {
-    fetchDoctors()
-  }, [appointmentType, bookingDetails.branchId, selectedSubService])
 
-  const fetchDoctors = async () => {
-    setLoadingDoctors(true)
 
-    try {
-      let doctorsList = []
+  // const fetchDoctors = async () => {
+  //   setLoadingDoctors(true)
 
-      if (appointmentType !== 'services') {
-        const clinicId = localStorage.getItem('HospitalId')
-        const branchId = localStorage.getItem('branchId')
+  //   try {
+  //     let doctorsList = []
 
-        if (!clinicId || !branchId) {
-          console.warn('Missing clinicId or branchId')
-          setDoctors([])
-          return
-        }
+  //     if (appointmentType !== 'services') {
+  //       const clinicId = localStorage.getItem('HospitalId')
+  //       const branchId = localStorage.getItem('branchId')
 
-        const response = await getDoctorByClinicIdData(clinicId, branchId)
+  //       if (!clinicId || !branchId) {
+  //         console.warn('Missing clinicId or branchId')
+  //         setDoctors([])
+  //         return
+  //       }
 
-        doctorsList = Array.isArray(response?.data) ? response.data : []
-      } else if (appointmentType === 'services' && bookingDetails.branchId && selectedSubService) {
-        const clinicId = localStorage.getItem('HospitalId')
-        const branchId = bookingDetails.branchId
-        const subServiceId = selectedSubService
+  //       const response = await getDoctorByClinicIdData(clinicId, branchId)
 
-        const url = `${BASE_URL}/doctors/${clinicId}/${branchId}/${subServiceId}`
-        const response = await axios.get(url)
+  //       doctorsList = Array.isArray(response?.data) ? response.data : []
+  //     } else if (appointmentType === 'services' && bookingDetails.branchId && selectedSubService) {
+  //       const clinicId = localStorage.getItem('HospitalId')
+  //       const branchId = bookingDetails.branchId
+  //       const subServiceId = selectedSubService
 
-        doctorsList = Array.isArray(response?.data?.data) ? response.data.data : []
-      } else {
-        doctorsList = []
-      }
+  //       const url = `${BASE_URL}/doctors/${clinicId}/${branchId}/${subServiceId}`
+  //       const response = await axios.get(url)
 
-      setDoctors(doctorsList)
-    } catch (err) {
-      console.error('Error fetching doctors:', err)
-      setDoctors([])
-    } finally {
-      setLoadingDoctors(false)
-    }
-  }
+  //       doctorsList = Array.isArray(response?.data?.data) ? response.data.data : []
+  //     } else {
+  //       doctorsList = []
+  //     }
+
+  //     setDoctors(doctorsList)
+  //   } catch (err) {
+  //     console.error('Error fetching doctors:', err)
+  //     setDoctors([])
+  //   } finally {
+  //     setLoadingDoctors(false)
+  //   }
+  // }
 
   const fetchSlots = async (doctorId) => {
     try {
@@ -546,44 +478,30 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   useEffect(() => {
     fetchRefferrDoctor()
   }, [])
-  const handleFeeTypeChange = async (e) => {
+  const handleFeeTypeChange = (e) => {
     const selectedType = e.target.value
-    const hospitalId = localStorage.getItem('HospitalId')
-    const { subServiceId, subServiceName, consultationType } = bookingDetails
 
-    try {
-      // 1 = FOC, 2 = Paid
-      const feeTypeCode = selectedType === 'FOC' ? 1 : 2
+    setBookingDetails((prev) => ({
+      ...prev,
+      foc: selectedType,
 
-      const url = `${BASE_URL}/calculateAmountByConsultationType/${hospitalId}/${subServiceId}/${subServiceName}/${feeTypeCode}`
-
-      const response = await axios.get(url, {
-        params: { feeType: feeTypeCode },
-      })
-
-      console.log('Fee API response:', response.data)
-
-      setBookingDetails((prev) => ({
-        ...prev,
-        foc: selectedType,
-        consultationFee: selectedType === 'FOC' ? 0 : response.data?.data?.consultationFee || 0,
-        totalFee: response.data?.data?.finalCost ?? 0,
-      }))
-    } catch (error) {
-      console.error('Error calculating fee amount:', error)
-    }
+      // ✅ FIX HERE
+      consultationFee:
+        selectedType === 'FOC'
+          ? 0
+          : originalConsultationFee || 0,
+    }))
   }
   useEffect(() => {
     if (
       bookingDetails.subServiceId &&
       bookingDetails.subServiceName &&
-      bookingDetails.consultationType
+      bookingDetails.consultationType &&
+      !bookingDetails.foc // ✅ only when not selected
     ) {
-      // Fetch the default Paid amount (feeType = 2)
-      handleFeeTypeChange('Paid', bookingDetails, setBookingDetails)
+      handleFeeTypeChange('Paid')
     }
   }, [bookingDetails.subServiceId, bookingDetails.subServiceName, bookingDetails.consultationType])
-
   // Watch for appointmentType changes and reset related fields
 
   // Fetch available slots for a doctor
@@ -1036,7 +954,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       else if (err.message?.includes('timeout'))
         showCustomToast('Request timed out. Please try again.', 'error')
       else showCustomToast('Failed to submit booking. Please try again.', 'error')
-    }finally{
+    } finally {
       setSaveLoading(false)
     }
   }
@@ -1047,6 +965,37 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       // Call your API for services appointment
     }
   }
+
+
+  useEffect(() => {
+    if (!bookingDetails.branchId) return
+
+    // ✅ Reset doctor + fee + slots
+    setBookingDetails((prev) => ({
+      ...prev,
+      doctorId: '',
+      doctorName: '',
+      doctorDeviceId: '',
+      consultationFee: 0,
+      servicetime: '',
+      serviceDate: '',
+    }))
+
+    // ✅ Reset slots UI
+    setSlotsForSelectedDate([])
+    setSelectedSlots([])
+    setSelectedDate('')
+
+    // ✅ Optional: clear errors
+    setErrors((prev) => ({
+      ...prev,
+      doctorName: '',
+      slot: '',
+    }))
+
+    console.log("Branch changed → Reset doctor, fee, slots")
+
+  }, [bookingDetails.branchId])
 
   const handleInClinicSubmit = () => {
     if (validate()) {
@@ -1086,19 +1035,34 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       // showCustomToast('Failed to submit follow-up booking', 'error')
     }
   }
-const parseAddress = (addressStr = "") => {
-  const parts = addressStr.split(",");
 
-  return {
-    houseNo: parts[0]?.trim() || "",
-    street: parts[1]?.trim() || "",
-    landmark: parts[2]?.trim() || "",
-    city: parts[3]?.trim() || "",
-    state: parts[4]?.trim() || "",
-    postalCode: parts[5]?.trim() || "",
-    country: parts[6]?.trim() || "India",
+  useEffect(() => {
+    if (!bookingDetails.branchId || !doctorData?.data) {
+      setDoctors([])
+      return
+    }
+
+    const filteredDoctors = doctorData.data.filter(
+      (doc) => doc.branchId === bookingDetails.branchId
+    )
+
+    console.log("Filtered Doctors:", filteredDoctors)
+
+    setDoctors(filteredDoctors)
+  }, [bookingDetails.branchId, doctorData])
+  const parseAddress = (addressStr = "") => {
+    const parts = addressStr.split(",");
+
+    return {
+      houseNo: parts[0]?.trim() || "",
+      street: parts[1]?.trim() || "",
+      landmark: parts[2]?.trim() || "",
+      city: parts[3]?.trim() || "",
+      state: parts[4]?.trim() || "",
+      postalCode: parts[5]?.trim() || "",
+      country: parts[6]?.trim() || "India",
+    };
   };
-};
   useEffect(() => {
     if (selectedBooking) {
       setBookingDetails((prev) => ({
@@ -1119,82 +1083,82 @@ const parseAddress = (addressStr = "") => {
   console.log(`appointmenttype ${appointmentType}`)
 
   // const [part, setPart] = useState("");
- const convertToBase64 = async (image) => {
-  try {
-    // ✅ already base64
-    if (typeof image === "string" && image.startsWith("data:image")) {
-      return image.split(",")[1]
+  const convertToBase64 = async (image) => {
+    try {
+      // ✅ already base64
+      if (typeof image === "string" && image.startsWith("data:image")) {
+        return image.split(",")[1]
+      }
+
+      // ✅ File / Blob
+      if (image instanceof File || image instanceof Blob) {
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.readAsDataURL(image)
+          reader.onloadend = () => resolve(reader.result.split(",")[1])
+          reader.onerror = reject
+        })
+      }
+
+      // ✅ URL / blob URL
+      if (typeof image === "string") {
+        const res = await fetch(image)
+        const blob = await res.blob()
+
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.readAsDataURL(blob)
+          reader.onloadend = () => resolve(reader.result.split(",")[1])
+          reader.onerror = reject
+        })
+      }
+
+      return ""
+    } catch (err) {
+      console.error("Base64 error:", err)
+      return ""
     }
-
-    // ✅ File / Blob
-    if (image instanceof File || image instanceof Blob) {
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.readAsDataURL(image)
-        reader.onloadend = () => resolve(reader.result.split(",")[1])
-        reader.onerror = reject
-      })
-    }
-
-    // ✅ URL / blob URL
-    if (typeof image === "string") {
-      const res = await fetch(image)
-      const blob = await res.blob()
-
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.readAsDataURL(blob)
-        reader.onloadend = () => resolve(reader.result.split(",")[1])
-        reader.onerror = reject
-      })
-    }
-
-    return ""
-  } catch (err) {
-    console.error("Base64 error:", err)
-    return ""
-  }
-}
-
-const handlePartClick = async (data) => {
-  console.log("RAW DATA:", data)
-
-  let actualData = data
-
-  // 🔥 unwrap if array
-  if (Array.isArray(data.answerData)) {
-    actualData = data.answerData[0]
   }
 
-  console.log("FIXED DATA:", actualData)
+  const handlePartClick = async (data) => {
+    console.log("RAW DATA:", data)
 
-  // ✅ Convert image to base64
-  let base64Image = ""
-  if (data.image) {
-    base64Image = await convertToBase64(data.image)
+    let actualData = data
+
+    // 🔥 unwrap if array
+    if (Array.isArray(data.answerData)) {
+      actualData = data.answerData[0]
+    }
+
+    console.log("FIXED DATA:", actualData)
+
+    // ✅ Convert image to base64
+    let base64Image = ""
+    if (data.image) {
+      base64Image = await convertToBase64(data.image)
+    }
+
+    setPart(actualData.parts || [])
+    setMarkedImage(base64Image) // ✅ now always base64
+    setTheraphyQuestions(actualData.answerData || {})
   }
 
-  setPart(actualData.parts || [])
-  setMarkedImage(base64Image) // ✅ now always base64
-  setTheraphyQuestions(actualData.answerData || {})
-}
+  // const handlePartClick = (data) => {
+  //   console.log("RAW DATA:", data);
 
-// const handlePartClick = (data) => {
-//   console.log("RAW DATA:", data);
+  //   let actualData = data;
 
-//   let actualData = data;
+  //   // 🔥 FIX: unwrap if array
+  //   if (Array.isArray(data.answerData)) {
+  //     actualData = data.answerData[0];
+  //   }
 
-//   // 🔥 FIX: unwrap if array
-//   if (Array.isArray(data.answerData)) {
-//     actualData = data.answerData[0];
-//   }
+  //   console.log("FIXED DATA:", actualData);
 
-//   console.log("FIXED DATA:", actualData);
-
-//   setPart(actualData.parts || []);
-//   setMarkedImage(data.image);
-//   setTheraphyQuestions(actualData.answerData || {});
-// };
+  //   setPart(actualData.parts || []);
+  //   setMarkedImage(data.image);
+  //   setTheraphyQuestions(actualData.answerData || {});
+  // };
   return (
     <COffcanvas
       placement="end"
@@ -1248,66 +1212,8 @@ const handlePartClick = async (data) => {
           </CCol>
         </CRow>
 
-        {/* SECTION: Appointment Type */}
-        {visitType !== 'followup' && (
-          <div>
-            <h6 className="mb-3 border-bottom pb-2">Appointment Type</h6>
-            <CRow className="mb-4">
-              <CCol md={6}>
-                <CFormCheck
-                  type="radio"
-                  label="Therapy"
-                  name="appointmentTypeRadio"
-                  value="services"
-                  checked={appointmentType === 'services'}
-                  onChange={(e) => {
-                    // handleAppointmentTypeChange(e.target.value)
-                    setAppointmentType('services')
-                    setBookingDetails((prev) => ({
-                      ...prev,
-                      consultationType: 'Services & Treatments',
-                    }))
-                  }}
-                />
-              </CCol>
-              <CCol md={6}>
-                <CFormCheck
-                  type="radio"
-                  label="In-Clinic"
-                  name="appointmentTypeRadio"
-                  value="inclinic"
-                  checked={appointmentType === 'inclinic'}
-                  onChange={(e) => {
-                    fetchDoctors()
-                    // handleAppointmentTypeChange(e.target.value)
-                    setAppointmentType('inclinic')
-                    setBookingDetails((prev) => ({
-                      ...prev,
-                      consultationType: 'In-Clinic Consultation',
-                    }))
-                  }}
-                />
-              </CCol>
-              {/* <CCol md={4}>
-                <CFormCheck
-                  type="radio"
-                  label="Online"
-                  name="appointmentTypeRadio"
-                  value="online"
-                  checked={appointmentType === 'Online Consultation'}
-                  onChange={(e) => {
-                    // handleAppointmentTypeChange(e.target.value)
-                    setAppointmentType('online')
-                    setBookingDetails((prev) => ({ ...prev, consultationType: 'online' }))
-                  }}
-                />
-              </CCol> */}
-            </CRow>
-            {errors.appointmentType && (
-              <div className="text-danger mb-3">{errors.appointmentType}</div>
-            )}
-          </div>
-        )}
+
+
 
         <BookingSearch
           visitType={visitType}
@@ -1524,177 +1430,17 @@ const handlePartClick = async (data) => {
             </div>
           )}
 
-          {/* 🔹 Show read-only data if patient selected */}
-          {/* {selectedBooking && (
-            <div>
-              <h6 className="mb-3 border-bottom pb-2">Patient Information</h6>
-              <p>
-                <strong>Name:</strong> {bookingDetails.name}
-              </p>
-              <p>
-                <strong>Patient ID:</strong> {bookingDetails.patientId}
-              </p>
-              <p>
-                <strong>DOB:</strong> {bookingDetails.dob}
-              </p>
-              <p>
-                <strong>Age:</strong> {bookingDetails.age}
-              </p>
-              <p>
-                <strong>Gender:</strong> {bookingDetails.gender}
-              </p>
-              <p>
-                <strong>Mobile:</strong> {bookingDetails.patientMobileNumber}
-              </p>
-              <p>
-                <strong>Address:</strong> {selectedBooking.patientAddress}
-              </p>
-            </div>
-          )} */}
+
+
         </div>
 
-        {/* SECTION: Services Selection */}
-        {visitType !== 'followup' && appointmentType.includes('service') && (
-          <>
-            <h6 className="mb-3 border-bottom pb-2">Select Service</h6>
-            <CRow className="mb-4">
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
-                  Category Name <span className="text-danger">*</span>
-                </CFormLabel>
-                <CFormSelect
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    const selectedId = e.target.value
-                    const selectedObj = categories.find((cat) => cat.categoryId === selectedId)
-
-                    setSelectedCategory(selectedId)
-
-                    setBookingDetails((prev) => ({
-                      ...prev,
-                      categoryId: selectedObj?.categoryId || '',
-                      categoryName: selectedObj?.categoryName || '',
-                    }))
-
-                    // Remove error when selected
-                    setErrors((prev) => ({ ...prev, selectedCategory: '' }))
-                  }}
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.categoryId} value={cat.categoryId}>
-                      {cat.categoryName}
-                    </option>
-                  ))}
-                </CFormSelect>
-
-                {errors.selectedCategory && (
-                  <div className="text-danger mt-1">{errors.selectedCategory}</div>
-                )}
-              </CCol>
-
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
-                  Service <span className="text-danger">*</span>
-                </CFormLabel>
-
-                <CFormSelect
-                  value={selectedService}
-                  onChange={(e) => {
-                    const selectedId = e.target.value
-                    const selectedObj = services.find((service) => service.serviceId === selectedId)
-
-                    console.log('Selected service:', selectedObj)
-
-                    setSelectedService(selectedId)
-
-                    // ✅ Update bookingDetails for backend
-                    setBookingDetails((prev) => ({
-                      ...prev,
-                      serviceId: selectedObj?.serviceId || '',
-                      servicename: selectedObj?.serviceName || '',
-                    }))
-
-                    // ✅ Optional: clear subservices when service changes
-                    setSelectedSubService('')
-                    setSubServices([])
-
-                    // ✅ Clear error when valid selection made
-                    setErrors((prev) => ({
-                      ...prev,
-                      selectedService: selectedId ? '' : 'Please select a service',
-                    }))
-                  }}
-                >
-                  <option value="">Select Service</option>
-                  {services.map((service) => (
-                    <option key={service.serviceId} value={service.serviceId}>
-                      {service.serviceName}
-                    </option>
-                  ))}
-                </CFormSelect>
-
-                {errors.selectedService && (
-                  <div className="text-danger mt-1">{errors.selectedService}</div>
-                )}
-              </CCol>
-
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
-                  Therapy Name <span className="text-danger">*</span>
-                </CFormLabel>
-                <CFormSelect
-                  value={selectedSubService}
-                  onChange={(e) => {
-                    const selectedId = e.target.value
-                    const selectedObj = subServices.find((sub) => sub.subServiceId === selectedId)
-
-                    setSelectedSubService(selectedId)
-
-                    // ✅ Update bookingDetails with sub-service info
-                    setBookingDetails((prev) => ({
-                      ...prev,
-                      subServiceId: selectedObj?.subServiceId || '',
-                      subServiceName: selectedObj?.subServiceName || '',
-                    }))
-
-                    // ✅ Real-time validation clearing / setting
-                    setErrors((prev) => ({
-                      ...prev,
-                      selectedSubService: selectedId ? '' : 'Please select a procedure name',
-                    }))
-                  }}
-                  disabled={!selectedService || !subServices || subServices.length === 0}
-                >
-                  <option value="">Select Sub-Service</option>
-                  {subServices && subServices.length > 0 ? (
-                    subServices.map((sub) => (
-                      <option key={sub.subServiceId} value={sub.subServiceId}>
-                        {sub.subServiceName}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="" disabled>
-                      No sub-services available
-                    </option>
-                  )}
-                </CFormSelect>
-
-                {/* ✅ Error message below */}
-                {errors.selectedSubService && (
-                  <div className="text-danger mt-1">{errors.selectedSubService}</div>
-                )}
-              </CCol>
-            </CRow>
-          </>
-        )}
 
         {/* SECTION: Patient & Booking Details */}
         {visitType !== 'followup' && (
           <div>
             <h6 className="mb-3 border-bottom pb-2">Patient & Booking Details</h6>
             <CRow className="mb-4">
-              <CCol md={4}>
+              <CCol md={6}>
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
                   Branch <span className="text-danger">*</span>
                 </CFormLabel>
@@ -1703,8 +1449,9 @@ const handlePartClick = async (data) => {
                   value={bookingDetails.branchId || ''}
                   onChange={(e) => {
                     const selectedBranch = branches.find(
-                      (branch) => branch.branchId === e.target.value,
+                      (branch) => branch.branchId === e.target.value
                     )
+
                     setBookingDetails((prev) => ({
                       ...prev,
                       branchId: selectedBranch?.branchId || '',
@@ -1727,7 +1474,7 @@ const handlePartClick = async (data) => {
                 {errors.branchname && <div className="text-danger">{errors.branchname}</div>}
               </CCol>
 
-              <CCol md={4}>
+              <CCol md={6}>
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
                   Doctor Name <span className="text-danger">*</span>
                 </CFormLabel>
@@ -1768,10 +1515,16 @@ const handlePartClick = async (data) => {
                         doctorId: selectedDoctor.doctorId,
                         doctorName: selectedDoctor.doctorName,
                         doctorDeviceId: selectedDoctor.doctorDeviceId,
-                        ...(appointmentType?.toLowerCase() === 'inclinic' && {
-                          consultationFee: selectedDoctor.doctorFees.inClinicFee || 0,
-                        }),
+
+                        // ✅ FIX HERE
+                        consultationFee:
+                          prev.foc === 'FOC'
+                            ? 0
+                            : selectedDoctor.doctorFees.inClinicFee || 0,
                       }))
+                      setOriginalConsultationFee(
+                        selectedDoctor.doctorFees.inClinicFee || 0
+                      )
 
                       // ✅ Clear previous slots if needed
                       setSlots([])
@@ -1824,61 +1577,30 @@ const handlePartClick = async (data) => {
                 {errors.doctorName && <div className="text-danger mt-1">{errors.doctorName}</div>}
               </CCol>
             </CRow>
-          </div>
-        )}
-
-        {/* SECTION: Consultation & Payment */}
-        {visitType !== 'followup' && appointmentType.includes('service') && (
-          <>
-            <h6 className="mb-3 border-bottom pb-2">Consultation & Payment</h6>
-            <CRow className="mb-4 g-3">
-              {/* Consultation Fee */}
-              <CCol md={4}>
+            <CRow className='mb-4'>
+              <CCol md={6}>
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
                   Consultation Fee <span className="text-danger">*</span>
                 </CFormLabel>
                 <CFormInput type="number" value={bookingDetails.consultationFee || 0} disabled />
               </CCol>
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
-                 Therapy Fee<span className="text-danger">*</span>
-                </CFormLabel>
-                <CFormInput type="number" value={bookingDetails.servicecost || 0} disabled />
-              </CCol>
-
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
-                  Discounted Amount <span className="text-danger">*</span>
-                </CFormLabel>
-                <CFormInput type="number" value={bookingDetails.discountAmount || 0} disabled />
-              </CCol>
-
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
-                  Discount(%) <span className="text-danger">*</span>
-                </CFormLabel>
-                <CFormInput type="number" value={bookingDetails.discountPercentage || 0} disabled />
-              </CCol>
-
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
-                  Total Amount <span className="text-danger">*</span>
-                </CFormLabel>
-                <CFormInput type="number" value={bookingDetails.totalFee || 0} disabled />
-              </CCol>
-              <CCol md={4}>
+              <CCol md={6}>
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
                   Consultation Fee Type <span className="text-danger">*</span>
                 </CFormLabel>
-                <CFormSelect value={bookingDetails.foc || 'Paid'} onChange={handleFeeTypeChange}>
-                  <option value="">-- Select Fee Type --</option>
+                <CFormSelect
+                  value={bookingDetails.foc}
+                  onChange={handleFeeTypeChange}
+                >
                   <option value="FOC">FOC (Free of Consultation)</option>
                   <option value="Paid">Paid</option>
                 </CFormSelect>
               </CCol>
             </CRow>
-          </>
+          </div>
         )}
+
+
 
         {/* ==================== Available Slots ==================== */}
         <h6 className="mb-3 border-bottom pb-2">Available Slots</h6>
@@ -2240,7 +1962,7 @@ const handlePartClick = async (data) => {
                 {/* ✅ Error message below */}
                 {errors.paymentType && <div className="text-danger mt-1">{errors.paymentType}</div>}
               </CCol>
-              <CCol md={5}>
+              {/* <CCol md={5}>
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
                   Payment Mode <span className="text-danger">*</span>
                 </CFormLabel>
@@ -2270,7 +1992,7 @@ const handlePartClick = async (data) => {
                 </CFormSelect>
 
                 {errors.paymentMode && <div className="text-danger mt-1">{errors.paymentMode}</div>}
-              </CCol>
+              </CCol> */}
               {/* ✅ Show only when Partial selected */}
               {bookingDetails.paymentMode === 'Partial' && (
                 <CCol md={5}>
@@ -2307,25 +2029,81 @@ const handlePartClick = async (data) => {
                 <Select
                   name="doctorRefCode"
                   value={
-                    referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) || null
+                    referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) ||
+                    (bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)
                   }
                   getOptionLabel={(option) =>
-                    ` ${option.fullName}-(${option.address.street},${option.address.city})`
+                    option.referralId === 'OTHER'
+                      ? 'Others'
+                      : `${option.fullName}-(${option.address.street},${option.address.city})`
                   }
                   getOptionValue={(option) => option.referralId}
-                  onChange={(selected) =>
-                    handleBookingChange({
-                      target: {
-                        name: 'doctorRefCode',
-                        value: selected ? selected.referralId : '',
-                      },
-                    })
+                  onChange={(selected) => {
+                    const value = selected ? selected.referralId : ''
+
+                    setBookingDetails((prev) => ({
+                      ...prev,
+                      doctorRefCode: value,
+                      referredByType: value === 'OTHER' ? '' : prev.referredByType,
+                      referredByName: value === 'OTHER' ? '' : prev.referredByName,
+                    }))
+                  }}
+                  options={[
+                    ...referDoctor,
+                    { referralId: 'OTHER', fullName: 'Others' }, // ✅ add this
+                  ]}
+                  placeholder={
+                    bookingDetails.doctorRefCode === 'OTHER'
+                      ? 'Select referral type'
+                      : 'Select or search doctor...'
                   }
-                  options={referDoctor}
-                  placeholder="Select or search doctor..."
                   isSearchable
                 />
               </CCol>
+              {bookingDetails.doctorRefCode === 'OTHER' && (
+                <CRow className="mt-3">
+
+                  {/* Referral Type */}
+                  <CCol md={6}>
+                    <CFormLabel>Referred By</CFormLabel>
+                    <CFormSelect
+                      value={bookingDetails.referredByType || ''}
+                      onChange={(e) =>
+                        setBookingDetails((prev) => ({
+                          ...prev,
+                          referredByType: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Select Type</option>
+                      <option value="Friend">Friend</option>
+                      <option value="Family">Family</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="Google">Google</option>
+                      <option value="Advertisement">Advertisement</option>
+                      <option value="Other">Other</option>
+                    </CFormSelect>
+                  </CCol>
+
+                  {/* Name Input */}
+                  <CCol md={6}>
+                    <CFormLabel>Referred Person Name</CFormLabel>
+                    <CFormInput
+                      type="text"
+                      placeholder="Enter name"
+                      value={bookingDetails.referredByName || ''}
+                      onChange={(e) =>
+                        setBookingDetails((prev) => ({
+                          ...prev,
+                          referredByName: e.target.value,
+                        }))
+                      }
+                    />
+                  </CCol>
+
+                </CRow>
+              )}
             </CRow>
           </>
         )}
@@ -2334,13 +2112,13 @@ const handlePartClick = async (data) => {
 
           <BodyAssessment onPartClick={handlePartClick} />
 
-         {markedImage && (
-  <img
-    src={`data:image/png;base64,${markedImage}`}
-    width={200}
-    alt="preview"
-  />
-)}
+          {markedImage && (
+            <img
+              src={`data:image/png;base64,${markedImage}`}
+              width={200}
+              alt="preview"
+            />
+          )}
 
           {/* <h3>Selected: {part}</h3> */}
         </div>
@@ -2400,7 +2178,7 @@ const handlePartClick = async (data) => {
               style={{ backgroundColor: 'var(--color-bgcolor)', color: 'var(--color-black)' }}
               disabled={saveloading}
             >
-             {saveloading ? "Submiting ..." : "Submit"} 
+              {saveloading ? "Submiting ..." : "Submit"}
             </CButton>
           )}
         </div>
@@ -2410,16 +2188,7 @@ const handlePartClick = async (data) => {
     </COffcanvas>
   )
 
-  // return (
-  //   <CModal alignment="center" visible={visible} onClose={onClose} size="xl">
-  //     <CModalHeader>
-  //       <CModalTitle>Book Appointment</CModalTitle>
-  //     </CModalHeader>
-  //     <CModalBody>
 
-  //     </CModalBody>
-  //   </CModal>
-  // )
 }
 
 export default BookAppointmentModal

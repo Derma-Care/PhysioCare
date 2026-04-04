@@ -99,7 +99,7 @@ a {
 /* modal heigth */
 
 .custom-modal .modal-content {
-  height: 90vh;         /* modal height */
+  /* height: 90vh;          */
   max-height: 90vh;     /* restrict max height */
   display: flex;
   flex-direction: column;

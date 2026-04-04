@@ -36,6 +36,7 @@ import { COLORS } from '../../Constant/Themes'
 import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import LoadingIndicator from '../../Utils/loader'
 import Pagination from '../../Utils/Pagination'
+import PrintLetterHead from '../../Utils/PrintLetterHead'
 const appointmentManagement = () => {
   const [viewService, setViewService] = useState(null)
   const [selectedServiceTypes, setSelectedServiceTypes] = useState([])
@@ -110,7 +111,7 @@ const appointmentManagement = () => {
   //       return 'dark'
   //   }
   // }
-
+  const [printData, setPrintData] = useState(null)
   useEffect(() => {
     const hospitalId = localStorage.getItem('HospitalId')
     if (hospitalId) {
@@ -270,6 +271,120 @@ const appointmentManagement = () => {
     setFilteredData(filtered)
   }, [searchQuery])
 
+  const PrintContent = ({ data }) => {
+    if (!data) return null
+
+    return (
+      <PrintLetterHead>
+        <div style={{ padding: 20, fontFamily: 'Arial' }}>
+
+          {/* TITLE */}
+          <h2 style={{ textAlign: 'center', marginBottom: 10 }}>
+            CONSULTATION RECEIPT
+          </h2>
+
+          {/* RECEIPT META */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: 14,
+            marginBottom: 10
+          }}>
+            <div><strong>Booking Id:</strong> {data.bookingId || '---'}</div>
+            <div><strong>Date:</strong> {data.serviceDate}</div>
+          </div>
+
+          <hr />
+
+          {/* PATIENT DETAILS */}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', fontSize: 14, color: "black" }}  >
+            <p style={{ color: "black" }}><strong>Patient ID:</strong> {data.patientId}</p>
+            <p style={{ color: "black" }}><strong>Name:</strong> {data.name}</p>
+            <p style={{ color: "black" }}><strong>Doctor:</strong> {data.doctorName}</p>
+            <p style={{ color: "black" }}><strong>Time:</strong> {data.slot || data.servicetime}</p>
+          </div>
+
+          <hr />
+
+          {/* BILL TABLE */}
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            marginTop: 10
+          }}>
+            <thead>
+              <tr style={{ background: '#f2f2f2' }}>
+                <th style={thStyle}>#</th>
+                <th style={thStyle}>Description</th>
+                <th style={thStyle}>Amount (₹)</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td style={tdStyle}>1</td>
+                <td style={tdStyle}>Consultation Fee</td>
+                <td style={tdStyle}>{data.consultationFee ?? 0}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* TOTAL */}
+          <div style={{
+            marginTop: 15,
+            display: 'flex',
+            justifyContent: 'flex-end'
+          }}>
+            <div style={{
+              border: '1px solid black',
+              padding: '10px 20px',
+              fontWeight: 'bold'
+            }}>
+              Total: ₹ {data.consultationFee ?? 0}
+            </div>
+          </div>
+
+          {/* FOOTER NOTE */}
+          <div style={{
+            marginTop: 20,
+            fontSize: 12,
+            textAlign: 'center',
+            color: 'gray'
+          }}>
+            * This is a computer-generated receipt. No signature required.
+          </div>
+
+        </div>
+      </PrintLetterHead>
+    )
+  }
+
+  // styles
+  const thStyle = {
+    border: '1px solid black',
+    padding: '8px',
+    textAlign: 'center'
+  }
+
+  const tdStyle = {
+    border: '1px solid black',
+    padding: '8px',
+    textAlign: 'center'
+  }
+  const handlePrint = (item) => {
+    console.log("PRINT DATA:", item)
+    setPrintData(item)
+
+
+  }
+  useEffect(() => {
+    if (printData) {
+      setTimeout(() => {
+        window.print()
+      }, 300)
+    }
+  }, [printData])
   return (
     <div style={{ overflow: 'hidden' }}>
       <div className="container ">
@@ -302,18 +417,16 @@ const appointmentManagement = () => {
           </CButton>
           <button
             onClick={() => toggleFilter('Service & Treatment')}
-            className={`btn ${
-              filterTypes.includes('Service & Treatment') ? 'btn-selected' : 'btn-unselected'
-            }`}
+            className={`btn ${filterTypes.includes('Service & Treatment') ? 'btn-selected' : 'btn-unselected'
+              }`}
           >
             Services & Treatment
           </button>
 
           <button
             onClick={() => toggleFilter('In-clinic')}
-            className={`btn ${
-              filterTypes.includes('In-clinic') ? 'btn-selected' : 'btn-unselected'
-            }`}
+            className={`btn ${filterTypes.includes('In-clinic') ? 'btn-selected' : 'btn-unselected'
+              }`}
           >
             In-Clinic Consultation
           </button>
@@ -365,18 +478,18 @@ const appointmentManagement = () => {
               checked={statusFilters.includes('Rejected')}
             /> */}
           </div>
-         {(role == 'admin' || role == 'receptionist') && (
-  <CButton
-    style={{
-      backgroundColor: 'var(--color-black)',
-      color: 'white',
-      marginLeft: '325px',
-    }}
-    onClick={() => setVisible(true)} // open modal
-  >
-    Book Appointment
-  </CButton>
-)}
+          {(role == 'admin' || role == 'receptionist') && (
+            <CButton
+              style={{
+                backgroundColor: 'var(--color-black)',
+                color: 'white',
+                marginLeft: '325px',
+              }}
+              onClick={() => setVisible(true)} // open modal
+            >
+              Book Appointment
+            </CButton>
+          )}
 
 
           {/* Modal imported from separate file */}
@@ -440,7 +553,7 @@ const appointmentManagement = () => {
                   <CTableDataCell>
                     <CButton
                       style={{ backgroundColor: 'var(--color-black)' }}
-                      className="text-white"
+                      className="text-white mx-2"
                       size="sm"
                       onClick={() =>
                         navigate(`/appointment-details/${item.bookingId}`, {
@@ -449,6 +562,14 @@ const appointmentManagement = () => {
                       }
                     >
                       View
+                    </CButton>
+                    <CButton
+                      style={{ backgroundColor: 'var(--color-black)' }}
+                      className="text-white"
+                      size="sm"
+                      onClick={() => handlePrint(item)}
+                    >
+                      Print
                     </CButton>
                   </CTableDataCell>
                 </CTableRow>
@@ -500,6 +621,20 @@ const appointmentManagement = () => {
           </div>
         )} */}
       </div>
+      <div
+        id="print-area"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          background: 'white',
+          zIndex: -1,
+        }}
+      >
+        {printData && <PrintContent data={printData} />}
+      </div>
+
     </div>
   )
 }

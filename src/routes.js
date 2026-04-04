@@ -36,7 +36,7 @@ const CustomerManagement = React.lazy(() => import('./views/customerManagement/C
 const LabTechnicianManagement = React.lazy(
   () => import('./views/EmployeeManagement/LabTechnicians/LabTechniciansManagement'),
 )
-const PackageManagement = React.lazy(() => import('./views/Packages/PackageManagement'))
+const Programs = React.lazy(() => import('./views/ProcedureManagement/Programs'))
 const FrontDeskManagement = React.lazy(
   () => import('./views/EmployeeManagement/FrontDesk/FrontDeskManagement'),
 )
@@ -60,7 +60,7 @@ const PharmacyManagement = React.lazy(
 )
 const ActiveAppointmentsScreen = React.lazy(
   () => import('./views/AppointmentManagement/In-progressAppointmnets'),
-  
+
 )
 const PatientManagement = React.lazy(() => import('./views/Patients/Patientmanagement'))
 const ViewPurchaseBills = React.lazy(
@@ -91,7 +91,7 @@ const TherapistDetails = React.lazy(() => import('./views/EmployeeManagement/The
 const ExerciseTable = React.lazy(() => import('./views/EmployeeManagement/Therapist/TherapyExercise'))
 const RevenueTable = React.lazy(() => import('./views/Analytics/Analytics'))
 const ExpenseForm = React.lazy(() => import('./views/Analytics/ExpenseForm'))
- 
+
 
 
 const routes = [
@@ -114,11 +114,11 @@ const routes = [
   { path: '/employee-management/pharmacist', name: 'Pharmacist', element: PharmacistManagement },
   { path: '/employee-management', name: 'Employee Management', element: EmployeeManagement },
   { path: '/employee-management/nurse', name: 'Therapist', element: Therapist },
-//   {
-//   path: '/employee-management/physio',
-//   name: 'Therapist',
-//   element: Physio
-// },
+  //   {
+  //   path: '/employee-management/physio',
+  //   name: 'Therapist',
+  //   element: Physio
+  // },
   { path: '/employee-management/pharmacist', name: 'Pharmacist', element: PharmacistManagement },
 
 
@@ -127,7 +127,7 @@ const routes = [
   {
     path: '/package-management',
     name: 'Package Management',
-    element: PackageManagement,
+    element: Programs,
   },
   { path: '/receptionist', name: 'Receptionist', element: Receptionist },
 
@@ -173,33 +173,33 @@ const routes = [
   { path: '/patient-management', name: 'Patient Management', element: PatientManagement },
 
   // Attendance
-{
-  path: "/attendance",
-  element: AttendanceLayout,
-  children: [
-  { index: true, element: AttendanceList },
-   { path: "employee-list", element: EmployeeList },
-   { path: "shift-list", element: ShiftMaster },
-   { path: "holiday", element: HolidayMaster },
-   { path: "attendance-entry", element: AttendanceEntry },
-   { path: "attendance-list", element: AttendanceList },
-   { path: "report", element: AttendanceReport },
-   { path: "monthly", element: MonthlyReport },
-   { path: "leave", element: LeaveRequest },
-   { path: "leave-list", element: LeaveList },
-    { path: "leave-approval", element: LeaveApproval },
-    { path: "assignShift", element: AssignShift },
+  {
+    path: "/attendance",
+    element: AttendanceLayout,
+    children: [
+      { index: true, element: AttendanceList },
+      { path: "employee-list", element: EmployeeList },
+      { path: "shift-list", element: ShiftMaster },
+      { path: "holiday", element: HolidayMaster },
+      { path: "attendance-entry", element: AttendanceEntry },
+      { path: "attendance-list", element: AttendanceList },
+      { path: "report", element: AttendanceReport },
+      { path: "monthly", element: MonthlyReport },
+      { path: "leave", element: LeaveRequest },
+      { path: "leave-list", element: LeaveList },
+      { path: "leave-approval", element: LeaveApproval },
+      { path: "assignShift", element: AssignShift },
 
-    
- ],
 
-},
+    ],
+
+  },
   { path: "/session-list", element: SessionList },
   { path: "/therapist", element: TherapistDashboard },
-  {path:"/therapist-details" , element:TherapistDetails },
-  {path:"/exercises" , element:ExerciseTable },
-  {path:"/analytics" , element:RevenueTable },
-  {path:"/expenses" , element:ExpenseForm }
+  { path: "/therapist-details", element: TherapistDetails },
+  { path: "/exercises", element: ExerciseTable },
+  { path: "/analytics", element: RevenueTable },
+  { path: "/expenses", element: ExpenseForm }
 
 
   // { path: "/attendance", element: AttendanceMenu },
