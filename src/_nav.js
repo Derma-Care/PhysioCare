@@ -80,10 +80,18 @@ export const getNavigation = (permissions = {}) => {
     },
     {
       component: CNavItem,
-      to: '/package-management',
+      to: '/therapy-programs',
       name: 'Therapy Programs',
       as: NavLink,
-      icon: <CIcon icon={cilLayers   } customClassName="nav-icon" />,
+      icon: <CIcon icon={cilLayers} customClassName="nav-icon" />,
+    },
+
+    {
+      component: CNavItem,
+      to: '/package-management',
+      name: 'Package Management',
+      as: NavLink,
+      icon: <CIcon icon={cilLayers} customClassName="nav-icon" />,
     },
 
     // {
@@ -115,13 +123,13 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilMedicalCross} customClassName="nav-icon" />,
     },
-      {
+    {
       component: CNavItem,
       to: '/exercises',
       name: 'Exercises',
 
       as: NavLink,
-      icon: <CIcon icon={cilRunning } customClassName="nav-icon" />,
+      icon: <CIcon icon={cilRunning} customClassName="nav-icon" />,
     },
 
     {
@@ -159,7 +167,7 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
     },
-     {
+    {
       component: CNavItem,
       to: '/analytics',
       name: 'Analytics',
@@ -175,7 +183,7 @@ export const getNavigation = (permissions = {}) => {
     },
 
 
-   
+
   ]
 
   // Only include items if permission exists

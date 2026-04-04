@@ -876,8 +876,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     console.log('Validating bookingDetails...', bookingDetails)
     console.log('Validating bookingDetails...', part)
 
-    if (!validate()) {
-      // showCustomToast('Please fix the errors before submitting.', 'error')
+    if (!validate()) { //TODO: Fix validation to show all errors and prevent submission
+      showCustomToast('Please fix the errors before submitting.', 'error')
       return
     }
     try {

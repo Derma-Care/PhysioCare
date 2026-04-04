@@ -125,8 +125,8 @@ const routes = [
   { path: '/pharmacy-management', name: 'Pharmacy Management', element: PharmacyManagement },
 
   {
-    path: '/package-management',
-    name: 'Package Management',
+    path: '/therapy-programs',
+    name: 'Therapy Programs',
     element: Programs,
   },
   { path: '/receptionist', name: 'Receptionist', element: Receptionist },

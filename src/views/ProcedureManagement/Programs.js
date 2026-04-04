@@ -35,6 +35,9 @@ import { getExercises } from "../EmployeeManagement/Therapist/TheraphyApi"
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { useHospital } from "../Usecontext/HospitalContext"
 import { Edit2, Eye, Trash2 } from "lucide-react"
+import { getTherapiesService } from "./TherapyServiceApi"
+import LoadingIndicator from "../../Utils/loader"
+import { addProgram, deleteProgram, getProgramService, getTherapy, updateProgram } from "./ProgramApi"
 
 
 export default function Programs() {
@@ -45,10 +48,14 @@ export default function Programs() {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [delloading, setDelLoading] = useState(false)
   const [viewService, setViewService] = useState(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     therapyName: "",
+
+    exercises: [],        // ✅ required
     exercisesIds: [],
-    consentType: "",
+
   })
 
   const [errors, setErrors] = useState({})
@@ -60,8 +67,21 @@ export default function Programs() {
   }, [])
 
   const fetchData = async () => {
-    const res = await GetSubServices_ByClinicId(localStorage.getItem("HospitalId"))
-    setList(res || [])
+    setLoading(true)
+    try {
+      const HospitalId = localStorage.getItem("HospitalId")
+      const branchId = localStorage.getItem("branchId")
+      const res = await getProgramService(HospitalId, branchId)
+      console.log("Services", res)
+      setList(res?.data?.data || [])
+    } catch (error) {
+      console.error("Error fetching services:", error)
+
+      // const res = await GetSubServices_ByClinicId(localStorage.getItem("HospitalId"))
+    } finally {
+      setLoading(false)
+    }
+    // setList(res || [])
   }
 
   const handleCancelDelete = () => {
@@ -72,13 +92,13 @@ export default function Programs() {
   const fetchExercises = async () => {
     const clinicId = localStorage.getItem("HospitalId")
     const branchId = localStorage.getItem("branchId")
-    const res = await getExercises(clinicId, branchId)
+    const res = await getTherapiesService(clinicId, branchId)
     console.log("Exercises", res.data.data)
     // convert to react-select format
     const data = res.data.data || []
     const options = data.map((item) => ({
-      value: item.therapyExercisesId,
-      label: item.name,
+      value: item.id,
+      label: item.therapyName,
     }))
 
     setExerciseOptions(options)
@@ -89,8 +109,10 @@ export default function Programs() {
     let err = {}
 
     if (!form.therapyName) err.therapyName = "Required"
-    if (form.exercisesIds.length === 0) err.exercisesIds = "Select at least one"
-    if (!form.consentType) err.consentType = "Required"
+    if (form.exercisesIds.length === 0) {
+      err.exercisesIds = "Select at least one"
+    }
+
 
     setErrors(err)
     return Object.keys(err).length === 0
@@ -101,15 +123,15 @@ export default function Programs() {
     if (!validate()) return
 
     const payload = {
-      therapyName: form.therapyName,
-      exercisesIds: form.exercisesIds,
-      consentType: form.consentType,
+      programName: form.therapyName,
+      therophyIds: form.exercisesIds,
+
     }
 
     if (editId) {
-      await updateServiceData(editId, payload)
+      await updateProgram(editId, payload)
     } else {
-      await postServiceData(payload)
+      await addProgram(payload)
     }
 
     resetForm()
@@ -122,7 +144,7 @@ export default function Programs() {
     const hospitalId = localStorage.getItem('HospitalId')
     try {
       setDelLoading(true)
-      const result = await deleteServiceData(serviceIdToDelete, hospitalId)
+      const result = await deleteProgram(serviceIdToDelete, hospitalId)
       console.log('Service deleted:', result)
       showCustomToast('Procedure deleted successfully!', { position: 'top-right' }, 'success')
 
@@ -138,13 +160,17 @@ export default function Programs() {
   // ---------------- EDIT ----------------
   const handleEdit = (item) => {
     setEditId(item.id)
+
+    const selected = exerciseOptions.filter(opt =>
+      (item.programIds || []).includes(opt.value)
+    )
+
     setForm({
       therapyName: item.therapyName,
-      exercises: exerciseOptions.filter((opt) =>
-        item.exercises.includes(opt.value)
-      ),
-      consentType: item.consentType,
+      exercises: selected,
+      exercisesIds: selected.map(s => s.value)
     })
+
     setModal(true)
   }
 
@@ -153,7 +179,7 @@ export default function Programs() {
     setForm({
       therapyName: "",
       exercises: [],
-      consentType: "",
+
     })
     setEditId(null)
     setModal(false)
@@ -161,11 +187,17 @@ export default function Programs() {
   }
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
-  const handleServiceDelete = async (serviceId) => {
-    console.log(serviceId)
+  const [serviceIdToDelete, setServiceIdToDelete] = useState(null)
 
-    setServiceIdToDelete(serviceId.subServiceId)
+  const handleServiceDelete = (id) => {
+    setServiceIdToDelete(id)
     setIsModalVisible(true)
+  }
+
+  if (loading) {
+    return (
+      <LoadingIndicator />
+    )
   }
   return (
     <>
@@ -209,69 +241,72 @@ export default function Programs() {
           </CTableRow>
         </CTableHead>
         <CTableBody>
-          {list.map((item, index) => (
-            <CTableRow key={item.id}>
-              <CTableDataCell>{index + 1}</CTableDataCell>
-              <CTableDataCell>{item.therapyName}</CTableDataCell>
-              <CTableDataCell>5</CTableDataCell>
-              {/* <CTableDataCell>{item.consentType}</CTableDataCell> */}
-              <CTableDataCell className="text-end">
-                <div className="d-flex justify-content-end gap-2  ">
-                  {/* {can('Therapy programs', 'read') && ( */}
-                  <button
-                    className="actionBtn"
-                    onClick={() => setViewService(item)}
-                    title="View"
-                  >
-                    <Eye size={18} />
-                  </button>
-                  {/* )}
+
+          {
+            list.length > 0 ? (
+              list.map((item, index) => (
+                <CTableRow key={item.id}>
+                  <CTableDataCell>{index + 1}</CTableDataCell>
+                  <CTableDataCell>{item.programName}</CTableDataCell>
+                  {/* <CTableDataCell>{item.therophyIds.length()}</CTableDataCell> */}
+                  {/* <CTableDataCell>{item.consentType}</CTableDataCell> */}
+                  <CTableDataCell className="text-end">
+                    <div className="d-flex justify-content-end gap-2  ">
+                      {/* {can('Therapy programs', 'read') && ( */}
+                      <button
+                        className="actionBtn"
+                        onClick={() => setViewService(item)}
+                        title="View"
+                      >
+                        <Eye size={18} />
+                      </button>
+                      {/* )}
                   {can('Therapy programs', 'update') && ( */}
-                  <button
-                    className="actionBtn"
-                    onClick={() => handleEdit(item)}
-                    title="Edit"
-                  >
-                    <Edit2 size={18} />
-                  </button>
-                  {/* )}
+                      <button
+                        className="actionBtn"
+                        onClick={() => handleEdit(item)}
+                        title="Edit"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      {/* )}
 
                   {can('Therapy programs', 'delete') && ( */}
-                  <button
-                    className="actionBtn"
+                      <button
+                        className="actionBtn"
 
-                    onClick={() => handleServiceDelete(item.id)}
-                    title="Delete"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                  {/* )} */}
-                  <ConfirmationModal
-                    isVisible={isModalVisible}
-                    title="Delete Procedure"
-                    message="Are you sure you want to delete this procedure? This action cannot be undone."
-                    confirmText={
-                      delloading ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2 text-white"
-                            role="status"
-                          />
-                          Deleting...
-                        </>
-                      ) : (
-                        'Yes, Delete'
-                      )
-                    }
-                    cancelText="Cancel"
-                    confirmColor="danger"
-                    cancelColor="secondary"
-                    onConfirm={handleConfirmDelete}
-                    onCancel={handleCancelDelete}
-                  />
-                </div>
-              </CTableDataCell>
-              {/* <CTableDataCell>
+                        onClick={() => handleServiceDelete(item.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                      {/* )} */}
+                      <ConfirmationModal
+                        isVisible={isModalVisible}
+                        title="Delete Procedure"
+                        message="Are you sure you want to delete this procedure? This action cannot be undone."
+                        confirmText={
+                          delloading ? (
+                            <>
+                              <span
+                                className="spinner-border spinner-border-sm me-2 text-white"
+                                role="status"
+                              />
+                              Deleting...
+                            </>
+                          ) : (
+                            'Yes, Delete'
+                          )
+                        }
+                        cancelText="Cancel"
+                        confirmColor="danger"
+                        cancelColor="secondary"
+                        onConfirm={handleConfirmDelete}
+                        onCancel={handleCancelDelete}
+                      />
+                    </div>
+                  </CTableDataCell>
+                  {/* <CTableDataCell>
                 <CButton size="sm" onClick={() => handleEdit(item)}>
                   Edit
                 </CButton>
@@ -283,13 +318,21 @@ export default function Programs() {
                   Delete
                 </CButton>
               </CTableDataCell> */}
-            </CTableRow>
-          ))}
+                </CTableRow>
+              ))) : (
+              <CTableRow>
+                <CTableDataCell colSpan={4} className="text-center">
+                  No Program Found
+                </CTableDataCell>
+              </CTableRow>
+            )
+
+          }
         </CTableBody>
       </CTable>
 
       {/* MODAL */}
-      <CModal visible={modal} onClose={resetForm} className="custom-modal" backdrop="static" size="lg">
+      <CModal visible={modal} onClose={resetForm} className={`custom-modal ${dropdownOpen ? "expand-modal" : ""}`} backdrop="static" size="lg">
         <CModalHeader>
           <CModalTitle>{editId ? "Edit" : "Add"} Programs</CModalTitle>
         </CModalHeader>
@@ -301,7 +344,7 @@ export default function Programs() {
               {/* Therapy Name */}
               <CCol md={12}>
                 <CFormInput
-                  placeholder="Programs Name"
+                  placeholder="Program Name"
                   value={form.therapyName}
                   onChange={(e) =>
                     setForm({ ...form, therapyName: e.target.value })
@@ -316,18 +359,40 @@ export default function Programs() {
 
               {/* Exercise */}
               <CCol md={12} className="mt-3">
+
                 <Select
                   options={exerciseOptions}
                   isMulti
                   isSearchable
                   value={form.exercises}
-                  onChange={(val) =>
-                    setForm({ ...form, exercises: val })
-                  }
+
+                  hideSelectedOptions={false}
+                  closeMenuOnSelect={false}
+                  isClearable={false}   // ✅ prevent accidental clear
+
+                  onFocus={() => setDropdownOpen(true)}
+                  onBlur={() => setDropdownOpen(false)}
+
+                  styles={{
+                    menuList: (base) => ({
+                      ...base,
+                      maxHeight: 200,
+                      overflowY: "auto"
+                    })
+                  }}
+
+                  onChange={(val) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      exercises: val || [],
+                      exercisesIds: val ? val.map((v) => String(v.value)) : [],
+                    }))
+                  }}
                 />
-                {errors.exercises && (
+
+                {errors.exercisesIds && (
                   <CFormText className="text-danger">
-                    {errors.exercises}
+                    {errors.exercisesIds}
                   </CFormText>
                 )}
               </CCol>

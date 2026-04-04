@@ -109,3 +109,11 @@ a {
   overflow-y: auto;     /* enable vertical scroll */
   flex: 1;              /* take available space */
 }
+
+.expand-modal .modal-content {
+  max-height: 100vh !important;
+}
+
+.expand-modal .modal-body {
+  overflow: visible !important;
+}
