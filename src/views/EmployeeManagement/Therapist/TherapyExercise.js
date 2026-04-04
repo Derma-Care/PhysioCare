@@ -32,6 +32,7 @@ import {
 } from "./TheraphyApi"
 import ConfirmationModal from "../../../components/ConfirmationModal"
 import { Edit2, Trash2, Eye } from "lucide-react"
+import LoadingIndicator from "../../../Utils/loader"
 
 export default function ExerciseTable() {
 
@@ -41,11 +42,12 @@ export default function ExerciseTable() {
   const emptyExercise = {
     name: "",
     video: "",
-    session: "",
+    session: "1",
     frequency: "",
     notes: "",
     image: "",
     imagePreview: "",
+   
 
     // ✅ NEW FIELDS
     pricePerSession: "",
@@ -53,6 +55,7 @@ export default function ExerciseTable() {
     repetitions: "",
     gst: "",
     otherTax: "",
+    discountPercentage: "",
   }
 
   const [exercises, setExercises] = useState([])
@@ -88,22 +91,89 @@ export default function ExerciseTable() {
   }, [])
 
   // ================= VALIDATION =================
-  const validateForm = () => {
-    if (!form.name) return showCustomToast("Name required", "error")
-    if (!form.session) return showCustomToast("Session required", "error")
-    if (!form.frequency) return showCustomToast("Frequency required", "error")
-    if (!form.notes) return showCustomToast("Notes required", "error")
-    if (!form.image) return showCustomToast("Image required", "error")
-
-    if (!form.pricePerSession) return showCustomToast("Price required", "error")
-    if (!form.sets) return showCustomToast("Sets required", "error")
-    if (!form.repetitions) return showCustomToast("Repetitions required", "error")
-
-    if (form.video && !form.video.startsWith("http"))
-      return showCustomToast("Invalid video link", "error")
-
-    return true
+ const validateForm = () => {
+  // Name
+  if (!form.name.trim()) {
+    showCustomToast("Name is required", "error")
+    return false
   }
+
+  // Session (fixed = 1, so just check existence)
+  if (!form.session || Number(form.session) !== 1) {
+    showCustomToast("Session must be 1", "error")
+    return false
+  }
+
+  // Frequency
+  if (!form.frequency.trim()) {
+    showCustomToast("Frequency is required", "error")
+    return false
+  }
+
+  // Notes
+  if (!form.notes.trim()) {
+    showCustomToast("Notes are required", "error")
+    return false
+  }
+
+  // Image
+  if (!form.image) {
+    showCustomToast("Image is required", "error")
+    return false
+  }
+
+  // Price
+  if (form.pricePerSession === "" || Number(form.pricePerSession) <= 0) {
+    showCustomToast("Enter valid price", "error")
+    return false
+  }
+
+  // Discount %
+  if (form.discountPercentage === "") {
+    showCustomToast("Discount is required", "error")
+    return false
+  }
+
+  if (Number(form.discountPercentage) < 0 || Number(form.discountPercentage) > 100) {
+    showCustomToast("Discount must be between 0 and 100", "error")
+    return false
+  }
+
+  // GST (optional but must be valid if entered)
+  if (form.gst !== "" && Number(form.gst) < 0) {
+    showCustomToast("GST cannot be negative", "error")
+    return false
+  }
+
+  // Other Tax
+  if (form.otherTax !== "" && Number(form.otherTax) < 0) {
+    showCustomToast("Other tax cannot be negative", "error")
+    return false
+  }
+
+  // Sets
+  if (form.sets === "" || Number(form.sets) <= 0) {
+    showCustomToast("Enter valid sets", "error")
+    return false
+  }
+
+  // Repetitions
+  if (form.repetitions === "" || Number(form.repetitions) <= 0) {
+    showCustomToast("Enter valid repetitions", "error")
+    return false
+  }
+
+  // Video (optional)
+  if (form.video) {
+  const url = form.video.trim()
+
+  if (!/^https?:\/\/.+/.test(url)) {
+    return showCustomToast("Enter valid video URL (must start with http/https)", "error")
+  }
+}
+
+  return true
+}
 
   // ================= SAVE =================
   const handleSave = async () => {
@@ -161,6 +231,12 @@ export default function ExerciseTable() {
   // ================= EDIT =================
   const handleEdit = (index) => {
     const ex = exercises[index]
+    let videoUrl = ex.video || ""
+
+  // ✅ auto prefix if missing
+  if (videoUrl && !videoUrl.startsWith("http")) {
+    videoUrl = "https://" + videoUrl
+  }
     setForm({ ...ex, imagePreview: ex.image })
     setEditIndex(index)
     setVisible(true)
@@ -196,6 +272,10 @@ export default function ExerciseTable() {
     <>
       <CCard>
         <CCardBody>
+           {loading ? (
+      <LoadingIndicator message="Loading exercises..." />
+    ) : (
+       <>
 
           <div className="d-flex justify-content-between mb-3">
             <h5>Exercises</h5>
@@ -209,10 +289,12 @@ export default function ExerciseTable() {
     <CTableRow>
       <CTableHeaderCell>S.No</CTableHeaderCell>
       <CTableHeaderCell>Name</CTableHeaderCell>
-      <CTableHeaderCell>Session</CTableHeaderCell>
-      <CTableHeaderCell>Frequency</CTableHeaderCell>
+      <CTableHeaderCell>Discount (%)</CTableHeaderCell>
+      <CTableHeaderCell>Discount Amount</CTableHeaderCell>
+
+
       <CTableHeaderCell>Price</CTableHeaderCell>
-      <CTableHeaderCell>Repetitions</CTableHeaderCell>
+
       <CTableHeaderCell>Action</CTableHeaderCell>
     </CTableRow>
   </CTableHead>
@@ -223,10 +305,10 @@ export default function ExerciseTable() {
         <CTableDataCell>{i + 1}</CTableDataCell>
 
         <CTableDataCell>{ex.name}</CTableDataCell>
-        <CTableDataCell>{ex.session}</CTableDataCell>
-        <CTableDataCell>{ex.frequency}</CTableDataCell>
+       <CTableDataCell>{ex.discountPercentage || 0}%</CTableDataCell>
+       <CTableDataCell>₹{ex.discountAmount || 0}</CTableDataCell>
+
         <CTableDataCell>₹{ex.pricePerSession}</CTableDataCell>
-        <CTableDataCell>{ex.repetitions}</CTableDataCell>
 
         <CTableDataCell>
           {/* VIEW */}
@@ -272,12 +354,14 @@ export default function ExerciseTable() {
     ))}
   </CTableBody>
 </CTable>
+  </>
+    )}
 
         </CCardBody>
       </CCard>
 
       {/* ADD / EDIT MODAL (UNCHANGED UI) */}
-      <CModal visible={visible} onClose={() => setVisible(false)}>
+      <CModal visible={visible} onClose={() => setVisible(false)} backdrop="static" className="custom-modal">
         <CModalHeader>
           <CModalTitle>Add Exercise</CModalTitle>
         </CModalHeader>
@@ -297,25 +381,70 @@ export default function ExerciseTable() {
 
             <CCol md={4}>
               <CFormLabel>Session</CFormLabel>
-              <CFormInput value={form.session} onChange={(e) => setForm({ ...form, session: e.target.value })} />
+              <CFormInput value={form.session}   disabled/>
             </CCol>
 
             
 
             <CCol md={4}>
               <CFormLabel>Price</CFormLabel>
-              <CFormInput type="number" value={form.pricePerSession} onChange={(e) => setForm({ ...form, pricePerSession: e.target.value })} />
+             <CFormInput
+  type="number"
+  min="0"
+  value={form.pricePerSession}
+  onChange={(e) =>
+    setForm({
+      ...form,
+      pricePerSession: Math.max(0, e.target.value),
+    })
+  }
+/>
             </CCol>
 
             <CCol md={4}>
               <CFormLabel>GST</CFormLabel>
-              <CFormInput type="number" value={form.gst} onChange={(e) => setForm({ ...form, gst: e.target.value })} />
+             <CFormInput
+  type="number"
+  min="0"
+  value={form.gst}
+  onChange={(e) =>
+    setForm({
+      ...form,
+      gst: Math.max(0, e.target.value),
+    })
+  }
+/>
             </CCol>
 
             <CCol md={4}>
               <CFormLabel>Other Tax</CFormLabel>
-              <CFormInput type="number" value={form.otherTax} onChange={(e) => setForm({ ...form, otherTax: e.target.value })} />
+             <CFormInput
+  type="number"
+  min="0"
+  value={form.otherTax}
+  onChange={(e) =>
+    setForm({
+      ...form,
+      otherTax: Math.max(0, e.target.value),
+    })
+  }
+/>
             </CCol>
+            <CCol md={4}>
+  <CFormLabel>Discount (%)</CFormLabel>
+  <CFormInput
+  type="number"
+  min="0"
+  max="100"
+  value={form.discountPercentage}
+  onChange={(e) =>
+    setForm({
+      ...form,
+      discountPercentage: Math.max(0, e.target.value),
+    })
+  }
+/>
+</CCol>
 
             <CCol md={4}>
               <CFormLabel>Sets</CFormLabel>
@@ -400,6 +529,8 @@ export default function ExerciseTable() {
         {/* PRICING */}
         <CCol md={6}><strong>Price:</strong> ₹{viewData.pricePerSession}</CCol>
         <CCol md={6}><strong>GST:</strong> {viewData.gst}%</CCol>
+        <CCol md={6}><strong>Discount:</strong> {viewData.discountPercentage}%</CCol>
+        <CCol md={6}><strong>Discount Amount:</strong> ₹{viewData.discountAmount?.toFixed(2)}</CCol>
 
         <CCol md={6}><strong>Other Tax:</strong> {viewData.otherTax}%</CCol>
 
