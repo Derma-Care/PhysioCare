@@ -719,142 +719,85 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   }
 
   const validate = () => {
-    const newErrors = {}
+  const newErrors = {};
 
-    // Visit Type
-    if (!visitType) newErrors.visitType = 'Please select visit type'
-
-    // Appointment Type (required only for first visit)
-
-    // if (appointmentType)
-    //   newErrors.appointmentType = 'Please select appointment type'
-
-    // Contact Info (only for new patients)
-    if (!selectedBooking && visitType !== 'followup') {
-      const name = bookingDetails.name?.trim() || ''
-
-      if (!name) {
-        newErrors.name = 'Name is required'
-      } else if (name.length < 3) {
-        newErrors.name = 'Name must be at least 3 characters'
-      } else if (!/^[A-Za-z\s]+$/.test(name)) {
-        // Only letters and spaces
-        newErrors.name = 'Name can only contain letters'
-      } else {
-        delete newErrors.name
-      }
-
-      if (!bookingDetails.dob) newErrors.dob = 'Date of Birth is required'
-
-      if (!bookingDetails.gender) {
-        newErrors.gender = 'Please select gender'
-      }
-
-      setErrors(newErrors)
-
-      if (!bookingDetails.patientMobileNumber) {
-        newErrors.patientMobileNumber = 'Mobile number is required'
-      } else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber)) {
-        newErrors.patientMobileNumber = 'Enter a valid 10-digit mobile number starting with 6-9'
-      } else {
-        delete newErrors.patientMobileNumber
-      }
-      if (!bookingDetails.problem?.trim()) {
-        errors.problem = 'Symptoms/Problem is required.'
-      } else if (bookingDetails.problem.trim().length < 5) {
-        errors.problem = 'Symptoms/Problem must be at least 5 characters.'
-      }
-
-      if (!bookingDetails.symptomsDuration) {
-        errors.symptomsDuration = 'Symptoms duration is required.'
-      }
-
-      if (!bookingDetails.unit) {
-        errors.unit = 'Please select a duration unit.'
-      }
-
-      // Address validations
-      const addressErrors = {}
-      const addressFields = bookingDetails.address || {}
-
-      for (let field in addressFields) {
-        if (field === 'landmark') continue // ✅ Landmark is optional
-
-        if (!addressFields[field] || addressFields[field].trim() === '') {
-          addressErrors[field] = `${field} is required`
-        } else if (field === 'postalCode' && !/^\d{6}$/.test(addressFields[field])) {
-          addressErrors[field] = 'Postal code must be 6 digits'
-        }
-      }
-
-      if (Object.keys(addressErrors).length > 0) newErrors.address = addressErrors
-    }
-    // Services (if service appointment)
-    if (visitType !== 'followup' && appointmentType?.includes('service')) {
-      if (!selectedCategory) newErrors.selectedCategory = 'Select a category'
-      if (!selectedService) newErrors.selectedService = 'Select a service'
-      if (!selectedSubService) newErrors.selectedSubService = 'Select a procedure'
-    }
-
-    // Branch & Doctor
-    if (visitType !== 'followup') {
-      if (!bookingDetails.branchId) newErrors.branchname = 'Select a branch'
-      if (!bookingDetails.doctorId) newErrors.doctorName = 'Select a doctor'
-    }
-
-    // Slots
-    if (visitType !== 'followup' && selectedSlots.length === 0)
-      newErrors.slot = 'Please select a time slot'
-
-    // Payment
-    if (visitType !== 'followup' && !bookingDetails.paymentType)
-      newErrors.paymentType = 'Select payment type'
-
-    // Symptoms (optional)
-    if (
-      bookingDetails.problem &&
-      (bookingDetails.problem.length < 5 || bookingDetails.problem.length > 300)
-    )
-      newErrors.problem = 'Problem description must be 5-300 characters'
-
-    if (
-      bookingDetails.symptomsDuration &&
-      (bookingDetails.symptomsDuration < 1 || bookingDetails.symptomsDuration > 365)
-    )
-      newErrors.symptomsDuration = 'Duration must be between 1 and 365'
-
-    // Doctor Referral Code (optional)
-
-    if (appointmentType?.toLowerCase().trim() === 'inclinic') {
-      // Symptoms/Problem
-      if (!bookingDetails.problem?.trim()) {
-        newErrors.problem = 'Symptoms/Problem is required'
-      } else if (bookingDetails.problem.trim().length < 5) {
-        newErrors.problem = 'Symptoms/Problem must be at least 5 characters'
-      } else {
-        delete newErrors.problem
-      }
-
-      // Symptoms Duration
-      if (!bookingDetails.symptomsDuration) {
-        newErrors.symptomsDuration = 'Symptoms duration is required'
-      } else if (bookingDetails.symptomsDuration < 1 || bookingDetails.symptomsDuration > 365) {
-        newErrors.symptomsDuration = 'Duration must be between 1 and 365'
-      } else {
-        delete newErrors.symptomsDuration
-      }
-
-      // Unit
-      if (!bookingDetails.unit) {
-        newErrors.unit = 'Please select a duration unit'
-      } else {
-        delete newErrors.unit
-      }
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  // Name
+  if (!bookingDetails.name?.trim()) {
+    newErrors.name = 'Name is required';
   }
+
+  // DOB
+  if (!bookingDetails.dob) {
+    newErrors.dob = 'Date of Birth is required';
+  }
+
+  // Gender
+  if (!bookingDetails.gender) {
+    newErrors.gender = 'Please select gender';
+  }
+
+  // Mobile
+  if (!bookingDetails.patientMobileNumber) {
+    newErrors.patientMobileNumber = 'Mobile number is required';
+  } else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber)) {
+    newErrors.patientMobileNumber = 'Enter valid 10-digit mobile';
+  }
+
+  // Problem
+  if (!bookingDetails.problem?.trim()) {
+    newErrors.problem = 'Symptoms/Problem is required';
+  }
+
+  // Duration
+  if (!bookingDetails.symptomsDuration) {
+    newErrors.symptomsDuration = 'Duration required';
+  }
+
+  // Unit
+  if (!bookingDetails.unit) {
+    newErrors.unit = 'Select unit';
+  }
+
+  // Branch
+  if (!bookingDetails.branchId) {
+    newErrors.branchname = 'Select branch';
+  }
+
+  // Doctor
+  if (!bookingDetails.doctorId) {
+    newErrors.doctorName = 'Select doctor';
+  }
+
+  // Slot
+  if (selectedSlots.length === 0) {
+    newErrors.slot = 'Select a time slot';
+  }
+
+  // Payment
+  if (!bookingDetails.paymentType) {
+    newErrors.paymentType = 'Select payment type';
+  }
+  // 🔥 Body Assessment Validation
+
+// 1. Parts selection
+if (!part || part.length === 0) {
+  newErrors.bodyParts = 'Please select at least one body part';
+}
+
+// 2. Marked Image
+if (!markedImage) {
+  newErrors.bodyImage = 'Please mark the pain area on body image';
+}
+
+// 3. Therapy Questions
+if (!theraphyQuestions || Object.keys(theraphyQuestions).length === 0) {
+  newErrors.therapy = 'Please answer therapy questions';
+}
+
+  setErrors(newErrors);
+
+  return Object.keys(newErrors).length === 0;
+};
 
   const handleAppointmentTypeChange = (type) => {
     setBookingDetails((prev) => ({
@@ -876,10 +819,10 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     console.log('Validating bookingDetails...', bookingDetails)
     console.log('Validating bookingDetails...', part)
 
-    // if (!validate()) { //TODO: Fix validation to show all errors and prevent submission
-    //   showCustomToast('Please fix the errors before submitting.', 'error')
-    //   return
-    // }
+    if (!validate()) { //TODO: Fix validation to show all errors and prevent submission
+      showCustomToast('Please fix the errors before submitting.', 'error')
+      return
+    }
     try {
       setSaveLoading(true)
       // Build payload explicitly, excluding 'slot'
@@ -1141,7 +1084,13 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     setPart(actualData.parts || [])
     setMarkedImage(base64Image) // ✅ now always base64
     setTheraphyQuestions(actualData.answerData || {})
+    setErrors((prev) => ({
+    ...prev,
+    part: '',
+    markedImage: '',
+  }));
   }
+  
 
   // const handlePartClick = (data) => {
   //   console.log("RAW DATA:", data);
@@ -2107,21 +2056,30 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             </CRow>
           </>
         )}
-        <div className="mb-4">
-          <h6>Pain Assessment</h6>
+     <div className="mb-4">
+  <h6>Pain Assessment</h6>
 
-          <BodyAssessment onPartClick={handlePartClick} />
+  <BodyAssessment onPartClick={handlePartClick} />
 
-          {markedImage && (
-            <img
-              src={`data:image/png;base64,${markedImage}`}
-              width={200}
-              alt="preview"
-            />
-          )}
+  {/* ✅ Error for part selection */}
+  {errors.part && (
+    <p className="text-danger small">{errors.part}</p>
+  )}
 
-          {/* <h3>Selected: {part}</h3> */}
-        </div>
+  {/* Image Preview */}
+  {markedImage && (
+    <img
+      src={`data:image/png;base64,${markedImage}`}
+      width={200}
+      alt="preview"
+    />
+  )}
+
+  {/* ✅ Error for image */}
+  {errors.markedImage && (
+    <p className="text-danger small">{errors.markedImage}</p>
+  )}
+</div>
 
         {selectedBooking == null && (
           <>

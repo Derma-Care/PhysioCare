@@ -249,7 +249,15 @@ const handleEdit = (item) => {
       {/* Add Button */}
       <div className="d-flex justify-content-end mb-3">
         {can("Therapy Management", "create") && (
-          <CButton onClick={() => setModal(true)}>Add Package</CButton>
+         <CButton
+  onClick={() => setModal(true)}
+  style={{
+    backgroundColor: 'var(--color-black)',
+    color: 'white'
+  }}
+>
+  + Add Package
+</CButton>
         )}
       </div>
 
@@ -324,14 +332,16 @@ const handleEdit = (item) => {
       {/* MODAL */}
       <CModal visible={modal} onClose={resetForm} className="custom-modal"  backdrop="static" alignment="center">
         <CModalHeader>
-          <CModalTitle>{editId ? "Edit" : "Add"} Package</CModalTitle>
+          <CModalTitle  style={{
+    color: 'var(--color-black)',
+  }}>{editId ? "Edit" : "Add"} Package</CModalTitle>
         </CModalHeader>
 
         <CModalBody>
           <CForm>
             <CRow>
               <CCol md={12}>
-                <CFormLabel>Package Name *</CFormLabel>
+                <CFormLabel>Package Name <span className="text-danger">*</span></CFormLabel>
                 <CFormInput
                   value={form.packageName}
                   onChange={(e) =>
@@ -344,7 +354,7 @@ const handleEdit = (item) => {
               </CCol>
 
               <CCol md={12} className="mt-3">
-                <CFormLabel>Programs *</CFormLabel>
+                <CFormLabel>Programs <span className="text-danger">*</span></CFormLabel>
                <Select
   options={exerciseOptions}
   isMulti
@@ -363,7 +373,7 @@ const handleEdit = (item) => {
               </CCol>
 
               <CCol md={6} className="mt-3">
-                <CFormLabel>Offer Type *</CFormLabel>
+                <CFormLabel>Offer Type <span className="text-danger">*</span></CFormLabel>
                <CFormInput
   value={form.offerType}
   onChange={(e) =>
@@ -376,7 +386,7 @@ const handleEdit = (item) => {
               </CCol>
 
               <CCol md={6} className="mt-3">
-                <CFormLabel>Discount *</CFormLabel>
+                <CFormLabel>Discount  <span className="text-danger">*</span></CFormLabel>
                <CFormInput
   type="number"
   value={form.discountPercentage}
@@ -390,7 +400,7 @@ const handleEdit = (item) => {
               </CCol>
 
               <CCol md={6} className="mt-3">
-                <CFormLabel>Start Date *</CFormLabel>
+                <CFormLabel>Start Date <span className="text-danger">*</span></CFormLabel>
               <CFormInput
   type="date"
   value={form.startOfferDate}
@@ -404,7 +414,7 @@ const handleEdit = (item) => {
               </CCol>
 
               <CCol md={6} className="mt-3">
-                <CFormLabel>End Date *</CFormLabel>
+                <CFormLabel>End Date <span className="text-danger">*</span></CFormLabel>
                <CFormInput
   type="date"
   value={form.endOfferDate}
@@ -418,11 +428,31 @@ const handleEdit = (item) => {
               </CCol>
             </CRow>
 
-            <div className="text-end mt-3">
-              <CButton onClick={handleSave}>
-                {editId ? "Update" : "Save"}
-              </CButton>
-            </div>
+           <div className="d-flex justify-content-end gap-2 mt-3">
+  
+  {/* Cancel */}
+ <CButton
+  onClick={resetForm}
+ color="secondary"
+>
+  Cancel
+</CButton>
+
+  {/* Save / Update */}
+  <CButton
+    onClick={handleSave}
+    style={{
+      backgroundColor: 'var(--color-bgcolor)',
+      color: 'var(--color-black)',
+      border: 'none',
+      borderRadius: '6px',
+      padding: '6px 14px'
+    }}
+  >
+    {editId ? "Update" : "Save"}
+  </CButton>
+
+</div>
           </CForm>
         </CModalBody>
       </CModal>
