@@ -171,20 +171,3 @@ export const getQuestionsByKey = async (parts) => {
 
 
 
-// GET exercises
-export const getExercises = (clinicId, branchId) => axios.get(`${BASE_URL}/getBytherapyExercisesClinicIdAndBranchId/${clinicId}/${branchId}`)
-
-// GET therapies
-export const getTherapies = () => axios.get(`${BASE_URL}/therapies`)
-
-// ADD
-export const addTherapy = (data) =>
-  axios.post(`${BASE_URL}/therapies`, data)
-
-// UPDATE
-export const updateTherapy = (id, data) =>
-  axios.put(`${BASE_URL}/therapies/${id}`, data)
-
-// DELETE
-export const deleteTherapy = (id) =>
-  axios.delete(`${BASE_URL}/therapies/${id}`)

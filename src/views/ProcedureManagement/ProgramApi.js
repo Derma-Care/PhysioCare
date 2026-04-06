@@ -1,15 +1,13 @@
 import axios from "axios"
 import { BASE_URL } from "../../baseUrl"
 
-// GET exercises
-export const getTherapy = (clinicId, branchId) => axios.get(`${BASE_URL}/getByTherapyServiceClinicIdAndBranchId/${clinicId}/${branchId}`)
 
 // GET therapies
-export const getProgramService = (clinicId, branchId) => axios.get(`${BASE_URL}/program/getAll`)
+export const getProgramService = (clinicId, branchId) => axios.get(`${BASE_URL}/program/getBycIdAndbId/${clinicId}/${branchId}`)
 
 
 // GET therapies
-export const getProgramServicebyProgramId = (programId, clinicId, branchId) => axios.get(`${BASE_URL}/getTherapyServiceWithExercises/${programId}/${clinicId}/${branchId}`)
+export const getProgramServicebyProgramId = (programId, clinicId, branchId) => axios.post(`${BASE_URL}/program/getBycIdAndbIdAndId/${clinicId}/${branchId}/${programId}`)
 
 // ADD
 export const addProgram = (data) =>

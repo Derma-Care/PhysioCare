@@ -17,6 +17,7 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CFormLabel,
 } from "@coreui/react"
 import Select from "react-select"
 
@@ -31,13 +32,14 @@ import {
   subServiceData,
   GetSubServices_ByClinicId,
 } from './ProcedureManagementAPI'
-import { getExercises } from "../EmployeeManagement/Therapist/TheraphyApi"
+
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { useHospital } from "../Usecontext/HospitalContext"
 import { Edit2, Eye, Trash2 } from "lucide-react"
 import { getTherapiesService } from "./TherapyServiceApi"
 import LoadingIndicator from "../../Utils/loader"
-import { addProgram, deleteProgram, getProgramService, getTherapy, updateProgram } from "./ProgramApi"
+import { addProgram, deleteProgram, getProgramService, getProgramServicebyProgramId, updateProgram } from "./ProgramApi"
+import { showCustomToast } from "../../Utils/Toaster"
 
 
 export default function Programs() {
@@ -50,6 +52,12 @@ export default function Programs() {
   const [viewService, setViewService] = useState(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [viewModal, setViewModal] = useState(false)
+  const [viewLoading, setViewLoading] = useState(false)
+  const [viewData, setViewData] = useState(null)
+  const clinicId = localStorage.getItem("HospitalId")
+  const branchId = localStorage.getItem("branchId")
   const [form, setForm] = useState({
     therapyName: "",
 
@@ -88,10 +96,30 @@ export default function Programs() {
     setIsModalVisible(false)
 
   }
+  const handleView = async (id) => {
+    try {
+      setViewModal(true)
+      setViewLoading(true)
+
+      const clinicId = localStorage.getItem("HospitalId")
+      const branchId = localStorage.getItem("branchId")
+
+      const res = await getProgramServicebyProgramId(id, clinicId, branchId)
+      // 🔥 OR use specific API if available: getProgramById(id)
+
+      const data = res?.data?.data
+
+      setViewData(data)
+
+    } catch (err) {
+      console.log("view error", err)
+    } finally {
+      setViewLoading(false)
+    }
+  }
 
   const fetchExercises = async () => {
-    const clinicId = localStorage.getItem("HospitalId")
-    const branchId = localStorage.getItem("branchId")
+
     const res = await getTherapiesService(clinicId, branchId)
     console.log("Exercises", res.data.data)
     // convert to react-select format
@@ -119,56 +147,101 @@ export default function Programs() {
   }
 
   // ---------------- SAVE ----------------
+
   const handleSave = async () => {
     if (!validate()) return
 
-    const payload = {
-      programName: form.therapyName,
-      therophyIds: form.exercisesIds,
+    try {
+      setSaveLoading(true)
 
+      const payload = {
+        clinicId: clinicId,
+        branchId: branchId,
+        programName: form.therapyName,
+        therophyIds: form.exercisesIds,
+
+      }
+
+
+
+      if (editId) {
+        await updateProgram(editId, payload)
+        showCustomToast("Program updated successfully!", { position: "top-right" }, "success")
+
+      } else {
+        await addProgram(payload)
+        showCustomToast("Program added successfully!", { position: "top-right" }, "success")
+
+      }
+
+      resetForm()
+      fetchData()
+
+    } catch (error) {
+      console.error(error)
+
+      showCustomToast("Something went wrong!", { position: "top-right" }, "error")
+
+    } finally {
+      setSaveLoading(false)
     }
-
-    if (editId) {
-      await updateProgram(editId, payload)
-    } else {
-      await addProgram(payload)
-    }
-
-    resetForm()
-    fetchData()
   }
+
 
   // ---------------- DELETE ----------------
   const handleConfirmDelete = async () => {
-    console.log(serviceIdToDelete)
-    const hospitalId = localStorage.getItem('HospitalId')
     try {
       setDelLoading(true)
-      const result = await deleteProgram(serviceIdToDelete, hospitalId)
-      console.log('Service deleted:', result)
-      showCustomToast('Procedure deleted successfully!', { position: 'top-right' }, 'success')
 
+      console.log("Deleting:", serviceIdToDelete)
+
+      await deleteProgram(serviceIdToDelete)
+
+      // ✅ update UI instantly
+      setList(prev => prev.filter(item => item.id !== serviceIdToDelete))
+
+      // ✅ SHOW TOAST HERE
+      showCustomToast(
+        "Program deleted successfully!",
+        { position: "top-right" },
+        "success"
+      )
+
+      // optional refresh
       fetchData()
+
     } catch (error) {
-      console.error('Error deleting Procedure:', error)
+      console.error(error)
+
+      // ❌ ERROR TOAST
+      showCustomToast(
+        "Failed to delete program",
+        { position: "top-right" },
+        "error"
+      )
+
     } finally {
       setDelLoading(false)
+      setIsModalVisible(false)
     }
-    setIsModalVisible(false)
   }
 
   // ---------------- EDIT ----------------
   const handleEdit = (item) => {
     setEditId(item.id)
 
+    // ✅ extract IDs from API
+    const selectedIds = (item.therophy || []).map(t => t.theraphyId)
+
+    // ✅ match with dropdown options
     const selected = exerciseOptions.filter(opt =>
-      (item.programIds || []).includes(opt.value)
+      selectedIds.includes(opt.value)
     )
 
     setForm({
-      therapyName: item.therapyName,
+      therapyName: item.programName,
       exercises: selected,
-      exercisesIds: selected.map(s => s.value)
+      exercisesIds: selected.map(s => String(s.value))
     })
 
     setModal(true)
@@ -234,7 +307,7 @@ export default function Programs() {
         <CTableHead>
           <CTableRow>
             <CTableHeaderCell>S.No</CTableHeaderCell>
-            <CTableHeaderCell>Therapy Name</CTableHeaderCell>
+            <CTableHeaderCell>Program Name</CTableHeaderCell>
             <CTableHeaderCell>No.Of Therapy</CTableHeaderCell>
             {/* <CTableHeaderCell>Consent</CTableHeaderCell> */}
             <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
@@ -248,14 +321,14 @@ export default function Programs() {
                 <CTableRow key={item.id}>
                   <CTableDataCell>{index + 1}</CTableDataCell>
                   <CTableDataCell>{item.programName}</CTableDataCell>
-                  {/* <CTableDataCell>{item.therophyIds.length()}</CTableDataCell> */}
+                  <CTableDataCell>{item.theraphyCount}</CTableDataCell>
                   {/* <CTableDataCell>{item.consentType}</CTableDataCell> */}
                   <CTableDataCell className="text-end">
                     <div className="d-flex justify-content-end gap-2  ">
                       {/* {can('Therapy programs', 'read') && ( */}
                       <button
                         className="actionBtn"
-                        onClick={() => setViewService(item)}
+                        onClick={() => handleView(item.id)}
                         title="View"
                       >
                         <Eye size={18} />
@@ -281,29 +354,7 @@ export default function Programs() {
                         <Trash2 size={18} />
                       </button>
                       {/* )} */}
-                      <ConfirmationModal
-                        isVisible={isModalVisible}
-                        title="Delete Procedure"
-                        message="Are you sure you want to delete this procedure? This action cannot be undone."
-                        confirmText={
-                          delloading ? (
-                            <>
-                              <span
-                                className="spinner-border spinner-border-sm me-2 text-white"
-                                role="status"
-                              />
-                              Deleting...
-                            </>
-                          ) : (
-                            'Yes, Delete'
-                          )
-                        }
-                        cancelText="Cancel"
-                        confirmColor="danger"
-                        cancelColor="secondary"
-                        onConfirm={handleConfirmDelete}
-                        onCancel={handleCancelDelete}
-                      />
+
                     </div>
                   </CTableDataCell>
                   {/* <CTableDataCell>
@@ -330,6 +381,29 @@ export default function Programs() {
           }
         </CTableBody>
       </CTable>
+      <ConfirmationModal
+        isVisible={isModalVisible}
+        title="Delete Procedure"
+        message="Are you sure you want to delete this procedure? This action cannot be undone."
+        confirmText={
+          delloading ? (
+            <>
+              <span
+                className="spinner-border spinner-border-sm me-2 text-white"
+                role="status"
+              />
+              Deleting...
+            </>
+          ) : (
+            'Yes, Delete'
+          )
+        }
+        cancelText="Cancel"
+        confirmColor="danger"
+        cancelColor="secondary"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
 
       {/* MODAL */}
       <CModal visible={modal} onClose={resetForm} className={`custom-modal ${dropdownOpen ? "expand-modal" : ""}`} backdrop="static" size="lg">
@@ -343,6 +417,7 @@ export default function Programs() {
 
               {/* Therapy Name */}
               <CCol md={12}>
+                <CFormLabel className="fw-bold">Program Name</CFormLabel>
                 <CFormInput
                   placeholder="Program Name"
                   value={form.therapyName}
@@ -359,6 +434,7 @@ export default function Programs() {
 
               {/* Exercise */}
               <CCol md={12} className="mt-3">
+                <CFormLabel className="fw-bold">Select  Therapy</CFormLabel>
 
                 <Select
                   options={exerciseOptions}
@@ -397,31 +473,11 @@ export default function Programs() {
                 )}
               </CCol>
 
-              {/* Consent */}
-              {/* <CCol md={12} className="mt-3">
-                <CFormSelect
-                  value={form.consentType}
-                  onChange={(e) =>
-                    setForm({ ...form, consentType: e.target.value })
-                  }
-                >
-                  <option value="">Select Consent</option>
-                  <option value="1">Generic</option>
-                  <option value="2">Therapy</option>
-                </CFormSelect>
-                {errors.consentType && (
-                  <CFormText className="text-danger">
-                    {errors.consentType}
-                  </CFormText>
-                )}
-              </CCol> */}
 
             </CRow>
 
             <div className="d-flex gap-2 justify-content-end">
-              {/* <CButton onClick={() => setIsModalVisible(false)} color="secondary">
-                Cancel
-              </CButton> */}
+
               <CButton className="mt-3 ms-2" color="secondary" onClick={resetForm}>
                 Cancel
               </CButton>
@@ -434,7 +490,16 @@ export default function Programs() {
                 }}
                 className="mt-3 ms-2"
               >
-                {editId ? "Update" : "Save"}
+
+
+                {saveLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    {editId ? "Updating..." : "Saving..."}
+                  </>
+                ) : (
+                  editId ? "Update" : "Save"
+                )}
               </CButton>
             </div>
 
@@ -444,6 +509,118 @@ export default function Programs() {
 
 
           </CForm>
+        </CModalBody>
+      </CModal>
+      <CModal visible={viewModal} onClose={() => setViewModal(false)} size="lg" backdrop="static" className="custom-modal">
+        <CModalHeader>
+          <CModalTitle>Program Details</CModalTitle>
+        </CModalHeader>
+
+        <CModalBody>
+          {viewLoading ? (
+            <div className="text-center p-4">
+              <LoadingIndicator />
+            </div>
+          ) : viewData ? (
+            <>
+              {/* PROGRAM TITLE */}
+              <div className="mb-4">
+                <h4 style={{ fontWeight: '700', color: 'var(--color-black)' }}>{viewData.programName}</h4>
+                <hr />
+              </div>
+
+              {/* THERAPIES */}
+              {viewData.therophyData?.map((therapy, index) => (
+                <div
+                  key={therapy.id}
+                  className="mb-3 shadow-sm rounded"
+                  style={{
+                    border: '1px solid #eee',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* HEADER */}
+                  <div
+                    data-bs-toggle="collapse"
+                    data-bs-target={`#therapy-${index}`}
+                    style={{
+                      padding: '12px 15px',
+                      cursor: 'pointer',
+                      backgroundColor: "var(--color-bgcolor)",
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontWeight: '600',
+                    }}
+                  >
+                    <span>
+                      {index + 1}. {therapy.therapyName}
+                    </span>
+
+                    <span style={{ fontSize: '12px', color: 'var(--color-black)' }}>
+                      Click to expand
+                    </span>
+                  </div>
+
+                  {/* BODY */}
+                  <div
+                    id={`therapy-${index}`}
+                    className="collapse"
+                    style={{ background: '#fff' }}
+                  >
+                    <div className="p-3">
+
+                      {therapy.exercises?.length > 0 ? (
+                        <CTable
+                          bordered
+                          hover
+                          responsive
+                          style={{ fontSize: '13px' }}
+                        >
+                          <CTableHead color="light" className="pink-table">
+                            <CTableRow>
+                              <CTableHeaderCell>#</CTableHeaderCell>
+                              <CTableHeaderCell>Exercise</CTableHeaderCell>
+                              <CTableHeaderCell>Session</CTableHeaderCell>
+                              <CTableHeaderCell>Frequency</CTableHeaderCell>
+                              <CTableHeaderCell>Sets</CTableHeaderCell>
+                              <CTableHeaderCell>Reps</CTableHeaderCell>
+                              <CTableHeaderCell>Price</CTableHeaderCell>
+                            </CTableRow>
+                          </CTableHead>
+
+                          <CTableBody>
+                            {therapy.exercises.map((ex, i) => (
+                              <CTableRow key={ex.id}>
+                                <CTableDataCell>{i + 1}</CTableDataCell>
+                                <CTableDataCell>
+                                  <strong>{ex.name}</strong>
+                                </CTableDataCell>
+                                <CTableDataCell>{ex.session || '-'}</CTableDataCell>
+                                <CTableDataCell>{ex.frequency || '-'}</CTableDataCell>
+                                <CTableDataCell>{ex.sets || '-'}</CTableDataCell>
+                                <CTableDataCell>{ex.repetitions || '-'}</CTableDataCell>
+                                <CTableDataCell style={{ fontWeight: '600' }}>
+                                  ₹{ex.totalPrice || 0}
+                                </CTableDataCell>
+                              </CTableRow>
+                            ))}
+                          </CTableBody>
+                        </CTable>
+                      ) : (
+                        <div className="text-center text-muted py-3">
+                          No Exercises Available
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <div className="text-center p-4 text-muted">No Data</div>
+          )}
         </CModalBody>
       </CModal>
     </>

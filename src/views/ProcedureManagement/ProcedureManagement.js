@@ -17,6 +17,7 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CFormLabel,
 } from "@coreui/react"
 import Select from "react-select"
 
@@ -31,11 +32,11 @@ import {
   subServiceData,
   GetSubServices_ByClinicId,
 } from './ProcedureManagementAPI'
-import { getExercises } from "../EmployeeManagement/Therapist/TheraphyApi"
+
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { useHospital } from "../Usecontext/HospitalContext"
 import { Edit2, Eye, Loader, Trash2 } from "lucide-react"
-import { addTherapy, deleteTherapy, getTherapiesService, getTherapiesServicebytherapyId, updateTherapy } from "./TherapyServiceApi"
+import { addTherapy, deleteTherapy, getExercises, getTherapiesService, getTherapiesServicebytherapyId, updateTherapy } from "./TherapyServiceApi"
 import LoadingIndicator from "../../Utils/loader"
 import { showCustomToast } from "../../Utils/Toaster"
 
@@ -54,6 +55,7 @@ export default function TherapyManagement() {
   const [viewModal, setViewModal] = useState(false)
   const [viewLoading, setViewLoading] = useState(false)
   const [viewData, setViewData] = useState([])
+  const [saveLoading, setSaveLoading] = useState(false)
   const [form, setForm] = useState({
     therapyName: "",
     exercisesIds: [],
@@ -161,23 +163,36 @@ export default function TherapyManagement() {
   const handleSave = async () => {
     if (!validate()) return
 
-    const payload = {
-      clinicId: localStorage.getItem("HospitalId"),
-      branchId: localStorage.getItem("branchId"),
-      therapyName: form.therapyName,
-      exerciseIds: form.exercisesIds,
+    try {
+      setSaveLoading(true)
 
-      consentType: form.consentType,
+      const payload = {
+        clinicId: localStorage.getItem("HospitalId"),
+        branchId: localStorage.getItem("branchId"),
+        therapyName: form.therapyName,
+        exerciseIds: form.exercisesIds,
+        consentType: form.consentType,
+      }
+
+      if (editId) {
+        await updateTherapy(editId, payload)
+        showCustomToast("Therapy updated successfully!", { position: "top-right" }, "success")
+      } else {
+        await addTherapy(payload)
+        showCustomToast("Therapy added successfully!", { position: "top-right" }, "success")
+      }
+
+      resetForm()
+      fetchData()
+
+    } catch (error) {
+      console.error(error)
+
+      showCustomToast("Something went wrong!", { position: "top-right" }, "error")
+
+    } finally {
+      setSaveLoading(false)
     }
-
-    if (editId) {
-      await updateTherapy(editId, payload)
-    } else {
-      await addTherapy(payload)
-    }
-
-    resetForm()
-    fetchData()
   }
 
   // ---------------- DELETE ----------------
@@ -203,8 +218,9 @@ export default function TherapyManagement() {
   const handleEdit = (item) => {
     setEditId(item.id)
 
+    // ✅ FIX: map exerciseId correctly
     const selectedExercises = exerciseOptions.filter((opt) =>
-      (item.exercises || []).map(String).includes(String(opt.value))
+      (item.exercises || []).map(e => e.exerciseId).includes(opt.value)
     )
 
     setForm({
@@ -375,6 +391,7 @@ export default function TherapyManagement() {
 
               {/* Therapy Name */}
               <CCol md={12}>
+                <CFormLabel className="fw-bold">Therapy Name</CFormLabel>
                 <CFormInput
                   placeholder="Therapy Name"
                   value={form.therapyName}
@@ -391,6 +408,7 @@ export default function TherapyManagement() {
 
               {/* Exercise */}
               <CCol md={12} className="mt-3">
+                <CFormLabel className="fw-bold">Select Exercises</CFormLabel>
                 <Select
                   options={exerciseOptions}
                   isMulti
@@ -423,6 +441,7 @@ export default function TherapyManagement() {
 
               {/* Consent */}
               <CCol md={12} className="mt-3">
+                <CFormLabel className="fw-bold">Consent Type</CFormLabel>
                 <CFormSelect
                   value={form.consentType}
                   onChange={(e) =>
@@ -458,7 +477,14 @@ export default function TherapyManagement() {
                 }}
                 className="mt-3 ms-2"
               >
-                {editId ? "Update" : "Save"}
+                {saveLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    {editId ? "Updating..." : "Saving..."}
+                  </>
+                ) : (
+                  editId ? "Update" : "Save"
+                )}
               </CButton>
             </div>
 
