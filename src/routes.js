@@ -90,7 +90,8 @@ const TherapistDashboard = React.lazy(() => import('./views/EmployeeManagement/T
 const TherapistDetails = React.lazy(() => import('./views/EmployeeManagement/Therapist/TherapistDetails'))
 const ExerciseTable = React.lazy(() => import('./views/EmployeeManagement/Therapist/TherapyExercise'))
 const RevenueTable = React.lazy(() => import('./views/Analytics/Analytics'))
-const ExpenseForm = React.lazy(() => import('./views/Analytics/ExpenseForm'))
+const ExpenseForm = React.lazy(() => import('./views/Analytics/ExpenseForm')) 
+const PackagesManagement = React.lazy(() => import('./views/Package/PackagesManagment'))
 
 
 
@@ -114,6 +115,7 @@ const routes = [
   { path: '/employee-management/pharmacist', name: 'Pharmacist', element: PharmacistManagement },
   { path: '/employee-management', name: 'Employee Management', element: EmployeeManagement },
   { path: '/employee-management/nurse', name: 'Therapist', element: Therapist },
+  { path: '/package-management', name: 'Package Management', element: PackagesManagement },
   //   {
   //   path: '/employee-management/physio',
   //   name: 'Therapist',

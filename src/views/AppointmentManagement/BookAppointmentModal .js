@@ -876,10 +876,10 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     console.log('Validating bookingDetails...', bookingDetails)
     console.log('Validating bookingDetails...', part)
 
-    if (!validate()) { //TODO: Fix validation to show all errors and prevent submission
-      showCustomToast('Please fix the errors before submitting.', 'error')
-      return
-    }
+    // if (!validate()) { //TODO: Fix validation to show all errors and prevent submission
+    //   showCustomToast('Please fix the errors before submitting.', 'error')
+    //   return
+    // }
     try {
       setSaveLoading(true)
       // Build payload explicitly, excluding 'slot'
