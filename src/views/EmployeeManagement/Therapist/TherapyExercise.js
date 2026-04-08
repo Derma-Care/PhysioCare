@@ -47,7 +47,7 @@ export default function ExerciseTable() {
     notes: "",
     image: "",
     imagePreview: "",
-   
+
 
     // ✅ NEW FIELDS
     pricePerSession: "",
@@ -63,7 +63,7 @@ export default function ExerciseTable() {
   const [visible, setVisible] = useState(false)
   const [editIndex, setEditIndex] = useState(null)
   const [loading, setLoading] = useState(false)
-  
+
 
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false)
   const [exerciseIdToDelete, setExerciseIdToDelete] = useState(null)
@@ -91,89 +91,89 @@ export default function ExerciseTable() {
   }, [])
 
   // ================= VALIDATION =================
- const validateForm = () => {
-  // Name
-  if (!form.name.trim()) {
-    showCustomToast("Name is required", "error")
-    return false
+  const validateForm = () => {
+    // Name
+    if (!form.name.trim()) {
+      showCustomToast("Name is required", "error")
+      return false
+    }
+
+    // Session (fixed = 1, so just check existence)
+    if (!form.session || Number(form.session) !== 1) {
+      showCustomToast("Session must be 1", "error")
+      return false
+    }
+
+    // Frequency
+    if (!form.frequency.trim()) {
+      showCustomToast("Frequency is required", "error")
+      return false
+    }
+
+    // Notes
+    if (!form.notes.trim()) {
+      showCustomToast("Notes are required", "error")
+      return false
+    }
+
+    // Image
+    // if (!form.image) {
+    //   showCustomToast("Image is required", "error")
+    //   return false
+    // }
+
+    // Price
+    if (form.pricePerSession === "" || Number(form.pricePerSession) <= 0) {
+      showCustomToast("Enter valid price", "error")
+      return false
+    }
+
+    // Discount %
+    // if (form.discountPercentage === "") {
+    //   showCustomToast("Discount is required", "error")
+    //   return false
+    // }
+
+    if (Number(form.discountPercentage) < 0 || Number(form.discountPercentage) > 100) {
+      showCustomToast("Discount must be between 0 and 100", "error")
+      return false
+    }
+
+    // GST (optional but must be valid if entered)
+    if (form.gst !== "" && Number(form.gst) < 0) {
+      showCustomToast("GST cannot be negative", "error")
+      return false
+    }
+
+    // Other Tax
+    if (form.otherTax !== "" && Number(form.otherTax) < 0) {
+      showCustomToast("Other tax cannot be negative", "error")
+      return false
+    }
+
+    // Sets
+    if (form.sets === "" || Number(form.sets) <= 0) {
+      showCustomToast("Enter valid sets", "error")
+      return false
+    }
+
+    // Repetitions
+    if (form.repetitions === "" || Number(form.repetitions) <= 0) {
+      showCustomToast("Enter valid repetitions", "error")
+      return false
+    }
+
+    // Video (optional)
+    if (form.video) {
+      const url = form.video.trim()
+
+      if (!/^https?:\/\/.+/.test(url)) {
+        return showCustomToast("Enter valid video URL (must start with http/https)", "error")
+      }
+    }
+
+    return true
   }
-
-  // Session (fixed = 1, so just check existence)
-  if (!form.session || Number(form.session) !== 1) {
-    showCustomToast("Session must be 1", "error")
-    return false
-  }
-
-  // Frequency
-  if (!form.frequency.trim()) {
-    showCustomToast("Frequency is required", "error")
-    return false
-  }
-
-  // Notes
-  if (!form.notes.trim()) {
-    showCustomToast("Notes are required", "error")
-    return false
-  }
-
-  // Image
-  if (!form.image) {
-    showCustomToast("Image is required", "error")
-    return false
-  }
-
-  // Price
-  if (form.pricePerSession === "" || Number(form.pricePerSession) <= 0) {
-    showCustomToast("Enter valid price", "error")
-    return false
-  }
-
-  // Discount %
-  if (form.discountPercentage === "") {
-    showCustomToast("Discount is required", "error")
-    return false
-  }
-
-  if (Number(form.discountPercentage) < 0 || Number(form.discountPercentage) > 100) {
-    showCustomToast("Discount must be between 0 and 100", "error")
-    return false
-  }
-
-  // GST (optional but must be valid if entered)
-  if (form.gst !== "" && Number(form.gst) < 0) {
-    showCustomToast("GST cannot be negative", "error")
-    return false
-  }
-
-  // Other Tax
-  if (form.otherTax !== "" && Number(form.otherTax) < 0) {
-    showCustomToast("Other tax cannot be negative", "error")
-    return false
-  }
-
-  // Sets
-  if (form.sets === "" || Number(form.sets) <= 0) {
-    showCustomToast("Enter valid sets", "error")
-    return false
-  }
-
-  // Repetitions
-  if (form.repetitions === "" || Number(form.repetitions) <= 0) {
-    showCustomToast("Enter valid repetitions", "error")
-    return false
-  }
-
-  // Video (optional)
-  if (form.video) {
-  const url = form.video.trim()
-
-  if (!/^https?:\/\/.+/.test(url)) {
-    return showCustomToast("Enter valid video URL (must start with http/https)", "error")
-  }
-}
-
-  return true
-}
 
   // ================= SAVE =================
   const handleSave = async () => {
@@ -233,10 +233,10 @@ export default function ExerciseTable() {
     const ex = exercises[index]
     let videoUrl = ex.video || ""
 
-  // ✅ auto prefix if missing
-  if (videoUrl && !videoUrl.startsWith("http")) {
-    videoUrl = "https://" + videoUrl
-  }
+    // ✅ auto prefix if missing
+    if (videoUrl && !videoUrl.startsWith("http")) {
+      videoUrl = "https://" + videoUrl
+    }
     setForm({ ...ex, imagePreview: ex.image })
     setEditIndex(index)
     setVisible(true)
@@ -272,90 +272,90 @@ export default function ExerciseTable() {
     <>
       <CCard>
         <CCardBody>
-           {loading ? (
-      <LoadingIndicator message="Loading exercises..." />
-    ) : (
-       <>
+          {loading ? (
+            <LoadingIndicator message="Loading exercises..." />
+          ) : (
+            <>
 
-          <div className="d-flex justify-content-between mb-3">
-            <h5>Exercises</h5>
-            <CButton onClick={handleAdd} disabled={loading} style={{ backgroundColor: "var(--color-black)", color: "#fff" }}>
-              + Add Exercise
-            </CButton>
-          </div>
+              <div className="d-flex justify-content-between mb-3">
+                <h5>Exercises</h5>
+                <CButton onClick={handleAdd} disabled={loading} style={{ backgroundColor: "var(--color-black)", color: "#fff" }}>
+                  + Add Exercise
+                </CButton>
+              </div>
 
-        <CTable bordered className="pink-table">
-  <CTableHead>
-    <CTableRow>
-      <CTableHeaderCell>S.No</CTableHeaderCell>
-      <CTableHeaderCell>Name</CTableHeaderCell>
-      <CTableHeaderCell>Discount (%)</CTableHeaderCell>
-      <CTableHeaderCell>Discount Amount</CTableHeaderCell>
+              <CTable bordered className="pink-table">
+                <CTableHead>
+                  <CTableRow>
+                    <CTableHeaderCell>S.No</CTableHeaderCell>
+                    <CTableHeaderCell>Name</CTableHeaderCell>
+                    <CTableHeaderCell>Discount (%)</CTableHeaderCell>
+                    <CTableHeaderCell>Discount Amount</CTableHeaderCell>
 
 
-      <CTableHeaderCell>Price</CTableHeaderCell>
+                    <CTableHeaderCell>Price</CTableHeaderCell>
 
-      <CTableHeaderCell>Action</CTableHeaderCell>
-    </CTableRow>
-  </CTableHead>
+                    <CTableHeaderCell>Action</CTableHeaderCell>
+                  </CTableRow>
+                </CTableHead>
 
-  <CTableBody>
-    {exercises.map((ex, i) => (
-      <CTableRow key={i}>
-        <CTableDataCell>{i + 1}</CTableDataCell>
+                <CTableBody>
+                  {exercises.map((ex, i) => (
+                    <CTableRow key={i}>
+                      <CTableDataCell>{i + 1}</CTableDataCell>
 
-        <CTableDataCell>{ex.name}</CTableDataCell>
-       <CTableDataCell>{ex.discountPercentage || 0}%</CTableDataCell>
-       <CTableDataCell>₹{ex.discountAmount || 0}</CTableDataCell>
+                      <CTableDataCell>{ex.name}</CTableDataCell>
+                      <CTableDataCell>{ex.discountPercentage || 0}%</CTableDataCell>
+                      <CTableDataCell>₹{ex.discountAmount || 0}</CTableDataCell>
 
-        <CTableDataCell>₹{ex.pricePerSession}</CTableDataCell>
+                      <CTableDataCell>₹{ex.pricePerSession}</CTableDataCell>
 
-        <CTableDataCell>
-          {/* VIEW */}
-          <CButton
-            size="sm"
-            className="actionBtn me-2"
-            style={{
-              backgroundColor: "var(--color-bgcolor)",
-              color: "var(--color-black)",
-            }}
-            onClick={() => handleView(ex)}
-          >
-            <Eye size={18} />
-          </CButton>
+                      <CTableDataCell>
+                        {/* VIEW */}
+                        <CButton
+                          size="sm"
+                          className="actionBtn me-2"
+                          style={{
+                            backgroundColor: "var(--color-bgcolor)",
+                            color: "var(--color-black)",
+                          }}
+                          onClick={() => handleView(ex)}
+                        >
+                          <Eye size={18} />
+                        </CButton>
 
-          {/* EDIT */}
-          <CButton
-            size="sm"
-            className="actionBtn me-2"
-            style={{
-              backgroundColor: "var(--color-bgcolor)",
-              color: "var(--color-black)",
-            }}
-            onClick={() => handleEdit(i)}
-          >
-            <Edit2 size={18} />
-          </CButton>
+                        {/* EDIT */}
+                        <CButton
+                          size="sm"
+                          className="actionBtn me-2"
+                          style={{
+                            backgroundColor: "var(--color-bgcolor)",
+                            color: "var(--color-black)",
+                          }}
+                          onClick={() => handleEdit(i)}
+                        >
+                          <Edit2 size={18} />
+                        </CButton>
 
-          {/* DELETE */}
-          <CButton
-            size="sm"
-            className="actionBtn"
-            style={{
-              backgroundColor: "var(--color-bgcolor)",
-              color: "var(--color-black)",
-            }}
-            onClick={() => openDeleteModal(i)}
-          >
-            <Trash2 size={18} />
-          </CButton>
-        </CTableDataCell>
-      </CTableRow>
-    ))}
-  </CTableBody>
-</CTable>
-  </>
-    )}
+                        {/* DELETE */}
+                        <CButton
+                          size="sm"
+                          className="actionBtn"
+                          style={{
+                            backgroundColor: "var(--color-bgcolor)",
+                            color: "var(--color-black)",
+                          }}
+                          onClick={() => openDeleteModal(i)}
+                        >
+                          <Trash2 size={18} />
+                        </CButton>
+                      </CTableDataCell>
+                    </CTableRow>
+                  ))}
+                </CTableBody>
+              </CTable>
+            </>
+          )}
 
         </CCardBody>
       </CCard>
@@ -381,70 +381,70 @@ export default function ExerciseTable() {
 
             <CCol md={4}>
               <CFormLabel>Session</CFormLabel>
-              <CFormInput value={form.session}   disabled/>
+              <CFormInput value={form.session} disabled />
             </CCol>
 
-            
+
 
             <CCol md={4}>
               <CFormLabel>Price</CFormLabel>
-             <CFormInput
-  type="number"
-  min="0"
-  value={form.pricePerSession}
-  onChange={(e) =>
-    setForm({
-      ...form,
-      pricePerSession: Math.max(0, e.target.value),
-    })
-  }
-/>
+              <CFormInput
+                type="number"
+                min="0"
+                value={form.pricePerSession}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    pricePerSession: Math.max(0, e.target.value),
+                  })
+                }
+              />
             </CCol>
 
             <CCol md={4}>
               <CFormLabel>GST</CFormLabel>
-             <CFormInput
-  type="number"
-  min="0"
-  value={form.gst}
-  onChange={(e) =>
-    setForm({
-      ...form,
-      gst: Math.max(0, e.target.value),
-    })
-  }
-/>
+              <CFormInput
+                type="number"
+                min="0"
+                value={form.gst}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    gst: Math.max(0, e.target.value),
+                  })
+                }
+              />
             </CCol>
 
             <CCol md={4}>
               <CFormLabel>Other Tax</CFormLabel>
-             <CFormInput
-  type="number"
-  min="0"
-  value={form.otherTax}
-  onChange={(e) =>
-    setForm({
-      ...form,
-      otherTax: Math.max(0, e.target.value),
-    })
-  }
-/>
+              <CFormInput
+                type="number"
+                min="0"
+                value={form.otherTax}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    otherTax: Math.max(0, e.target.value),
+                  })
+                }
+              />
             </CCol>
             <CCol md={4}>
-  <CFormLabel>Discount (%)</CFormLabel>
-  <CFormInput
-  type="number"
-  min="0"
-  max="100"
-  value={form.discountPercentage}
-  onChange={(e) =>
-    setForm({
-      ...form,
-      discountPercentage: Math.max(0, e.target.value),
-    })
-  }
-/>
-</CCol>
+              <CFormLabel>Discount (%)</CFormLabel>
+              <CFormInput
+                type="number"
+                min="0"
+                max="100"
+                value={form.discountPercentage}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    discountPercentage: Math.max(0, e.target.value),
+                  })
+                }
+              />
+            </CCol>
 
             <CCol md={4}>
               <CFormLabel>Sets</CFormLabel>
@@ -484,98 +484,98 @@ export default function ExerciseTable() {
       </CModal>
 
       {/* ✅ VIEW MODAL */}
-    
-<ConfirmationModal
-  isVisible={isDeleteModalVisible}
-  title="Delete Exercise"
-  message="Are you sure you want to delete this exercise? This action cannot be undone."
-  isLoading={delloading}
-  confirmText="Yes, Delete"
-  cancelText="Cancel"
-  confirmColor="danger"
-  cancelColor="secondary"
-  onConfirm={confirmDeleteExercise}
-  onCancel={() => {
-    setIsDeleteModalVisible(false)
-    setExerciseIdToDelete(null)
-  }}
-/>
+
+      <ConfirmationModal
+        isVisible={isDeleteModalVisible}
+        title="Delete Exercise"
+        message="Are you sure you want to delete this exercise? This action cannot be undone."
+        isLoading={delloading}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        confirmColor="danger"
+        cancelColor="secondary"
+        onConfirm={confirmDeleteExercise}
+        onCancel={() => {
+          setIsDeleteModalVisible(false)
+          setExerciseIdToDelete(null)
+        }}
+      />
       <CModal
-  visible={viewVisible}
-  onClose={() => setViewVisible(false)}
-  className="custom-modal"
->
-  <CModalHeader>
-    <CModalTitle>Exercise Details</CModalTitle>
-  </CModalHeader>
+        visible={viewVisible}
+        onClose={() => setViewVisible(false)}
+        className="custom-modal"
+      >
+        <CModalHeader>
+          <CModalTitle>Exercise Details</CModalTitle>
+        </CModalHeader>
 
-  <CModalBody>
-    {viewData ? (
-      <CRow>
+        <CModalBody>
+          {viewData ? (
+            <CRow>
 
-        {/* IMAGE */}
-        <CCol md={12} className="text-center mb-3">
-          {viewData.image && (
-            <CImage src={viewData.image} width={120} />
-          )}
-        </CCol>
+              {/* IMAGE */}
+              <CCol md={12} className="text-center mb-3">
+                {viewData.image && (
+                  <CImage src={viewData.image} width={120} />
+                )}
+              </CCol>
 
-        {/* BASIC */}
-        <CCol md={6}><strong>Name:</strong> {viewData.name}</CCol>
-        <CCol md={6}><strong>Session:</strong> {viewData.session}</CCol>
+              {/* BASIC */}
+              <CCol md={6}><strong>Name:</strong> {viewData.name}</CCol>
+              <CCol md={6}><strong>Session:</strong> {viewData.session}</CCol>
 
-        <CCol md={6}><strong>Frequency:</strong> {viewData.frequency}</CCol>
+              <CCol md={6}><strong>Frequency:</strong> {viewData.frequency}</CCol>
 
-        {/* PRICING */}
-        <CCol md={6}><strong>Price:</strong> ₹{viewData.pricePerSession}</CCol>
-        <CCol md={6}><strong>GST:</strong> {viewData.gst}%</CCol>
-        <CCol md={6}><strong>Discount:</strong> {viewData.discountPercentage}%</CCol>
-        <CCol md={6}><strong>Discount Amount:</strong> ₹{viewData.discountAmount?.toFixed(2)}</CCol>
+              {/* PRICING */}
+              <CCol md={6}><strong>Price:</strong> ₹{viewData.pricePerSession}</CCol>
+              <CCol md={6}><strong>GST:</strong> {viewData.gst}%</CCol>
+              <CCol md={6}><strong>Discount:</strong> {viewData.discountPercentage}%</CCol>
+              <CCol md={6}><strong>Discount Amount:</strong> ₹{viewData.discountAmount?.toFixed(2)}</CCol>
 
-        <CCol md={6}><strong>Other Tax:</strong> {viewData.otherTax}%</CCol>
+              <CCol md={6}><strong>Other Tax:</strong> {viewData.otherTax}%</CCol>
 
-        <CCol md={6}>
-          <strong>Total:</strong> ₹
-          {(
-            Number(viewData.pricePerSession || 0) +
-            (Number(viewData.pricePerSession || 0) * Number(viewData.gst || 0)) / 100 +
-            (Number(viewData.pricePerSession || 0) * Number(viewData.otherTax || 0)) / 100
-          ).toFixed(2)}
-        </CCol>
+              <CCol md={6}>
+                <strong>Total:</strong> ₹
+                {(
+                  Number(viewData.pricePerSession || 0) +
+                  (Number(viewData.pricePerSession || 0) * Number(viewData.gst || 0)) / 100 +
+                  (Number(viewData.pricePerSession || 0) * Number(viewData.otherTax || 0)) / 100
+                ).toFixed(2)}
+              </CCol>
 
-        {/* EXERCISE */}
-        <CCol md={6}><strong>Sets:</strong> {viewData.sets}</CCol>
-        <CCol md={6}><strong>Repetitions:</strong> {viewData.repetitions}</CCol>
+              {/* EXERCISE */}
+              <CCol md={6}><strong>Sets:</strong> {viewData.sets}</CCol>
+              <CCol md={6}><strong>Repetitions:</strong> {viewData.repetitions}</CCol>
 
-        {/* NOTES */}
-        <CCol md={12}>
-          <strong>Notes:</strong> {viewData.notes}
-        </CCol>
+              {/* NOTES */}
+              <CCol md={12}>
+                <strong>Notes:</strong> {viewData.notes}
+              </CCol>
 
-        {/* VIDEO */}
-        <CCol md={12}>
-          <strong>Video:</strong>{" "}
-          {viewData.video ? (
-            <a href={viewData.video} target="_blank" rel="noreferrer">
-              Watch Video
-            </a>
+              {/* VIDEO */}
+              <CCol md={12}>
+                <strong>Video:</strong>{" "}
+                {viewData.video ? (
+                  <a href={viewData.video} target="_blank" rel="noreferrer">
+                    Watch Video
+                  </a>
+                ) : (
+                  "No Video"
+                )}
+              </CCol>
+
+            </CRow>
           ) : (
-            "No Video"
+            <div>No data available</div>
           )}
-        </CCol>
+        </CModalBody>
 
-      </CRow>
-    ) : (
-      <div>No data available</div>
-    )}
-  </CModalBody>
-
-  <CModalFooter>
-    <CButton onClick={() => setViewVisible(false)}>
-      Close
-    </CButton>
-  </CModalFooter>
-</CModal>
+        <CModalFooter>
+          <CButton onClick={() => setViewVisible(false)}>
+            Close
+          </CButton>
+        </CModalFooter>
+      </CModal>
     </>
   )
 }

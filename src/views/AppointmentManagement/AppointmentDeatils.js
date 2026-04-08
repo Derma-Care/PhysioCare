@@ -30,6 +30,7 @@ import { GetProcedureFormData } from '../ConsentForms/ConsentFormsAPI'
 import ConsentFormHandler from '../ConsentForms/ConsentFormHandler'
 import { showCustomToast } from '../../Utils/Toaster'
 import PaymentAccordion from './PaymentProgram'
+import ProgramPayment from './PaymentProgram'
 
 const AppointmentDetails = () => {
   const { id } = useParams()
@@ -70,6 +71,7 @@ const AppointmentDetails = () => {
   const showConfirmed = normalizedStatus === 'confirmed'
   const showCompletedOrActive = ['completed', 'active'].includes(normalizedStatus)
   const showVitalsCard = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
+  const showPayment = ['active',].includes(normalizedStatus)
   const showConfirmedOrCompleted = ['confirmed', 'completed', 'active'].includes(normalizedStatus)
 
   const [validationErrors, setValidationErrors] = useState({})
@@ -346,6 +348,25 @@ const AppointmentDetails = () => {
   const showPrescription =
     ['active', 'completed'].includes(normalizedStatus) && appointment?.prescriptionPdf
 
+
+
+
+  const handlePaymentClick = () => {
+    if (showPayment && normalizedStatus === "active") {
+      console.log("Navigating to payment with appointment:", appointment)
+      navigate("/program-payment" + `/${id}`, {
+        state: {
+          bookingId: appointment.bookingId,
+          doctorId: appointment.doctorId,
+          clinicId: appointment.clinicId,
+          branchId: appointment.branchId,
+          patientId: appointment.patientId,
+        }
+      })
+    } else {
+      alert("Payment allowed only for active status")
+    }
+  }
   return (
     <div className="container mt-4">
       {/* Header */}
@@ -366,6 +387,15 @@ const AppointmentDetails = () => {
               Add Vitals
             </CButton>
           )}
+          {
+            showPayment && (<CButton
+              color="success"
+              onClick={() => handlePaymentClick()}
+              disabled={!showPayment} // optional disable
+            >
+              Payment
+            </CButton>)
+          }
           {/* <CButton
             color="secondary"
             size="sm"
@@ -561,6 +591,8 @@ const AppointmentDetails = () => {
         {showVitalsCard && (
           <div className="card shadow-sm p-3 mb-3 mt-4" style={{ color: 'var(--color-black)' }}>
             <div className="d-flex justify-content-between align-items-center">
+
+
               <h5>Vitals Card</h5>
               {showConfirmed && !vitals && (
                 <CButton
@@ -570,6 +602,7 @@ const AppointmentDetails = () => {
                   Add Vitals
                 </CButton>
               )}
+
             </div>
             {vitals ? (
               <div className="row mt-3">
@@ -599,7 +632,7 @@ const AppointmentDetails = () => {
           </div>
         )}
 
-        <PaymentAccordion />
+
 
         {showConfirmedOrCompleted && doctor && (
           <>

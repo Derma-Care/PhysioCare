@@ -90,8 +90,9 @@ const TherapistDashboard = React.lazy(() => import('./views/EmployeeManagement/T
 const TherapistDetails = React.lazy(() => import('./views/EmployeeManagement/Therapist/TherapistDetails'))
 const ExerciseTable = React.lazy(() => import('./views/EmployeeManagement/Therapist/TherapyExercise'))
 const RevenueTable = React.lazy(() => import('./views/Analytics/Analytics'))
-const ExpenseForm = React.lazy(() => import('./views/Analytics/ExpenseForm')) 
+const ExpenseForm = React.lazy(() => import('./views/Analytics/ExpenseForm'))
 const PackagesManagement = React.lazy(() => import('./views/Package/PackagesManagment'))
+const ProgramPayment = React.lazy(() => import('./views/AppointmentManagement/PaymentProgram'))
 
 
 
@@ -201,7 +202,8 @@ const routes = [
   { path: "/therapist-details", element: TherapistDetails },
   { path: "/exercises", element: ExerciseTable },
   { path: "/analytics", element: RevenueTable },
-  { path: "/expenses", element: ExpenseForm }
+  { path: "/expenses", element: ExpenseForm },
+  { path: "/program-payment/:id", element: ProgramPayment }
 
 
   // { path: "/attendance", element: AttendanceMenu },
