@@ -560,7 +560,7 @@ export default function ProgramPayment() {
 
                     {/* BUTTONS */}
                     {/* and check status also */}
-                    {!isFollowUpPayment && (
+                    {isFollowUpPayment && (
                         <CCard className="mb-3 shadow-sm">
                             <CCardHeader className="fw-bold d-flex justify-content-between align-items-center">
                                 <div>Payment History</div>
