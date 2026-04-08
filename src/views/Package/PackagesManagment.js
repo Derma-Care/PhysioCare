@@ -456,42 +456,230 @@ const handleEdit = (item) => {
           </CForm>
         </CModalBody>
       </CModal>
-      <CModal visible={viewModal} onClose={() => setViewModal(false)}>
-  <CModalHeader>
-    <CModalTitle>Package Details</CModalTitle>
+  <CModal visible={viewModal} onClose={() => setViewModal(false)} size="lg">
+  <CModalHeader
+    style={{
+      color: 'var(--color-black)',
+      borderBottom: '1px solid var(--color-border)',
+    }}
+  >
+    <CModalTitle style={{ fontWeight: '600' }}>Package Details</CModalTitle>
   </CModalHeader>
 
-  <CModalBody>
+ <CModalBody style={{ backgroundColor: 'var(--color-bg-light)' }}>
     {selectedPackage && (
-      <div className="d-flex flex-column gap-2">
+      <div className="d-flex flex-column gap-3">
 
-        <div><strong>Package Name:</strong> {selectedPackage.packageName}</div>
-<div>
-  <strong>Programs:</strong>{" "}
-  {selectedPackage.programs?.length
-    ? selectedPackage.programs.map(p => p.programName).join(", ")
-    : selectedPackage.programIds?.join(", ")}
+        {/* PACKAGE INFO */}
+     <div className="accordion" id="packageAccordion">
+
+  <div
+    className="accordion-item"
+    style={{
+      border: '1px solid var(--color-border)',
+      borderRadius: '10px',
+      overflow: 'hidden',
+    }}
+  >
+
+    {/* HEADER */}
+    <h2 className="accordion-header">
+      <button
+        className="accordion-button collapsed"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#packageDetails"
+         style={{
+    backgroundColor: 'var(--color-bgcolor)',
+    color: 'var(--color-black)',
+    fontWeight: '600',
+    border: 'none',
+  }}
+      >
+        {selectedPackage.packageName}
+      </button>
+    </h2>
+
+    {/* BODY */}
+    <div
+      id="packageDetails"
+      className="accordion-collapse collapse"
+      data-bs-parent="#packageAccordion"
+      
+    >
+      <div
+        className="accordion-body"
+        style={{
+          padding: '12px 16px',
+          fontSize: '14px',
+          lineHeight: '1.9',
+        }}
+      >
+
+        <div style={{ minWidth: '130px' }}>
+          <span style={{ minWidth: '130px' }}>Programs:</span>
+          <span>{selectedPackage.noOfPrograms}</span>
+        </div>
+
+        <div style={{ minWidth: '130px' }}>
+          <span style={{ minWidth: '130px'}}>
+            Discount:
+          </span>
+          <span >
+            {selectedPackage.discountPercentage}%
+          </span>
+        </div>
+
+        <div style={{ minWidth: '130px' }}>
+          <span style={{ minWidth: '130px' }}>
+            Offer Type:
+          </span>
+          <span>
+            {selectedPackage.offerType}
+          </span>
+        </div>
+
+        <div >
+          <span style={{ minWidth: '130px' }}>Start Date:</span>
+          <span>{selectedPackage.startOfferDate}</span>
+        </div>
+
+        <div>
+          <span style={{ minWidth: '130px' }}>End Date:</span>
+          <span>{selectedPackage.endOfferDate}</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
 </div>
 
-        <div>
-          <strong>No. of Programs:</strong> {selectedPackage.noOfPrograms}
-        </div>
+        {/* PROGRAM ACCORDION */}
+        <div className="accordion" id="programAccordion">
 
-        <div>
-          <strong>Discount:</strong> {selectedPackage.discountPercentage}%
-        </div>
+          {Array.isArray(selectedPackage.programs) &&
+            selectedPackage.programs.map((program, pIndex) => (
+              <div className="accordion-item" key={pIndex}>
 
-        <div>
-          <strong>Offer Type:</strong>{" "}
-          {selectedPackage.offerType}
-        </div>
+                {/* PROGRAM HEADER */}
+                <h2 className="accordion-header">
+                  <button
+                    className="accordion-button collapsed"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target={`#program-${pIndex}`}
+                     style={{
+    backgroundColor: 'var(--color-bgcolor)',
+    color: 'var(--color-black)',
+    fontWeight: '600',
+    border: 'none',
+  }}
+                  >
+                    {pIndex + 1}. {program.programName}
+                  </button>
+                </h2>
 
-        <div>
-          <strong>Start Date:</strong> {selectedPackage.startOfferDate}
-        </div>
+                {/* PROGRAM BODY */}
+                <div
+                  id={`program-${pIndex}`}
+                  className="accordion-collapse collapse"
+                  data-bs-parent="#programAccordion"
+                >
+                  <div className="accordion-body">
 
-        <div>
-          <strong>End Date:</strong> {selectedPackage.endOfferDate}
+                    {/* THERAPY ACCORDION */}
+                    <div className="accordion" id={`therapyAccordion-${pIndex}`}>
+
+                      {Array.isArray(program.therophyData) &&
+                        program.therophyData.map((therapy, tIndex) => (
+                          <div className="accordion-item" key={tIndex}>
+
+                            {/* THERAPY HEADER */}
+                            <h2 className="accordion-header">
+                              <button
+                                className="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target={`#therapy-${pIndex}-${tIndex}`}
+                                style={{
+  backgroundColor: 'var(--color-bg-light)',
+  color: 'var(--color-black)',
+}}
+                              >
+                                {tIndex + 1}. {therapy.therapyName}
+                              </button>
+                            </h2>
+
+                            {/* THERAPY BODY */}
+                            <div
+                              id={`therapy-${pIndex}-${tIndex}`}
+                              className="accordion-collapse collapse"
+                              data-bs-parent={`#therapyAccordion-${pIndex}`}
+                            >
+                              <div className="accordion-body">
+
+                                {/* EXERCISES TABLE */}
+                                {Array.isArray(therapy.exercises) &&
+                                therapy.exercises.length > 0 ? (
+                                  <CTable bordered responsive size="sm">
+                                    <CTableHead>
+                                      <CTableRow>
+                                        <CTableHeaderCell>#</CTableHeaderCell>
+                                        <CTableHeaderCell>Name</CTableHeaderCell>
+                                        <CTableHeaderCell>Session</CTableHeaderCell>
+                                        <CTableHeaderCell>Frequency</CTableHeaderCell>
+                                        <CTableHeaderCell>Sets</CTableHeaderCell>
+                                        <CTableHeaderCell>Reps</CTableHeaderCell>
+                                        <CTableHeaderCell>Price</CTableHeaderCell>
+                                      </CTableRow>
+                                    </CTableHead>
+
+                                    <CTableBody>
+                                      {therapy.exercises.map((ex, i) => (
+                                        <CTableRow key={i}>
+                                          <CTableDataCell>{i + 1}</CTableDataCell>
+
+                                          <CTableDataCell>
+                                            <strong>{ex.name}</strong>
+                                            <br />
+                                            <small className="text-muted">
+                                              {ex.notes}
+                                            </small>
+                                          </CTableDataCell>
+
+                                          <CTableDataCell>{ex.session || '-'}</CTableDataCell>
+                                          <CTableDataCell>{ex.frequency || '-'}</CTableDataCell>
+                                          <CTableDataCell>{ex.sets || '-'}</CTableDataCell>
+                                          <CTableDataCell>{ex.repetitions || '-'}</CTableDataCell>
+
+                                          <CTableDataCell>
+                                            ₹{ex.totalPrice || 0}
+                                          </CTableDataCell>
+                                        </CTableRow>
+                                      ))}
+                                    </CTableBody>
+                                  </CTable>
+                                ) : (
+                                  <div className="text-center text-muted">
+                                    No Exercises Available
+                                  </div>
+                                )}
+
+                              </div>
+                            </div>
+
+                          </div>
+                        ))}
+
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            ))}
+
         </div>
 
       </div>
