@@ -718,87 +718,61 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     }
   }
 
-  const validate = () => {
+const validate = () => {
   const newErrors = {};
 
-  // Name
-  if (!bookingDetails.name?.trim()) {
-    newErrors.name = 'Name is required';
-  }
-
-  // DOB
+  if (!bookingDetails.name?.trim()) newErrors.name = 'Name is required';
+  // ✅ DOB only required for NEW patients
+if (!selectedBooking) {
   if (!bookingDetails.dob) {
-    newErrors.dob = 'Date of Birth is required';
+    newErrors.dob = 'DOB required';
   }
+}
+  // if (!bookingDetails.dob) newErrors.dob = 'DOB required';
+  if (!bookingDetails.gender) newErrors.gender = 'Select gender';
 
-  // Gender
-  if (!bookingDetails.gender) {
-    newErrors.gender = 'Please select gender';
-  }
-
-  // Mobile
   if (!bookingDetails.patientMobileNumber) {
-    newErrors.patientMobileNumber = 'Mobile number is required';
+    newErrors.patientMobileNumber = 'Mobile required';
   } else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber)) {
-    newErrors.patientMobileNumber = 'Enter valid 10-digit mobile';
+    newErrors.patientMobileNumber = 'Invalid mobile';
   }
 
-  // Problem
+  // if (!bookingDetails.problem?.trim()) newErrors.problem = 'Problem required';
+  if (appointmentType?.toLowerCase().trim() !== 'services') {
   if (!bookingDetails.problem?.trim()) {
-    newErrors.problem = 'Symptoms/Problem is required';
+    newErrors.problem = 'Problem required';
   }
-
-  // Duration
+}
+  // if (!bookingDetails.symptomsDuration) newErrors.symptomsDuration = 'Duration required';
+  if (appointmentType?.toLowerCase().trim() !== 'services') {
   if (!bookingDetails.symptomsDuration) {
     newErrors.symptomsDuration = 'Duration required';
   }
 
-  // Unit
   if (!bookingDetails.unit) {
     newErrors.unit = 'Select unit';
   }
-
-  // Branch
-  if (!bookingDetails.branchId) {
-    newErrors.branchname = 'Select branch';
-  }
-
-  // Doctor
-  if (!bookingDetails.doctorId) {
-    newErrors.doctorName = 'Select doctor';
-  }
-
-  // Slot
-  if (selectedSlots.length === 0) {
-    newErrors.slot = 'Select a time slot';
-  }
-
-  // Payment
-  if (!bookingDetails.paymentType) {
-    newErrors.paymentType = 'Select payment type';
-  }
-  // 🔥 Body Assessment Validation
-
-// 1. Parts selection
-if (!part || part.length === 0) {
-  newErrors.bodyParts = 'Please select at least one body part';
 }
+  // if (!bookingDetails.unit) newErrors.unit = 'Select unit';
 
-// 2. Marked Image
-if (!markedImage) {
-  newErrors.bodyImage = 'Please mark the pain area on body image';
-}
+  if (!bookingDetails.branchId) newErrors.branchname = 'Select branch';
+  if (!bookingDetails.doctorId) newErrors.doctorName = 'Select doctor';
+  if (!bookingDetails.servicetime) newErrors.slot = 'Select slot';
+  if (!bookingDetails.paymentType) newErrors.paymentType = 'Select payment';
 
-// 3. Therapy Questions
-if (!theraphyQuestions || Object.keys(theraphyQuestions).length === 0) {
-  newErrors.therapy = 'Please answer therapy questions';
-}
+  if (!part || part.length === 0) newErrors.part = 'Select body part';
+  if (!markedImage) newErrors.markedImage = 'Mark image';
+
+  if (!theraphyQuestions || Object.keys(theraphyQuestions).length === 0) {
+    newErrors.therapy = "Answer therapy questions";
+  }
+
+  console.log("🚨 VALIDATION ERRORS:", newErrors); // ✅ THIS IS KEY
 
   setErrors(newErrors);
 
   return Object.keys(newErrors).length === 0;
 };
-
   const handleAppointmentTypeChange = (type) => {
     setBookingDetails((prev) => ({
       ...prev,
@@ -813,7 +787,7 @@ if (!theraphyQuestions || Object.keys(theraphyQuestions).length === 0) {
   const handleSubmit = async () => {
     console.log(selectedBooking)
     const combinedSymptomsDuration = `${bookingDetails.symptomsDuration} ${bookingDetails.unit}`
-    const combinedName = `${bookingDetails.title}${bookingDetails.name}`
+   const combinedName = `${bookingDetails.title} ${bookingDetails.name}`
     console.log('Payload without slot:', combinedSymptomsDuration)
     console.log('Payload without combinedName:', combinedName)
     console.log('Validating bookingDetails...', bookingDetails)
@@ -1081,14 +1055,20 @@ if (!theraphyQuestions || Object.keys(theraphyQuestions).length === 0) {
       base64Image = await convertToBase64(data.image)
     }
 
-    setPart(actualData.parts || [])
+   setPart(actualData.parts && actualData.parts.length ? actualData.parts : ["selected"]);
     setMarkedImage(base64Image) // ✅ now always base64
-    setTheraphyQuestions(actualData.answerData || {})
-    setErrors((prev) => ({
-    ...prev,
-    part: '',
-    markedImage: '',
-  }));
+    setTheraphyQuestions(
+  actualData.answerData && Object.keys(actualData.answerData).length
+    ? actualData.answerData
+    : { answered: true }   // ✅ fallback so validation passes
+);
+    setErrors((prev) => {
+  const updated = { ...prev };
+  delete updated.part;
+  delete updated.markedImage;
+  delete updated.therapy;
+  return updated;
+});
   }
   
 

@@ -143,6 +143,10 @@ const [finalAmount, setFinalAmount] = useState(0)
 const [paymentDate, setPaymentDate] = useState("")
 const [programData, setProgramData] = useState(null)
 const [loading, setLoading] = useState(false)
+const [selectedType, setSelectedType] = useState("");
+const [selectedValue, setSelectedValue] = useState("");
+
+const [optionsList, setOptionsList] = useState([]);
 
     const [paymentPercent, setPaymentPercent] = useState(100)
   const handleFinalAmountChange = (value) => {
@@ -168,6 +172,49 @@ const handleDiscountChange = (value) => {
 
   calculateFinalAmount(amount)   // ✅ update final amount
 }
+const handleTypeChange = (type) => {
+  setSelectedType(type);
+  setSelectedValue("");
+
+  let data = [];
+
+  switch (type) {
+    case "program":
+      data = [programData]; // single or array
+      break;
+
+    case "therapy":
+      data = programData?.therophyData || [];
+      break;
+
+    case "exercise":
+      data =
+        programData?.therophyData?.flatMap((t) => t.exercises) || [];
+      break;
+
+    case "session":
+      data =
+        programData?.therophyData?.flatMap((t) =>
+          t.exercises.flatMap((e) =>
+            generateSessionPlan(
+              startDate,
+              e.noOfSessions,
+              e.frequency
+            )
+          )
+        ) || [];
+      break;
+
+    case "package":
+      data = packageData || []; // from API
+      break;
+
+    default:
+      data = [];
+  }
+
+  setOptionsList(data);
+};
 const calculateFinalAmount = (discountAmt) => {
   const total = programData?.programyCost
 
@@ -648,6 +695,51 @@ useEffect(() => {
   {errors.startDate && (
     <small style={{ color: "red" }}>{errors.startDate}</small>
   )}
+</CCol>
+<CCol md={4}>
+  <CFormLabel>Select Type</CFormLabel>
+  <CFormSelect
+    value={selectedType}
+    onChange={(e) => handleTypeChange(e.target.value)}
+  >
+    <option value="">Select Type</option>
+    <option value="program">Program</option>
+    <option value="therapy">Therapy</option>
+    <option value="exercise">Exercise</option>
+    <option value="session">Session</option>
+    <option value="package">Package</option>
+  </CFormSelect>
+</CCol>
+<CCol md={4}>
+  <CFormLabel>Select Value</CFormLabel>
+  <CFormSelect
+    value={selectedValue}
+    onChange={(e) => setSelectedValue(e.target.value)}
+  >
+    <option value="">Select</option>
+
+    {optionsList.map((item, index) => {
+      let label = "";
+
+      if (selectedType === "program") {
+        label = item.programName;
+      } else if (selectedType === "therapy") {
+        label = item.therapyName;
+      } else if (selectedType === "exercise") {
+        label = item.exerciseName;
+      } else if (selectedType === "session") {
+        label = new Date(item).toLocaleDateString();
+      } else if (selectedType === "package") {
+        label = item.packageName;
+      }
+
+      return (
+        <option key={index} value={index}>
+          {label}
+        </option>
+      );
+    })}
+  </CFormSelect>
 </CCol>
 
                         <CCol md={3}>
