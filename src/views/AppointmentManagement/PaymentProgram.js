@@ -27,6 +27,7 @@ import PrintLetterHead from "../../Utils/PrintLetterHead"
 import { percent } from "framer-motion"
 import { Button } from "bootstrap"
 import { useLocation } from "react-router-dom"
+import { getprogramsfromDoctors } from "../ProcedureManagement/ProgramApi"
 
 export default function ProgramPayment() {
     const location = useLocation();
@@ -43,88 +44,89 @@ export default function ProgramPayment() {
 
 
     // ✅ DUMMY DATA
-    const data = {
-        doctorName: "Dr. John (Physio)",
-        doctorId: "DOC123",
-        therapistName: "Therapy_1",
-        therapistId: "THER123",
-        therapistRecordId: "REC123",
-        programName: "Program_1",
-        programId: "PROG123",
-        programyCost: 600,
-        noOfSessionCount: 30,
-        noTherapyCount: 2,
-        therophyData: [
-            {
-                therapyName: "Therapy_1",
-                therapyId: "THER123",
-                therapyCost: 300,
-                noOfSessionCount: 30,
-                exercises: [
-                    {
-                        exerciseId: "E1",
-                        exerciseName: "Exercise_1",
-                        totalSessionCost: 100,
-                        pricePerSession: 10,
-                        noOfSessions: 10,
-                        sets: 3,
-                        repetitions: 10,
-                        youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                        frequency: "2/day",
-                    },
-                    {
-                        exerciseId: "E2",
-                        exerciseName: "Exercise_2",
-                        totalSessionCost: 200,
-                        pricePerSession: 20,
-                        noOfSessions: 5,
-                        sets: 4,
-                        repetitions: 12,
-                        youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                        frequency: "3/day",
-                    },
-                ],
-            },
-            {
-                therapyName: "Therapy_2",
-                therapyId: "THER123",
-                therapyCost: 300,
-                noOfSessionCount: 30,
-                exercises: [
-                    {
-                        exerciseId: "E3",
-                        exerciseName: "Exercise_3",
-                        totalSessionCost: 150,
-                        pricePerSession: 15,
-                        noOfSessions: 10,
-                        sets: 3,
-                        repetitions: 15,
-                        youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                        frequency: "5/week",
-                    },
-                    {
-                        exerciseId: "E4",
-                        exerciseName: "Exercise_4",
-                        totalSessionCost: 150,
-                        pricePerSession: 15,
-                        noOfSessions: 10,
-                        sets: 2,
-                        repetitions: 10,
-                        youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                        frequency: "2/week",
-                    },
-                ],
-            },
-        ],
-    }
+    // const data = {
+    //     doctorName: "Dr. John (Physio)",
+    //     doctorId: "DOC123",
+    //     therapistName: "Therapy_1",
+    //     therapistId: "THER123",
+    //     therapistRecordId: "REC123",
+    //     programName: "Program_1",
+    //     programId: "PROG123",
+    //     programyCost: 600,
+    //     noOfSessionCount: 30,
+    //     noTherapyCount: 2,
+    //     therophyData: [
+    //         {
+    //             therapyName: "Therapy_1",
+    //             therapyId: "THER123",
+    //             therapyCost: 300,
+    //             noOfSessionCount: 30,
+    //             exercises: [
+    //                 {
+    //                     exerciseId: "E1",
+    //                     exerciseName: "Exercise_1",
+    //                     totalSessionCost: 100,
+    //                     pricePerSession: 10,
+    //                     noOfSessions: 10,
+    //                     sets: 3,
+    //                     repetitions: 10,
+    //                     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    //                     frequency: "2/day",
+    //                 },
+    //                 {
+    //                     exerciseId: "E2",
+    //                     exerciseName: "Exercise_2",
+    //                     totalSessionCost: 200,
+    //                     pricePerSession: 20,
+    //                     noOfSessions: 5,
+    //                     sets: 4,
+    //                     repetitions: 12,
+    //                     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    //                     frequency: "3/day",
+    //                 },
+    //             ],
+    //         },
+    //         {
+    //             therapyName: "Therapy_2",
+    //             therapyId: "THER123",
+    //             therapyCost: 300,
+    //             noOfSessionCount: 30,
+    //             exercises: [
+    //                 {
+    //                     exerciseId: "E3",
+    //                     exerciseName: "Exercise_3",
+    //                     totalSessionCost: 150,
+    //                     pricePerSession: 15,
+    //                     noOfSessions: 10,
+    //                     sets: 3,
+    //                     repetitions: 15,
+    //                     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    //                     frequency: "5/week",
+    //                 },
+    //                 {
+    //                     exerciseId: "E4",
+    //                     exerciseName: "Exercise_4",
+    //                     totalSessionCost: 150,
+    //                     pricePerSession: 15,
+    //                     noOfSessions: 10,
+    //                     sets: 2,
+    //                     repetitions: 10,
+    //                     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    //                     frequency: "2/week",
+    //                 },
+    //             ],
+    //         },
+    //     ],
+    // }
+    
 
     const [startDate, setStartDate] = useState("")
     const [paymentType, setPaymentType] = useState("full")
-    const [paymentAmount, setPaymentAmount] = useState(data.programyCost)
+   const [paymentAmount, setPaymentAmount] = useState(0)
+const [finalAmount, setFinalAmount] = useState(0)
     const [discount, setDiscount] = useState(0)
     const [showTable, setShowTable] = useState(false)
     const [discountPercent, setDiscountPercent] = useState(0)
-    const [finalAmount, setFinalAmount] = useState(data.programyCost)
     const [printData, setPrintData] = useState(null)
     const [openTherapy, setOpenTherapy] = useState(null)
     const [openExercise, setOpenExercise] = useState(null)
@@ -137,29 +139,62 @@ export default function ProgramPayment() {
     const [balanceAmount, setBalanceAmount] = useState(finalAmount)
     const [isFollowUpPayment, setIsFollowUpPayment] = useState(false)
     const [paymentMode, setPaymentMode] = useState("cash")
+    const [isFirstPayment, setIsFirstPayment] = useState(true)
+const [paymentDate, setPaymentDate] = useState("")
+const [programData, setProgramData] = useState(null)
+const [loading, setLoading] = useState(false)
 
     const [paymentPercent, setPaymentPercent] = useState(100)
-    const handleDiscountChange = (value) => {
-        const percent = Number(value)
+  const handleFinalAmountChange = (value) => {
+  setFinalAmount(Number(value))
+}
+const handleDiscountChange = (value) => {
+  if (value === "") {
+    setDiscount("")
+    setDiscountAmount(0)
+    calculateFinalAmount(0)
+    return
+  }
 
-        setDiscountAmount(percent)
+  let val = Number(value)
 
-        // ✅ convert % → amount
-        const discountValue = (data.programyCost * percent) / 100
+  if (val > 100) val = 100
+  if (val < 0) val = 0
 
-        const final = data.programyCost - discountValue
-        setFinalAmount(final)
+  setDiscount(val)
 
-        // recalc payment
-        if (paymentType === "partial") {
-            const half = final / 2
-            setPaymentAmount(half)
-            setPaymentPercent(50)
-        } else {
-            setPaymentAmount(final)
-            setPaymentPercent(100)
-        }
-    }
+  const amount = (programData?.programyCost * val) / 100
+  setDiscountAmount(amount)
+
+  calculateFinalAmount(amount)   // ✅ update final amount
+}
+const calculateFinalAmount = (discountAmt) => {
+  const total = programData?.programyCost
+
+  let final = total - discountAmt
+
+  if (final < 0) final = 0
+
+  setFinalAmount(final)
+}
+
+const handleDiscountAmountChange = (value) => {
+  if (value === "") {
+    setDiscountAmount("")
+    return
+  }
+
+  let val = Number(value)
+
+  if (val < 0) val = 0
+  if (val > (programData?.programyCost || 0)) val = programData?.programyCost || 0
+
+  setDiscountAmount(val)
+
+  // ✅ auto calculate percentage
+ const percent = (val / (programData?.programyCost || 1)) * 100 
+  setDiscount(percent.toFixed(2))
+}
 
     useEffect(() => {
         const totalPaid = paymentHistory.reduce((sum, p) => sum + p.amount, 0)
@@ -175,6 +210,11 @@ export default function ProgramPayment() {
         }
 
     }, [paymentHistory, finalAmount, isFollowUpPayment])
+ 
+useEffect(() => {
+  const final = (programData?.programyCost || 0) - discountAmount
+  setFinalAmount(final >= 0 ? final : 0)
+}, [discountAmount, programData])
     const handlePaymentType = (type) => {
         setPaymentType(type)
 
@@ -187,6 +227,13 @@ export default function ProgramPayment() {
             setPaymentPercent(100)
         }
     }
+  
+useEffect(() => {
+  if (programData) {
+    setPaymentAmount(programData.programyCost)
+    setFinalAmount(programData.programyCost)
+  }
+}, [programData])
     const handleAmountChange = (value) => {
         const amount = Number(value)
 
@@ -203,71 +250,95 @@ export default function ProgramPayment() {
         const percent = balanceAmount > 0 ? (amount / finalAmount) * 100 : 0
         setPaymentPercent(percent.toFixed(2))
     }
+     useEffect(() => {
+  if (!programData) return   // ✅ FIX
 
-    const validate = () => {
-        let err = {}
+  const final = programData.programyCost - discountAmount
+  setFinalAmount(final >= 0 ? final : 0)
 
-        if (!isFollowUpPayment && !startDate) {
-            err.startDate = "Start date is required"
-        }
+}, [discountAmount, programData])
 
-        if (!paymentAmount || paymentAmount <= 0 || isNaN(paymentAmount)) {
-            err.paymentAmount = "Enter valid amount"
-        } else if (paymentAmount > finalAmount) {
-            err.paymentAmount = "Amount cannot exceed final amount"
-        }
+   const validate = () => {
+  let err = {}
 
-        if (paymentPercent <= 0 || paymentPercent > 100) {
-            err.paymentPercent = "Percent must be between 1 and 100"
-        }
+  if (!isFollowUpPayment && !startDate) {
+    err.startDate = "Start date is required"
+  }
 
-        if (discountAmount < 0) {
-            err.discountAmount = "Discount cannot be negative"
-        } else if (discountAmount > data.programyCost) {
-            err.discountAmount = "Discount cannot exceed total cost"
-        }
+  if (!paymentAmount || paymentAmount <= 0 || isNaN(paymentAmount)) {
+    err.paymentAmount = "Enter valid amount"
+  } else if (paymentAmount > finalAmount) {
+    err.paymentAmount = "Amount cannot exceed final amount"
+  }
 
-        const isDiscountApplied = discountAmount > 0
-        const isLowPayment = paymentAmount < finalAmount * 0.5
+  if (paymentPercent <= 0 || paymentPercent > 100) {
+    err.paymentPercent = "Percent must be between 1 and 100"
+  }
 
-        if ((isDiscountApplied || isLowPayment) && !discountIssuedBy) {
-            err.discountIssuedBy = "Issuer name is required for discount or low payment"
-        }
+  if (discountAmount < 0) {
+    err.discountAmount = "Discount cannot be negative"
+  } else if (discountAmount > programData?.programyCost) {
+    err.discountAmount = "Discount cannot exceed total cost"
+  }
+  if (discountAmount > (programData?.programyCost || 0)) {
+  err.discountAmount = "Discount cannot exceed total cost"
+}
 
-        if (paymentType === "partial") {
-            if (!paymentAmount || paymentAmount <= 0) {
-                err.paymentAmount = "Enter valid amount"
-            } else if (paymentAmount >= finalAmount) {
-                err.paymentAmount = "Partial payment must be less than final amount"
-            }
-        }
-        if (paymentAmount > balanceAmount) {
-            err.paymentAmount = "Cannot pay more than remaining balance"
-        }
-        setErrors(err)
-        return Object.keys(err).length === 0
+  const isDiscountApplied = discountAmount > 0
+  const isLowPayment = paymentPercent < 50   // ✅ FIXED
+
+  if ((isDiscountApplied || isLowPayment) && !discountIssuedBy) {
+    err.discountIssuedBy = "Approval required for discount or <50% payment"
+  }
+
+  if (paymentType === "partial") {
+    if (!paymentAmount || paymentAmount <= 0) {
+      err.paymentAmount = "Enter valid amount"
+    } else if (paymentAmount >= finalAmount) {
+      err.paymentAmount = "Partial payment must be less than final amount"
     }
-    const handlePercentChange = (percent) => {
-        const p = Number(percent)
+  }
 
-        setPaymentPercent(p)
+  if (paymentAmount > balanceAmount) {
+    err.paymentAmount = "Cannot pay more than remaining balance"
+  }
 
-        const amount = (finalAmount * p) / 100
-        setPaymentAmount(amount)
-    }
+  setErrors(err)
+  return Object.keys(err).length === 0
+}
+  const handlePercentChange = (value) => {
+  let percent = Number(value)
+
+  if (percent > 100) {
+    percent = 100
+  }
+
+  if (percent < 0) {
+    percent = 0
+  }
+
+  setPaymentPercent(percent)
+
+  // ✅ Optional validation message
+  setErrors((prev) => ({
+    ...prev,
+    paymentPercent:
+      percent > 100 ? "Cannot exceed 100%" : ""
+  }))
+}
     const prepareTherapyDataWithSessions = () => {
         return {
-            doctorName: data.doctorName,
-            doctorId: data.doctorId,
-            therapistName: data.therapistName,
-            therapistId: data.therapistId,
-            therapistRecordId: data.therapistRecordId,
-            programName: data.programName,
-            programId: data.programId,
-            noOfSessionCount: data.noOfSessionCount,
-            noTherapyCount: data.noTherapyCount,
+            doctorName: programData?.doctorName,
+            doctorId: programData?.doctorId,
+            therapistName: programData?.therapistName,
+            therapistId: programData?.therapistId,
+            therapistRecordId: programData?.therapistRecordId,
+            programName: programData?.programName,
+            programId: programData?.programId,
+            noOfSessionCount: programData?.noOfSessionCount,
+            noTherapyCount: programData?.noTherapyCount,
 
-            therophyData: data.therophyData.map((therapy) => ({
+            therophyData: programData?.therophyData?.map((therapy) => ({
                 ...therapy,
                 exercises: therapy.exercises.map((exe) => {
                     const sessions = generateSessionPlan(
@@ -288,33 +359,78 @@ export default function ProgramPayment() {
             })),
         };
     };
+     useEffect(() => {
+  if (clinicId && branchId && patientId && bookingId) {
+    fetchProgramDetails()
+  }
+}, [clinicId, branchId, patientId, bookingId])
+const fetchProgramDetails = async () => {
+  try {
+    setLoading(true)
 
+    const response = await getprogramsfromDoctors(
+      clinicId,
+      branchId,
+      patientId,
+      bookingId
+    )
+
+    const res = response.data
+
+    if (!res.success || !res.data || res.data.length === 0) {
+      setProgramData(null)
+      return false
+    }
+
+    // ✅ FIX HERE
+    setProgramData(res.data[0])
+
+    return true
+
+  } catch (error) {
+    console.error(error)
+    return false
+  } finally {
+    setLoading(false)
+  }
+}
+const handleOpenProgramDetails = async () => {
+  console.log("Calling API with:", {
+    clinicId,
+    branchId,
+    patientId,
+    bookingId
+  })
+
+  await fetchProgramDetails()
+  setViewModal(true)
+}
     const handleSubmit = () => {
 
         const therapyWithSessions = prepareTherapyDataWithSessions()
 
         const payload = {
-            clinicId: "0002",
-            branchId: "000201",
-            bookingId: "BOOK123",
-            patientId: "BOOK123",
-            therapistRecordId: "1244",
-            overallpaymentPercent: 100, //backend - GET
+            clinicId: localStorage.getItem("HospitalId"), //clinicId,
+            branchId: localStorage.getItem("BranchId"), //branchId,
+            bookingId: bookingId,
+            patientId: patientId,
+            therapistRecordId: programData?.therapistRecordId,
+            overallpaymentPercent: programData?.overallpaymentPercent, //backend - GET
             paymentStatus: balanceAmount === 0 ? "Paid" : "Partial", //backend - GET
-            totalAmount: data.programyCost, //backend - GET
+            totalAmount:programData?.programyCost, //backend - GET
             finalAmount: finalAmount,   //backend - GET
             paidAmount: paymentAmount,
             previousPaid: previousPaid, //backend - GET
             totalPaid: previousPaid + paymentAmount, //backend - GET
-            discount: discountAmount,
+            discount: discount,
             discountAmount: discountAmount, // for backend - GET
             balanceAmount: finalAmount - (previousPaid + paymentAmount), //backend will calculate this based on payments received - GET
             dueAmount: finalAmount - (previousPaid + paymentAmount), //backend - GET
             sessionStartDate: new Date().toLocaleDateString(),
-            noOfSessionCompletedCount: 5, //get this from session data which is updated therapist side you will get in session status completed - GET
+            noOfSessionCompletedCount: programData?.noOfSessionCompletedCount, //get this from session data which is updated therapist side you will get in session status completed - GET
             noOfSessionCompletedStatus: false, //  default it is false when 50% session completed and there are due amount then only it will be true - GET
             sessionTableCreatedStatus: true, //  default it is false - GET
-            totalSessionCount: 30, //backend - GET
+            totalSessionCount: programData?.totalSessionCount, //backend - GET
             paymentHistory: [
                 ...paymentHistory,
                 {
@@ -339,21 +455,77 @@ export default function ProgramPayment() {
         console.log("FINAL discountPercent", discountPercent)
         setPrintData(payload)
         setShowTable(false)
-        setPaymentHistory(payload.paymentHistory)
-        setPaymentAmount(payload.balanceAmount)
+       setPaymentAmount(programData?.programyCost || 0)
+setFinalAmount(programData?.programyCost || 0)
     }
+    useEffect(() => {
+  if (paymentHistory && paymentHistory.length > 0) {
+    setIsFirstPayment(false)
+    setPaymentDate(paymentHistory[0]?.paymentDate) // or latest
+  }
+}, [paymentHistory])
+useEffect(() => {
+  if (paymentPercent < 50 && !discountIssuedBy) {
+    setErrors((prev) => ({
+      ...prev,
+      discountIssuedBy: "Approval required for <50% payment"
+    }))
+  } else {
+    setErrors((prev) => ({
+      ...prev,
+      discountIssuedBy: ""
+    }))
+  }
+}, [paymentPercent, discountIssuedBy])
     useEffect(() => {
         if (isFollowUpPayment) {
             setPaymentAmount(balanceAmount)
         }
     }, [balanceAmount, isFollowUpPayment])
-    const handleGenerate = () => {
-        if (!validate()) return
+    const handleGenerate = async () => {
+  if (!validate()) return
 
+  const payload = {
+    clinicId:localStorage.getItem("HospitalId") ,
+    branchId:localStorage.getItem("BranchId") ,
+    bookingId,
+    patientId,
+    startDate,
+    paymentType,
+    paymentAmount,
+    paymentPercent,
+    discount,
+    discountAmount,
+    finalAmount,
+    paymentMode,
+    approvedBy: paymentPercent < 50 ? discountIssuedBy : ""
+  }
 
-        setShowTable(true)
+  try {
+    const response = await fetch("YOUR_API_URL_HERE", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
 
-    }
+    const data = await response.json()
+
+    console.log("API Response:", data)
+
+    // ✅ after success
+    setShowTable(true)
+
+  } catch (error) {
+    console.error("API Error:", error)
+
+    setErrors((prev) => ({
+      ...prev,
+      api: "Something went wrong. Please try again."
+    }))
+  }
+}
 
     // 🔥 DATE GENERATOR FUNCTION (skip sunday)
     const generateDates = (start, totalSessions) => {
@@ -431,7 +603,7 @@ export default function ProgramPayment() {
     // ✅ CANCEL
     const handleCancel = () => {
         setStartDate("")
-        setPaymentAmount(data.programyCost)
+        setPaymentAmount(programData.programyCost)
         setShowTable(false)
         setPrintData(null)
         setErrors({})
@@ -442,12 +614,12 @@ export default function ProgramPayment() {
                 <CCardHeader className="d-flex justify-content-between align-items-center">
 
 
-                    <h5 className="mb-0">{data.programName}</h5>
+                    <h5 className="mb-0">{programData?.programName}</h5>
 
                     <CButton
                         size="sm"
                         style={{ backgroundColor: "var(--color-bgcolor)", color: "var(--color-black)" }}
-                        onClick={() => setViewModal(true)}
+                      onClick={handleOpenProgramDetails} 
                     >
                         Program Details
                     </CButton>
@@ -456,26 +628,30 @@ export default function ProgramPayment() {
                 <CCardBody>
                     {/* INPUT SECTION */}
                     <CRow className="mb-3">
+                     <CCol md={3}>
+  <CFormLabel>Start Date</CFormLabel>
+
+  <CFormInput
+    type="date"
+    value={isFirstPayment ? startDate : paymentDate}
+    onChange={(e) => {
+      if (isFirstPayment) {
+        setStartDate(e.target.value)
+
+        // ✅ clear error
+        setErrors((prev) => ({ ...prev, startDate: "" }))
+      }
+    }}
+    disabled={!isFirstPayment} // 🔒 lock after first payment
+  />
+
+  {errors.startDate && (
+    <small style={{ color: "red" }}>{errors.startDate}</small>
+  )}
+</CCol>
+
                         <CCol md={3}>
-                            <CFormLabel className="fw-bold">Start Date</CFormLabel>
-                            <CFormInput
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => {
-                                    setStartDate(e.target.value)
-
-                                    // ✅ clear error
-                                    setErrors((prev) => ({ ...prev, startDate: "" }))
-                                }}
-                            />
-
-                            {errors.startDate && (
-                                <small style={{ color: "red" }}>{errors.startDate}</small>
-                            )}
-                        </CCol>
-
-                        <CCol md={3}>
-                            <CFormLabel className="fw-bold">Payment Type</CFormLabel>
+                            <CFormLabel>Payment Type</CFormLabel>
                             <CFormSelect
                                 value={paymentType}
                                 onChange={(e) => handlePaymentType(e.target.value)}
@@ -486,7 +662,7 @@ export default function ProgramPayment() {
                         </CCol>
 
                         <CCol md={3}>
-                            <CFormLabel className="fw-bold">Payment Amount</CFormLabel>
+                            <CFormLabel >Payment Amount</CFormLabel>
                             <CFormInput
                                 type="number"
                                 value={paymentAmount}
@@ -504,28 +680,62 @@ export default function ProgramPayment() {
 
                         </CCol>
                         <CCol md={3}>
-                            <CFormLabel className="fw-bold">Payment Percent</CFormLabel>
-                            <CFormInput
-                                type="number"
-                                value={paymentPercent}
-                                onChange={(e) => handlePercentChange(e.target.value)}
-                            />
-                        </CCol>
+  <CFormLabel >Payment Percent</CFormLabel>
+
+  <CFormInput
+    type="number"
+    value={paymentPercent}
+    min={0}
+    max={100}
+    onChange={(e) => handlePercentChange(e.target.value)}
+  />
+
+  {errors.paymentPercent && (
+    <small style={{ color: "red" }}>{errors.paymentPercent}</small>
+  )}
+</CCol>
                         <CRow className="mt-3">
                             <CCol md={4}>
-                                <CFormLabel className="fw-bold">Discount %</CFormLabel>
+  <CFormLabel >Discount %</CFormLabel>
+
+  <CFormInput
+    type="number"
+    value={discount}
+    min={0}
+    max={100}
+    onChange={(e) => handleDiscountChange(e.target.value)}
+  />
+
+  {errors.discount && (
+    <small style={{ color: "red" }}>{errors.discount}</small>
+  )}
+</CCol>
+                            <CCol md={4}>
+                                <CFormLabel >Discount Amount</CFormLabel>
                                 <CFormInput
                                     type="number"
                                     value={discountAmount}
-                                    onChange={(e) => handleDiscountChange(e.target.value)}
+                                    onChange={(e) => handleDiscountAmountChange(e.target.value)}
                                 />
                                 {errors.discountAmount && (
                                     <small style={{ color: "red" }}>{errors.discountAmount}</small>
                                 )}
 
                             </CCol>
+                             <CCol md={4}>
+                                <CFormLabel >Final Amount</CFormLabel>
+                                <CFormInput
+                                    type="number"
+                                    value={finalAmount}
+                                    onChange={(e) => handleFinalAmountChange(e.target.value)}
+                                />
+                                {errors.finalAmount && (
+                                    <small style={{ color: "red" }}>{errors.finalAmount}</small>
+                                )}
+
+                            </CCol>
                             <CCol md={4}>
-                                <CFormLabel className="fw-bold">Approved By (Discount / Low Payment)</CFormLabel>
+                                <CFormLabel >Approved By (Discount / Low Payment)</CFormLabel>
                                 <CFormInput
                                     type="Text"
                                     value={discountIssuedBy}
@@ -543,7 +753,7 @@ export default function ProgramPayment() {
                                 )}
                             </CCol>
                             <CCol md={3}>
-                                <CFormLabel className="fw-bold">Payment Mode</CFormLabel>
+                                <CFormLabel >Payment Mode</CFormLabel>
                                 <CFormSelect
                                     value={paymentMode}
                                 // onChange={(e) => handlePaymentType(e.target.value)}
@@ -650,9 +860,9 @@ export default function ProgramPayment() {
                     {/* TABLE */}
                     {showTable && startDate && (
                         <>
-                            <h5 className="mt-4 fw-bold">{data.programName}</h5>
+                            <h5 className="mt-4 fw-bold">{programData.programName}</h5>
 
-                            {data.therophyData.map((therapy, tIndex) => (
+                            {programData?.therophyData.map((therapy, tIndex) => (
                                 <CCard key={tIndex} className="mt-3 shadow-sm">
 
                                     {/* 🔹 THERAPY HEADER */}
@@ -797,11 +1007,11 @@ export default function ProgramPayment() {
                                                 <td><b>Patient ID</b></td>
                                                 <td>: {patientId}</td>
                                                 <td><b>Doctor</b></td>
-                                                <td>: {data.doctorName}</td>
+                                                <td>: {programData?.doctorName}</td>
                                             </tr>
                                             <tr>
                                                 <td><b>Program</b></td>
-                                                <td>: {data.programName}</td>
+                                                <td>: {programData?.programName}</td>
                                                 <td><b>Payment Mode</b></td>
                                                 <td>: {paymentMode}</td>
                                             </tr>
@@ -828,7 +1038,7 @@ export default function ProgramPayment() {
                                         <tbody>
                                             <tr>
                                                 <td>Total Amount</td>
-                                                <td>{data.programyCost}</td>
+                                                <td>{programData.programyCost}</td>
                                             </tr>
                                             <tr>
                                                 <td>Discount</td>
@@ -886,7 +1096,7 @@ export default function ProgramPayment() {
                                         </tr>
                                         <tr>
                                             <td><b>Program</b></td>
-                                            <td>: {data.programName}</td>
+                                            <td>: {programData?.programName}</td>
                                             <td><b>Therapist</b></td>
                                             <td>: Dr. John (Physio)</td>
                                             <td><b>Program Cost</b></td>
@@ -905,7 +1115,7 @@ export default function ProgramPayment() {
 
 
 
-                                {data.therophyData.map((therapy, tIndex) => (
+                                {programData?.therophyData.map((therapy, tIndex) => (
                                     <div key={tIndex} style={{ marginBottom: "20px" }}>
 
                                         {/* 🔹 THERAPY */}
@@ -989,7 +1199,7 @@ export default function ProgramPayment() {
                                     <CCardHeader className="fw-bold">Payment Details</CCardHeader>
                                     <CCardBody>
                                         <CRow>
-                                            <CCol md={3}><b>Total:</b> ₹{data.programyCost}</CCol>
+                                            <CCol md={3}><b>Total:</b> ₹{programData?.programyCost}</CCol>
                                             <CCol md={3}><b>Discount (%):</b> {discountAmount}</CCol>
                                             <CCol md={3}><b>Final:</b> ₹{finalAmount}</CCol>
                                             <CCol md={3}><b>Paid:</b> ₹{previousPaid}</CCol>
@@ -1054,77 +1264,140 @@ export default function ProgramPayment() {
                     </div>
                 </>
             )}
-            <CModal size="xl" visible={viewModal} onClose={() => setViewModal(false)} className="custom-modal">
-                <CModalHeader>
-                    <CModalTitle>Program Details</CModalTitle>
-                </CModalHeader>
+           <CModal
+  size="xl"
+  visible={viewModal}
+  onClose={() => setViewModal(false)}
+  className="custom-modal"
+>
+  <CModalHeader>
+    <CModalTitle>Program Details</CModalTitle>
+  </CModalHeader>
 
-                <CModalBody>
-                    {/* 🔹 Program Summary */}
-                    <CCard className="mb-3 shadow-sm">
-                        <CCardBody>
-                            <CRow>
-                                <CCol md={4}>
-                                    <strong>Program:</strong> {data.programName}
-                                </CCol>
-                                <CCol md={4}>
-                                    <strong>Total Cost:</strong> ₹{data.programyCost}
-                                </CCol>
-                                <CCol md={4}>
-                                    <strong>Sessions:</strong> {data.noOfSessionCount}
-                                </CCol>
-                            </CRow>
-                        </CCardBody>
-                    </CCard>
+  <CModalBody>
 
-                    {/* 🔹 Payment Summary */}
+    {/* 🔹 LOADING STATE */}
+    {loading && (
+      <div className="text-center my-4">
+        <strong>Loading program details...</strong>
+      </div>
+    )}
 
+    {/* 🔹 NO DATA */}
+    {!loading && !programData && (
+      <div className="text-center text-danger my-4">
+        No Program Data Found
+      </div>
+    )}
 
-                    {/* 🔹 Therapy Details */}
-                    {data.therophyData.map((therapy, tIndex) => (
-                        <CCard key={tIndex} className="mb-3 border shadow-sm">
-                            <CCardHeader className="fw-bold">
-                                {therapy.therapyName}
-                            </CCardHeader>
+    {/* 🔹 MAIN DATA */}
+    {!loading && programData && (
+      <>
+        {/* 🔹 Program Summary */}
+        <CCard className="mb-3 shadow-sm">
+          <CCardBody>
+            <CRow>
+              <CCol md={4}>
+                <strong>Program:</strong> {programData?.programName}
+              </CCol>
+              <CCol md={4}>
+                <strong>Total Cost:</strong> ₹{programData?.programCost}
+              </CCol>
+              <CCol md={4}>
+                <strong>Sessions:</strong> {programData?.noOfSessionCount}
+              </CCol>
+            </CRow>
+          </CCardBody>
+        </CCard>
 
-                            <CCardBody>
-                                {therapy.exercises.map((exe, eIndex) => (
-                                    <div key={eIndex} className="mb-3 p-2 border rounded">
+        {/* 🔹 Therapy Details */}
+        {programData?.therophyData?.length > 0 ? (
+          programData.therophyData.map((therapy, tIndex) => (
+            <CCard key={tIndex} className="mb-3 border shadow-sm">
 
-                                        <strong>▶ {exe.exerciseName}</strong>
+              {/* 🔸 Therapy Header */}
+              <CCardHeader className="fw-bold bg-light">
+                {therapy.therapyName}
+              </CCardHeader>
 
-                                        <CTable small bordered className="mt-2">
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell>Sessions</CTableHeaderCell>
-                                                    <CTableHeaderCell>Sets</CTableHeaderCell>
-                                                    <CTableHeaderCell>Reps</CTableHeaderCell>
-                                                    <CTableHeaderCell>Frequency</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
+              {/* 🔸 Therapy Body */}
+              <CCardBody>
 
-                                            <CTableBody>
-                                                <CTableRow>
-                                                    <CTableDataCell>{exe.noOfSessions}</CTableDataCell>
-                                                    <CTableDataCell>{exe.sets}</CTableDataCell>
-                                                    <CTableDataCell>{exe.repetitions}</CTableDataCell>
-                                                    <CTableDataCell>{exe.frequency}</CTableDataCell>
-                                                </CTableRow>
-                                            </CTableBody>
-                                        </CTable>
-                                    </div>
-                                ))}
-                            </CCardBody>
-                        </CCard>
-                    ))}
-                </CModalBody>
+                {therapy.exercises?.length > 0 ? (
+                  therapy.exercises.map((exe, eIndex) => (
+                    <div
+                      key={eIndex}
+                      className="mb-3 p-3 border rounded"
+                      style={{ background: "#fafafa" }}
+                    >
 
-                <CModalFooter>
-                    <CButton color="secondary" onClick={() => setViewModal(false)}>
-                        Close
-                    </CButton>
-                </CModalFooter>
-            </CModal>
+                      {/* Exercise Name */}
+                      <strong>▶ {exe.exerciseName}</strong>
+
+                      {/* Exercise Details */}
+                      <CRow className="mt-2">
+                        <CCol md={3}>
+                          <small><b>Sessions:</b> {exe.noOfSessions}</small>
+                        </CCol>
+
+                        <CCol md={3}>
+                          <small><b>Sets:</b> {exe.sets}</small>
+                        </CCol>
+
+                        <CCol md={3}>
+                          <small><b>Reps:</b> {exe.repetitions}</small>
+                        </CCol>
+
+                        <CCol md={3}>
+                          <small><b>Frequency:</b> {exe.frequancy}</small>
+                        </CCol>
+                      </CRow>
+
+                      {/* Optional Notes */}
+                      {exe.notes && (
+                        <div className="mt-2">
+                          <small><b>Notes:</b> {exe.notes}</small>
+                        </div>
+                      )}
+
+                      {/* Optional Video */}
+                      {exe.videoUrl && exe.videoUrl !== "please keep url" && (
+                        <div className="mt-2">
+                          <a
+                            href={exe.videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            ▶ Watch Video
+                          </a>
+                        </div>
+                      )}
+
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-muted">No Exercises Found</div>
+                )}
+
+              </CCardBody>
+            </CCard>
+          ))
+        ) : (
+          <div className="text-center text-muted">
+            No Therapy Data Available
+          </div>
+        )}
+      </>
+    )}
+
+  </CModalBody>
+
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setViewModal(false)}>
+      Close
+    </CButton>
+  </CModalFooter>
+</CModal>
         </>
     )
 }

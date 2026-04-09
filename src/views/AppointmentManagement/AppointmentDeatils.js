@@ -526,7 +526,7 @@ const AppointmentDetails = () => {
             <strong>Patient Name:</strong> {appointment?.name}
           </div>
           <div className="col-md-4">
-            <strong>Mobile Number:</strong> {appointment?.mobileNumber}
+            <strong>Mobile Number:</strong> {appointment?.patientMobileNumber  }
           </div>
           <div className="col-md-4">
             <strong>Booking For:</strong> {appointment?.bookingFor}
