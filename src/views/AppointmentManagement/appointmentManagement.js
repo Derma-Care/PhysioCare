@@ -44,6 +44,7 @@ const appointmentManagement = () => {
   const [filteredData, setFilteredData] = useState([])
   const [availableServiceTypes, setAvailableServiceTypes] = useState([])
   const [availableConsultationTypes, setAvailableConsultationTypes] = useState([])
+  const [selectedDate, setSelectedDate] = useState('')
   const { searchQuery } = useGlobalSearch()
   const consultationTypeLabels = {
     'In-clinic': 'In-clinic',
@@ -122,9 +123,10 @@ const appointmentManagement = () => {
   //filtering
   useEffect(() => {
     let filtered = [...bookings]
-    console.log('Initial bookings:', filtered)
+
     const normalize = (val) => val?.toLowerCase().trim()
 
+    // Search
     if (searchQuery.trim() !== '') {
       filtered = filtered.filter((item) =>
         Object.values(item).some((val) =>
@@ -133,50 +135,24 @@ const appointmentManagement = () => {
       )
     }
 
-    // Filter by status (use 'status', not 'bookedStatus')
+    // Status filter
     if (statusFilters.length > 0) {
       filtered = filtered.filter((item) =>
         statusFilters.some((status) => normalize(status) === normalize(item.status)),
       )
-      console.log('After status filter:', filtered)
-    }
-    const consultationTypeMap = {
-      'Service & Treatment': 'services & treatments',
-      'Tele Consultation': 'Tele consultation',
-      'In-clinic': 'in-clinic consultation',
     }
 
-    // Filter by consultation type (only one at a time)
-    if (filterTypes.length === 1) {
-      const selectedType = filterTypes[0]
-
-      if (selectedType === 'Tele Consultation') {
-        filtered = filtered.filter(
-          (item) =>
-            normalize(item.consultationType) === 'tele consultation' ||
-            normalize(item.consultationType) === 'online consultation',
-        )
-        console.log(`After ${selectedType} filter:`, filtered)
-      } else {
-        const mappedType = consultationTypeMap[selectedType]
-        if (mappedType) {
-          filtered = filtered.filter((item) => normalize(item.consultationType) === mappedType)
-          console.log(`After ${selectedType} filter:`, filtered)
-        }
-      }
-    }
-    if (searchQuery.trim()) {
+    // ✅ DATE FILTER (only when selected)
+    if (selectedDate !== '') {
       filtered = filtered.filter(
-        (item) =>
-          item.name?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-          item.patientId?.toLowerCase().includes(searchQuery.toLowerCase().trim()),
+        (item) => item.serviceDate === selectedDate
       )
     }
 
     setFilteredData(filtered)
     setCurrentPage(1)
-  }, [bookings, filterTypes, statusFilters, searchQuery])
 
+  }, [bookings, statusFilters, searchQuery, selectedDate])
   const statusLabelMap = {
     'In-Progress': 'Active',
     Completed: 'Completed',
@@ -478,20 +454,49 @@ const appointmentManagement = () => {
               checked={statusFilters.includes('Rejected')}
             /> */}
           </div>
-          {(role == 'admin' || role == 'receptionist') && (
-            <CButton
-              style={{
-                backgroundColor: 'var(--color-black)',
-                color: 'white',
-                marginLeft: '325px',
-              }}
-              onClick={() => setVisible(true)} // open modal
-            >
-              Book Appointment
-            </CButton>
-          )}
+          <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
+            <div style={{ position: 'relative', width: '200px' }}>
+
+              <CFormInput
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                style={{ paddingRight: '30px' }}
+              />
+
+              {/* ❌ Clear Icon */}
+              {selectedDate && (
+                <span
+                  onClick={() => setSelectedDate('')}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    color: 'gray',
+                  }}
+                >
+                  ✕
+                </span>
+              )}
 
 
+            </div>
+            {(role == 'admin' || role == 'receptionist') && (
+              <CButton
+                style={{
+                  backgroundColor: 'var(--color-black)',
+                  color: 'white',
+                  marginLeft: '325px',
+                }}
+                onClick={() => setVisible(true)} // open modal
+              >
+                Book Appointment
+              </CButton>
+            )}
+          </div>
           {/* Modal imported from separate file */}
           <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
         </div>
@@ -500,6 +505,7 @@ const appointmentManagement = () => {
           <CTableHead className="pink-table  w-auto">
             <CTableRow>
               <CTableHeaderCell>S.No</CTableHeaderCell>
+              <CTableHeaderCell>Booking ID</CTableHeaderCell>
               <CTableHeaderCell>Patient_ID</CTableHeaderCell>
               <CTableHeaderCell>Name</CTableHeaderCell>
               <CTableHeaderCell>Doctor Name</CTableHeaderCell>
@@ -535,6 +541,7 @@ const appointmentManagement = () => {
               paginatedData.map((item, index) => (
                 <CTableRow key={`${item.id}-${index}`} className="pink-table">
                   <CTableDataCell> {(currentPage - 1) * itemsPerPage + index + 1}</CTableDataCell>
+                  <CTableDataCell>{item.bookingId}</CTableDataCell>
                   <CTableDataCell>{item.patientId}</CTableDataCell>
                   <CTableDataCell>{item.name}</CTableDataCell>
                   <CTableDataCell>{item.doctorName}</CTableDataCell>
