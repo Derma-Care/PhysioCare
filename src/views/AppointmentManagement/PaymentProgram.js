@@ -1,5 +1,7 @@
 /* eslint-disable react/prop-types */
 import React, { useEffect, useState } from "react"
+import Select, { components } from "react-select";
+
 import {
     CCard,
     CCardBody,
@@ -28,6 +30,7 @@ import { percent } from "framer-motion"
 import { Button } from "bootstrap"
 import { useLocation } from "react-router-dom"
 import { getprogramsfromDoctors } from "../ProcedureManagement/ProgramApi"
+import { BASE_URL } from "../../baseUrl";
 
 export default function ProgramPayment() {
     const location = useLocation();
@@ -43,93 +46,20 @@ export default function ProgramPayment() {
     } = location.state || {};
 
 
-    // ✅ DUMMY DATA
-    // const data = {
-    //     doctorName: "Dr. John (Physio)",
-    //     doctorId: "DOC123",
-    //     therapistName: "Therapy_1",
-    //     therapistId: "THER123",
-    //     therapistRecordId: "REC123",
-    //     programName: "Program_1",
-    //     programId: "PROG123",
-    //     programyCost: 600,
-    //     noOfSessionCount: 30,
-    //     noTherapyCount: 2,
-    //     therophyData: [
-    //         {
-    //             therapyName: "Therapy_1",
-    //             therapyId: "THER123",
-    //             therapyCost: 300,
-    //             noOfSessionCount: 30,
-    //             exercises: [
-    //                 {
-    //                     exerciseId: "E1",
-    //                     exerciseName: "Exercise_1",
-    //                     totalSessionCost: 100,
-    //                     pricePerSession: 10,
-    //                     noOfSessions: 10,
-    //                     sets: 3,
-    //                     repetitions: 10,
-    //                     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    //                     frequency: "2/day",
-    //                 },
-    //                 {
-    //                     exerciseId: "E2",
-    //                     exerciseName: "Exercise_2",
-    //                     totalSessionCost: 200,
-    //                     pricePerSession: 20,
-    //                     noOfSessions: 5,
-    //                     sets: 4,
-    //                     repetitions: 12,
-    //                     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    //                     frequency: "3/day",
-    //                 },
-    //             ],
-    //         },
-    //         {
-    //             therapyName: "Therapy_2",
-    //             therapyId: "THER123",
-    //             therapyCost: 300,
-    //             noOfSessionCount: 30,
-    //             exercises: [
-    //                 {
-    //                     exerciseId: "E3",
-    //                     exerciseName: "Exercise_3",
-    //                     totalSessionCost: 150,
-    //                     pricePerSession: 15,
-    //                     noOfSessions: 10,
-    //                     sets: 3,
-    //                     repetitions: 15,
-    //                     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    //                     frequency: "5/week",
-    //                 },
-    //                 {
-    //                     exerciseId: "E4",
-    //                     exerciseName: "Exercise_4",
-    //                     totalSessionCost: 150,
-    //                     pricePerSession: 15,
-    //                     noOfSessions: 10,
-    //                     sets: 2,
-    //                     repetitions: 10,
-    //                     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    //                     frequency: "2/week",
-    //                 },
-    //             ],
-    //         },
-    //     ],
-    // }
+   
     
 
     const [startDate, setStartDate] = useState("")
     const [paymentType, setPaymentType] = useState("full")
    const [paymentAmount, setPaymentAmount] = useState(0)
-const [finalAmount, setFinalAmount] = useState(0)
+  const [finalAmount, setFinalAmount] = useState(0)
     const [discount, setDiscount] = useState(0)
     const [showTable, setShowTable] = useState(false)
     const [discountPercent, setDiscountPercent] = useState(0)
     const [printData, setPrintData] = useState(null)
     const [openTherapy, setOpenTherapy] = useState(null)
     const [openExercise, setOpenExercise] = useState(null)
+    
     const [errors, setErrors] = useState({})
     const [viewModal, setViewModal] = useState(false)
     const [discountAmount, setDiscountAmount] = useState(0)
@@ -144,7 +74,7 @@ const [paymentDate, setPaymentDate] = useState("")
 const [programData, setProgramData] = useState(null)
 const [loading, setLoading] = useState(false)
 const [selectedType, setSelectedType] = useState("");
-const [selectedValue, setSelectedValue] = useState("");
+const [selectedValue, setSelectedValue] = useState([]);
 
 const [optionsList, setOptionsList] = useState([]);
 
@@ -152,71 +82,92 @@ const [optionsList, setOptionsList] = useState([]);
   const handleFinalAmountChange = (value) => {
   setFinalAmount(Number(value))
 }
-const handleDiscountChange = (value) => {
-  if (value === "") {
-    setDiscount("")
-    setDiscountAmount(0)
-    calculateFinalAmount(0)
-    return
-  }
+const totalAmount = Number(programData?.programCost || 0);
+const formatTherapyTable = (data) => {
+  const rows = []
 
-  let val = Number(value)
+  data.forEach((item) => {
+    item.therapyData?.forEach((therapy, tIndex) => {
+      therapy.exercises?.forEach((exercise, eIndex) => {
+        exercise.sessions?.forEach((session, sIndex) => {
+          rows.push({
+            therapyId: therapy.therapyId || `therapy_${tIndex}`, // ✅ fallback
+            therapyName: therapy.therapyName || "N/A",
 
-  if (val > 100) val = 100
-  if (val < 0) val = 0
+            exerciseId: exercise.exerciseId || `exe_${eIndex}`,
+            exerciseName: exercise.exerciseName || "N/A",
 
-  setDiscount(val)
+            date: session.date,
+            sessionId: session.sessionId || `session_${sIndex}`,
+            status: session.status,
 
-  const amount = (programData?.programyCost * val) / 100
-  setDiscountAmount(amount)
+            frequency: exercise.frequency,
+            sets: exercise.sets,
+            reps: exercise.repetitions,
+          })
+        })
+      })
+    })
+  })
 
-  calculateFinalAmount(amount)   // ✅ update final amount
+  return rows
 }
+
 const handleTypeChange = (type) => {
   setSelectedType(type);
-  setSelectedValue("");
+  setSelectedValue([]);
+
+  if (!programData) {
+    console.log("❌ Program data not loaded yet");
+    setOptionsList([]);
+    return;
+  }
+
+  const therapies = programData?.therapyData || programData?.therophyData || [];
+
+  console.log("Therapies:", therapies);
 
   let data = [];
 
   switch (type) {
     case "program":
-      data = [programData]; // single or array
+      data = [programData];
       break;
 
     case "therapy":
-      data = programData?.therophyData || [];
+      data = therapies;
       break;
 
     case "exercise":
-      data =
-        programData?.therophyData?.flatMap((t) => t.exercises) || [];
+      data = therapies.flatMap((t) => t.exercises || []);
       break;
 
     case "session":
-      data =
-        programData?.therophyData?.flatMap((t) =>
-          t.exercises.flatMap((e) =>
-            generateSessionPlan(
-              startDate,
-              e.noOfSessions,
-              e.frequency
-            )
+      data = therapies.flatMap((t) =>
+        (t.exercises || []).flatMap((e) =>
+          generateSessionPlan(
+            startDate,
+            e.noOfSessions,
+            e.frequency
           )
-        ) || [];
+        )
+      );
       break;
 
     case "package":
-      data = packageData || []; // from API
+      data = packageData || [];
       break;
 
     default:
       data = [];
   }
 
+  console.log("Final optionsList:", data);
+
   setOptionsList(data);
 };
 const calculateFinalAmount = (discountAmt) => {
-  const total = programData?.programyCost
+  const total = programData?.programCost
 
   let final = total - discountAmt
 
@@ -226,84 +177,116 @@ const calculateFinalAmount = (discountAmt) => {
 }
 
 const handleDiscountAmountChange = (value) => {
-  if (value === "") {
-    setDiscountAmount("")
-    return
-  }
+  let val = Number(value);
 
-  let val = Number(value)
+  if (isNaN(val) || val < 0) val = 0;
+  if (val > totalAmount) val = totalAmount;
 
-  if (val < 0) val = 0
-  if (val > (programData?.programyCost || 0)) val = programData?.programyCost || 0
+  const percent = totalAmount > 0 ? (val / totalAmount) * 100 : 0;
 
-  setDiscountAmount(val)
+  setDiscountAmount(Number(val.toFixed(2)));
+  setDiscount(Number(percent.toFixed(2)));
+};
 
-  // ✅ auto calculate percentage
- const percent = (val / (programData?.programyCost || 1)) * 100 
-  setDiscount(percent.toFixed(2))
-}
+const handleDiscountChange = (value) => {
+  let percent = Number(value);
 
-    useEffect(() => {
-        const totalPaid = paymentHistory.reduce((sum, p) => sum + p.amount, 0)
+  if (isNaN(percent) || percent < 0) percent = 0;
+  if (percent > 100) percent = 100;
 
-        setPreviousPaid(totalPaid)
+  const amount = (totalAmount * percent) / 100;
 
-        const balance = finalAmount - totalPaid
-        setBalanceAmount(balance)
-
-        // ✅ FIX: set payment amount to balance
-        if (isFollowUpPayment) {
-            setPaymentAmount(balance)
-        }
-
-    }, [paymentHistory, finalAmount, isFollowUpPayment])
- 
+  setDiscount(percent);
+  setDiscountAmount(Number(amount.toFixed(2)));
+};
 useEffect(() => {
-  const final = (programData?.programyCost || 0) - discountAmount
-  setFinalAmount(final >= 0 ? final : 0)
-}, [discountAmount, programData])
-    const handlePaymentType = (type) => {
-        setPaymentType(type)
+  const final = totalAmount - discountAmount;
+  setFinalAmount(final >= 0 ? Number(final.toFixed(2)) : 0);
+}, [discountAmount, totalAmount]);
 
-        if (type === "partial") {
-            const half = finalAmount / 2
-            setPaymentAmount(half)
-            setPaymentPercent(50)
-        } else {
-            setPaymentAmount(finalAmount)
-            setPaymentPercent(100)
-        }
-    }
+
+   useEffect(() => {
+  const totalPaid = paymentHistory.reduce((sum, p) => sum + p.amount, 0);
+
+  setPreviousPaid(totalPaid);
+
+  const balance = finalAmount - totalPaid;
+
+  setBalanceAmount(balance >= 0 ? Number(balance.toFixed(2)) : 0);
+
+}, [paymentHistory, finalAmount]);
+ 
+
+  const handlePaymentType = (type) => {
+  setPaymentType(type);
+
+  const remaining = balanceAmount > 0 ? balanceAmount : finalAmount;
+
+  if (type === "partial") {
+    const half = remaining / 2;
+
+    setPaymentAmount(Number(half.toFixed(2)));
+
+    const percent =
+      finalAmount > 0 ? (half / finalAmount) * 100 : 0;
+
+    setPaymentPercent(Number(percent.toFixed(2)));
+  } else {
+    setPaymentAmount(remaining);
+
+    const percent =
+      finalAmount > 0 ? (remaining / finalAmount) * 100 : 0;
+
+    setPaymentPercent(Number(percent.toFixed(2)));
+  }
+};
+useEffect(() => {
+  const totalPaid = paymentHistory.reduce((sum, p) => sum + p.amount, 0);
+
+  setPreviousPaid(totalPaid);
+
+  const balance = finalAmount - totalPaid;
+
+  setBalanceAmount(balance >= 0 ? Number(balance.toFixed(2)) : 0);
+}, [paymentHistory, finalAmount]);
   
 useEffect(() => {
   if (programData) {
-    setPaymentAmount(programData.programyCost)
-    setFinalAmount(programData.programyCost)
+   setPaymentAmount(totalAmount);
+setFinalAmount(totalAmount);
   }
 }, [programData])
-    const handleAmountChange = (value) => {
-        const amount = Number(value)
+  const handleAmountChange = (value) => {
+  let amount = Number(value);
 
-        if (amount > balanceAmount) {
-            setErrors((prev) => ({
-                ...prev,
-                paymentAmount: "Cannot exceed remaining balance",
-            }))
-            return
-        }
+  if (value === "") {
+    setPaymentAmount("");
+    return;
+  }
 
-        setPaymentAmount(amount)
+  if (isNaN(amount) || amount < 0) amount = 0;
 
-        const percent = balanceAmount > 0 ? (amount / finalAmount) * 100 : 0
-        setPaymentPercent(percent.toFixed(2))
-    }
-     useEffect(() => {
-  if (!programData) return   // ✅ FIX
+  // ❗ DON'T BLOCK typing
+  if (amount > balanceAmount) {
+    setErrors((prev) => ({
+      ...prev,
+      paymentAmount: "Cannot exceed remaining balance",
+    }));
+  } else {
+    setErrors((prev) => ({
+      ...prev,
+      paymentAmount: "",
+    }));
+  }
 
-  const final = programData.programyCost - discountAmount
-  setFinalAmount(final >= 0 ? final : 0)
+  setPaymentAmount(amount);
 
-}, [discountAmount, programData])
+  const percent =
+    finalAmount > 0 ? (amount / finalAmount) * 100 : 0;
+
+  setPaymentPercent(Number(percent.toFixed(2)));
+};
+   
 
    const validate = () => {
   let err = {}
@@ -324,10 +307,10 @@ useEffect(() => {
 
   if (discountAmount < 0) {
     err.discountAmount = "Discount cannot be negative"
-  } else if (discountAmount > programData?.programyCost) {
+  } else if (discountAmount > programData?.programCost) {
     err.discountAmount = "Discount cannot exceed total cost"
   }
-  if (discountAmount > (programData?.programyCost || 0)) {
+  if (discountAmount > (programData?.programCost || 0)) {
   err.discountAmount = "Discount cannot exceed total cost"
 }
 
@@ -385,7 +368,7 @@ useEffect(() => {
             noOfSessionCount: programData?.noOfSessionCount,
             noTherapyCount: programData?.noTherapyCount,
 
-            therophyData: programData?.therophyData?.map((therapy) => ({
+            therophyData: programData?.therapyData?.map((therapy) => ({
                 ...therapy,
                 exercises: therapy.exercises.map((exe) => {
                     const sessions = generateSessionPlan(
@@ -441,6 +424,38 @@ const fetchProgramDetails = async () => {
     setLoading(false)
   }
 }
+const Option = (props) => {
+  return (
+    <components.Option {...props}>
+      <input
+        type="checkbox"
+        checked={props.isSelected}
+        onChange={() => null}
+        style={{ marginRight: 8 }}
+      />
+      {props.label}
+    </components.Option>
+  );
+};
+const formattedOptions = optionsList.map((item) => {
+  let label = "";
+
+  if (selectedType === "program") {
+    label = item.programName;
+  } else if (selectedType === "therapy") {
+    label = item.therapyName;
+  } else if (selectedType === "exercise") {
+    label = item.exerciseName;
+  } 
+  else if (selectedType === "package") {
+    label = item.packageName;
+  }
+
+  return {
+    value: item,   // ✅ full object
+    label: label,
+  };
+});
 const handleOpenProgramDetails = async () => {
   console.log("Calling API with:", {
     clinicId,
@@ -458,13 +473,13 @@ const handleOpenProgramDetails = async () => {
 
         const payload = {
             clinicId: localStorage.getItem("HospitalId"), //clinicId,
-            branchId: localStorage.getItem("BranchId"), //branchId,
+            branchId: localStorage.getItem("branchId"), //branchId,
             bookingId: bookingId,
             patientId: patientId,
             therapistRecordId: programData?.therapistRecordId,
             overallpaymentPercent: programData?.overallpaymentPercent, //backend - GET
             paymentStatus: balanceAmount === 0 ? "Paid" : "Partial", //backend - GET
-            totalAmount:programData?.programyCost, //backend - GET
+            totalAmount: Number(programData?.programCost || 0), //backend - GET
             finalAmount: finalAmount,   //backend - GET
             paidAmount: paymentAmount,
             previousPaid: previousPaid, //backend - GET
@@ -502,8 +517,8 @@ const handleOpenProgramDetails = async () => {
         console.log("FINAL discountPercent", discountPercent)
         setPrintData(payload)
         setShowTable(false)
-       setPaymentAmount(programData?.programyCost || 0)
-setFinalAmount(programData?.programyCost || 0)
+       setPaymentAmount(totalAmount)
+setFinalAmount(totalAmount)
     }
     useEffect(() => {
   if (paymentHistory && paymentHistory.length > 0) {
@@ -524,32 +539,30 @@ useEffect(() => {
     }))
   }
 }, [paymentPercent, discountIssuedBy])
-    useEffect(() => {
-        if (isFollowUpPayment) {
-            setPaymentAmount(balanceAmount)
-        }
-    }, [balanceAmount, isFollowUpPayment])
-    const handleGenerate = async () => {
-  if (!validate()) return
+
+   const handleGenerate = async () => {
+  console.log("Generate clicked")
+
+  const isValid = validate()
+  console.log("Validation result:", isValid)
+
+  if (!isValid) return
 
   const payload = {
-    clinicId:localStorage.getItem("HospitalId") ,
-    branchId:localStorage.getItem("BranchId") ,
+    clinicId: localStorage.getItem("HospitalId"),
+    branchId: localStorage.getItem("branchId"),
     bookingId,
     patientId,
     startDate,
-    paymentType,
-    paymentAmount,
-    paymentPercent,
-    discount,
-    discountAmount,
-    finalAmount,
-    paymentMode,
-    approvedBy: paymentPercent < 50 ? discountIssuedBy : ""
+    therapistRecordId: programData?.therapistRecordId,
   }
 
+  console.log("Payload:", payload)
+
   try {
-    const response = await fetch("YOUR_API_URL_HERE", {
+    console.log("Calling API...")
+
+    const response = await fetch(`${BASE_URL}/generate-table`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -561,19 +574,12 @@ useEffect(() => {
 
     console.log("API Response:", data)
 
-    // ✅ after success
     setShowTable(true)
 
   } catch (error) {
     console.error("API Error:", error)
-
-    setErrors((prev) => ({
-      ...prev,
-      api: "Something went wrong. Please try again."
-    }))
   }
 }
-
     // 🔥 DATE GENERATOR FUNCTION (skip sunday)
     const generateDates = (start, totalSessions) => {
 
@@ -650,7 +656,7 @@ useEffect(() => {
     // ✅ CANCEL
     const handleCancel = () => {
         setStartDate("")
-        setPaymentAmount(programData.programyCost)
+        setPaymentAmount(totalAmount)
         setShowTable(false)
         setPrintData(null)
         setErrors({})
@@ -661,7 +667,9 @@ useEffect(() => {
                 <CCardHeader className="d-flex justify-content-between align-items-center">
 
 
-                    <h5 className="mb-0">{programData?.programName}</h5>
+                  {selectedType !== "package" && (
+  <h5 className="mb-0">{programData?.programName}</h5>
+)}
 
                     <CButton
                         size="sm"
@@ -703,43 +711,45 @@ useEffect(() => {
     onChange={(e) => handleTypeChange(e.target.value)}
   >
     <option value="">Select Type</option>
-    <option value="program">Program</option>
     <option value="therapy">Therapy</option>
     <option value="exercise">Exercise</option>
-    <option value="session">Session</option>
     <option value="package">Package</option>
   </CFormSelect>
 </CCol>
 <CCol md={4}>
   <CFormLabel>Select Value</CFormLabel>
-  <CFormSelect
-    value={selectedValue}
-    onChange={(e) => setSelectedValue(e.target.value)}
-  >
-    <option value="">Select</option>
 
-    {optionsList.map((item, index) => {
-      let label = "";
+  <Select
+    isMulti
+    options={formattedOptions}
+    components={{ Option }} // ✅ checkbox added
+    closeMenuOnSelect={false}
+    hideSelectedOptions={false}
+ value={selectedValue}
+  onChange={(selected) => {
+  const selectedItems = selected || [];
 
-      if (selectedType === "program") {
-        label = item.programName;
-      } else if (selectedType === "therapy") {
-        label = item.therapyName;
-      } else if (selectedType === "exercise") {
-        label = item.exerciseName;
-      } else if (selectedType === "session") {
-        label = new Date(item).toLocaleDateString();
-      } else if (selectedType === "package") {
-        label = item.packageName;
-      }
+  setSelectedValue(selectedItems);
 
-      return (
-        <option key={index} value={index}>
-          {label}
-        </option>
-      );
-    })}
-  </CFormSelect>
+  let total = 0;
+
+  selectedItems.forEach((item) => {
+    const val = item.value;
+
+    if (selectedType === "therapy") {
+      total += Number(val.therapyCost || 0);
+    } else if (selectedType === "exercise") {
+      total += Number(val.totalSessionCost || 0);
+    } else if (selectedType === "package") {
+      total += Number(val.packageCost || 0);
+    }
+  });
+
+  setFinalAmount(total);
+  setPaymentAmount(total);
+}}
+    placeholder="Select..."
+  />
 </CCol>
 
                         <CCol md={3}>
@@ -753,24 +763,29 @@ useEffect(() => {
                             </CFormSelect>
                         </CCol>
 
-                        <CCol md={3}>
-                            <CFormLabel >Payment Amount</CFormLabel>
-                            <CFormInput
-                                type="number"
-                                value={paymentAmount}
-                                onChange={(e) => {
-                                    handleAmountChange(e.target.value)
+                      <CCol md={3}>
+  <CFormLabel>Payment Amount</CFormLabel>
 
-                                    // ✅ clear error
-                                    setErrors((prev) => ({ ...prev, startDate: "" }))
-                                }}
-                            />
-                            {errors.paymentAmount && (
-                                <small style={{ color: "red" }}>{errors.paymentAmount}</small>
-                            )}
+  <CFormInput
+    type="number"
+    value={paymentAmount ?? ""}
+    onChange={(e) => {
+      handleAmountChange(e.target.value);
 
+      // ✅ correct error clear
+      setErrors((prev) => ({
+        ...prev,
+        paymentAmount: ""
+      }));
+    }}
+  />
 
-                        </CCol>
+  {errors.paymentAmount && (
+    <small style={{ color: "red" }}>
+      {errors.paymentAmount}
+    </small>
+  )}
+</CCol>
                         <CCol md={3}>
   <CFormLabel >Payment Percent</CFormLabel>
 
@@ -880,40 +895,46 @@ useEffect(() => {
                             </CCardHeader>
                             <CCardBody>
 
-                                <CTable small bordered className="mt-3 pink-table" responsive>
-                                    <CTableHead>
-                                        <CTableRow>
-                                            <CTableHeaderCell>S.No</CTableHeaderCell>
-                                            <CTableHeaderCell>Date</CTableHeaderCell>
-                                            <CTableHeaderCell>Amount</CTableHeaderCell>
-                                            <CTableHeaderCell>Due Amount</CTableHeaderCell>
-                                            <CTableHeaderCell>Payment Mode</CTableHeaderCell>
-                                            <CTableHeaderCell>Payment Type</CTableHeaderCell>
-                                            <CTableHeaderCell>Payment Percentage</CTableHeaderCell>
-                                            <CTableHeaderCell>Approved By</CTableHeaderCell>
+                               {showTable && (
+  <CTable small bordered className="mt-3 pink-table" responsive>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell>S.No</CTableHeaderCell>
+        <CTableHeaderCell>Therapy</CTableHeaderCell>
+        <CTableHeaderCell>Exercise</CTableHeaderCell>
+        <CTableHeaderCell>Date</CTableHeaderCell>
+        <CTableHeaderCell>Session ID</CTableHeaderCell>
+        <CTableHeaderCell>Status</CTableHeaderCell>
+        <CTableHeaderCell>Frequency</CTableHeaderCell>
+        <CTableHeaderCell>Sets</CTableHeaderCell>
+        <CTableHeaderCell>Reps</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
 
-
-
-
-
-                                        </CTableRow>
-                                    </CTableHead>
-                                    <CTableBody>
-                                        {paymentHistory.map((p, i) => (
-                                            <CTableRow key={i}>
-                                                <CTableDataCell>{i + 1}</CTableDataCell>
-                                                <CTableDataCell>{new Date(p.date).toLocaleDateString()}</CTableDataCell>
-                                                <CTableDataCell>₹{p.amount}</CTableDataCell>
-                                                <CTableDataCell>₹{p.dueAmount}</CTableDataCell>
-                                                <CTableDataCell>{p.paymentMode}</CTableDataCell>
-                                                <CTableDataCell>{p.paymentType}</CTableDataCell>
-                                                <CTableDataCell>{p.paymentPercent} %</CTableDataCell>
-                                                <CTableDataCell>{p.discountIssuedBy || "NA"}</CTableDataCell>
-
-                                            </CTableRow>
-                                        ))}
-                                    </CTableBody>
-                                </CTable>
+    <CTableBody>
+      {tableData.map((row, i) => (
+        <CTableRow key={i}>
+          <CTableDataCell>{i + 1}</CTableDataCell>
+          <CTableDataCell>{row.therapyName}</CTableDataCell>
+          <CTableDataCell>{row.exerciseName}</CTableDataCell>
+          <CTableDataCell>{row.date}</CTableDataCell>
+          <CTableDataCell>{row.sessionId}</CTableDataCell>
+          <CTableDataCell>
+            <span style={{
+              color: row.status === "Pending" ? "orange" : "green",
+              fontWeight: "600"
+            }}>
+              {row.status}
+            </span>
+          </CTableDataCell>
+          <CTableDataCell>{row.frequency}</CTableDataCell>
+          <CTableDataCell>{row.sets}</CTableDataCell>
+          <CTableDataCell>{row.reps}</CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
+)}
                             </CCardBody>
                         </CCard>
                     )
@@ -954,7 +975,7 @@ useEffect(() => {
                         <>
                             <h5 className="mt-4 fw-bold">{programData.programName}</h5>
 
-                            {programData?.therophyData.map((therapy, tIndex) => (
+                            {programData?.therapyData .map((therapy, tIndex) => (
                                 <CCard key={tIndex} className="mt-3 shadow-sm">
 
                                     {/* 🔹 THERAPY HEADER */}
@@ -1130,7 +1151,7 @@ useEffect(() => {
                                         <tbody>
                                             <tr>
                                                 <td>Total Amount</td>
-                                                <td>{programData.programyCost}</td>
+                                                <td>{programData.programCost}</td>
                                             </tr>
                                             <tr>
                                                 <td>Discount</td>
@@ -1207,7 +1228,7 @@ useEffect(() => {
 
 
 
-                                {programData?.therophyData.map((therapy, tIndex) => (
+                                {programData?.therapyData.map((therapy, tIndex) => (
                                     <div key={tIndex} style={{ marginBottom: "20px" }}>
 
                                         {/* 🔹 THERAPY */}
@@ -1291,7 +1312,7 @@ useEffect(() => {
                                     <CCardHeader className="fw-bold">Payment Details</CCardHeader>
                                     <CCardBody>
                                         <CRow>
-                                            <CCol md={3}><b>Total:</b> ₹{programData?.programyCost}</CCol>
+                                            <CCol md={3}><b>Total:</b> ₹{programData?.programCost}</CCol>
                                             <CCol md={3}><b>Discount (%):</b> {discountAmount}</CCol>
                                             <CCol md={3}><b>Final:</b> ₹{finalAmount}</CCol>
                                             <CCol md={3}><b>Paid:</b> ₹{previousPaid}</CCol>

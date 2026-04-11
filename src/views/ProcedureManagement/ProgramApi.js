@@ -23,5 +23,5 @@ export const deleteProgram = (id) =>
 
 export const getprogramsfromDoctors = (clinicId, branchId, patientId, bookingId) =>
   axios.get(
-    `${wifiUrl}/physiotherapy-doctor/getProgramAndTherapyInfo/${clinicId}/${branchId}/${patientId}/${bookingId}`
+    `${wifiUrl}/api/physiotherapy-doctor/getProgramAndTherapyInfo/${clinicId}/${branchId}/${patientId}/${bookingId}`
   )
