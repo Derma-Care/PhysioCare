@@ -86,7 +86,20 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const [postOffices, setPostOffices] = useState([])
   const [selectedPO, setSelectedPO] = useState(null)
   const pincodeTimer = useRef(null)
+  const [activityLevel, setActivityLevel] = useState("");
 
+  const activityOptions = [
+    "Sedentary",
+    "Moderate",
+    "Active",
+    "Athlete"
+  ];
+  const reasonforVisitOption = [
+    "Chronic Pain",
+    "Sports Rehab",
+    "Neuro Rehab",
+    "Others"
+  ];
   // dropdown lists
   const [categories, setCategories] = useState([])
   const [selectedProcedure, setSelectedProcedure] = useState('')
@@ -109,7 +122,12 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const [onboardToCustomer, setOnboardToCustomer] = useState(false)
 
   const type = appointmentType.trim().toLowerCase()
+  const [otherReason, setOtherReason] = useState("");
+  const [originalConsultationFee, setOriginalConsultationFee] = useState('')
 
+  const [errors, setErrors] = useState({})
+  const [activityLevels, setActivityLevels] = useState([]);
+  const [reasonForVisit, setReasonForVisit] = useState([]);
   const initialBookingDetails = {
     branchId: localStorage.getItem('branchId') || '',
     branchname: localStorage.getItem('branchName') || '',
@@ -123,6 +141,14 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     serviceId: '',
     subServiceName: '',
     subServiceId: '',
+    previousInjuries: "",
+    currentMedications: "",
+    allergies: "",
+    occupation: "",
+    activityLevels: [],
+    reasonForVisit: "",
+    insuranceProvider: "",
+    policyNumber: "",
 
     doctorId: '',
     doctorName: '',
@@ -148,7 +174,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     problem: '',
     foc: 'Paid',
     // parts:part,
-
+    focReason: "",
     attachments: [],
     freeFollowUps: selectedHospital.data.freeFollowUps,
     consentFormPdf: '',
@@ -171,11 +197,29 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     },
   }
   const [bookingDetails, setBookingDetails] = useState(initialBookingDetails)
-  const [originalConsultationFee, setOriginalConsultationFee] = useState('')
+  const handleChange = (level) => {
+    if (activityLevels.includes(level)) {
+      // remove if already selected
+      setActivityLevels(activityLevels.filter(item => item !== level));
 
-  const [errors, setErrors] = useState({})
 
+    } else {
+      // add if not selected
+      setActivityLevels([...activityLevels, level]);
 
+    }
+  };
+  const handleReasonChange = (value) => {
+    setBookingDetails((prev) => ({
+      ...prev,
+      reasonForVisit: value,
+    }));
+
+    // reset other input if not "Others"
+    if (value !== "Others") {
+      setOtherReason("");
+    }
+  };
 
   const formatDate = (date) => {
     if (!date) return null
@@ -479,19 +523,22 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     fetchRefferrDoctor()
   }, [])
   const handleFeeTypeChange = (e) => {
-    const selectedType = e.target.value
+    const selectedType = e.target.value;
 
     setBookingDetails((prev) => ({
       ...prev,
       foc: selectedType,
 
-      // ✅ FIX HERE
+      // ✅ Consultation fee logic
       consultationFee:
         selectedType === 'FOC'
           ? 0
           : originalConsultationFee || 0,
-    }))
-  }
+
+      // ✅ Add this (important)
+      focReason: selectedType === 'FOC' ? prev.focReason : '',
+    }));
+  };
   useEffect(() => {
     if (
       bookingDetails.subServiceId &&
@@ -617,21 +664,26 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     // Real-time validation
     setErrors((prev) => {
       const updatedErrors = { ...prev }
+
       if (section === 'address') {
         if (!updatedErrors.address) updatedErrors.address = {}
 
         if (field === 'postalCode') {
-          if (/^\d{6}$/.test(value)) {
-            delete updatedErrors.address[field]
-          } else {
+          if (!value || !/^\d{6}$/.test(value)) {
             updatedErrors.address[field] = 'Postal code must be 6 digits'
+          } else {
+            delete updatedErrors.address[field]
           }
         } else {
-          if (value.trim() !== '') delete updatedErrors.address[field]
+          // REMOVE validation for other fields
+          delete updatedErrors.address[field]
         }
 
-        if (Object.keys(updatedErrors.address).length === 0) delete updatedErrors.address
+        if (Object.keys(updatedErrors.address).length === 0) {
+          delete updatedErrors.address
+        }
       }
+
       return updatedErrors
     })
 
@@ -718,61 +770,75 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     }
   }
 
-const validate = () => {
-  const newErrors = {};
+  const validate = () => {
+    const newErrors = {};
 
-  if (!bookingDetails.name?.trim()) newErrors.name = 'Name is required';
-  // ✅ DOB only required for NEW patients
-if (!selectedBooking) {
-  if (!bookingDetails.dob) {
-    newErrors.dob = 'DOB required';
-  }
-}
-  // if (!bookingDetails.dob) newErrors.dob = 'DOB required';
-  if (!bookingDetails.gender) newErrors.gender = 'Select gender';
+    if (!bookingDetails.name?.trim()) newErrors.name = 'Name is required';
+    // ✅ DOB only required for NEW patients
+    if (!selectedBooking) {
+      if (!bookingDetails.dob) {
+        newErrors.dob = 'DOB required';
+      }
+    }
+    // if (!bookingDetails.dob) newErrors.dob = 'DOB required';
+    if (!bookingDetails.gender) newErrors.gender = 'Select gender';
 
-  if (!bookingDetails.patientMobileNumber) {
-    newErrors.patientMobileNumber = 'Mobile required';
-  } else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber)) {
-    newErrors.patientMobileNumber = 'Invalid mobile';
-  }
+    if (!bookingDetails.patientMobileNumber) {
+      newErrors.patientMobileNumber = 'Mobile required';
+    } else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber)) {
+      newErrors.patientMobileNumber = 'Invalid mobile';
+    }
 
-  // if (!bookingDetails.problem?.trim()) newErrors.problem = 'Problem required';
-  if (appointmentType?.toLowerCase().trim() !== 'services') {
-  if (!bookingDetails.problem?.trim()) {
-    newErrors.problem = 'Problem required';
-  }
-}
-  // if (!bookingDetails.symptomsDuration) newErrors.symptomsDuration = 'Duration required';
-  if (appointmentType?.toLowerCase().trim() !== 'services') {
-  if (!bookingDetails.symptomsDuration) {
-    newErrors.symptomsDuration = 'Duration required';
-  }
+    // if (!bookingDetails.problem?.trim()) newErrors.problem = 'Problem required';
+    if (appointmentType?.toLowerCase().trim() !== 'services') {
+      if (!bookingDetails.problem?.trim()) {
+        newErrors.problem = 'Problem required';
+      }
+    }
+    // if (!bookingDetails.symptomsDuration) newErrors.symptomsDuration = 'Duration required';
+    if (appointmentType?.toLowerCase().trim() !== 'services') {
+      if (!bookingDetails.symptomsDuration) {
+        newErrors.symptomsDuration = 'Duration required';
+      }
 
-  if (!bookingDetails.unit) {
-    newErrors.unit = 'Select unit';
-  }
-}
-  // if (!bookingDetails.unit) newErrors.unit = 'Select unit';
+      if (!bookingDetails.unit) {
+        newErrors.unit = 'Select unit';
+      }
+    }
 
-  if (!bookingDetails.branchId) newErrors.branchname = 'Select branch';
-  if (!bookingDetails.doctorId) newErrors.doctorName = 'Select doctor';
-  if (!bookingDetails.servicetime) newErrors.slot = 'Select slot';
-  if (!bookingDetails.paymentType) newErrors.paymentType = 'Select payment';
+    if (bookingDetails.foc === 'FOC' && !bookingDetails.focReason?.trim()) {
+      newErrors.focReason = 'Please enter reason for FOC';
+      return;
+    }
+    // if (!bookingDetails.unit) newErrors.unit = 'Select unit';
 
-  if (!part || part.length === 0) newErrors.part = 'Select body part';
-  if (!markedImage) newErrors.markedImage = 'Mark image';
+    if (!bookingDetails.branchId) newErrors.branchname = 'Select branch';
+    if (!bookingDetails.doctorId) newErrors.doctorName = 'Select doctor';
+    if (!bookingDetails.servicetime) newErrors.slot = 'Select slot';
+    if (!bookingDetails.paymentType) newErrors.paymentType = 'Select payment';
 
-  if (!theraphyQuestions || Object.keys(theraphyQuestions).length === 0) {
-    newErrors.therapy = "Answer therapy questions";
-  }
+    if (!part || part.length === 0) newErrors.part = 'Select body part';
+    if (!markedImage) newErrors.markedImage = 'Mark image';
 
-  console.log("🚨 VALIDATION ERRORS:", newErrors); // ✅ THIS IS KEY
+    // ✅ POSTAL CODE VALIDATION
+    if (!bookingDetails.address?.postalCode) {
+      if (!newErrors.address) newErrors.address = {};
+      newErrors.address.postalCode = "Postal Code is required";
+    } else if (!/^\d{6}$/.test(bookingDetails.address.postalCode)) {
+      if (!newErrors.address) newErrors.address = {};
+      newErrors.address.postalCode = "Postal Code must be 6 digits";
+    }
+    // if (!theraphyQuestions || Object.keys(theraphyQuestions).length === 0) {
+    //   newErrors.therapy = "Answer therapy questions";
+    // }
 
-  setErrors(newErrors);
+    console.log("🚨 VALIDATION ERRORS:", newErrors); // ✅ THIS IS KEY
 
-  return Object.keys(newErrors).length === 0;
-};
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleAppointmentTypeChange = (type) => {
     setBookingDetails((prev) => ({
       ...prev,
@@ -787,7 +853,7 @@ if (!selectedBooking) {
   const handleSubmit = async () => {
     console.log(selectedBooking)
     const combinedSymptomsDuration = `${bookingDetails.symptomsDuration} ${bookingDetails.unit}`
-   const combinedName = `${bookingDetails.title} ${bookingDetails.name}`
+    const combinedName = `${bookingDetails.title}${bookingDetails.name}`
     console.log('Payload without slot:', combinedSymptomsDuration)
     console.log('Payload without combinedName:', combinedName)
     console.log('Validating bookingDetails...', bookingDetails)
@@ -801,7 +867,10 @@ if (!selectedBooking) {
       setSaveLoading(true)
       // Build payload explicitly, excluding 'slot'
       const { unit, address, slot, ...rest } = bookingDetails
-
+      const finalReason =
+        bookingDetails.reasonForVisit === "Others"
+          ? otherReason
+          : bookingDetails.reasonForVisit;
       const payloadToSend = {
         ...rest,
         name: combinedName,
@@ -811,6 +880,14 @@ if (!selectedBooking) {
         partImage: markedImage,
         theraphyAnswers: theraphyQuestions,
         parts: part,
+        previousInjuries: bookingDetails.previousInjuries,
+        currentMedications: bookingDetails.currentMedications,
+        allergies: bookingDetails.allergies,
+        occupation: bookingDetails.occupation,
+        activityLevels: bookingDetails.activityLevels,
+        reasonForVisit: finalReason,
+        insuranceProvider: bookingDetails.insuranceProvider,
+        policyNumber: bookingDetails.policyNumber,
       }
 
       console.log('Payload without slot:', payloadToSend)
@@ -998,7 +1075,13 @@ if (!selectedBooking) {
   }, [selectedBooking, setBookingDetails])
 
   console.log(`appointmenttype ${appointmentType}`)
-
+  useEffect(() => {
+    setBookingDetails(prev => ({
+      ...prev,
+      activityLevels: activityLevels,
+      reasonForVisit: reasonForVisit
+    }))
+  }, [activityLevels, reasonForVisit])
   // const [part, setPart] = useState("");
   const convertToBase64 = async (image) => {
     try {
@@ -1055,22 +1138,16 @@ if (!selectedBooking) {
       base64Image = await convertToBase64(data.image)
     }
 
-   setPart(actualData.parts && actualData.parts.length ? actualData.parts : ["selected"]);
+    setPart(actualData.parts || [])
     setMarkedImage(base64Image) // ✅ now always base64
-    setTheraphyQuestions(
-  actualData.answerData && Object.keys(actualData.answerData).length
-    ? actualData.answerData
-    : { answered: true }   // ✅ fallback so validation passes
-);
-    setErrors((prev) => {
-  const updated = { ...prev };
-  delete updated.part;
-  delete updated.markedImage;
-  delete updated.therapy;
-  return updated;
-});
+    setTheraphyQuestions(actualData.answerData || {})
+    setErrors((prev) => ({
+      ...prev,
+      part: '',
+      markedImage: '',
+    }));
   }
-  
+
 
   // const handlePartClick = (data) => {
   //   console.log("RAW DATA:", data);
@@ -1303,7 +1380,7 @@ if (!selectedBooking) {
                               className="text-capitalize"
                             >
                               {field === 'po' ? 'PO Address' : field}{' '}
-                              {field !== 'landmark' && <span className="text-danger">*</span>}
+                              {/* {field !== 'postalCode' && <span className="text-danger">*</span>} */}
                             </CFormLabel>
 
                             {field === 'po' ? (
@@ -1342,7 +1419,7 @@ if (!selectedBooking) {
                                 onChange={(e) =>
                                   handleNestedChange('address', field, e.target.value)
                                 }
-                                required={field !== 'landmark'}
+                                required={field !== 'postalCode'}
                               />
                             )}
 
@@ -1523,8 +1600,28 @@ if (!selectedBooking) {
                 >
                   <option value="FOC">FOC (Free of Consultation)</option>
                   <option value="Paid">Paid</option>
+                  {/* <option value="Unpaid">Unpaid</option> */}
+
                 </CFormSelect>
               </CCol>
+              {bookingDetails.foc === 'FOC' && (
+                <CCol md={6} className='mt-3'>
+                  <CFormLabel>
+                    Reason for FOC <span className="text-danger">*</span>
+                  </CFormLabel>
+                  <CFormInput
+                    value={bookingDetails.focReason || ''}
+                    placeholder="Enter reason"
+                    onChange={(e) =>
+                      setBookingDetails((prev) => ({
+                        ...prev,
+                        focReason: e.target.value,
+                      }))
+                    }
+                  />
+                  {errors.focReason && <div className="text-danger mt-1">{errors.focReason}</div>}
+                </CCol>
+              )}
             </CRow>
           </div>
         )}
@@ -1675,7 +1772,7 @@ if (!selectedBooking) {
         {visitType !== 'followup' && (
           <>
             {/* SECTION: Symptoms */}
-            <h6 className="mb-3 border-bottom pb-2">Symptoms</h6>
+            <h6 className="mb-3 border-bottom pb-2"> Medical & Lifestyle History</h6>
 
             <CRow className="mb-4">
               <CCol md={5}>
@@ -1747,11 +1844,140 @@ if (!selectedBooking) {
                 {errors.unit && <p className="text-danger small">{errors.unit}</p>}
               </CCol>
             </CRow>
+            <CRow>
+              <CCol md={4}>
+                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  Previous Injuries
+
+                </CFormLabel>
+                <CFormInput
+                  name="previousInjuries"
+                  value={bookingDetails.previousInjuries}
+                  onChange={handleBookingChange}
+                />
+              </CCol>
+
+              <CCol md={4}>
+                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  Current Medications
+
+                </CFormLabel>
+                <CFormInput
+                  name="currentMedications"
+                  value={bookingDetails.currentMedications}
+                  onChange={handleBookingChange}
+                />
+              </CCol>
+
+              <CCol md={4}>
+                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  Allergies
+
+                </CFormLabel>
+                <CFormInput
+                  name="allergies"
+                  value={bookingDetails.allergies}
+                  onChange={handleBookingChange}
+                />
+              </CCol>
+
+            </CRow>
+            <CRow className='mt-3'>
+
+
+              <CCol md={4}>
+                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  Occupation
+
+                </CFormLabel>
+                <CFormInput
+                  name="occupation"
+                  value={bookingDetails.occupation}
+                  onChange={handleBookingChange}
+                />
+              </CCol>
+
+              <CCol md={6}>
+                <CFormLabel>Reason for Visit</CFormLabel>
+
+                <div className="d-flex gap-3 mt-1">
+                  {reasonforVisitOption.map((item) => (
+                    <div key={item} className="d-flex align-items-center">
+                      <input
+                        type="radio"
+                        name="reasonForVisit"
+                        value={item}
+                        checked={bookingDetails.reasonForVisit === item}
+                        onChange={() => handleReasonChange(item)}
+                      />
+                      <label className="ms-1">{item}</label>
+                    </div>
+                  ))}
+                </div>
+              </CCol>
+              {bookingDetails.reasonForVisit === "Others" && (
+                <CCol md={6} className="mt-3">
+                  <CFormLabel>
+                    Enter Reason <span className="text-danger">*</span>
+                  </CFormLabel>
+
+                  <CFormInput
+                    placeholder="Enter custom reason"
+                    value={otherReason}
+                    onChange={(e) => setOtherReason(e.target.value)}
+                  />
+                </CCol>
+              )}
+            </CRow>
+            <div className='mt-3'>
+              <h6 className="mb-3 border-bottom pb-2" >Activity Level</h6>
+
+              <div className="d-flex gap-3 align-items-center mt-1" style={{ color: 'var(--color-black)' }}>
+                {activityOptions.map((level) => (
+                  <div key={level} className="d-flex align-items-center">
+                    <input
+                      type="checkbox"
+                      value={level}
+                      checked={activityLevels.includes(level)}
+                      onChange={() => handleChange(level)}
+                    />
+                    <label className="ms-1">{level}</label>
+                  </div>
+                ))}
+              </div>
+
+              {/* <p>Selected: {activityLevels.join(", ")}</p> */}
+            </div>
+
+
+
+
+            <CRow className="mt-3">
+              <h6 className="mb-3 border-bottom pb-2" >Insurance Info</h6>
+              <CCol md={6} style={{ color: "var(--color-black)" }}>
+                <CFormLabel>Insurance Provider</CFormLabel>
+                <CFormInput
+                  name="insuranceProvider"
+                  value={bookingDetails.insuranceProvider}
+                  onChange={handleBookingChange}
+                />
+              </CCol>
+
+              <CCol md={6} style={{ color: "var(--color-black)" }}>
+                <CFormLabel>Policy Number</CFormLabel>
+                <CFormInput
+                  name="policyNumber"
+                  value={bookingDetails.policyNumber}
+                  onChange={handleBookingChange}
+                />
+              </CCol>
+            </CRow>
 
             {/* SECTION: Attachment */}
 
-            <CCol md={6}>
-              <CFormLabel style={{ color: 'var(--color-black)' }}>Attachments</CFormLabel>
+            <CCol md={6} className='mt-3'>
+              <h6 className='mb-3 border-bottom pb-2'>Attachments</h6>
+
               <CFormInput
                 type="file"
                 name="attachments"
@@ -1886,6 +2112,8 @@ if (!selectedBooking) {
                   <option value="Cash">Cash</option>
                   <option value="Card">Card</option>
                   <option value="UPI">UPI</option>
+                  <option value="Not Paid">Not Paid</option>
+
                 </CFormSelect>
 
                 {/* ✅ Error message below */}
@@ -1953,7 +2181,7 @@ if (!selectedBooking) {
               )}
               {/* Doctor Referral Code */}
               <CCol md={6}>
-                <h6>Referred By</h6>
+                <CFormLabel style={{ color: "var(--color-black)" }}>Referred By</CFormLabel>
 
                 <Select
                   name="doctorRefCode"
@@ -1994,7 +2222,7 @@ if (!selectedBooking) {
 
                   {/* Referral Type */}
                   <CCol md={6}>
-                    <CFormLabel>Referred By</CFormLabel>
+                    <CFormLabel style={{ color: "var(--color-black)" }}>Referred By</CFormLabel>
                     <CFormSelect
                       value={bookingDetails.referredByType || ''}
                       onChange={(e) =>
@@ -2017,7 +2245,7 @@ if (!selectedBooking) {
 
                   {/* Name Input */}
                   <CCol md={6}>
-                    <CFormLabel>Referred Person Name</CFormLabel>
+                    <CFormLabel style={{ color: "var(--color-black)" }}>Referred Person Name</CFormLabel>
                     <CFormInput
                       type="text"
                       placeholder="Enter name"
@@ -2036,30 +2264,30 @@ if (!selectedBooking) {
             </CRow>
           </>
         )}
-     <div className="mb-4">
-  <h6>Pain Assessment</h6>
+        <div className="mb-4">
+          <h6 className='mb-3 border-bottom pb-2'>Pain Assessment</h6>
 
-  <BodyAssessment onPartClick={handlePartClick} />
+          <BodyAssessment onPartClick={handlePartClick} />
 
-  {/* ✅ Error for part selection */}
-  {errors.part && (
-    <p className="text-danger small">{errors.part}</p>
-  )}
+          {/* ✅ Error for part selection */}
+          {errors.part && (
+            <p className="text-danger small">{errors.part}</p>
+          )}
 
-  {/* Image Preview */}
-  {markedImage && (
-    <img
-      src={`data:image/png;base64,${markedImage}`}
-      width={200}
-      alt="preview"
-    />
-  )}
+          {/* Image Preview */}
+          {markedImage && (
+            <img
+              src={`data:image/png;base64,${markedImage}`}
+              width={200}
+              alt="preview"
+            />
+          )}
 
-  {/* ✅ Error for image */}
-  {errors.markedImage && (
-    <p className="text-danger small">{errors.markedImage}</p>
-  )}
-</div>
+          {/* ✅ Error for image */}
+          {errors.markedImage && (
+            <p className="text-danger small">{errors.markedImage}</p>
+          )}
+        </div>
 
         {selectedBooking == null && (
           <>

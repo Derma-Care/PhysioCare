@@ -31,7 +31,7 @@ import 'slick-carousel/slick/slick-theme.css'
 import axios from 'axios'
 import { MainAdmin_URL, AllCustomerAdvertisements } from '../../baseUrl'
 // import { appointments_Ref } from '../../baseUrl'
-import { AppointmentData, GetBookingByClinicIdData } from '../AppointmentManagement/appointmentAPI'
+import { AppointmentData, bookingUpdate, GetBookingByClinicIdData, GetTodayBooking } from '../AppointmentManagement/appointmentAPI'
 import { DoctorData, getDoctorByClinicIdData } from '../Doctors/DoctorAPI'
 import { COLORS } from '../../Constant/Themes'
 import './Widget.css'
@@ -40,6 +40,8 @@ import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import { http } from '../../Utils/Interceptors'
 import Pagination from '../../Utils/Pagination'
 import { CustomerByClinicNdBranchId } from '../customerManagement/CustomerManagementAPI'
+import { Eye, Printer } from 'lucide-react'
+import PrintLetterHead from '../../Utils/PrintLetterHead'
 
 const WidgetsDropdown = (props) => {
   const [slides, setSlides] = useState([])
@@ -60,8 +62,8 @@ const WidgetsDropdown = (props) => {
   const [appointmentError, setAppointmentError] = useState(null) // New state for appointment fetch error
   const [loadingPatients, setLoadingPatients] = useState(true) // New state for loading indicator
   const [loadingDoctors, setLoadingDoctors] = useState(true) // New state for loading indicator
-  const [patientError, setPatientError] = useState(null) 
-  const [doctorError, setDoctorError] = useState(null) 
+  const [patientError, setPatientError] = useState(null)
+  const [doctorError, setDoctorError] = useState(null)
   const [doctors, setDoctors] = useState([])
   const [patients, setPatients] = useState([])
   const { searchQuery } = useGlobalSearch()
@@ -73,8 +75,10 @@ const WidgetsDropdown = (props) => {
   const [inprogressApt, setInprogressApt] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
-
+  const [statusFilter, setStatusFilter] = useState('');
   const [showAppointments, setShowAppointments] = useState(false)
+  const [editingPaymentId, setEditingPaymentId] = useState(null);
+  const [printData, setPrintData] = useState(null)
   const statusLabelMap = {
     'In-Progress': 'Active',
     Completed: 'Completed',
@@ -90,6 +94,94 @@ const WidgetsDropdown = (props) => {
     } else {
       setStatusFilters([value]) // Allow only one selection
     }
+  }
+  const PrintContent = ({ data }) => {
+    if (!data) return null
+
+    return (
+      <PrintLetterHead>
+        <div style={{ padding: 20, fontFamily: 'Arial' }}>
+
+          {/* TITLE */}
+          <h2 style={{ textAlign: 'center', marginBottom: 10 }}>
+            CONSULTATION RECEIPT
+          </h2>
+
+          {/* RECEIPT META */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: 14,
+            marginBottom: 10
+          }}>
+            <div><strong>Booking Id:</strong> {data.bookingId || '---'}</div>
+            <div><strong>Date:</strong> {data.serviceDate}</div>
+          </div>
+
+          <hr />
+
+          {/* PATIENT DETAILS */}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', fontSize: 14, color: "black" }}  >
+            <p style={{ color: "black" }}><strong>Patient ID:</strong> {data.patientId}</p>
+            <p style={{ color: "black" }}><strong>Name:</strong> {data.name}</p>
+            <p style={{ color: "black" }}><strong>Doctor:</strong> {data.doctorName}</p>
+            <p style={{ color: "black" }}><strong>Time:</strong> {data.slot || data.servicetime}</p>
+          </div>
+
+          <hr />
+
+          {/* BILL TABLE */}
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            marginTop: 10
+          }}>
+            <thead>
+              <tr style={{ background: '#f2f2f2' }}>
+                <th style={thStyle}>#</th>
+                <th style={thStyle}>Description</th>
+                <th style={thStyle}>Amount (₹)</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td style={tdStyle}>1</td>
+                <td style={tdStyle}>Consultation Fee</td>
+                <td style={tdStyle}>{data.consultationFee ?? 0}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* TOTAL */}
+          <div style={{
+            marginTop: 15,
+            display: 'flex',
+            justifyContent: 'flex-end'
+          }}>
+            <div style={{
+              border: '1px solid black',
+              padding: '10px 20px',
+              fontWeight: 'bold'
+            }}>
+              Total: ₹ {data.consultationFee ?? 0}
+            </div>
+          </div>
+
+          {/* FOOTER NOTE */}
+          <div style={{
+            marginTop: 20,
+            fontSize: 12,
+            textAlign: 'center',
+            color: 'gray'
+          }}>
+            * This is a computer-generated receipt. No signature required.
+          </div>
+
+        </div>
+      </PrintLetterHead>
+    )
   }
   const navigate = useNavigate()
   const toggleFilter = (type) => {
@@ -157,7 +249,7 @@ const WidgetsDropdown = (props) => {
       setAppointmentError(null)
 
       try {
-        const response = await GetBookingByClinicIdData(clinicId)
+        const response = await GetTodayBooking(clinicId)
         console.log('Raw Appointments Data:', response)
 
         if (response && Array.isArray(response.data)) {
@@ -168,10 +260,7 @@ const WidgetsDropdown = (props) => {
             const itemDate = item.status.toLowerCase()
             return itemDate === 'in-progress'
           })
-          const filteredAppointments = allAppointments.filter((item) => {
-            const itemDate = item.serviceDate ? convertToISODate(item.serviceDate) : ''
-            return itemDate === todayISO && item.clinicId === clinicId
-          })
+          const filteredAppointments = allAppointments;
           setInprogressApt(inprogreeAppointments)
           setTodayBookings(filteredAppointments)
         } else {
@@ -188,36 +277,54 @@ const WidgetsDropdown = (props) => {
     },
     [todayISO, convertToISODate],
   )
-const fetchPatients = useCallback(async (clinicId) => {
+  const fetchPatients = useCallback(async (clinicId) => {
     setLoadingPatients(true)
     setPatientError(null)
     try {
       const branchId = localStorage.getItem('branchId')
       // The response here is ALREADY the array of patients, 
       // as determined by the CustomerByClinicNdBranchId function.
-      const response = await CustomerByClinicNdBranchId(clinicId, branchId) 
+      const response = await CustomerByClinicNdBranchId(clinicId, branchId)
       console.log('Raw Patients Data:', response)
 
       //  Access the response directly, not response?.data
-      const patientArray = response || [] 
+      const patientArray = response || []
 
       if (Array.isArray(patientArray)) {
         // Use setTotalPatientsCount, not setTotalDoctorsCount
-        setTotalPatientsCount(patientArray.length) 
+        setTotalPatientsCount(patientArray.length)
         setPatients(patientArray)
       } else {
         console.error('Invalid patients response format:', response)
         //Use setPatientError, not setDoctorError
-        setPatientError('No patients found.') 
+        setPatientError('No patients found.')
       }
     } catch (error) {
       console.error('Failed to fetch patients:', error)
       //  Use setPatientError, not setDoctorError
-      setPatientError('Failed to fetch patients.') 
+      setPatientError('Failed to fetch patients.')
     } finally {
       setLoadingPatients(false)
     }
-}, [])
+  }, [])
+
+  const updatePaymentStatus = async (bookingId, paymentType) => {
+    try {
+      await bookingUpdate({ bookingId, paymentType }) // Assuming bookingUpdate accepts an object with these properties
+
+
+      // ✅ update UI locally (no reload)
+      setTodayBookings((prev) =>
+        prev.map((item) =>
+          item.bookingId === bookingId
+            ? { ...item, paymentType }
+            : item
+        )
+      );
+    } catch (err) {
+      console.error("Payment update failed", err);
+    }
+  };
 
   const fetchDoctors = useCallback(async (clinicId) => {
     setLoadingDoctors(true)
@@ -333,6 +440,19 @@ const fetchPatients = useCallback(async (clinicId) => {
     return `data:image/png;base64,${src}` // adjust type if JPG or SVG
   }
 
+  // styles
+  const thStyle = {
+    border: '1px solid black',
+    padding: '8px',
+    textAlign: 'center'
+  }
+
+  const tdStyle = {
+    border: '1px solid black',
+    padding: '8px',
+    textAlign: 'center'
+  }
+
   const sliderSettings = {
     dots: true,
     infinite: slides.length > 1, // Only enable loop when more than 1
@@ -408,11 +528,32 @@ const fetchPatients = useCallback(async (clinicId) => {
       lower.includes('video') // fallback if backend sends mime type
     )
   }
+  useEffect(() => {
+    if (printData) {
+      const timer = setTimeout(() => {
+        window.print()
+
+        // ✅ IMPORTANT: clear after print
+        setTimeout(() => {
+          setPrintData(null)
+        }, 300)
+      }, 500)
+
+      return () => clearTimeout(timer)
+    }
+  }, [printData])
+
+  const handlePrint = (item) => {
+    console.log("PRINT DATA:", item)
+    setPrintData(item)
+
+
+  }
   return (
     <>
       {/*to display cards*/}
       <CRow className={props.className} xs={{ gutter: 4 }}>
-         {/* <CCol sm={6} xl={3}>
+        {/* <CCol sm={6} xl={3}>
           <CCard>
             <CCardBody style={{ textAlign: "center" }}>
               <h5>🏥Chiselon Clinic Management System</h5>
@@ -435,135 +576,135 @@ const fetchPatients = useCallback(async (clinicId) => {
             </CCardBody>
           </CCard>
         </CCol> */}
-    <CCol sm={6} xl={4}>
+        <CCol sm={6} xl={4}>
 
-<CCard
-      onClick={() => navigate("/appointment-management")}
-      style={{
-        cursor: "pointer",
-        border: "1px solid #var(--color-black)",
-        borderRadius: "14px",
-        backgroundColor: "#ffffff",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-        transition: "all 0.2s ease",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-2px)"
-        e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)"
-        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
-      }}
-    >
-      <CCardBody
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 18px",
-        }}
-      >
-        {/* 🔹 Left Side (Count + Text) */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", }}>
-          
-          {/* 🔵 Rounded Count */}
-          <div
+          <CCard
+            onClick={() => navigate("/appointment-management")}
             style={{
-              width: "42px",
-              height: "42px",
-              borderRadius: "50%",
-              backgroundColor: "#e7f1ff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "bold",
-              color: "var(--color-black)",
-              fontSize: "16px",
+              cursor: "pointer",
+              border: "1px solid #var(--color-black)",
+              borderRadius: "14px",
+              backgroundColor: "#ffffff",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)"
+              e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)"
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
             }}
           >
-            {totalAppointmentsCount}
-          </div>
+            <CCardBody
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 18px",
+              }}
+            >
+              {/* 🔹 Left Side (Count + Text) */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", }}>
 
-          {/* 📝 Text */}
-          <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
-           Total Appointments
-          </div>
-        </div>
+                {/* 🔵 Rounded Count */}
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "50%",
+                    backgroundColor: "#e7f1ff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                    color: "var(--color-black)",
+                    fontSize: "16px",
+                  }}
+                >
+                  {totalAppointmentsCount}
+                </div>
 
-        {/* ➡️ Arrow */}
-        <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
-      </CCardBody>
-    </CCard>
+                {/* 📝 Text */}
+                <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
+                  Total Appointments
+                </div>
+              </div>
 
-    
-    </CCol>
+              {/* ➡️ Arrow */}
+              <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
+            </CCardBody>
+          </CCard>
 
-       <CCol sm={6} xl={4}>
+
+        </CCol>
+
+        <CCol sm={6} xl={4}>
 
 
-<CCard
-      onClick={() => navigate("/patient-management")}
-      style={{
-        cursor: "pointer",
-       border: "1px solid #var(--color-black)",
-        borderRadius: "14px",
-        backgroundColor: "#ffffff",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-        transition: "all 0.2s ease",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-2px)"
-        e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)"
-        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
-      }}
-    >
-      <CCardBody
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 18px",
-        }}
-      >
-        {/* 🔹 Left Side (Count + Text) */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          
-          {/* 🔵 Rounded Count */}
-          <div
+          <CCard
+            onClick={() => navigate("/patient-management")}
             style={{
-              width: "42px",
-              height: "42px",
-              borderRadius: "50%",
-              backgroundColor: "#e7f1ff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "bold",
-                            color: "var(--color-black)",
-
-              fontSize: "16px",
+              cursor: "pointer",
+              border: "1px solid #var(--color-black)",
+              borderRadius: "14px",
+              backgroundColor: "#ffffff",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)"
+              e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)"
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
             }}
           >
-            {totalPatientsCount}
-          </div>
+            <CCardBody
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 18px",
+              }}
+            >
+              {/* 🔹 Left Side (Count + Text) */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
 
-          {/* 📝 Text */}
-          <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
-            Total Patients
-          </div>
-        </div>
+                {/* 🔵 Rounded Count */}
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "50%",
+                    backgroundColor: "#e7f1ff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                    color: "var(--color-black)",
 
-        {/* ➡️ Arrow */}
-        <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
-      </CCardBody>
-    </CCard>
+                    fontSize: "16px",
+                  }}
+                >
+                  {totalPatientsCount}
+                </div>
 
-     
-    </CCol>
+                {/* 📝 Text */}
+                <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
+                  Total Patients
+                </div>
+              </div>
+
+              {/* ➡️ Arrow */}
+              <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
+            </CCardBody>
+          </CCard>
+
+
+        </CCol>
 
         {/* <CCol sm={6} xl={4}>
           <CWidgetStatsA
@@ -573,68 +714,68 @@ const fetchPatients = useCallback(async (clinicId) => {
 
           />
         </CCol> */}
-            <CCol sm={6} xl={4}>
-   <CCard
-      onClick={() => navigate("/employee-management/doctor")}
-      style={{
-        cursor: "pointer",
-       border: "1px solid #var(--color-black)",
-        borderRadius: "14px",
-        backgroundColor: "#ffffff",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-        transition: "all 0.2s ease",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-2px)"
-        e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)"
-        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
-      }}
-    >
-      <CCardBody
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 18px",
-        }}
-      >
-        {/* 🔹 Left Side (Count + Text) */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          
-          {/* 🔵 Rounded Count */}
-          <div
+        <CCol sm={6} xl={4}>
+          <CCard
+            onClick={() => navigate("/employee-management/doctor")}
             style={{
-              width: "42px",
-              height: "42px",
-              borderRadius: "50%",
-              backgroundColor: "#e7f1ff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "bold",
-                           color: "var(--color-black)",
-
-              fontSize: "16px",
+              cursor: "pointer",
+              border: "1px solid #var(--color-black)",
+              borderRadius: "14px",
+              backgroundColor: "#ffffff",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)"
+              e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)"
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
             }}
           >
-            {totalDoctorsCount}
-          </div>
+            <CCardBody
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 18px",
+              }}
+            >
+              {/* 🔹 Left Side (Count + Text) */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
 
-          {/* 📝 Text */}
-          <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
-            Total Doctors
-          </div>
-        </div>
+                {/* 🔵 Rounded Count */}
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "50%",
+                    backgroundColor: "#e7f1ff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                    color: "var(--color-black)",
 
-        {/* ➡️ Arrow */}
-        <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
-      </CCardBody>
-    </CCard>
-    </CCol>
- 
+                    fontSize: "16px",
+                  }}
+                >
+                  {totalDoctorsCount}
+                </div>
+
+                {/* 📝 Text */}
+                <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
+                  Total Doctors
+                </div>
+              </div>
+
+              {/* ➡️ Arrow */}
+              <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
+            </CCardBody>
+          </CCard>
+        </CCol>
+
       </CRow>
 
       {/* Carousel Section */}
@@ -648,11 +789,13 @@ const fetchPatients = useCallback(async (clinicId) => {
       </CCard>
 
       {/*to display today Appointments Table */}
-      <div className="container mt-4 ">
-        <h5 className="mb-4">Today Appointments</h5>
+      <div className="container mt-3 ">
+
         <div className="row">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            {/* Left side buttons */}
+          <div className="d-flex justify-content-between align-items-center align-content-center  ">
+            <h5 className="mb-4">Today Appointments</h5>
+
+            {/* 
             <div className="d-flex gap-2">
               <CButton
                 style={{ backgroundColor: 'var(--color-black)', color: COLORS.white }}
@@ -668,48 +811,23 @@ const fetchPatients = useCallback(async (clinicId) => {
 
               <button
                 onClick={() => toggleFilter('Service & Treatment')}
-                className={`btn ${
-                  filterTypes.includes('Service & Treatment') ? 'btn-selected' : 'btn-unselected'
-                }`}
+                className={`btn ${filterTypes.includes('Service & Treatment') ? 'btn-selected' : 'btn-unselected'
+                  }`}
               >
-                Service & Treatment
+                Therapy
               </button>
 
               <button
                 onClick={() => toggleFilter('In-clinic')}
-                className={`btn ${
-                  filterTypes.includes('In-clinic') ? 'btn-selected' : 'btn-unselected'
-                }`}
+                className={`btn ${filterTypes.includes('In-clinic') ? 'btn-selected' : 'btn-unselected'
+                  }`}
               >
-                In-Clinic Consultation
+                Consultation
               </button>
 
-              {/* <button
-                onClick={() => toggleFilter('Tele Consultation')}
-                className={`btn ${
-                  filterTypes.includes('Tele Consultation') ? 'btn-selected' : 'btn-unselected'
-                }`}
-              >
-                Tele Consultation
-              </button> */}
-            </div>
-            {/* Right side reset button */}
-            {/* {!showAppointments && (
-              <CButton
-                style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
-                onClick={() => setShowAppointments(true)}
-              >
-                Active Appointments ({inprogressApt?.length || 0})
-              </CButton>
-            )} */}
 
-            {/* Conditionally render table inside dashboard */}
-            {/* {showAppointments && (
-              <ActiveAppointmentsScreen
-                inprogressApt={inprogressApt}
-                onBack={() => setShowAppointments(false)}
-              />
-            )} */}
+            </div> */}
+
             <CButton
               className="mx-2"
               style={{ backgroundColor: 'var(--color-black)', color: COLORS.white }}
@@ -718,16 +836,45 @@ const fetchPatients = useCallback(async (clinicId) => {
               Active Appointments
             </CButton>
           </div>
+          <div className="d-flex gap-2 mb-3">
+            <CButton
+              style={{
+                backgroundColor: statusFilter === '' ? 'var(--color-black)' : '#ccc',
+                color: '#fff'
+              }}
+              onClick={() => setStatusFilter('')}
+            >
+              All
+            </CButton>
+
+
+            <button
+              onClick={() => setStatusFilter('confirmed')}
+              className={`btn ${statusFilter.includes('confirmed') ? 'btn-selected' : 'btn-unselected'
+                }`}
+            >
+              Confirmed
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={`btn ${statusFilter.includes('pending') ? 'btn-selected' : 'btn-unselected'
+                }`}
+            >
+              Pending
+            </button>
+
+          </div>
         </div>
 
         <CTable striped hover responsive>
           <CTableHead className="pink-table">
             <CTableRow>
               <CTableHeaderCell>S.No</CTableHeaderCell>
+              <CTableHeaderCell>Booking Id</CTableHeaderCell>
               <CTableHeaderCell>Patient File_ID</CTableHeaderCell>
               <CTableHeaderCell>Name</CTableHeaderCell>
               <CTableHeaderCell>Doctor Name</CTableHeaderCell>
-              <CTableHeaderCell>Consultation Type</CTableHeaderCell>
+              <CTableHeaderCell>Payment Status</CTableHeaderCell>
               <CTableHeaderCell>Date</CTableHeaderCell>
               <CTableHeaderCell>Time</CTableHeaderCell>
               <CTableHeaderCell>Status</CTableHeaderCell>
@@ -737,15 +884,15 @@ const fetchPatients = useCallback(async (clinicId) => {
 
           <CTableBody>
             {loadingAppointments ? (
-              <CTableRow>
-                <CTableDataCell
-                  colSpan="9"
-                  className="text-center"
-                  style={{ color: 'var(--color-black)' }}
-                >
-                  <LoadingIndicator message="Loading appointments..." />
-                </CTableDataCell>
-              </CTableRow>
+
+              <CTableDataCell
+                colSpan="9"
+                className="text-center"
+                style={{ color: 'var(--color-black)' }}
+              >
+                <LoadingIndicator message="Loading appointments..." />
+              </CTableDataCell>
+
             ) : appointmentError ? (
               <CTableRow>
                 <CTableDataCell
@@ -759,12 +906,13 @@ const fetchPatients = useCallback(async (clinicId) => {
             ) : (
               (() => {
                 // 1. Filter by status (Confirmed appointments)
-                const confirmed = todayBookings.filter(
-                  (item) => item.status?.toLowerCase() === 'confirmed',
-                )
+                const filteredByStatus = todayBookings.filter((item) => {
+                  if (!statusFilter) return true;
+                  return item.status?.toLowerCase() === statusFilter;
+                });
 
                 // 2. Filter by consultation type
-                const filteredByTypes = confirmed.filter((item) => {
+                const filteredByTypes = filteredByStatus.filter((item) => {
                   if (filterTypes.length === 0) {
                     return true
                   }
@@ -812,10 +960,53 @@ const fetchPatients = useCallback(async (clinicId) => {
                   .map((item, index) => (
                     <CTableRow key={`${item.id}-${index}`} className="pink-table">
                       <CTableDataCell>{(currentPage - 1) * pageSize + index + 1}</CTableDataCell>
-                      <CTableDataCell>{item.patientId}</CTableDataCell>
+                      <CTableDataCell>
+                        {item.bookingId ? item.bookingId.slice(-4) : "-"}
+                      </CTableDataCell>
+                      <CTableDataCell>
+                        {item.patientId ? item.patientId.slice(-6) : "-"}
+                      </CTableDataCell>
                       <CTableDataCell>{item.name}</CTableDataCell>
                       <CTableDataCell>{item.doctorName}</CTableDataCell>
-                      <CTableDataCell>{item.consultationType}</CTableDataCell>
+                      <CTableDataCell>
+                        {editingPaymentId === item.bookingId ? (
+                          <select
+                            className="form-select"
+                            autoFocus
+                            onChange={(e) => {
+                              updatePaymentStatus(item.bookingId, e.target.value);
+                              setEditingPaymentId(null);
+                            }}
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Select Payment</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Card">Card</option>
+                            <option value="UPI">UPI</option>
+                          </select>
+                        ) : (
+                          <CBadge
+                            style={{ cursor: "pointer" }}
+                            color={
+                              item.paymentType && item.paymentType.toLowerCase() !== "not paid"
+                                ? "success"
+                                : "danger"
+                            }
+                            onClick={() => {
+                              if (
+                                !item.paymentType ||
+                                item.paymentType.toLowerCase() === "not paid"
+                              ) {
+                                setEditingPaymentId(item.bookingId);
+                              }
+                            }}
+                          >
+                            {item.paymentType && item.paymentType.toLowerCase() !== "not paid"
+                              ? "Paid"
+                              : "Not Paid"}
+                          </CBadge>
+                        )}
+                      </CTableDataCell>
                       <CTableDataCell>{item.serviceDate}</CTableDataCell>
                       <CTableDataCell>{item.slot || item.servicetime}</CTableDataCell>
                       <CTableDataCell>
@@ -825,7 +1016,7 @@ const fetchPatients = useCallback(async (clinicId) => {
                           {statusLabelMap[item.status] || item.status}
                         </CBadge>
                       </CTableDataCell>
-                      <CTableDataCell>
+                      {/* <CTableDataCell>
                         <CButton
                           style={{ backgroundColor: 'var(--color-black)' }}
                           className="text-white"
@@ -838,6 +1029,35 @@ const fetchPatients = useCallback(async (clinicId) => {
                         >
                           View
                         </CButton>
+
+
+                      </CTableDataCell> */}
+                      <CTableDataCell>
+                        <div className="d-flex align-items-center gap-2">
+
+                          <CButton
+                            style={{ backgroundColor: 'var(--color-black)' }}
+                            className="text-white d-flex align-items-center justify-content-center"
+                            size="sm"
+                            onClick={() =>
+                              navigate(`/appointment-details/${item.bookingId}`, {
+                                state: { appointment: item },
+                              })
+                            }
+                          >
+                            <Eye size={18} />
+                          </CButton>
+
+                          <CButton
+                            style={{ backgroundColor: 'var(--color-black)' }}
+                            className="text-white d-flex align-items-center justify-content-center"
+                            size="sm"
+                            onClick={() => handlePrint(item)}
+                          >
+                            <Printer size={18} />
+                          </CButton>
+
+                        </div>
                       </CTableDataCell>
                     </CTableRow>
                   ))
@@ -855,6 +1075,20 @@ const fetchPatients = useCallback(async (clinicId) => {
           onPageSizeChange={setPageSize}
         />
       )}
+      <div
+        id="print-area"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          background: 'white',
+          zIndex: 9999,
+          display: printData ? 'block' : 'none', // ✅ hide when no data
+        }}
+      >
+        {printData && <PrintContent data={printData} />}
+      </div>
     </>
   )
 }

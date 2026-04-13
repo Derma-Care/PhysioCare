@@ -30,23 +30,26 @@ const BookingSearch = ({
 
   // 🧠 Common API handler
   const fetchBookings = async (apiFunc, searchValue) => {
-    const query = searchValue?.trim()
-    if (!query) return
+    const query = searchValue?.trim();
+    if (!query) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await apiFunc(query)
+      const res = await apiFunc(query);
 
-      setBookingData(res?.data?.data || [])
-      console.log('Fetched bookings:', res?.data?.data || [])
-      console.log('Fetched bookings:', res || [])
+      const apiData = res?.data?.data;
+
+      // ✅ FIX HERE
+      setBookingData(Array.isArray(apiData) ? apiData : [apiData]);
+
+      console.log("Final bookingData:", apiData);
     } catch (err) {
-      console.error('Error fetching bookings:', err)
-      setBookingData([])
+      console.error("Error fetching bookings:", err);
+      setBookingData([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // 🔍 Manual search on button click
   const handleSearch = async () => {
@@ -77,7 +80,7 @@ const BookingSearch = ({
     }
 
     const delayDebounce = setTimeout(async () => {
-      setSelectedBooking(null) // Reset before new fetch
+      setSelectedBooking(null)
       setModalVisible(false)
       if (visitType === 'followup') {
         await fetchBookings(getInProgressfollowupBookings, patientSearch)
@@ -158,9 +161,9 @@ const BookingSearch = ({
       </CRow>
 
       {/* 📋 Booking List */}
-      {bookingData && !selectedBooking && (
+      {bookingData.length > 0 && !selectedBooking && (
         <CListGroup className="shadow-sm mb-4">
-          {[bookingData].map((item) => (
+          {bookingData.map((item) => (
             <CListGroupItem
               key={item.patientId}
               action
@@ -174,8 +177,6 @@ const BookingSearch = ({
             >
               <strong>{item.name}</strong>
               <span className="text-muted">{item.patientId}</span>
-
-              {/* ❗ These are not in API */}
               <span className="text-muted">{item.doctorName || '-'}</span>
               <span className="text-muted">{item.branchname || '-'}</span>
             </CListGroupItem>

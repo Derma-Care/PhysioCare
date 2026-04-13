@@ -31,6 +31,7 @@ import ConsentFormHandler from '../ConsentForms/ConsentFormHandler'
 import { showCustomToast } from '../../Utils/Toaster'
 import PaymentAccordion from './PaymentProgram'
 import ProgramPayment from './PaymentProgram'
+import PhysioConsentForm from './PhysioConsentForm'
 
 const AppointmentDetails = () => {
   const { id } = useParams()
@@ -265,24 +266,7 @@ const AppointmentDetails = () => {
       return null
     }
   }
-  // const getMimeTypeFromBase64 = (base64String) => {
-  //   if (base64String.startsWith('JVBERi0')) {
-  //     return 'application/pdf' // PDF
-  //   }
-  //   if (base64String.startsWith('/9j/')) {
-  //     return 'image/jpeg' // JPEG
-  //   }
-  //   if (base64String.startsWith('iVBORw0KGgo')) {
-  //     return 'image/png' // PNG
-  //   }
-  //   if (base64String.startsWith('data:')) {
-  //     // If it's already a data URL, extract the MIME type
-  //     const mimeMatch = base64String.match(/^data:(.*?);base64/)
-  //     return mimeMatch ? mimeMatch[1] : 'application/octet-stream'
-  //   }
-  //   // Default to a generic binary type if the type cannot be determined
-  //   return 'application/octet-stream'
-  // }
+
 
   const getMimeTypeFromBase64 = (base64String) => {
     if (base64String.startsWith('JVBERi0')) return 'application/pdf' // PDF
@@ -406,9 +390,19 @@ const AppointmentDetails = () => {
           </CButton> */}
         </div>
       </div>
+      <CButton className='mt-2'
+        style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+        onClick={() =>
+          navigate("/physio-consent-form", {
+            state: { bookingDetails: appointment },
+          })
+        }
+      >
+        Go to Consent Form
+      </CButton>
 
       <div
-        className="mt-4 p-4 border rounded shadow-sm bg-white"
+        className="mt-2 p-4 border rounded shadow-sm bg-white"
         style={{ color: 'var(--color-black)' }}
       >
         <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
@@ -526,7 +520,7 @@ const AppointmentDetails = () => {
             <strong>Patient Name:</strong> {appointment?.name}
           </div>
           <div className="col-md-4">
-            <strong>Mobile Number:</strong> {appointment?.patientMobileNumber  }
+            <strong>Mobile Number:</strong> {appointment?.patientMobileNumber}
           </div>
           <div className="col-md-4">
             <strong>Booking For:</strong> {appointment?.bookingFor}
@@ -537,6 +531,10 @@ const AppointmentDetails = () => {
           <div className="col-md-4">
             <strong>Gender:</strong> {appointment?.gender}
           </div>
+          <div className="col-md-4">
+            <strong>Visit Type:</strong> {appointment?.visitType}
+          </div>
+
           <div className="col-12">
             <strong>Problem:</strong>{' '}
             <p style={{ color: 'var(--color-black)' }}>{appointment?.problem}</p>
@@ -634,13 +632,15 @@ const AppointmentDetails = () => {
 
 
 
+
+
         {showConfirmedOrCompleted && doctor && (
           <>
             <div className="mt-4">
               <CAccordion activeItemKey={1}>
                 {/* Consent Form Accordion */}
                 {/* {appointment?.consentFormPdf != '' && ( */}
-
+                {/* <PhysioConsentForm /> */}
                 {appointment?.consultationType?.toLowerCase() === 'services & treatments' &&
                   appointment?.consultationType?.toLowerCase() === 'services & treatments' &&
                   new Date(appointment?.serviceDate) <= new Date() &&

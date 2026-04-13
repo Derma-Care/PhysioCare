@@ -21,9 +21,16 @@ import {
   CFormInput,
   CInputGroupText,
   CSpinner,
-} from '@coreui/react'
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
+
+}
+
+  from '@coreui/react'
 import { CBadge } from '@coreui/react'
-import { cilSearch } from '@coreui/icons'
+import { cilEyedropper, cilPrint, cilSearch } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 import { AppointmentData } from './appointmentAPI'
 import { useNavigate } from 'react-router-dom'
@@ -31,12 +38,14 @@ import axios from 'axios'
 import { GetBookingByClinicIdData } from './appointmentAPI'
 import { GetBookingBy_ClinicId } from '../../baseUrl'
 import BookAppointmentModal from './BookAppointmentModal '
-
+import Select from 'react-select'
 import { COLORS } from '../../Constant/Themes'
 import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import LoadingIndicator from '../../Utils/loader'
 import Pagination from '../../Utils/Pagination'
 import PrintLetterHead from '../../Utils/PrintLetterHead'
+
+import { Edit2, Eye, Loader, Printer, Trash2 } from "lucide-react"
 const appointmentManagement = () => {
   const [viewService, setViewService] = useState(null)
   const [selectedServiceTypes, setSelectedServiceTypes] = useState([])
@@ -57,12 +66,25 @@ const appointmentManagement = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5)
   const [loading, setLoading] = useState(true)
   const [visible, setVisible] = useState(false)
-
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const itemsPerPage = 7
   const navigate = useNavigate()
   const [sortOrder, setSortOrder] = useState('asc')
   const role = localStorage.getItem('role') // or from context/state
+  const [showDropdown, setShowDropdown] = useState(false)
 
+  const STATUS_OPTIONS = [
+    { label: 'Pending', value: 'Pending' },
+    { label: 'Active', value: 'In-Progress' },
+    { label: 'Completed', value: 'Completed' },
+    { label: 'Confirmed', value: 'Confirmed' },
+    { label: 'Due for Investigation', value: 'Due-Investigation' },
+    { label: 'Investigation Done', value: 'Investigation-Done' },
+    { label: 'Follow Up', value: 'Follow-Up' },
+    { label: 'Cancelled', value: 'Cancelled' },
+    { label: 'Rescheduled', value: 'Rescheduled' },
+    { label: 'Dropped', value: 'Dropped' },
+  ]
 
   const fetchAppointments = async () => {
     try {
@@ -206,11 +228,11 @@ const appointmentManagement = () => {
   const handleStatusChange = (e) => {
     const value = e.target.value
 
-    if (statusFilters.includes(value)) {
-      setStatusFilters([]) // Deselect if the same one is clicked
-    } else {
-      setStatusFilters([value]) // Allow only one selection
-    }
+    setStatusFilters((prev) =>
+      prev.includes(value)
+        ? prev.filter((item) => item !== value)
+        : [...prev, value]
+    )
   }
   // const sortedAppointments = [...appointments].sort((a, b) => {
   //   const dateA = new Date(a.date)
@@ -356,58 +378,55 @@ const appointmentManagement = () => {
   }
   useEffect(() => {
     if (printData) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         window.print()
-      }, 300)
+
+        // ✅ IMPORTANT: clear after print
+        setTimeout(() => {
+          setPrintData(null)
+        }, 300)
+      }, 500)
+
+      return () => clearTimeout(timer)
     }
   }, [printData])
   return (
     <div style={{ overflow: 'hidden' }}>
       <div className="container ">
-        <h5>Appointments</h5>
+        <h2 className='mb-4'>Appointments</h2>
         <div className="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-          {/* <CInputGroup style={{ width: '300px' }}>
-            <CFormInput
-              type="text"
-              placeholder="Search by Patient Name or ID"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <CInputGroupText>
-              <CIcon icon={cilSearch} />
-            </CInputGroupText>
-          </CInputGroup> */}
-        </div>
 
-        <div className="d-flex gap-2 mb-3">
-          <CButton
-            style={{ backgroundColor: 'var(--color-black)', color: COLORS.white }}
-            onClick={() => {
-              setSelectedServiceTypes([])
-              setSelectedConsultationTypes([])
-              setFilterTypes([])
-              setStatusFilters([])
-            }}
-          >
-            All
-          </CButton>
-          <button
-            onClick={() => toggleFilter('Service & Treatment')}
-            className={`btn ${filterTypes.includes('Service & Treatment') ? 'btn-selected' : 'btn-unselected'
-              }`}
-          >
-            Services & Treatment
-          </button>
 
-          <button
-            onClick={() => toggleFilter('In-clinic')}
-            className={`btn ${filterTypes.includes('In-clinic') ? 'btn-selected' : 'btn-unselected'
-              }`}
-          >
-            In-Clinic Consultation
-          </button>
 
-          {/* <button
+          <div className="d-flex gap-2 ">
+            <CButton
+              style={{ backgroundColor: 'var(--color-black)', color: COLORS.white }}
+              onClick={() => {
+                setSelectedServiceTypes([])
+                setSelectedConsultationTypes([])
+                setFilterTypes([])
+                setStatusFilters([])
+              }}
+            >
+              All
+            </CButton>
+            <button
+              onClick={() => toggleFilter('Service & Treatment')}
+              className={`btn ${filterTypes.includes('Service & Treatment') ? 'btn-selected' : 'btn-unselected'
+                }`}
+            >
+              Therapies
+            </button>
+
+            <button
+              onClick={() => toggleFilter('In-clinic')}
+              className={`btn ${filterTypes.includes('In-clinic') ? 'btn-selected' : 'btn-unselected'
+                }`}
+            >
+              Consultation
+            </button>
+
+            {/* <button
             onClick={() => toggleFilter('Tele Consultation')}
             className={`btn ${
               filterTypes.includes('Tele Consultation') ? 'btn-selected' : 'btn-unselected'
@@ -415,92 +434,72 @@ const appointmentManagement = () => {
           >
             Tele Consultation
           </button> */}
-        </div>
-
-        <div className="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <div className="d-flex gap-2 flex-wrap" style={{ color: 'var(--color-black)' }}>
-            {/* <CFormCheck
-              label="Pending"
-              value="Pending"
-              onChange={handleStatusChange}
-              checked={statusFilters.includes('Pending')}
-            /> */}
-            <CFormCheck
-              style={{ color: 'var(--color-black)' }}
-              label="Active" // UI
-              value="In-Progress" //Backend value
-              onChange={handleStatusChange}
-              checked={statusFilters.includes('In-Progress')}
-            />
-
-            <CFormCheck
-              style={{ color: 'var(--color-black)' }}
-              label="Completed"
-              value="Completed"
-              onChange={handleStatusChange}
-              checked={statusFilters.includes('Completed')}
-            />
-            <CFormCheck
-              style={{ color: 'var(--color-black)' }}
-              label="Confirmed"
-              value="Confirmed"
-              onChange={handleStatusChange}
-              checked={statusFilters.includes('Confirmed')}
-            />
-            {/* <CFormCheck
-              label="Rejected"
-              value="Rejected"
-              onChange={handleStatusChange}
-              checked={statusFilters.includes('Rejected')}
-            /> */}
           </div>
-          <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
-            <div style={{ position: 'relative', width: '200px' }}>
 
-              <CFormInput
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                style={{ paddingRight: '30px' }}
-              />
+          <div className=" d-flex justify-content-end align-items-center flex-wrap gap-2">
+            <div className="d-flex align-items-center justify-content-between">
 
-              {/* ❌ Clear Icon */}
-              {selectedDate && (
-                <span
-                  onClick={() => setSelectedDate('')}
+              {/* LEFT SIDE → Date Input */}
+              <div style={{ position: 'relative', width: '200px' }} className='mx-2'>
+                <CFormInput
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  style={{ paddingRight: '30px' }}
+                />
+
+                {/* ❌ Clear Icon */}
+                {selectedDate && (
+                  <span
+                    onClick={() => setSelectedDate('')}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      color: 'gray',
+                    }}
+                  >
+                    ✕
+                  </span>
+                )}
+              </div>
+
+              {/* RIGHT SIDE → Button */}
+              {(role === 'admin' || role === 'receptionist') && (
+                <CButton
                   style={{
-                    position: 'absolute',
-                    right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    color: 'gray',
+                    backgroundColor: 'var(--color-black)',
+                    color: 'white',
                   }}
+                  onClick={() => setVisible(true)}
                 >
-                  ✕
-                </span>
+                  Book Appointment
+                </CButton>
               )}
 
-
             </div>
-            {(role == 'admin' || role == 'receptionist') && (
-              <CButton
-                style={{
-                  backgroundColor: 'var(--color-black)',
-                  color: 'white',
-                  marginLeft: '325px',
-                }}
-                onClick={() => setVisible(true)} // open modal
-              >
-                Book Appointment
-              </CButton>
-            )}
+            {/* Modal imported from separate file */}
+            <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
           </div>
-          {/* Modal imported from separate file */}
-          <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
         </div>
-
+        <CCol md={4} className='mb-2'>
+          <Select
+            isMulti
+            options={STATUS_OPTIONS}
+            value={STATUS_OPTIONS.filter(option =>
+              statusFilters.includes(option.value)
+            )}
+            onChange={(selectedOptions) =>
+              setStatusFilters(selectedOptions.map(opt => opt.value))
+            }
+            placeholder="Select Filter By Status"
+            className="basic-multi-select"
+            classNamePrefix="select"
+          />
+        </CCol>
         <CTable striped hover responsive>
           <CTableHead className="pink-table  w-auto">
             <CTableRow>
@@ -526,17 +525,17 @@ const appointmentManagement = () => {
           <CTableBody>
             {loading ? (
               // Show loading row while fetching
-              <CTableRow>
-                <CTableDataCell
-                  colSpan="9"
-                  className="text-center  "
-                  style={{ color: 'var(--color-black)' }}
-                >
-                  <div className="d-flex justify-content-center align-items-center">
-                    <LoadingIndicator message="Loading appointments..." />
-                  </div>
-                </CTableDataCell>
-              </CTableRow>
+
+              <CTableDataCell
+                colSpan="9"
+                className="text-center  "
+                style={{ color: 'var(--color-black)' }}
+              >
+                <div className="d-flex justify-content-center align-items-center">
+                  <LoadingIndicator message="Loading appointments..." />
+                </div>
+              </CTableDataCell>
+
             ) : paginatedData.length > 0 ? (
               paginatedData.map((item, index) => (
                 <CTableRow key={`${item.id}-${index}`} className="pink-table">
@@ -558,26 +557,31 @@ const appointmentManagement = () => {
                   </CTableDataCell>
 
                   <CTableDataCell>
-                    <CButton
-                      style={{ backgroundColor: 'var(--color-black)' }}
-                      className="text-white mx-2"
-                      size="sm"
-                      onClick={() =>
-                        navigate(`/appointment-details/${item.bookingId}`, {
-                          state: { appointment: item },
-                        })
-                      }
-                    >
-                      View
-                    </CButton>
-                    <CButton
-                      style={{ backgroundColor: 'var(--color-black)' }}
-                      className="text-white"
-                      size="sm"
-                      onClick={() => handlePrint(item)}
-                    >
-                      Print
-                    </CButton>
+                    <div className="d-flex align-items-center gap-2">
+
+                      <CButton
+                        style={{ backgroundColor: 'var(--color-black)' }}
+                        className="text-white d-flex align-items-center justify-content-center"
+                        size="sm"
+                        onClick={() =>
+                          navigate(`/appointment-details/${item.bookingId}`, {
+                            state: { appointment: item },
+                          })
+                        }
+                      >
+                        <Eye size={18} />
+                      </CButton>
+
+                      <CButton
+                        style={{ backgroundColor: 'var(--color-black)' }}
+                        className="text-white d-flex align-items-center justify-content-center"
+                        size="sm"
+                        onClick={() => handlePrint(item)}
+                      >
+                        <Printer size={18} />
+                      </CButton>
+
+                    </div>
                   </CTableDataCell>
                 </CTableRow>
               ))
@@ -636,13 +640,14 @@ const appointmentManagement = () => {
           left: 0,
           width: '100%',
           background: 'white',
-          zIndex: -1,
+          zIndex: 9999,
+          display: printData ? 'block' : 'none', // ✅ hide when no data
         }}
       >
         {printData && <PrintContent data={printData} />}
       </div>
 
-    </div>
+    </div >
   )
 }
 
