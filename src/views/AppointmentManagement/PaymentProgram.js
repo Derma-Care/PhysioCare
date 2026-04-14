@@ -54,6 +54,7 @@ export default function ProgramPayment() {
    const [paymentAmount, setPaymentAmount] = useState(0)
   const [finalAmount, setFinalAmount] = useState(0)
     const [discount, setDiscount] = useState(0)
+    const [serviceType, setServiceType] = useState("");
     const [showTable, setShowTable] = useState(false)
     const [discountPercent, setDiscountPercent] = useState(0)
     const [printData, setPrintData] = useState(null)
@@ -117,21 +118,34 @@ const handleTypeChange = (type) => {
   setSelectedType(type);
   setSelectedValue([]);
 
-  if (!programData) {
-    console.log("❌ Program data not loaded yet");
-    setOptionsList([]);
-    return;
-  }
-
-  const therapies = programData?.therapyData || programData?.therophyData || [];
-
-  console.log("Therapies:", therapies);
-
   let data = [];
 
+  // ✅ STEP 1: Extract therapies properly
+  let therapies = [];
+
+  if (serviceType === "package") {
+    // 🔥 from therapySessions (optionsList has packages)
+    therapies = optionsList
+      ?.flatMap(pkg => pkg.programs || [])
+      ?.flatMap(program => program.therapyData || []);
+  } else {
+    // normal flow
+    therapies =
+      programData?.therapyData ||
+      programData?.therophyData ||
+      [];
+  }
+
+  console.log("✅ Therapies:", therapies);
+
+  // ✅ STEP 2: Switch logic
   switch (type) {
     case "program":
-      data = [programData];
+      if (serviceType === "package") {
+        data = optionsList.flatMap(pkg => pkg.programs || []);
+      } else {
+        data = [programData];
+      }
       break;
 
     case "therapy":
@@ -139,15 +153,15 @@ const handleTypeChange = (type) => {
       break;
 
     case "exercise":
-      data = therapies.flatMap((t) => t.exercises || []);
+      data = therapies.flatMap(t => t.exercises || []);
       break;
 
     case "session":
-      data = therapies.flatMap((t) =>
-        (t.exercises || []).flatMap((e) =>
+      data = therapies.flatMap(t =>
+        (t.exercises || []).flatMap(e =>
           generateSessionPlan(
             startDate,
-            e.noOfSessions,
+            e.noOfSessions || e.session,   // 🔥 handle both keys
             e.frequency
           )
         )
@@ -155,14 +169,14 @@ const handleTypeChange = (type) => {
       break;
 
     case "package":
-      data = packageData || [];
+      data = optionsList || []; // already set from API
       break;
 
     default:
       data = [];
   }
 
-  console.log("Final optionsList:", data);
+  console.log("✅ Final optionsList:", data);
 
   setOptionsList(data);
 };
@@ -256,6 +270,12 @@ useEffect(() => {
 setFinalAmount(totalAmount);
   }
 }, [programData])
+useEffect(() => {
+  if (serviceType) {
+    handleTypeChange(serviceType);
+    setSelectedType(serviceType); // auto select in UI
+  }
+}, [serviceType, programData]);
   const handleAmountChange = (value) => {
   let amount = Number(value);
 
@@ -396,34 +416,39 @@ setFinalAmount(totalAmount);
 }, [clinicId, branchId, patientId, bookingId])
 const fetchProgramDetails = async () => {
   try {
-    setLoading(true)
+    setLoading(true);
 
     const response = await getprogramsfromDoctors(
       clinicId,
       branchId,
       patientId,
       bookingId
-    )
+    );
 
-    const res = response.data
+    const res = response.data;
 
-    if (!res.success || !res.data || res.data.length === 0) {
-      setProgramData(null)
-      return false
-    }
+    if (!res.success) return;
 
-    // ✅ FIX HERE
-    setProgramData(res.data[0])
+    // ✅ SET SERVICE TYPE (MAIN PART)
+    setServiceType(res.serviceType);
+    const sessions = res.data?.therapySessions || [];
 
-    return true
+    // ✅ SET DATA
+    if (res.serviceType === "package") {
+  setOptionsList(sessions); // packages
+  setProgramData(null);
+} else {
+  // flatten programs
+  const programs = sessions.flatMap(pkg => pkg.programs || []);
+  setProgramData(programs[0]); // or full list if needed
+}
 
   } catch (error) {
-    console.error(error)
-    return false
+    console.error(error);
   } finally {
-    setLoading(false)
+    setLoading(false);
   }
-}
+};
 const Option = (props) => {
   return (
     <components.Option {...props}>
@@ -505,7 +530,7 @@ const handleOpenProgramDetails = async () => {
                     paymentPercent: paymentPercent,
                 },
             ],
-            therapyWithSessions: therapyWithSessions, //[...data.therophyData] // include therapy + sessions in payload and it will update the status when therapist session completed
+            therapyWithSessions: therapyWithSessions, 
         }
 
         if (payload.balanceAmount > 0) {
@@ -704,17 +729,20 @@ useEffect(() => {
     <small style={{ color: "red" }}>{errors.startDate}</small>
   )}
 </CCol>
-<CCol md={4}>
-  <CFormLabel>Select Type</CFormLabel>
-  <CFormSelect
-    value={selectedType}
-    onChange={(e) => handleTypeChange(e.target.value)}
-  >
-    <option value="">Select Type</option>
-    <option value="therapy">Therapy</option>
-    <option value="exercise">Exercise</option>
-    <option value="package">Package</option>
-  </CFormSelect>
+<CCol md={3}>
+  <CFormLabel>Service Type</CFormLabel>
+
+<CFormSelect
+  value={selectedType}
+  onChange={(e) => handleTypeChange(e.target.value)}
+>
+  <option value="">Select Type</option>
+
+  {serviceType === "program" && <option value="program">Program</option>}
+  {serviceType === "therapy" && <option value="therapy">Therapy</option>}
+  {serviceType === "exercise" && <option value="exercise">Exercise</option>}
+  {serviceType === "package" && <option value="package">Package</option>}
+</CFormSelect>
 </CCol>
 <CCol md={4}>
   <CFormLabel>Select Value</CFormLabel>
@@ -737,7 +765,7 @@ useEffect(() => {
     const val = item.value;
 
     if (selectedType === "therapy") {
-      total += Number(val.therapyCost || 0);
+     total += Number(val.totalPrice || 0);
     } else if (selectedType === "exercise") {
       total += Number(val.totalSessionCost || 0);
     } else if (selectedType === "package") {
@@ -908,6 +936,8 @@ useEffect(() => {
         <CTableHeaderCell>Frequency</CTableHeaderCell>
         <CTableHeaderCell>Sets</CTableHeaderCell>
         <CTableHeaderCell>Reps</CTableHeaderCell>
+        <CTableHeaderCell>Payment Status</CTableHeaderCell>
+
       </CTableRow>
     </CTableHead>
 
@@ -930,7 +960,8 @@ useEffect(() => {
           <CTableDataCell>{row.frequency}</CTableDataCell>
           <CTableDataCell>{row.sets}</CTableDataCell>
           <CTableDataCell>{row.reps}</CTableDataCell>
-        </CTableRow>
+          <CTableDataCell>{row.paymentStatus}</CTableDataCell>
+        </CTableRow>  
       ))}
     </CTableBody>
   </CTable>
