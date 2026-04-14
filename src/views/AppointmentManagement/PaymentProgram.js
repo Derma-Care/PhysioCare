@@ -582,7 +582,7 @@ useEffect(() => {
     bookingId,
     patientId,
     startDate,
-    therapistRecordId:therapistRecordId,
+    therapistRecordId:programData?.therapistRecordId,
   }
 
   console.log("Payload:", payload)
