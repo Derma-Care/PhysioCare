@@ -32,6 +32,7 @@ import { useLocation } from "react-router-dom"
 import { getprogramsfromDoctors } from "../ProcedureManagement/ProgramApi"
 import { BASE_URL } from "../../baseUrl";
 
+
 export default function ProgramPayment() {
     const location = useLocation();
 
@@ -60,6 +61,7 @@ export default function ProgramPayment() {
     const [printData, setPrintData] = useState(null)
     const [openTherapy, setOpenTherapy] = useState(null)
     const [openExercise, setOpenExercise] = useState(null)
+    const [therapistRecordId, setTherapistRecordId] = useState(null);
     
     const [errors, setErrors] = useState({})
     const [viewModal, setViewModal] = useState(false)
@@ -431,6 +433,7 @@ const fetchProgramDetails = async () => {
 
     // ✅ SET SERVICE TYPE (MAIN PART)
     setServiceType(res.serviceType);
+    setTherapistRecordId(res.data?.therapistRecordId);
     const sessions = res.data?.therapySessions || [];
 
     // ✅ SET DATA
@@ -568,10 +571,10 @@ useEffect(() => {
    const handleGenerate = async () => {
   console.log("Generate clicked")
 
-  const isValid = validate()
-  console.log("Validation result:", isValid)
+  // const isValid = validate()
+  // console.log("Validation result:", isValid)
 
-  if (!isValid) return
+  // if (!isValid) return
 
   const payload = {
     clinicId: localStorage.getItem("HospitalId"),
@@ -579,7 +582,7 @@ useEffect(() => {
     bookingId,
     patientId,
     startDate,
-    therapistRecordId: programData?.therapistRecordId,
+    therapistRecordId:therapistRecordId,
   }
 
   console.log("Payload:", payload)

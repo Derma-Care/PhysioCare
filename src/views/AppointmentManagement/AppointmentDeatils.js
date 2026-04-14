@@ -42,14 +42,37 @@ const AppointmentDetails = () => {
   const [vitals, setVitals] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
+  const calculateBMI = (height, weight) => {
+  const h = Number(height) / 100;
+  const w = Number(weight);
+
+  if (!h || !w) return '';
+
+  return (w / (h * h)).toFixed(2);
+};
+ ;
+
+  
+  
+  
 
   const [formData, setFormData] = useState({
-    height: '',
-    weight: '',
-    bloodPressure: '',
-    temperature: '',
-    bmi: calculateBMI(formData.height, formData.weight),
-  })
+  height: '',
+  weight: '',
+  bloodPressure: '',
+  temperature: '',
+  bmi: '',
+});
+useEffect(() => {
+  if (formData.height && formData.weight) {
+    const bmi = calculateBMI(formData.height, formData.weight);
+
+    setFormData(prev => ({
+      ...prev,
+      bmi
+    }));
+  }
+}, [formData.height, formData.weight]);
   const appointment = location.state?.appointment
   const { hospitalId, selectedHospital } = useHospital()
   if (!appointment) {
@@ -215,10 +238,7 @@ const AppointmentDetails = () => {
     }
   }
 
-  const calculateBMI = (height, weight) => {
-    const h = Number(height) / 100
-    return h > 0 ? (weight / (h * h)).toFixed(2) : ''
-  }
+  
   const handleUpdateVitals = async () => {
     try {
       await updateVitalsData(formData, appointment.bookingId, appointment.patientId)
@@ -363,7 +383,8 @@ const AppointmentDetails = () => {
 
 
   const handlePaymentClick = () => {
-    if (showPayment && normalizedStatus === "active") {
+    // if (showPayment && normalizedStatus === "active") {
+    if (normalizedStatus !== "active") {
       console.log("Navigating to payment with appointment:", appointment)
       navigate("/program-payment" + `/${id}`, {
         state: {
@@ -399,13 +420,14 @@ const AppointmentDetails = () => {
             </CButton>
           )}
           {
-            showPayment && (<CButton
+            // showPayment && (<CButton
+            <CButton
               color="success"
               onClick={() => handlePaymentClick()}
-              disabled={!showPayment} // optional disable
+              // disabled={!showPayment} // optional disable
             >
               Payment
-            </CButton>)
+            </CButton>
           }
           {/* <CButton
             color="secondary"
