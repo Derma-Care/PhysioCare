@@ -139,6 +139,7 @@ export const GetTodayBooking = async (id) => {
     const response = await axios.get(
       `${BASE_URL}/getTodayBookings/${hID}/${branchId}`,
     ) //TODO:chnage when apigetway call axios to http
+    console.log(response.data)
     return response.data
   } catch (error) {
     console.error('Error fetching booking by clinicId:', error.message)

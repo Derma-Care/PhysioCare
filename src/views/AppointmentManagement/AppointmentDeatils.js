@@ -48,7 +48,7 @@ const AppointmentDetails = () => {
     weight: '',
     bloodPressure: '',
     temperature: '',
-    bmi: '',
+    bmi: calculateBMI(formData.height, formData.weight),
   })
   const appointment = location.state?.appointment
   const { hospitalId, selectedHospital } = useHospital()
@@ -175,22 +175,49 @@ const AppointmentDetails = () => {
       showCustomToast('Please fix validation errors before submitting.', 'error')
       return
     }
-    console.log('Submitting vitals data:', formData)
+
     try {
       setLoading(true)
-      await postVitalsData({ ...formData, patientId: appointment.patientId }, appointment.bookingId)
 
-      showCustomToast('Vitals added successfully! ', 'success')
+      const payload = {
+        patientId: appointment.patientId,
+        bookingId: appointment.bookingId,
+        height: formData.height,
+        weight: Number(formData.weight) || 0,
+        bloodPressure: formData.bloodPressure,
+        temperature: formData.temperature,
+        bmi: formData.bmi,
+        date: new Date().toISOString(), // optional but recommended
+      }
+
+      console.log('Submitting vitals data:', payload)
+
+      await postVitalsData(payload)
+
+      showCustomToast('Vitals added successfully!', 'success')
 
       setShowModal(false)
-      setFormData({ height: '', weight: '', bloodPressure: '', temperature: '', bmi: '' })
+
+      setFormData({
+        height: '',
+        weight: '',
+        bloodPressure: '',
+        temperature: '',
+        bmi: '',
+      })
+
       fetchVitals()
     } catch (error) {
-      // showCustomToast('Failed to add vitals','error')
-    }
-    finally {
+      console.error(error)
+      showCustomToast('Failed to add vitals', 'error')
+    } finally {
       setLoading(false)
     }
+  }
+
+  const calculateBMI = (height, weight) => {
+    const h = Number(height) / 100
+    return h > 0 ? (weight / (h * h)).toFixed(2) : ''
   }
   const handleUpdateVitals = async () => {
     try {

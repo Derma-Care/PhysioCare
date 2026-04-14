@@ -258,7 +258,7 @@ const InProgressAppointmentsPage = () => {
         console.log('Booking Payload:', payload)
 
         // 🔹 Example: Post booking to your backend
-        const response = await axios.post(`${Booking_sevice}/customer/bookService`, payload)
+        const response = await axios.post(`${BASE_URL}/physioAppointment`, payload)
 
         if (response?.data?.success) {
           showCustomToast(response.data.message || 'Booking successful!', 'success')
@@ -538,10 +538,10 @@ const InProgressAppointmentsPage = () => {
               <CCardBody style={{ padding: '10px' }}>
                 {appointments.map((apt) => (
                   <CCard
-                  
+
                     key={apt.bookingId}
                     className="mb-3"
-                    style={{ color: 'var(--color-black)'  }}
+                    style={{ color: 'var(--color-black)' }}
                   >
                     {/* 🔹 Booking header */}
                     <div
@@ -617,9 +617,9 @@ const InProgressAppointmentsPage = () => {
                                   <CTableBody>
                                     {treatment.dates.map((sitting, i) => {
                                       const sittingKey = `${apt.bookingId}-${treatmentName}-${i}`
-                                     const isCompleted =
-  sitting.status?.toLowerCase() === 'completed' ||
-  sitting.status?.toLowerCase() === 'confirmed'
+                                      const isCompleted =
+                                        sitting.status?.toLowerCase() === 'completed' ||
+                                        sitting.status?.toLowerCase() === 'confirmed'
 
                                       const isEditMode = editMode[sittingKey]
 
@@ -884,13 +884,12 @@ const InProgressAppointmentsPage = () => {
                                   isPastTime && (
                                     <div
                                       key={i}
-                                      className={`slot-item text-center border rounded ${
-                                        isBooked
-                                          ? 'bg-danger text-white'
-                                          : isSelected
-                                            ? 'text-white'
-                                            : 'bg-light var(--color-black)'
-                                      }`}
+                                      className={`slot-item text-center border rounded ${isBooked
+                                        ? 'bg-danger text-white'
+                                        : isSelected
+                                          ? 'text-white'
+                                          : 'bg-light var(--color-black)'
+                                        }`}
                                       onClick={() => {
                                         if (isBooked) return
                                         setSelectedSlots(isSelected ? null : slotObj.slot)

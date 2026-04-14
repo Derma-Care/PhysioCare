@@ -257,7 +257,7 @@ const WidgetsDropdown = (props) => {
           setTotalAppointmentsCount(allAppointments.length)
 
           const inprogreeAppointments = allAppointments.filter((item) => {
-            const itemDate = item.status.toLowerCase()
+            const itemDate = item.status
             return itemDate === 'in-progress'
           })
           const filteredAppointments = allAppointments;
