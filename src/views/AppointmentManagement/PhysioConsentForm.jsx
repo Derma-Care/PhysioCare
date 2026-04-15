@@ -8,8 +8,10 @@ import PatientRegistration from "./PatientInfoConsent";
 
 const ConsentForm = () => {
   const location = useLocation();
-  const booking = location.state?.bookingDetails || {};
-
+const booking = location.state?.bookingDetails || {};
+const vitals = location.state?.vitals || {};
+const doctorSign = location.state?.doctorsign || "";
+console.log("Booking Details in Consent Form:", booking); // Debug log
   const formRef = useRef();
   const patientSignRef = useRef();
 
@@ -23,7 +25,18 @@ const ConsentForm = () => {
     doctor: booking?.doctorName || "",
     uhid: booking?.patientId || "",
   };
+const [consentForm, setConsentForm] = useState({
+  relationType: "Patient", // Patient / Relative
+  relationName: ""
+});
 
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  setConsentForm((prev) => ({
+    ...prev,
+    [name]: value
+  }));
+};
   // Save signature
   const savePatientSign = () => {
     const img = patientSignRef.current
@@ -60,11 +73,15 @@ const ConsentForm = () => {
       <div ref={formRef} >
      {/* PAGE 1 */}
   <div className="a4-page" >
-    <PatientRegistration booking={booking} />
+    <PatientRegistration booking={booking} vitals={vitals}/>
   </div>
 <hr />
         {/* HEADER */}
-        <div className="mt-3" >
+       
+
+        {/* MAIN BOX */}
+        <div className="main-box a4-page">
+           <div  >
           <h3 className="title-box">
             CONSENT FOR PHYSIOTHERAPY <br />
             <span className="tamil">
@@ -72,9 +89,6 @@ const ConsentForm = () => {
             </span>
           </h3>
         </div>
-
-        {/* MAIN BOX */}
-        <div className="main-box a4-page">
 
           <table className="table">
             <tbody>
@@ -176,24 +190,82 @@ const ConsentForm = () => {
           </p>
 
           {/* SIGNATURE */}
-          <div className="sign-section">
+        <div className="sign-section">
 
-            <div>
-              <p>Patient Signature</p>
-              <SignaturePad
-                ref={patientSignRef}
-                canvasProps={{ width: 250, height: 80, className: "sign-box" }}
-              />
-              <button onClick={savePatientSign}>Save</button>
-              {patientSign && <img src={patientSign} className="sign-img" />}
-            </div>
+  {/* Patient / Relative */}
+  <div className="sign-card">
+    <p className="sign-title">Patient / Relative</p>
 
-            <div>
-              <p>Physiotherapist</p>
-              <div className="sign-box"></div>
-            </div>
+    <div className="radio-group">
+      <label className="me-3">
+        <input
+          type="radio"
+          name="relationType"
+          value="Patient"
+          checked={consentForm.relationType === "Patient"}
+          onChange={handleChange}
+        />
+        Patient
+      </label>
 
-          </div>
+      <label>
+        <input
+          type="radio"
+          name="relationType"
+          value="Relative"
+          checked={consentForm.relationType === "Relative"}
+          onChange={handleChange}
+        />
+        Relative
+      </label>
+    </div>
+
+    <input
+      type="text"
+      name="relationName"
+      placeholder="Enter Name"
+      value={consentForm.relationName}
+      onChange={handleChange}
+      className="form-control mt-2"
+    />
+  </div>
+
+  {/* Patient Signature */}
+  <div className="sign-card">
+    <p className="sign-title">Signature with Date</p>
+
+    <SignaturePad
+      ref={patientSignRef}
+      canvasProps={{
+        width: 250,
+        height: 80,
+        className: "sign-box"
+      }}
+    />
+
+    <button className="btn btn-dark btn-sm mt-2" onClick={savePatientSign}>
+      Save
+    </button>
+
+    {patientSign && (
+      <img src={patientSign} alt="Patient Sign" className="sign-img mt-2" />
+    )}
+  </div>
+
+  {/* Doctor Signature */}
+  <div className="sign-card">
+    <p className="sign-title">Physiotherapist</p>
+
+    <div className="sign-box doctor-box">
+      <img
+        src={doctorSign}
+        alt="Doctor Signature"
+        className="doctor-sign-img"
+      />
+    </div>
+  </div>
+
+</div>
 
         </div>
       </div>
@@ -327,6 +399,55 @@ const ConsentForm = () => {
     margin: 0;
     page-break-after: always;
   }
+}.sign-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.sign-card {
+  flex: 1;
+  min-width: 280px;
+}
+
+.sign-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.sign-box {
+  width: 200px;
+  height: 80px;
+  border: 1px solid #000;
+  background: #fff;
+}
+
+.sign-img {
+  width: 200px;
+  height: 80px;
+  object-fit: contain;
+  border: 1px solid #ddd;
+}
+
+.doctor-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doctor-sign-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
       `}</style>
     </>

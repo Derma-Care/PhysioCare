@@ -43,36 +43,36 @@ const AppointmentDetails = () => {
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const calculateBMI = (height, weight) => {
-  const h = Number(height) / 100;
-  const w = Number(weight);
+    const h = Number(height) / 100;
+    const w = Number(weight);
 
-  if (!h || !w) return '';
+    if (!h || !w) return '';
 
-  return (w / (h * h)).toFixed(2);
-};
- ;
+    return (w / (h * h)).toFixed(2);
+  };
+  ;
 
-  
-  
-  
+
+
+
 
   const [formData, setFormData] = useState({
-  height: '',
-  weight: '',
-  bloodPressure: '',
-  temperature: '',
-  bmi: '',
-});
-useEffect(() => {
-  if (formData.height && formData.weight) {
-    const bmi = calculateBMI(formData.height, formData.weight);
+    height: '',
+    weight: '',
+    bloodPressure: '',
+    temperature: '',
+    bmi: '',
+  });
+  useEffect(() => {
+    if (formData.height && formData.weight) {
+      const bmi = calculateBMI(formData.height, formData.weight);
 
-    setFormData(prev => ({
-      ...prev,
-      bmi
-    }));
-  }
-}, [formData.height, formData.weight]);
+      setFormData(prev => ({
+        ...prev,
+        bmi
+      }));
+    }
+  }, [formData.height, formData.weight]);
   const appointment = location.state?.appointment
   const { hospitalId, selectedHospital } = useHospital()
   if (!appointment) {
@@ -143,7 +143,7 @@ useEffect(() => {
       if (Array.isArray(data) && data.length === 0) {
         setVitals(null)
       } else {
-        setVitals(data)
+        setVitals(data[0])
       }
     } catch (error) {
       console.error('Error fetching vitals:', error)
@@ -215,7 +215,7 @@ useEffect(() => {
 
       console.log('Submitting vitals data:', payload)
 
-      await postVitalsData(payload)
+      await postVitalsData(payload, payload.bookingId)
 
       showCustomToast('Vitals added successfully!', 'success')
 
@@ -238,7 +238,7 @@ useEffect(() => {
     }
   }
 
-  
+
   const handleUpdateVitals = async () => {
     try {
       await updateVitalsData(formData, appointment.bookingId, appointment.patientId)
@@ -424,7 +424,7 @@ useEffect(() => {
             <CButton
               color="success"
               onClick={() => handlePaymentClick()}
-              // disabled={!showPayment} // optional disable
+            // disabled={!showPayment} // optional disable
             >
               Payment
             </CButton>
@@ -439,11 +439,16 @@ useEffect(() => {
           </CButton> */}
         </div>
       </div>
-      <CButton className='mt-2'
-        style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+      <CButton
+        className="mt-2"
+        style={{ backgroundColor: "var(--color-black)", color: "white" }}
         onClick={() =>
           navigate("/physio-consent-form", {
-            state: { bookingDetails: appointment },
+            state: {
+              bookingDetails: appointment,
+              vitals: vitals,
+              doctorsign: doctor?.doctorSignature
+            }
           })
         }
       >
@@ -632,8 +637,7 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* vitals */}
-        {/* Vitals Card */}
+
         {/* Vitals Card */}
         {showVitalsCard && (
           <div className="card shadow-sm p-3 mb-3 mt-4" style={{ color: 'var(--color-black)' }}>

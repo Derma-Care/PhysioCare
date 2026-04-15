@@ -1,9 +1,10 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 
-const PatientRegistration = ({booking}) => {
+const PatientRegistration = ({booking,vitals}) => {
   {};
-
+console.log("Booking in Patient Registration:", booking); // Debug log
+console.log("Vitals in Patient Registration:", vitals); // Debug log
   const data = {
     name: booking?.name || "Prashanth",
     age: booking?.age || "28",
@@ -17,7 +18,7 @@ const PatientRegistration = ({booking}) => {
     <div className="form-container">
 
       {/* HEADER */}
-      <div className="header">
+      {/* <div className="header">
         <div className="left">
           <p>📞 99948 85456 | 93607 46496</p>
           <p>🌐 kinetixwellnesscare.in</p>
@@ -28,7 +29,7 @@ const PatientRegistration = ({booking}) => {
           <h2>KINETIX</h2>
           <p>PHYSIOTHERAPY | REHAB FITNESS & RECOVERY</p>
         </div>
-      </div>
+      </div> */}
 
       <h2 className="title">Patient Registration Form</h2>
 
@@ -88,21 +89,20 @@ const PatientRegistration = ({booking}) => {
           <span>Email:</span>
           <span className="line">{data.email}</span>
         </div>
-
-        <table className="table">
-          <tbody>
-            <tr>
-              <td>Height:</td>
-              <td></td>
-              <td>Weight:</td>
-              <td></td>
-              <td>Blood Pressure:</td>
-              <td></td>
-              <td>Temperature / spo2:</td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
+       
+                  
+       <table className="table">
+  <tbody>
+    <tr>
+      <td>Height: {vitals?.height || "-"} cm</td>
+      <td>Weight: {vitals?.weight || "-"} kg</td>
+      <td>Blood Pressure: {vitals?.bloodPressure || "-"}</td>
+      <td>Temperature: {vitals?.temperature || "-"} °C</td>
+      <td>BMI: {vitals?.bmi || "-"}</td>
+   
+    </tr>
+  </tbody>
+</table>
       </div>
 
       {/* EMERGENCY */}
@@ -145,13 +145,13 @@ const PatientRegistration = ({booking}) => {
 
         <div className="inline">
           <span>Current Medications:</span>
-          <span className="line"></span>
+          <span className="line">{booking.currentMedications}</span>
 
           <span>Allergies:</span>
-          <span className="line"></span>
+          <span className="line">{booking.allergies}</span>
         </div>
 
-        <p>Past Medical Conditions / Surgeries: __________________________</p>
+        <span>Past Medical Conditions / Surgeries: </span><span className="line">{booking.previousInjuries}</span>
       </div>
 
       {/* INSURANCE */}
@@ -160,10 +160,10 @@ const PatientRegistration = ({booking}) => {
 
         <div className="inline">
           <span>Insurance Provider:</span>
-          <span className="line"></span>
+          <span className="line">{booking.insuranceProvider}</span>
 
           <span>Policy Number:</span>
-          <span className="line"></span>
+          <span className="line">{booking.policyNumber}</span>
         </div>
       </div>
 
@@ -178,7 +178,9 @@ const PatientRegistration = ({booking}) => {
 
         <div className="inline space">
           <span>Date:</span>
-          <span className="line small"></span>
+          <span className="line small">
+  {new Date().toLocaleString()}
+</span>
 
           <span>Signature:</span>
           <span className="line small"></span>
