@@ -156,7 +156,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     doctorRefCode: '',
 
     consultationType: 'Services & Treatments',
-    consultationFee: '',
+    consultationFee: [],
     consultationExpiration: selectedHospital.data.consultationExpiration,
     paymentType: '',
     partAmount: '',
@@ -871,6 +871,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         bookingDetails.reasonForVisit === "Others"
           ? otherReason
           : bookingDetails.reasonForVisit;
+
+
       const payloadToSend = {
         ...rest,
         name: combinedName,
@@ -888,6 +890,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         reasonForVisit: finalReason,
         insuranceProvider: bookingDetails.insuranceProvider,
         policyNumber: bookingDetails.policyNumber,
+        consultationFee: [
+          {
+            consulationFee: Number(bookingDetails.consultationFee || 0),
+          },
+        ],
       }
 
       console.log('Payload without slot:', payloadToSend)

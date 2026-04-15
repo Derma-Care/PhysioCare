@@ -15,6 +15,4 @@ export const fetchConsentData = async (appointment, hospitalId) => {
   }
 }
 
-export const updateAppointmentBasedOnBookingId = (data) => {
-  return http.put(`${BASE_URL}/updateAppointmentBasedOnBookingId`, data)
-}
+

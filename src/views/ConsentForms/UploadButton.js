@@ -1,9 +1,10 @@
 import { CButton } from '@coreui/react'
 import { Upload } from 'lucide-react'
 import React, { useRef } from 'react'
-import { updateAppointmentBasedOnBookingId } from './consentService'
+
 import { useNavigate } from 'react-router-dom'
 import { showCustomToast } from '../../Utils/Toaster'
+import { bookingUpdate } from '../AppointmentManagement/appointmentAPI'
 
 function UploadButton({ bookingId }) {
   const navigate = useNavigate()
@@ -29,7 +30,7 @@ function UploadButton({ bookingId }) {
         console.log('Final payload:', payload)
 
         try {
-          const res = await updateAppointmentBasedOnBookingId(payload)
+          const res = await bookingUpdate(payload)
           console.log(res)
           if (res) {
             showCustomToast('Consent form uploaded successfully', 'success')

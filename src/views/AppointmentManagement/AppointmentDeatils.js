@@ -439,21 +439,28 @@ const AppointmentDetails = () => {
           </CButton> */}
         </div>
       </div>
-      <CButton
-        className="mt-2"
-        style={{ backgroundColor: "var(--color-black)", color: "white" }}
-        onClick={() =>
-          navigate("/physio-consent-form", {
-            state: {
-              bookingDetails: appointment,
-              vitals: vitals,
-              doctorsign: doctor?.doctorSignature
+      {
+        vitals && (
+
+          <CButton
+            className="mt-2"
+            style={{ backgroundColor: "var(--color-black)", color: "white" }}
+            onClick={() =>
+              navigate("/physio-consent-form", {
+                state: {
+                  bookingDetails: appointment,
+                  vitals: vitals,
+                  doctorsign: doctor?.doctorSignature
+                }
+              })
             }
-          })
-        }
-      >
-        Go to Consent Form
-      </CButton>
+          >
+            Go to Consent Form
+          </CButton>
+
+        )
+      }
+
 
       <div
         className="mt-2 p-4 border rounded shadow-sm bg-white"
@@ -612,7 +619,7 @@ const AppointmentDetails = () => {
             <strong>Paid Amount:</strong> ₹{appointment?.totalFee}
           </div>
           <div className="col-md-4">
-            <strong>Consultation Fee:</strong> ₹{appointment?.consultationFee}
+            <strong>Consultation Fee:</strong> ₹{appointment?.consultationFee[0]?.consulationFee || 'N/A'}
           </div>
         </div>
 
@@ -879,7 +886,7 @@ const AppointmentDetails = () => {
           </>
         )}
       </div>
-    </div>
+    </div >
   )
 }
 export default AppointmentDetails
