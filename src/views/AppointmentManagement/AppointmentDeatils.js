@@ -701,7 +701,7 @@ const AppointmentDetails = () => {
                 {/* Consent Form Accordion */}
                 {/* {appointment?.consentFormPdf != '' && ( */}
                 {/* <PhysioConsentForm /> */}
-                {appointment?.consultationType?.toLowerCase() === 'services & treatments' &&
+                {/* {appointment?.consultationType?.toLowerCase() === 'services & treatments' &&
                   appointment?.consultationType?.toLowerCase() === 'services & treatments' &&
                   new Date(appointment?.serviceDate) <= new Date() &&
                   (appointment?.consentFormPdf ? (
@@ -748,7 +748,7 @@ const AppointmentDetails = () => {
                       selectedHospital={selectedHospital}
                       hospitalId={hospitalId}
                     />
-                  ))}
+                  ))} */}
 
                 {/* Web-specific Consent Form (always visible for confirmed appointments) */}
                 {/* Web-specific Consent Form */}

@@ -33,10 +33,10 @@ function UploadButton({ bookingId }) {
           const res = await bookingUpdate(payload)
           console.log(res)
           if (res) {
-            showCustomToast('Consent form uploaded successfully', 'success')
-            navigate('/dashboard')
+            showCustomToast(res.message || 'Consent form uploaded successfully', 'success')
+            navigate('/dashboard', { replace: true })
           } else {
-            showCustomToast('Consent form not uploaded successfully', 'error')
+            showCustomToast(res.message || 'Consent form not uploaded successfully', 'error')
           }
           // console.log('Consent form uploaded successfully');
         } catch (error) {
