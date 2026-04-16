@@ -12,7 +12,7 @@ import {
   CRow,
 } from '@coreui/react'
 import { toast } from 'react-toastify'
-import { getInProgressfollowupBookings } from '../../APIs/GetFollowUpApi'
+import { getBookingsForFollowUps } from '../../APIs/GetFollowUpApi'
 import { getBookingsByPatientId } from '../../APIs/GetpatinetData'
 import { showCustomToast } from '../../Utils/Toaster'
 
@@ -63,7 +63,7 @@ const BookingSearch = ({
     setModalVisible(false)
 
     if (visitType === 'followup') {
-      await fetchBookings(getInProgressfollowupBookings, patientSearch)
+      await fetchBookings(getBookingsForFollowUps, patientSearch)
     } else {
       await fetchBookings(getBookingsByPatientId, patientSearch)
 
@@ -83,7 +83,7 @@ const BookingSearch = ({
       setSelectedBooking(null)
       setModalVisible(false)
       if (visitType === 'followup') {
-        await fetchBookings(getInProgressfollowupBookings, patientSearch)
+        await fetchBookings(getBookingsForFollowUps, patientSearch)
       } else {
         await fetchBookings(getBookingsByPatientId, patientSearch)
       }
@@ -234,7 +234,7 @@ const BookingSearch = ({
                     <strong>Consultation Type:</strong> {selectedBooking.consultationType}
                   </p>
                   <p>
-                    <strong>Consultation Fee:</strong> ₹{selectedBooking.consultationFee}
+                    <strong>Consultation Fee:</strong> ₹{selectedBooking.consultationFee[0]?.consultationFee}
                   </p>
                   <p>
                     <strong>Total Fee:</strong> ₹{selectedBooking.totalFee}

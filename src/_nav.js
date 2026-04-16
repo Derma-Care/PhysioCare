@@ -39,8 +39,8 @@ export const getNavigation = (permissions = {}) => {
     {
       component: CNavItem,
       name: 'Appointments',
-      // to: '/Appointment-Management',
-      to: '/followupDashboard',
+      to: '/Appointment-Management',
+      // to: '/followupDashboard',
       as: NavLink,
       icon: <CIcon icon={cilCalendar} customClassName="nav-icon" />,
     },

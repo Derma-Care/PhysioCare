@@ -26,3 +26,10 @@ export const getInProgressfollowupBookings = (patientId) => {
 
   return http.get(`${BASE_URL}/bookings/Inprogress/patientId/${patientId}/${clinicid}`)
 }
+
+
+export const getBookingsForFollowUps = (bookingId) => {
+  const clinicid = localStorage.getItem('HospitalId')
+
+  return http.get(`${BASE_URL}/getBookingById/${bookingId}`)
+}

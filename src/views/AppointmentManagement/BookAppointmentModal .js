@@ -890,7 +890,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         reasonForVisit: finalReason,
         insuranceProvider: bookingDetails.insuranceProvider,
         policyNumber: bookingDetails.policyNumber,
-        consultationFee: [
+        consultationFee: [  //TODO:listOfConsultationFee
           {
             consulationFee: Number(bookingDetails.consultationFee || 0),
           },
@@ -1563,7 +1563,10 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                         bookingDetails.consultationType?.toLowerCase().includes('service') &&
                         bookingDetails.subServiceId
                       ) {
-                        fee = bookingDetails.consultationFee || 0
+                        const fee =
+                          bookingDetails.consultationFee[0]?.consulationFee ||
+                          bookingDetails.consultationFee ||
+                          0;
                       } else {
                         fee =
                           appointmentType?.toLowerCase() === 'inclinic'
@@ -1595,7 +1598,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
                   Consultation Fee <span className="text-danger">*</span>
                 </CFormLabel>
-                <CFormInput type="number" value={bookingDetails.consultationFee || 0} disabled />
+                <CFormInput type="number" value={bookingDetails.consultationFee[0]?.consulationFee || 0} disabled />
               </CCol>
               <CCol md={6}>
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
