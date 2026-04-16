@@ -6,7 +6,7 @@ import jsPDF from "jspdf";
 import axios from "axios";
 import PatientRegistration from "./PatientInfoConsent";
 import PrintLetterHead from "../../Utils/PrintLetterHead";
-import { CButton } from "@coreui/react";
+import { CButton, CCol, CRow } from "@coreui/react";
 import { cilCheck, cilTrash, cilX } from "@coreui/icons";
 import CIcon from "@coreui/icons-react";
 import { right } from "@popperjs/core";
@@ -481,24 +481,46 @@ informations to treatment and I am having right to decline treatment at any time
       </div>
 
       {/* BUTTONS */}
-      <div className="actions">
-        <CButton style={{backgroundColor:"var(--color-bgcolor)",color:"var(--color-black)"}} className="mx-2" onClick={() => window.print()}>Print</CButton>
-        <CButton style={{backgroundColor:"var(--color-bgcolor)",color:"var(--color-black)"}} className="mx-2" onClick={downloadPDF}>Download PDF</CButton>
-       <CButton
-  style={{backgroundColor:"var(--color-bgcolor)",color:"var(--color-black)"}}
-  onClick={upload}
-  disabled={!patientSign}
->
-  Submit
-</CButton>
-  {/* <input
-    type="file"
-    accept=".pdf,.png,.jpg,.jpeg"
-    onChange={handleFileUpload}
-  /> */}
-     <UploadButton bookingId={booking?.bookingId} />
-      </div>
- 
+ <CRow className="mt-3 align-items-center align-content-center justify-content-center mb-3 w-100">
+  <CCol xs={12}>
+    <div className="d-flex flex-wrap gap-2 justify-content-start">
+
+      <CButton
+        style={{
+          backgroundColor: "var(--color-bgcolor)",
+          color: "var(--color-black)"
+        }}
+        onClick={() => window.print()}
+      >
+        Print
+      </CButton>
+
+      <CButton
+        style={{
+          backgroundColor: "var(--color-bgcolor)",
+          color: "var(--color-black)"
+        }}
+        onClick={downloadPDF}
+      >
+        Download PDF
+      </CButton>
+
+      <CButton
+        style={{
+          backgroundColor: "var(--color-bgcolor)",
+          color: "var(--color-black)"
+        }}
+        onClick={upload}
+        disabled={!patientSign}
+      >
+        Submit
+      </CButton>
+
+      <UploadButton bookingId={booking?.bookingId} />
+
+    </div>
+  </CCol>
+</CRow>
 
       {/* CSS */}
     

@@ -568,6 +568,7 @@ const appointmentManagement = () => {
                             state: { appointment: item },
                           })
                         }
+
                       >
                         <Eye size={18} />
                       </CButton>

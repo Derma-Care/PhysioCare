@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
     CContainer,
     CRow,
@@ -19,92 +19,96 @@ import {
 } from '@coreui/react'
 import { useNavigate } from 'react-router-dom'
 import Pagination from '../../Utils/Pagination'
-const data = [
-    {
-        id: "Kar-Mad-2026-0022",
-        patient: "Mr.Banavath Prashanth",
-        mobile: "7842259803",
-        doctor: "Dr. Kaleeswaran",
-        paymentType: "Not Paid",
-        visitType: "First Visit",
-        date: "2026-04-15",
-        time: "4:00 PM",
-        status: "Pending",
-        followUpStatus: "Pending"
-    },
-    {
-        id: "Kar-Mad-2026-0023",
-        patient: "Ramesh Kumar",
-        mobile: "9876543210",
-        doctor: "Dr. Arun",
-        paymentType: "Paid",
-        visitType: "First Visit",
-        date: "2026-04-16",
-        time: "10:30 AM",
-        status: "Confirmed",
-        followUpStatus: "Pending"
-    },
-    {
-        id: "Kar-Mad-2026-0024",
-        patient: "Sita Devi",
-        mobile: "9123456780",
-        doctor: "Dr. Kaleeswaran",
-        paymentType: "Paid",
-        visitType: "Follow-up",
-        date: "2026-04-17",
-        time: "11:00 AM",
-        status: "Due for Investigation",
-        followUpStatus: "Pending"
-    },
-    {
-        id: "Kar-Mad-2026-0025",
-        patient: "Rajesh",
-        mobile: "9988776655",
-        doctor: "Dr. Meena",
-        paymentType: "Paid",
-        visitType: "Follow-up",
-        date: "2026-04-18",
-        time: "2:00 PM",
-        status: "Investigation Done",
-        followUpStatus: "Pending"
-    },
-    {
-        id: "Kar-Mad-2026-0026",
-        patient: "Kumar",
-        mobile: "9000011111",
-        doctor: "Dr. Arun",
-        paymentType: "Package",
-        visitType: "Follow-up",
-        date: "2026-04-19",
-        time: "5:00 PM",
-        status: "In Progress",
-        followUpStatus: "Pending"
-    },
-    {
-        id: "Kar-Mad-2026-0027",
-        patient: "Anjali",
-        mobile: "9555512345",
-        doctor: "Dr. Kaleeswaran",
-        paymentType: "Follow-up",
-        visitType: "Follow-up",
-        date: "2026-04-20",
-        time: "3:30 PM",
-        status: "Follow-up",
-        followUpStatus: "Pending"
-    },
-    {
-        id: "Kar-Mad-2026-0028",
-        patient: "Mahesh",
-        mobile: "9666612345",
-        doctor: "Dr. Meena",
-        paymentType: "Closed",
-        visitType: "Follow-up",
-        date: "2026-04-21",
-        time: "1:00 PM",
-        status: "Completed",
-        followUpStatus: "Pending"
-    }
-]
+import { getBookingsTodayFollowUps, getUpcomingFollowUps } from '../../APIs/GetFollowUpApi'
+import { bookingUpdate } from './appointmentAPI'
+import LoadingIndicator from '../../Utils/loader'
+import capitalizeWords from '../../Utils/capitalizeWords'
+// const data = [
+//     {
+//         id: "Kar-Mad-2026-0022",
+//         patient: "Mr.Banavath Prashanth",
+//         mobile: "7842259803",
+//         doctor: "Dr. Kaleeswaran",
+//         paymentType: "Not Paid",
+//         visitType: "First Visit",
+//         date: "2026-04-15",
+//         time: "4:00 PM",
+//         status: "Pending",
+//         followUpStatus: "Pending"
+//     },
+//     {
+//         id: "Kar-Mad-2026-0023",
+//         patient: "Ramesh Kumar",
+//         mobile: "9876543210",
+//         doctor: "Dr. Arun",
+//         paymentType: "Paid",
+//         visitType: "First Visit",
+//         date: "2026-04-16",
+//         time: "10:30 AM",
+//         status: "Confirmed",
+//         followUpStatus: "Pending"
+//     },
+//     {
+//         id: "Kar-Mad-2026-0024",
+//         patient: "Sita Devi",
+//         mobile: "9123456780",
+//         doctor: "Dr. Kaleeswaran",
+//         paymentType: "Paid",
+//         visitType: "Follow-up",
+//         date: "2026-04-17",
+//         time: "11:00 AM",
+//         status: "Due for Investigation",
+//         followUpStatus: "Pending"
+//     },
+//     {
+//         id: "Kar-Mad-2026-0025",
+//         patient: "Rajesh",
+//         mobile: "9988776655",
+//         doctor: "Dr. Meena",
+//         paymentType: "Paid",
+//         visitType: "Follow-up",
+//         date: "2026-04-18",
+//         time: "2:00 PM",
+//         status: "Investigation Done",
+//         followUpStatus: "Pending"
+//     },
+//     {
+//         id: "Kar-Mad-2026-0026",
+//         patient: "Kumar",
+//         mobile: "9000011111",
+//         doctor: "Dr. Arun",
+//         paymentType: "Package",
+//         visitType: "Follow-up",
+//         date: "2026-04-19",
+//         time: "5:00 PM",
+//         status: "In Progress",
+//         followUpStatus: "Pending"
+//     },
+//     {
+//         id: "Kar-Mad-2026-0027",
+//         patient: "Anjali",
+//         mobile: "9555512345",
+//         doctor: "Dr. Kaleeswaran",
+//         paymentType: "Follow-up",
+//         visitType: "Follow-up",
+//         date: "2026-04-20",
+//         time: "3:30 PM",
+//         status: "Follow-up",
+//         followUpStatus: "Pending"
+//     },
+//     {
+//         id: "Kar-Mad-2026-0028",
+//         patient: "Mahesh",
+//         mobile: "9666612345",
+//         doctor: "Dr. Meena",
+//         paymentType: "Closed",
+//         visitType: "Follow-up",
+//         date: "2026-04-21",
+//         time: "1:00 PM",
+//         status: "Completed",
+//         followUpStatus: "Pending"
+//     }
+// ]
 
 const followUpStatus = [
     'All',
@@ -130,25 +134,121 @@ export default function FollowupDashboard() {
     const today = '2026-04-15'
     const next7 = '2026-04-21'
 
-    const [rows, setRows] = useState(data)
+    const [activeCard, setActiveCard] = useState("today")
+
+    const [rows, setRows] = useState([])
     const [filter, setFilter] = useState('All')
     const [fromDate, setFromDate] = useState(today)
     const [toDate, setToDate] = useState(today)
     const [currentPage, setCurrentPage] = useState(1)
     const [pageSize, setPageSize] = useState(10)
+    const [todayCount, setTodayCount] = useState(0)
+    const [weekCount, setWeekCount] = useState(0)
+    const [confirmedCount, setConfirmedCount] = useState(0)
+    const [inProgressCount, setInProgressCount] = useState(0)
+    const [loading, setLoading] = useState(false)
+    // useEffect(() => {
+    //     getTodayFollowUps()
+    // }, [])
+    useEffect(() => {
+        getTodayFollowUps()
+        // loadWeekCountOnly()
+    }, [])
 
-    const list = useMemo(() => {
-        return rows.filter((row) => {
-            const matchStatus =
-                filter === 'All' || row.status === filter
+    const getTodayFollowUps = async () => {
+        setLoading(true)
+        try {
+            const res = await getBookingsTodayFollowUps()
 
-            const matchDate =
-                row.date >= fromDate && row.date <= toDate
+            if (res.status === 200) {
+                const todayData = Array.isArray(res?.data?.data)
+                    ? res.data.data
+                    : []
 
-            return matchStatus && matchDate
-        })
-    }, [rows, filter, fromDate, toDate])
+                setRows(todayData)
+                setTodayCount(todayData.length)
+                setConfirmedCount(
+                    todayData.filter(
+                        x => (x.status || "").toLowerCase() === "confirmed"
+                    ).length
+                )
 
+                setInProgressCount(
+                    todayData.filter(
+                        x => (x.status || "").toLowerCase() === "in progress"
+                    ).length
+                )
+            } else {
+                setRows([])
+            }
+        } catch (err) {
+            console.error(err)
+            setRows([])
+        } finally {
+            setLoading(false)
+        }
+    }
+    const getUpcomingAppointments = async () => {
+        setLoading(true)
+        try {
+            const res = await getUpcomingFollowUps()
+
+            if (res.status === 200) {
+                const weekData = Array.isArray(res?.data?.data)
+                    ? res.data.data
+                    : []
+
+                setRows(weekData)
+
+                setWeekCount(weekData.length)
+
+                setConfirmedCount(
+                    weekData.filter(
+                        x => (x.status || "").toLowerCase() === "confirmed"
+                    ).length
+                )
+
+                setInProgressCount(
+                    weekData.filter(
+                        x => (x.status || "").toLowerCase() === "in progress"
+                    ).length
+                )
+
+            } else {
+                setRows([])
+            }
+        } catch (error) {
+            console.error(error)
+            setRows([])
+        } finally {
+            setLoading(false)
+        }
+    }
+    const updatePaymentStatus = async (bookingId, status) => {
+        console.log(`Updating booking ${bookingId} with payment type: ${status}`);
+        try {
+            await bookingUpdate({ bookingId, followupStatus: status }) // Assuming bookingUpdate accepts an object with these properties
+
+            getTodayFollowUps()
+
+        } catch (err) {
+            console.error("Payment update failed", err);
+        }
+    };
+
+    // const list = useMemo(() => {
+    //     return rows.filter((row) => {
+    //         const matchStatus =
+    //             filter === "All" || row.status === filter
+
+    //         const matchDate =
+    //             row.date >= fromDate &&
+    //             row.date <= toDate
+
+    //         return matchStatus && matchDate
+    //     })
+    // }, [rows, filter, fromDate, toDate])
+    const list = rows
     const updateStatus = (id, value) => {
         setRows(
             rows.map((r) =>
@@ -157,36 +257,44 @@ export default function FollowupDashboard() {
         )
     }
 
-    const getColor = (status) => {
-        switch (status) {
-            case 'Pending':
+    const getColor = (status = '') => {
+        switch (status.toLowerCase()) {
+            case 'pending':
                 return 'warning'
-            case 'Confirmed':
+
+            case 'confirmed':
                 return 'info'
-            case 'Due for Investigation':
+
+            case 'due for investigation':
                 return 'danger'
-            case 'Investigation Done':
+
+            case 'investigation done':
                 return 'primary'
-            case 'In Progress':
+
+            case 'in progress':
                 return 'success'
-            case 'Follow-up':
+
+            case 'follow-up':
+            case 'follow-up needed':
                 return 'secondary'
-            case 'Follow-up Needed':
-                return 'secondary'
-            case 'Cancelled':
+
+            case 'cancelled':
                 return 'danger'
-            case 'Rescheduled':
+
+            case 'rescheduled':
+            case 'drop':
+            case 'no calls':
                 return 'dark'
-            case 'Drop':
-                return 'dark'
-            case 'No Reply':
+
+            case 'no reply':
                 return 'secondary'
-            case 'No Follow-up':
+
+            case 'no follow-up':
                 return 'warning'
-            case 'No Calls':
-                return 'dark'
-            case 'Completed':
+
+            case 'completed':
                 return 'success'
+
             default:
                 return 'light'
         }
@@ -220,71 +328,115 @@ export default function FollowupDashboard() {
     const todayBookings = list.slice(startIndex, endIndex)
 
     return (
-        <CContainer fluid className="mt-4">
-            <h2
-                className="mb-4 fw-bold"
-                style={{ color: 'var(--color-black)' }}
-            >
-                Follow-up Dashboard
-            </h2>
+        <CContainer fluid  >
+
 
             {/* Cards */}
-            <CRow className="mb-4" >
-                <CCol md={3} >
-                    <CCard style={{ color: 'var(--color-black)' }}>
-                        <CCardBody>
-                            <CCardTitle>Today</CCardTitle>
-                            <h3>
-                                {
-                                    rows.filter(
-                                        (x) => x.date === today
-                                    ).length
-                                }
-                            </h3>
-                        </CCardBody>
+            <CRow className="mb-4 g-3">
+
+                {/* Today */}
+                <CCol md={3}>
+                    <CCard
+                        onClick={() => {
+                            setActiveCard("today")
+                            getTodayFollowUps()
+                            setCurrentPage(1)
+                        }}
+                        style={{
+                            cursor: "pointer",
+                            textAlign: "center",
+                            height: "85px",
+                            borderRadius: "12px",
+                            border:
+                                activeCard === "today"
+                                    ? "2px solid var(--color-bgcolor)"
+                                    : "1px solid #e5e5e5",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center"
+                        }}
+                    >
+                        <div>
+                            <h6 className="mb-1 fw-semibold">Today</h6>
+                            <h4 className="mb-0 fw-bold">{todayCount}</h4>
+                        </div>
                     </CCard>
                 </CCol>
 
+                {/* 1 Week */}
                 <CCol md={3}>
-                    <CCard style={{ color: 'var(--color-black)' }}>
-                        <CCardBody>
-                            <CCardTitle>7 Days</CCardTitle>
-                            <h3>{list.length}</h3>
-                        </CCardBody>
+                    <CCard
+                        onClick={() => {
+                            setActiveCard("upcoming")
+                            getUpcomingAppointments()
+                            setCurrentPage(1)
+                        }}
+                        style={{
+                            cursor: "pointer",
+                            textAlign: "center",
+                            height: "85px",
+                            borderRadius: "12px",
+                            border:
+                                activeCard === "upcoming"
+                                    ? "2px solid var(--color-bgcolor)"
+                                    : "1px solid #e5e5e5",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center"
+                        }}
+                    >
+                        <div>
+                            <h6 className="mb-1 fw-semibold">1 Week</h6>
+                            <h4 className="mb-0 fw-bold">{weekCount}</h4>
+                        </div>
                     </CCard>
                 </CCol>
 
+                {/* Pending */}
                 <CCol md={3}>
-                    <CCard style={{ color: 'var(--color-black)' }}>
-                        <CCardBody>
-                            <CCardTitle>Pending</CCardTitle>
-                            <h3>
-                                {
-                                    list.filter(
-                                        (x) => x.status === 'Pending'
-                                    ).length
-                                }
-                            </h3>
-                        </CCardBody>
+                    <CCard
+                        style={{
+                            textAlign: "center",
+                            height: "85px",
+                            borderRadius: "12px",
+                            border: "1px solid #e5e5e5",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center"
+                        }}
+                    >
+                        <div>
+                            <h6 className="mb-1 fw-semibold">Confirmed</h6>
+                            <h4 className="mb-0 fw-bold">{confirmedCount}</h4>
+                        </div>
                     </CCard>
                 </CCol>
 
+                {/* In Progress */}
                 <CCol md={3}>
-                    <CCard style={{ color: 'var(--color-black)' }} >
-                        <CCardBody>
-                            <CCardTitle>In Progress</CCardTitle>
-                            <h3>
-                                {
-                                    list.filter(
-                                        (x) => x.status === 'In Progress'
-                                    ).length
-                                }
-                            </h3>
-                        </CCardBody>
+                    <CCard
+                        style={{
+                            textAlign: "center",
+                            height: "85px",
+                            borderRadius: "12px",
+                            border: "1px solid #e5e5e5",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center"
+                        }}
+                    >
+                        <div>
+                            <h6 className="mb-1 fw-semibold">In Progress</h6>
+                            <h4 className="mb-0 fw-bold">{inProgressCount}</h4>
+                        </div>
                     </CCard>
                 </CCol>
+
             </CRow>
-
             {/* Filters */}
             <CRow className="mb-3" style={{ color: 'var(--color-black)' }}>
                 <CCol md={3}>
@@ -339,6 +491,7 @@ export default function FollowupDashboard() {
             >
                 <CTableHead color="light">
                     <CTableRow>
+                        <CTableHeaderCell>S.No</CTableHeaderCell>
                         <CTableHeaderCell>Booking Id</CTableHeaderCell>
                         <CTableHeaderCell>Date</CTableHeaderCell>
                         <CTableHeaderCell>Time</CTableHeaderCell>
@@ -354,66 +507,78 @@ export default function FollowupDashboard() {
                 </CTableHead>
 
                 <CTableBody>
-                    {todayBookings.map((row) => (
-                        <CTableRow key={row.id}>
-                            <CTableDataCell>{row.id}</CTableDataCell>
-                            <CTableDataCell>{row.date}</CTableDataCell>
-                            <CTableDataCell>{row.time}</CTableDataCell>
-                            <CTableDataCell>{row.patient}</CTableDataCell>
-                            <CTableDataCell>{row.mobile}</CTableDataCell>
-                            <CTableDataCell>{row.doctor}</CTableDataCell>
-                            <CTableDataCell>{row.paymentType}</CTableDataCell>
-                            <CTableDataCell>{row.visitType}</CTableDataCell>
 
-                            <CTableDataCell>
-                                <CBadge color={getColor(row.status)}>
-                                    {row.status}
-                                </CBadge>
-                            </CTableDataCell>
+                    {loading ? (
+                        <CTableRow>
+                            <CTableDataCell colSpan={12} className="text-center py-4">
+                                <LoadingIndicator message='Loading appointments...' />
 
-                            <CTableDataCell>
-                                <CFormSelect
-                                    size="sm"
-                                    value={row.followUpStatus}
-                                    onChange={(e) =>
-                                        updateFollowUpStatus(
-                                            row.id,
-                                            e.target.value
-                                        )
-                                    }
-                                >
-                                    {followUpStatus.slice(1).map((s) => (
-                                        <option key={s}>{s}</option>
-                                    ))}
-                                </CFormSelect>
                             </CTableDataCell>
-                            <CTableDataCell>
-                                <CButton
-                                    size="sm"
-                                    style={{
-                                        backgroundColor: "var(--color-bgcolor)",
-                                        color: "var(--color-black)"
-                                    }}
-                                    onClick={() =>
-                                        navigate(
-                                            row.status === "In Progress"
-                                                ? `/program-payment/${row.id}`
-                                                : `/appointment-details/${row.id}`
-                                        )
-                                    }
-                                >
-                                    View
-                                </CButton>
-                            </CTableDataCell>
-
                         </CTableRow>
-                    ))}
+                    ) : todayBookings.length === 0 ? (
+                        <CTableRow>
+                            <CTableDataCell colSpan={12} className="text-center py-4">
+                                No appointments found
+                            </CTableDataCell>
+                        </CTableRow>
+                    ) : (
+                        todayBookings.map((row, index) => (
+                            <CTableRow key={row.bookingId}>
+                                <CTableDataCell>
+                                    {(currentPage - 1) * pageSize + index + 1}
+                                </CTableDataCell>
+
+                                <CTableDataCell>{row.bookingId}</CTableDataCell>
+                                <CTableDataCell>{row.serviceDate}</CTableDataCell>
+                                <CTableDataCell>{row.servicetime}</CTableDataCell>
+                                <CTableDataCell>{row.name}</CTableDataCell>
+                                <CTableDataCell>{row.patientMobileNumber}</CTableDataCell>
+                                <CTableDataCell>{row.doctorName}</CTableDataCell>
+                                <CTableDataCell>{row.paymentType}</CTableDataCell>
+                                <CTableDataCell>{capitalizeWords(row.visitType)}</CTableDataCell>
+
+                                <CTableDataCell>
+                                    <CBadge color={getColor(row.status)}>
+                                        {row.status}
+                                    </CBadge>
+                                </CTableDataCell>
+
+                                <CTableDataCell>
+                                    <CFormSelect
+                                        size="sm"
+                                        value={row.followUpStatus}
+                                        onChange={(e) =>
+                                            updatePaymentStatus(row.bookingId, e.target.value)
+                                        }
+                                    >
+                                        {followUpStatus.slice(1).map((s) => (
+                                            <option key={s}>{s}</option>
+                                        ))}
+                                    </CFormSelect>
+                                </CTableDataCell>
+
+                                <CTableDataCell>
+                                    <CButton
+                                        size="sm"
+                                        onClick={() =>
+                                            navigate(`/appointment-details/${row.bookingId}`, {
+                                                state: { appointment: row }
+                                            })
+                                        }
+                                    >
+                                        View
+                                    </CButton>
+                                </CTableDataCell>
+                            </CTableRow>
+                        ))
+                    )}
+
                 </CTableBody>
             </CTable>
-            {todayBookings.length > 0 && (
+            {!loading && todayBookings.length > 0 && (
                 <Pagination
                     currentPage={currentPage}
-                    totalPages={Math.ceil(todayBookings.length / pageSize)}
+                    totalPages={Math.ceil(rows.length / pageSize)}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
                     onPageSizeChange={(size) => {
