@@ -28,8 +28,14 @@ export default function ProgramPayment() {
   // 🔥 STATES
   const [startDate, setStartDate] = useState("");
   const [tableData, setTableData] = useState([]);
+  const[packageId,setPackageId]=useState("");
+  const [formattedData, setformattedData] = useState([]); 
+  const [sessionRows, setSessionRows] = useState([]);
+  const [programData, setProgramData] = useState(null);
+const [viewModal, setViewModal] = useState(false);
   const [apiData, setApiData] = useState([]);
   const [fullPaymentData, setFullPaymentData] = useState([])
+const [paymentData, setPaymentData] = useState(null);
   const navigate = useNavigate();
   const [doctorName, setDoctorName] = useState("");
 const [therapistId, setTherapistId] = useState("");
@@ -66,6 +72,7 @@ const [selectedExercise, setSelectedExercise] = useState(null);
     }
   }
 }, [apiData]);
+
 
 
   // 🔥 DUMMY DATA
@@ -160,10 +167,14 @@ const [selectedExercise, setSelectedExercise] = useState(null);
       console.log("API RESPONSE:", data);
       console.log("SERVICE TYPES:", getServiceTypes());
 console.log("SELECTED TYPE:", selectedType);
+setPackageId(data?.data?.[0]?.packageId || "");
+ // Set packageId from API response
 
       const apiResponse = data?.data || [];
 
+
       setApiData(apiResponse);
+      
       setDoctorName(apiResponse?.[0]?.doctorName || "");
 setTherapistId(apiResponse?.[0]?.therapistId || "");
 setTherapistName(apiResponse?.[0]?.therapistName || "");
@@ -171,10 +182,12 @@ setTherapistName(apiResponse?.[0]?.therapistName || "");
       // ✅ ADD THIS LINE (CRITICAL FIX)
       setTherapistRecordId(apiResponse?.[0]?.therapistRecordId || "");
 
+
     } catch (error) {
       console.error("API Error:", error);
     }
   };
+  console.log(packageId)
   useEffect(() => {
   if (apiData?.length && !selectedType) {
     setSelectedType("package"); // 🔥 MUST
@@ -379,6 +392,23 @@ const handleSelectValue = (selected) => {
       console.log("GENERATE API RESPONSE:", data);
 
       const apiResponse = Array.isArray(data?.data) ? data.data : [];
+      const apiData = data?.data || [];
+console.log(apiData)
+const rows = apiData.flatMap(item =>
+  item?.therapyData?.flatMap(therapy =>
+    therapy?.exercises?.flatMap(exercise =>
+      exercise?.sessions?.map(session => ({
+        sessionId: session.sessionId,
+        date: session.date,
+        status: session.status,
+        paymentStatus: session.paymentStatus
+      })) || []
+    ) || []
+  ) || []
+);
+
+setSessionRows(apiData);
+setformattedData(rows);
 
       // setApiData(apiResponse);
 
@@ -416,31 +446,79 @@ const handleTypeChange = (type) => {
     setFinalAmount(0);
   }
 };
-  const buildTherapyPayload = () => {
+const buildTherapyPayload = () => {
   if (!apiData?.length) return [];
 
-  return apiData.map(item => ({
-    packageId: item.packageId,
-    packageName: item.packageName,
+  const item = apiData[0];
+  const selectedIds = (selectedValue || []).map(i => i.value);
 
-    programs: (item.therapySessions || []).map(program => ({
-      programId: program.programId,
-      programName: program.programName,
+  // 1. Helper to find sessions for a specific exercise
+  const getMatchedSessions = (exerciseId) => {
+    // We look into the sessionRows (the data returned from /generate-table)
+    // and extract the specific sessions for this exercise
+    const exerciseData = sessionRows.flatMap(prog => 
+      prog.therapyData?.flatMap(ther => 
+        ther.exercises?.find(ex => ex.exerciseId === exerciseId)
+      )
+    ).filter(Boolean)[0];
 
-      therapyData: (program.therapyData || []).map(therapy => ({
-        therapyId: therapy.therapyId,
-        therapyName: therapy.therapyName,
+    return exerciseData?.sessions || [];
+  };
 
-        exercises: (therapy.exercises || []).map(ex => ({
-          exerciseId: ex.exerciseId,
-          exerciseName: ex.exerciseName,
-          pricePerSession: ex.pricePerSession,
-          noOfSessions: ex.noOfSessions
+  // 2. Helper to map Exercise structure
+const mapExercise = (ex) => ({
+  exerciseId: String(ex.exerciseId || ""), // Ensure String
+  exerciseName: String(ex.exerciseName || ex.name || "Unknown"),
+  pricePerSession: Number(ex.pricePerSession) || 0, // Force Number
+  noOfSessions: Number(ex.noOfSessions) || 0,
+  totalExercisePrice: Number(ex.totalExercisePrice || ex.totalSessionCost) || 0,
+  paymentStatus: "UNPAID",
+  frequency: String(ex.frequency || ex.frequancy || ""),
+  sets: Number(ex.sets) || 0,
+  repetitions: Number(ex.repetitions) || 0,
+  youtubeUrl: String(ex.videoUrl || ""),
+  notes: String(ex.notes || ""),
+  // sessions: getMatchedSessions(ex.exerciseId) || [] // Ensure it's at least an empty array
+});
+
+  // ================= PACKAGE LOGIC =================
+  if (selectedType === "package") {
+    return [{
+      packageId: item.packageId,
+      packageName: item.packageName,
+      programs: (item.therapySessions || []).map(program => ({
+        programId: program.programId,
+        programName: program.programName,
+        therapyData: (program.therapyData || []).map(therapy => ({
+          therapyId: therapy.therapyId,
+          therapyName: therapy.therapyName,
+          totalPrice: therapy.totalPrice,
+          exercises: (therapy.exercises || []).map(ex => mapExercise(ex))
         }))
       }))
-    }))
-  }));
-};
+    }];
+  }
+
+  // ================= PROGRAM LOGIC =================
+  if (selectedType === "program") {
+    return (item.therapySessions || [])
+      .filter(p => !selectedIds.length || selectedIds.includes(p.programId))
+      .map(program => ({
+        programId: program.programId,
+        programName: program.programName,
+        therapyData: (program.therapyData || []).map(therapy => ({
+          therapyId: therapy.therapyId,
+          therapyName: therapy.therapyName,
+          totalPrice: therapy.totalPrice,
+          exercises: (therapy.exercises || []).map(ex => mapExercise(ex))
+        }))
+      }));
+  }
+
+  return [];
+}
+    // console.log(selectedValue);
+
   const createPayloadData = {
     clinicId: localStorage.getItem("HospitalId"),
     branchId: localStorage.getItem("branchId"),
@@ -459,36 +537,20 @@ const handleTypeChange = (type) => {
     amount: Number(finalAmount || 0),
     paymentMode: paymentMode?.toUpperCase(),
     paymentType: paymentType?.toUpperCase(),
+    totalSessionCount: 2,
 
     discountAmount: Number(discountAmount || 0),
     discountIssuedBy,
 
     paymentLevel: selectedType?.toUpperCase(),
 
-    paymentTarget: {
-      packageIds:
-        selectedType === "package"
-          ? selectedValue.map((i) => i.value || i.packageId)
-          : [],
-
-      programIds:
-        selectedType === "program"
-          ? selectedValue.map((i) => i.value || i.programId)
-          : [],
-
-      therapyIds:
-        selectedType === "therapy"
-          ? selectedValue.map((i) => i.value || i.therapyId)
-          : [],
-
-      exerciseIds:
-        selectedType === "exercise"
-          ? selectedValue.map((i) => i.value || i.exerciseId)
-          : [],
-
-      sessionIds: [],
-    },
-
+ paymentTarget: {
+    packageIds: selectedType === "package" ? packageId : [],
+    programIds: selectedType === "program" ? selectedValue.map(i => i.value) : [],
+    therapyIds: selectedType === "therapy" ? selectedValue.map(i => i.value) : [],
+    exerciseIds: [],
+    sessionIds: []
+  },
     paymentDate: new Date().toISOString().split("T")[0],
 
     therapyWithSessions: buildTherapyPayload(),
@@ -592,11 +654,14 @@ const handleTypeChange = (type) => {
       console.error("Payment Error:", error);
     }
   };
+  useEffect(() => {     
+    fetchPaymentDetails();
+  }, [bookingId]);
 
   const fetchPaymentDetails = async () => {
     try {
       const res = await fetch(
-        `${wifiUrl}/api/physiotherapy-doctor/payment/getByBookingId/${bookingId}`
+        `${wifiUrl}/api/physiotherapy-doctor/payment/${bookingId}`
       );
       const data = await res.json();
 
@@ -604,6 +669,7 @@ const handleTypeChange = (type) => {
 
       const result = data.data;
       setFullPaymentData(result)
+      console.log(result)
 
       // 🔥 BASIC DETAILS
       setPaymentAmount(result.totalAmount || 0);
@@ -649,13 +715,19 @@ const handleTypeChange = (type) => {
   return (
     
     <div className="p-3">
-      <CButton onClick={() =>
-        navigate("/paymentDetails", {
-          state: { paymentData: fullPaymentData },
-        })
+      {showTable&&(
+        <CButton onClick={() =>
+          navigate("/paymentDetails", {
+            state: { paymentData: fullPaymentData },
+          })
+        }   style={{ backgroundColor: "var(--color-black)", color: "#fff", marginRight: "10px" }}>
+          Payment Details
+        </CButton>
+      )}
+       {/* <CButton onClick={() => fetchTherapySessions()
       } style={{ backgroundColor: "var(--color-black)", color: "#fff" }}>
-        Payment Details
-      </CButton>
+        Program Details
+      </CButton> */}
       
 
       {/* 🔹 STEP 1 */}
@@ -682,50 +754,27 @@ const handleTypeChange = (type) => {
       {showTable && (
         <>
           {/* TABLE */}
-          <CTable bordered>
+  <CTable bordered className="pink-table m-3" >
+  <CTableHead>
+    <CTableRow>
+      <CTableHeaderCell>Session ID</CTableHeaderCell>
+      <CTableHeaderCell>Date</CTableHeaderCell>
+      <CTableHeaderCell>Status</CTableHeaderCell>
+      <CTableHeaderCell>Payment Status</CTableHeaderCell>
+    </CTableRow>
+  </CTableHead>
 
-            <CTableHead>
-              <CTableRow>
-                <CTableHeaderCell>#</CTableHeaderCell>
-                <CTableHeaderCell>Program</CTableHeaderCell>
-                <CTableHeaderCell>Therapy</CTableHeaderCell>
-                <CTableHeaderCell>Exercise</CTableHeaderCell>
-                <CTableHeaderCell>Session</CTableHeaderCell>
-                <CTableHeaderCell>Sets</CTableHeaderCell>        {/* ✅ NEW */}
-                <CTableHeaderCell>Reps</CTableHeaderCell>        {/* ✅ NEW */}
-                <CTableHeaderCell>Frequency</CTableHeaderCell>   {/* ✅ NEW */}
-                <CTableHeaderCell>Notes</CTableHeaderCell>       {/* ✅ NEW */}
-                <CTableHeaderCell>Price</CTableHeaderCell>       {/* ✅ NEW */}
-                <CTableHeaderCell>Status</CTableHeaderCell>
-                <CTableHeaderCell>Payment</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-
-            <CTableBody>
-              {(tableData || []).map((row, i) => (
-                <CTableRow key={i}>
-                  <CTableDataCell>{i + 1}</CTableDataCell>
-
-                  <CTableDataCell>{row?.programName || "-"}</CTableDataCell>
-                  <CTableDataCell>{row?.therapyName || "-"}</CTableDataCell>
-                  <CTableDataCell>{row?.exerciseName || "-"}</CTableDataCell>
-
-                  <CTableDataCell>{row?.sessionNo || "-"}</CTableDataCell>
-
-                  {/* ✅ NEW DATA */}
-                  <CTableDataCell>{row?.sets || "-"}</CTableDataCell>
-                  <CTableDataCell>{row?.repetitions || "-"}</CTableDataCell>
-                  <CTableDataCell>{row?.frequency || "-"}</CTableDataCell>
-                  <CTableDataCell>{row?.notes || "-"}</CTableDataCell>
-                  <CTableDataCell>{row?.price || 0}</CTableDataCell>
-
-                  <CTableDataCell>{row?.status || "-"}</CTableDataCell>
-                  <CTableDataCell>{row?.paymentStatus || "-"}</CTableDataCell>
-                </CTableRow>
-              ))}
-            </CTableBody>
-
-          </CTable>
+  <CTableBody>
+    {formattedData.map((session, i) => (
+      <CTableRow key={session.sessionId || i}>
+        <CTableDataCell>{session?.sessionId}</CTableDataCell>
+        <CTableDataCell>{session?.date}</CTableDataCell>
+        <CTableDataCell>{session?.status}</CTableDataCell>
+        <CTableDataCell>{session?.paymentStatus}</CTableDataCell>
+      </CTableRow>
+    ))}
+  </CTableBody>
+</CTable>
 
           {/* PAYMENT */}
           <CCard className="mt-3">
@@ -755,7 +804,7 @@ const handleTypeChange = (type) => {
                 {/* 🔹 SELECT VALUE */}
                 <CCol md={4}>
                {selectedType !== "package" && (
-  <CCol md={4}>
+                <>
     <CFormLabel>Select Value</CFormLabel>
     <Select
       isMulti
@@ -763,8 +812,9 @@ const handleTypeChange = (type) => {
       value={selectedValue || []}
       onChange={handleSelectValue}
     />
-  </CCol>
+    </>
 )}
+
                 </CCol>
 
                 {/* 🔹 PAYMENT TYPE */}

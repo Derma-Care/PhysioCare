@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect,useState } from "react";
 import {
     CCard,
     CCardBody,
@@ -169,8 +169,8 @@ export default function PaymentDetailsUI() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // const paymentData = location.state.paymentData || {};
-    // const [data, setData] = useState(paymentData);
+    const paymentData = location.state.paymentData || {};
+    const [data, setData] = useState(paymentData);
 
     // alert(bookingId);
     return (
