@@ -557,52 +557,54 @@ const mapExercise = (ex) => ({
   };
 
   const updatePayload = {
-    clinicId: localStorage.getItem("HospitalId"),
-    branchId: localStorage.getItem("branchId"),
-    bookingId,
-    patientId,
+  bookingId,
 
-    doctorId,
-    doctorName,
+  amount: Number(finalAmount || 0),
+  paymentMode: paymentMode?.toUpperCase(),
+  paymentType: paymentType?.toUpperCase(),
 
-    therapistId,
-    therapistName,
-    therapistRecordId,
+  paymentLevel: selectedType?.toUpperCase(),
 
-    serviceType: selectedType?.toUpperCase(),
+  paymentTarget: {
+    ...(selectedType === "package" && {
+      packageIds: selectedValue.length
+        ? selectedValue.map(i => i.value)
+        : apiData.map(i => i.packageId),
+    }),
 
-    amount: Number(finalAmount || 0),
-    paymentMode: paymentMode?.toUpperCase(),
-    paymentType: paymentType?.toUpperCase(),
+    ...(selectedType === "program" && {
+      programIds: selectedValue.length
+        ? selectedValue.map(i => i.value)
+        : apiData[0]?.therapySessions?.map(p => p.programId),
+    }),
 
-    paymentLevel: selectedType?.toUpperCase(),
+    ...(selectedType === "therapy" && {
+      therapyIds: selectedValue.length
+        ? selectedValue.map(i => i.value)
+        : apiData[0]?.therapySessions?.flatMap(p =>
+            p.therapyData?.map(t => t.therapyId)
+          ),
+    }),
 
-    paymentTarget: {
-      packageIds:
-        selectedType === "package"
-          ? selectedValue.map((i) => i.value || i.packageId)
-          : [],
+    ...(selectedType === "exercise" && {
+      exerciseIds: selectedValue.length
+        ? selectedValue.map(i => i.value)
+        : apiData[0]?.therapySessions?.flatMap(p =>
+            p.therapyData?.flatMap(t =>
+              t.exercises?.map(e => e.therapyExercisesId)
+            )
+          ),
+    }),
 
-      programIds:
-        selectedType === "program"
-          ? selectedValue.map((i) => i.value || i.programId)
-          : [],
+    ...(selectedType === "session" && {
+      sessionIds: selectedValue.length
+        ? selectedValue.map(i => i.value)
+        : sessionRows.map(s => s.sessionId),
+    }),
+  },
 
-      therapyIds:
-        selectedType === "therapy"
-          ? selectedValue.map((i) => i.value || i.therapyId)
-          : [],
-
-      exerciseIds:
-        selectedType === "exercise"
-          ? selectedValue.map((i) => i.value || i.exerciseId)
-          : [],
-
-      sessionIds: [],
-    },
-
-    paymentDate: new Date().toISOString().split("T")[0],
-  };
+  paymentDate: new Date().toISOString().split("T")[0],
+};
 
 
   // 🔥 SUBMIT
@@ -621,7 +623,7 @@ const mapExercise = (ex) => ({
         // ✅ UPDATE PAYMENT
         payload = updatePayload;
         url = `${wifiUrl}/api/physiotherapy-doctor/payment/update`;
-        method = "PUT";
+        method = "POST";
       }
 
       console.log("FINAL PAYLOAD:", payload);
@@ -965,72 +967,70 @@ const mapExercise = (ex) => ({
             </CCardBody>
           </CCard>
 
-          {showPrint && printData && (
-            <div className="print-container">
+        {/*
+{showPrint && printData && (
+  <div className="print-container">
 
-              <h2 style={{ textAlign: "center" }}>
-                Patient Treatment & Payment Summary
-              </h2>
+    <h2 style={{ textAlign: "center" }}>
+      Patient Treatment & Payment Summary
+    </h2>
 
-              <hr />
+    <hr />
 
-              {/* 🔹 BASIC DETAILS */}
-              <p><b>Start Date:</b> {printData.startDate}</p>
-              <p><b>Service Type:</b> {printData.serviceType}</p>
+    <p><b>Start Date:</b> {printData.startDate}</p>
+    <p><b>Service Type:</b> {printData.serviceType}</p>
 
-              {/* 🔹 SELECTED ITEMS */}
-              <h4>Selected Services</h4>
-              <ul>
-                {printData.selectedItems.map((item, i) => (
-                  <li key={i}>
-                    {item.label} - ₹{item.price}
-                  </li>
-                ))}
-              </ul>
+    <h4>Selected Services</h4>
+    <ul>
+      {printData.selectedItems.map((item, i) => (
+        <li key={i}>
+          {item.label} - ₹{item.price}
+        </li>
+      ))}
+    </ul>
 
-              {/* 🔹 TABLE */}
-              <h4>Session Details</h4>
+    <h4>Session Details</h4>
 
-              <table border="1" width="100%" cellPadding="5">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Program</th>
-                    <th>Therapy</th>
-                    <th>Exercise</th>
-                    <th>Session</th> {/* ✅ ADD THIS */}
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Payment</th>
-                  </tr>
-                </thead>
+    <table border="1" width="100%" cellPadding="5">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Program</th>
+          <th>Therapy</th>
+          <th>Exercise</th>
+          <th>Session</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Payment</th>
+        </tr>
+      </thead>
 
-                <tbody>
-                  {(printData?.tableData || []).map((row, i) => (
-                    <tr key={i}>
-                      <td>{i + 1}</td>
-                      <td>{row?.programName || "-"}</td>
-                      <td>{row?.therapyName || "-"}</td>
-                      <td>{row?.exerciseName || "-"}</td>
-                      <td>{row?.sessionNo || "-"}</td> {/* ✅ ADD THIS */}
-                      <td>{row?.date || "-"}</td>
-                      <td>{row?.status || "-"}</td>
-                      <td>{row?.paymentStatus || "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <tbody>
+        {(printData?.tableData || []).map((row, i) => (
+          <tr key={i}>
+            <td>{i + 1}</td>
+            <td>{row?.programName || "-"}</td>
+            <td>{row?.therapyName || "-"}</td>
+            <td>{row?.exerciseName || "-"}</td>
+            <td>{row?.sessionNo || "-"}</td>
+            <td>{row?.date || "-"}</td>
+            <td>{row?.status || "-"}</td>
+            <td>{row?.paymentStatus || "-"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
 
-              {/* 🔹 PAYMENT */}
-              <h4 style={{ marginTop: "20px" }}>Payment Details</h4>
+    <h4 style={{ marginTop: "20px" }}>Payment Details</h4>
 
-              <p><b>Total Amount:</b> ₹{printData.paymentAmount}</p>
-              <p><b>Discount:</b> ₹{printData.discountAmount}</p>
-              <p><b>Final Amount:</b> ₹{printData.finalAmount}</p>
-              <p><b>Payment Mode:</b> {printData.paymentMode}</p>
+    <p><b>Total Amount:</b> ₹{printData.paymentAmount}</p>
+    <p><b>Discount:</b> ₹{printData.discountAmount}</p>
+    <p><b>Final Amount:</b> ₹{printData.finalAmount}</p>
+    <p><b>Payment Mode:</b> {printData.paymentMode}</p>
 
-            </div>
-          )}
+  </div>
+)}
+*/}
         </>
 
       )}
