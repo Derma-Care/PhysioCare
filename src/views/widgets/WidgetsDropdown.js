@@ -249,7 +249,7 @@ const WidgetsDropdown = (props) => {
       setAppointmentError(null)
 
       try {
-        const response = await GetTodayBooking(clinicId)
+        const response = await GetTodayBooking()
         console.log('Raw Appointments Data:', response)
 
         if (response && Array.isArray(response.data)) {

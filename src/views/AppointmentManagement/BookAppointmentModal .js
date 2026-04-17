@@ -45,7 +45,7 @@ import { useHospital } from '../Usecontext/HospitalContext'
 import { toast } from 'react-toastify'
 import BookingSearch from '../widgets/BookingSearch '
 import LoadingIndicator from '../../Utils/loader'
-import { postBooking } from '../../APIs/BookServiceAPi'
+import { followUPBooking, postBooking } from '../../APIs/BookServiceAPi'
 
 
 import { addCustomer } from '../customerManagement/CustomerManagementAPI'
@@ -890,7 +890,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         reasonForVisit: finalReason,
         insuranceProvider: bookingDetails.insuranceProvider,
         policyNumber: bookingDetails.policyNumber,
-        consultationFee: [  //TODO:listOfConsultationFee
+        listOfConsultationFee: [  //TODO:listOfConsultationFee
           {
             consulationFee: Number(bookingDetails.consultationFee || 0),
           },
@@ -1025,7 +1025,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     console.log('📦 Follow-up Payload:', payload)
 
     try {
-      const res = await postBooking(payload)
+      const res = await followUPBooking(payload)
       console.log('✅ Follow-up Response:', res)
       showCustomToast('Follow-up booking submitted successfully!', 'success')
       setTimeout(() => {
@@ -1598,7 +1598,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 <CFormLabel style={{ color: 'var(--color-black)' }}>
                   Consultation Fee <span className="text-danger">*</span>
                 </CFormLabel>
-                <CFormInput type="number" value={bookingDetails.consultationFee[0]?.consulationFee || 0} disabled />
+                <CFormInput type="number" value={bookingDetails.consultationFee || 0} disabled />
               </CCol>
               <CCol md={6}>
                 <CFormLabel style={{ color: 'var(--color-black)' }}>

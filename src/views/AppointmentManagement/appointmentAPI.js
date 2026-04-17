@@ -137,7 +137,7 @@ export const GetTodayBooking = async (id) => {
   console.log(id)
   try {
     const response = await axios.get(
-      `${BASE_URL}/getTodayBookings/${hID}/${branchId}`,
+      `${BASE_URL}/getTodayBookingsByClinicIdAndBranchId/${hID}/${branchId}`,
     ) //TODO:chnage when apigetway call axios to http
     console.log(response.data)
     return response.data

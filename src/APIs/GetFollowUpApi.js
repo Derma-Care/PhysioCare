@@ -47,3 +47,13 @@ export const getUpcomingFollowUps = () => {
 
   return http.get(`${BASE_URL}/upcoming/${clinicid}/${branchId}/1`)
 }
+
+
+
+export const getDateRangeFollowUps = (fromDate, toDate) => {
+  const clinicid = localStorage.getItem("HospitalId")
+  const branchId = localStorage.getItem("branchId")
+  return http.get(
+    `${BASE_URL}/dateRange/${clinicid}/${branchId}/${fromDate}/${toDate}`
+  );
+};

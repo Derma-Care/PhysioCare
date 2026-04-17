@@ -36,12 +36,14 @@ const data = {
             paymentMode: "CASH",
             paymentType: "PARTIAL",
             paymentDate: "2026-04-14",
+            paymentleval: "Session"
         },
         {
             amount: 1500,
             paymentMode: "UPI",
             paymentType: "PARTIAL",
             paymentDate: "2026-04-15",
+            paymentleval: "Therapy"
         },
     ],
 
@@ -274,6 +276,7 @@ export default function PaymentDetailsUI() {
                                 <CTableHeaderCell>Amount</CTableHeaderCell>
                                 <CTableHeaderCell>Mode</CTableHeaderCell>
                                 <CTableHeaderCell>Type</CTableHeaderCell>
+                                <CTableHeaderCell>Payment Leval</CTableHeaderCell>
                             </CTableRow>
                         </CTableHead>
                         <CTableBody>
@@ -284,6 +287,9 @@ export default function PaymentDetailsUI() {
                                     <CTableDataCell>₹{item.amount}</CTableDataCell>
                                     <CTableDataCell>{item.paymentMode}</CTableDataCell>
                                     <CTableDataCell>{item.paymentType}</CTableDataCell>
+                                    <CTableDataCell>{item.paymentleval}</CTableDataCell>
+
+
                                 </CTableRow>
                             ))}
                         </CTableBody>

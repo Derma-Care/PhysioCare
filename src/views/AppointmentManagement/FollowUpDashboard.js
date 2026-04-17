@@ -19,7 +19,7 @@ import {
 } from '@coreui/react'
 import { useNavigate } from 'react-router-dom'
 import Pagination from '../../Utils/Pagination'
-import { getBookingsTodayFollowUps, getUpcomingFollowUps } from '../../APIs/GetFollowUpApi'
+import { getBookingsTodayFollowUps, getUpcomingFollowUps, getDateRangeFollowUps } from '../../APIs/GetFollowUpApi'
 import { bookingUpdate } from './appointmentAPI'
 import LoadingIndicator from '../../Utils/loader'
 import capitalizeWords from '../../Utils/capitalizeWords'
@@ -131,15 +131,14 @@ export default function FollowupDashboard() {
 
 
     const navigate = useNavigate()
-    const today = '2026-04-15'
-    const next7 = '2026-04-21'
+
 
     const [activeCard, setActiveCard] = useState("today")
 
     const [rows, setRows] = useState([])
     const [filter, setFilter] = useState('All')
-    const [fromDate, setFromDate] = useState(today)
-    const [toDate, setToDate] = useState(today)
+    const [fromDate, setFromDate] = useState('')
+    const [toDate, setToDate] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [pageSize, setPageSize] = useState(10)
     const [todayCount, setTodayCount] = useState(0)
@@ -224,10 +223,36 @@ export default function FollowupDashboard() {
             setLoading(false)
         }
     }
+
+    const getDateRangeAppointments = async () => {
+        if (!fromDate || !toDate) return;
+        console.log(fromDate, toDate)
+        setLoading(true);
+        try {
+            const res = await getDateRangeFollowUps(
+                fromDate,
+                toDate
+            );
+
+            const data = Array.isArray(res?.data?.data)
+                ? res.data.data
+                : Array.isArray(res?.data)
+                    ? res.data
+                    : [];
+
+            setRows(data);
+            setCurrentPage(1);
+        } catch (error) {
+            console.error(error);
+            setRows([]);
+        } finally {
+            setLoading(false);
+        }
+    };
     const updatePaymentStatus = async (bookingId, status) => {
         console.log(`Updating booking ${bookingId} with payment type: ${status}`);
         try {
-            await bookingUpdate({ bookingId, followupStatus: status }) // Assuming bookingUpdate accepts an object with these properties
+            await bookingUpdate({ bookingId, followupStatus: status.toLowerCase() }) // Assuming bookingUpdate accepts an object with these properties
 
             getTodayFollowUps()
 
@@ -248,7 +273,21 @@ export default function FollowupDashboard() {
     //         return matchStatus && matchDate
     //     })
     // }, [rows, filter, fromDate, toDate])
-    const list = rows
+    useEffect(() => {
+        if (fromDate && toDate) {
+            getDateRangeAppointments();
+        }
+    }, [fromDate, toDate]);
+    const list = useMemo(() => {
+        return rows.filter((row) => {
+            const matchStatus =
+                filter === "All" ||
+                (row.followUpStatus || "").toLowerCase() === filter.toLowerCase() ||
+                (row.status || "").toLowerCase() === filter.toLowerCase();
+
+            return matchStatus;
+        });
+    }, [rows, filter]);
     const updateStatus = (id, value) => {
         setRows(
             rows.map((r) =>
@@ -456,7 +495,7 @@ export default function FollowupDashboard() {
                         type="date"
                         label="To Date"
                         value={toDate}
-                        max={next7}
+
                         onChange={(e) => {
                             setToDate(e.target.value)
                             setCurrentPage(1)
@@ -546,13 +585,15 @@ export default function FollowupDashboard() {
                                 <CTableDataCell>
                                     <CFormSelect
                                         size="sm"
-                                        value={row.followUpStatus}
+                                        value={capitalizeWords(row.followUpStatus || row.followupStatus || "")}
                                         onChange={(e) =>
                                             updatePaymentStatus(row.bookingId, e.target.value)
                                         }
                                     >
                                         {followUpStatus.slice(1).map((s) => (
-                                            <option key={s}>{s}</option>
+                                            <option key={s} value={s}>
+                                                {s}
+                                            </option>
                                         ))}
                                     </CFormSelect>
                                 </CTableDataCell>
