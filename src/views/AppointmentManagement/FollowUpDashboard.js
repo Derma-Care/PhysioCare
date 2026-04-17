@@ -519,6 +519,17 @@ export default function FollowupDashboard() {
                         </CFormSelect>
                     </div>
                 </CCol>
+                 {(role === 'admin' || role === 'receptionist') && (
+                                <CButton
+                                  style={{
+                                    backgroundColor: 'var(--color-black)',
+                                    color: 'white',
+                                  }}
+                                  onClick={() => setVisible(true)}
+                                >
+                                  Book Appointment
+                                </CButton>
+                              )}
             </CRow>
 
             {/* Table */}
