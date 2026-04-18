@@ -33,6 +33,7 @@ export default function ProgramPayment() {
   const [sessionRows, setSessionRows] = useState([]);
   const [programData, setProgramData] = useState(null);
 const [viewModal, setViewModal] = useState(false);
+const [selectedfullExercise, setSelectedfullExercise] = useState([]);
   const [apiData, setApiData] = useState([]);
   const [fullPaymentData, setFullPaymentData] = useState([])
 const [paymentData, setPaymentData] = useState(null);
@@ -168,6 +169,7 @@ const [selectedExercise, setSelectedExercise] = useState(null);
       console.log("SERVICE TYPES:", getServiceTypes());
 console.log("SELECTED TYPE:", selectedType);
 setPackageId(data?.data?.[0]?.packageId || "");
+setSelectedfullExercise(data?.data?.therapySessions || []);
  // Set packageId from API response
 
       const apiResponse = data?.data || [];
@@ -193,92 +195,92 @@ setTherapistName(apiResponse?.[0]?.therapistName || "");
     setSelectedType("package"); // 🔥 MUST
   }
 }, [apiData]);
- const getServiceTypes = () => {
-  const types = new Set();
+    const getServiceTypes = () => {
+      const types = new Set();
 
-  (apiData || []).forEach(item => {
-    if (item.therapySessions?.length) types.add("program");
+      (apiData || []).forEach(item => {
+        if (item.therapySessions?.length) types.add("program");
 
-    item.therapySessions?.forEach(program => {
-      if (program.therapyData?.length) types.add("therapy");
+        item.therapySessions?.forEach(program => {
+          if (program.therapyData?.length) types.add("therapy");
 
-      program.therapyData?.forEach(therapy => {
-        if (therapy.exercises?.length) types.add("exercise");
+          program.therapyData?.forEach(therapy => {
+            if (therapy.exercises?.length) types.add("exercise");
 
-        therapy.exercises?.forEach(ex => {
-          if (ex.noOfSessions) types.add("session");
+            therapy.exercises?.forEach(ex => {
+              if (ex.noOfSessions) types.add("session");
+            });
+          });
         });
       });
-    });
-  });
 
-  // ✅ ALWAYS FIRST
-  const orderedTypes = ["package", ...types];
+      // ✅ ALWAYS FIRST
+      const orderedTypes = ["package", ...types];
 
-  return [...new Set(orderedTypes)];
-};
- const getOptionsByType = () => {
-  if (!apiData?.length) return [];
+      return [...new Set(orderedTypes)];
+    };
+  const getOptionsByType = () => {
+    if (!apiData?.length) return [];
 
-  const item = apiData[0];
+    const item = apiData[0];
 
-  switch (selectedType) {
+    switch (selectedType) {
 
-    // 🔹 PACKAGE → NO VALUES
-    case "package":
-      return ;
+      // 🔹 PACKAGE → NO VALUES
+      case "package":
+        return ;
 
-    // 🔹 PROGRAM → SHOW PROGRAM NAMES
-    case "program":
-      return (item.therapySessions || []).map(p => ({
-        label: p.programName,
-        value: p.programId,
-        price: p.totalPrice,
-      }));
+      // 🔹 PROGRAM → SHOW PROGRAM NAMES
+      case "program":
+        return (item.therapySessions || []).map(p => ({
+          label: p.programName,
+          value: p.programId,
+          price: p.totalPrice,
+        }));
 
-    // 🔹 THERAPY → SHOW THERAPIES
-    case "therapy":
-      return (item.therapySessions || []).flatMap(p =>
-        (p.therapyData || []).map(t => ({
-          label: t.therapyName,
-          value: t.therapyId,
-          price: t.totalPrice,
-        }))
-      );
-
-    // 🔹 EXERCISE → SHOW EXERCISES
-    case "exercise":
-      return (item.therapySessions || []).flatMap(p =>
-        (p.therapyData || []).flatMap(t =>
-          (t.exercises || []).map(e => ({
-            label: e.exerciseName,
-            value: e.exerciseId,
-            price: e.totalSessionCost,
+      // 🔹 THERAPY → SHOW THERAPIES
+      case "therapy":
+        return (item.therapySessions || []).flatMap(p =>
+          (p.therapyData || []).map(t => ({
+            label: t.therapyName,
+            value: t.therapyId,
+            price: t.totalPrice,
           }))
-        )
-      );
+        );
 
-    // 🔹 SESSION → SHOW SESSIONS
-    case "session":
-      return (item.therapySessions || []).flatMap(p =>
-        (p.therapyData || []).flatMap(t =>
-          (t.exercises || []).flatMap(e =>
-            Array.from(
-              { length: e.noOfSessions || 1 },
-              (_, i) => ({
-                label: `${e.exerciseName} - Session ${i + 1}`,
-                value: `${e.exerciseId}_${i + 1}`,
-                price: e.pricePerSession,
-              })
+      // 🔹 EXERCISE → SHOW EXERCISES
+      case "exercise":
+        return (item.therapySessions || []).flatMap(p =>
+          (p.therapyData || []).flatMap(t =>
+            (t.exercises || []).map(e => ({
+              label: e.exerciseName,
+              value: e.exerciseId,
+              price: e.totalSessionCost,
+            }))
+          )
+        );
+
+      // 🔹 SESSION → SHOW SESSIONS
+      case "session":
+        return (item.therapySessions || []).flatMap(p =>
+          (p.therapyData || []).flatMap(t =>
+            (t.exercises || []).flatMap(e =>
+              Array.from(
+                { length: e.noOfSessions || 1 },
+                (_, i) => ({
+                  label: `${e.exerciseName} - Session ${i + 1}`,
+                  value: `${e.exerciseId}_${i + 1}`,
+                  price: e.pricePerSession,
+                })
+              )
             )
           )
-        )
-      );
+        );
 
-    default:
-      return [];
-  }
-};
+      default:
+        return [];
+    }
+  };
 const handleSelectValue = (selected) => {
   const selectedItems = selected || [];
   setSelectedValue(selectedItems);
@@ -524,6 +526,7 @@ const mapExercise = (ex) => ({
     branchId: localStorage.getItem("branchId"),
     bookingId,
     patientId,
+    sessionStartDate: startDate,
 
     doctorId: doctorId ,
     doctorName: doctorName,
@@ -545,7 +548,11 @@ const mapExercise = (ex) => ({
     paymentLevel: selectedType?.toUpperCase(),
 
  paymentTarget: {
-    packageIds: selectedType === "package" ? packageId : [],
+    paymentTarget: {
+  ...(selectedType === "package" && packageId && {
+    packageIds: [packageId],
+  }),
+},
     programIds: selectedType === "program" ? selectedValue.map(i => i.value) : [],
     therapyIds: selectedType === "therapy" ? selectedValue.map(i => i.value) : [],
     exerciseIds: [],
@@ -639,6 +646,7 @@ const mapExercise = (ex) => ({
       const data = await response.json();
       console.log("API RESPONSE:", data);
 
+
       setIsFollowUpPayment(true);
 
       // 👉 print after success
@@ -648,9 +656,10 @@ const mapExercise = (ex) => ({
         tableData, startDate
       });
 
-      setShowPrint(true);
+      // setShowPrint(true);
+      navigate(-1)
 
-      setTimeout(() => window.print(), 800);
+      // setTimeout(() => window.print(), 800);
 
     } catch (error) {
       console.error("Payment Error:", error);
@@ -957,11 +966,13 @@ const mapExercise = (ex) => ({
 
               {/* 🔹 BUTTON */}
               <div className="mt-3 text-end">
-                <CButton onClick={handleSubmit} style={{ backgroundColor: "var(--color-black)", color: "#fff" }}>
-                  {isFollowUpPayment
-                    ? "Update Payment & Print"
-                    : "Submit & Print"}
-                </CButton>
+               <CButton
+  onClick={handleSubmit}
+  // disabled={isFollowUpPayment && paymentStatus !== "UNPAID"}
+  style={{ backgroundColor: "var(--color-black)", color: "#fff" }}
+>
+  {isFollowUpPayment ? "Update Payment" : "Submit Payment"}
+</CButton>
               </div>
 
             </CCardBody>

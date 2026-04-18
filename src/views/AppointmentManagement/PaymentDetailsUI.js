@@ -276,7 +276,7 @@ export default function PaymentDetailsUI() {
                                 <CTableHeaderCell>Amount</CTableHeaderCell>
                                 <CTableHeaderCell>Mode</CTableHeaderCell>
                                 <CTableHeaderCell>Type</CTableHeaderCell>
-                                <CTableHeaderCell>Payment Leval</CTableHeaderCell>
+                                <CTableHeaderCell>Payment Level</CTableHeaderCell>
                             </CTableRow>
                         </CTableHead>
                         <CTableBody>
@@ -287,7 +287,7 @@ export default function PaymentDetailsUI() {
                                     <CTableDataCell>₹{item.amount}</CTableDataCell>
                                     <CTableDataCell>{item.paymentMode}</CTableDataCell>
                                     <CTableDataCell>{item.paymentType}</CTableDataCell>
-                                    <CTableDataCell>{item.paymentleval}</CTableDataCell>
+                                    <CTableDataCell>{item.paymentLevel}</CTableDataCell>
 
 
                                 </CTableRow>
