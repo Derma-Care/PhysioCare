@@ -23,6 +23,7 @@ import { getBookingsTodayFollowUps, getUpcomingFollowUps, getDateRangeFollowUps 
 import { bookingUpdate } from './appointmentAPI'
 import LoadingIndicator from '../../Utils/loader'
 import capitalizeWords from '../../Utils/capitalizeWords'
+import BookAppointmentModal from './BookAppointmentModal '
 // const data = [
 //     {
 //         id: "Kar-Mad-2026-0022",
@@ -146,6 +147,8 @@ export default function FollowupDashboard() {
     const [confirmedCount, setConfirmedCount] = useState(0)
     const [inProgressCount, setInProgressCount] = useState(0)
     const [loading, setLoading] = useState(false)
+    const role = localStorage.getItem('role')
+    const [visible, setVisible] = useState(false)
     // useEffect(() => {
     //     getTodayFollowUps()
     // }, [])
@@ -477,7 +480,7 @@ export default function FollowupDashboard() {
 
             </CRow>
             {/* Filters */}
-            <CRow className="mb-3" style={{ color: 'var(--color-black)' }}>
+            <CRow className="mb-3 d-flex justify-content-center align-items-center align-content-center" style={{ color: 'var(--color-black)' }} >
                 <CCol md={3}>
                     <CFormInput
                         type="date"
@@ -519,19 +522,21 @@ export default function FollowupDashboard() {
                         </CFormSelect>
                     </div>
                 </CCol>
-                 {(role === 'admin' || role === 'receptionist') && (
-                                <CButton
-                                  style={{
-                                    backgroundColor: 'var(--color-black)',
-                                    color: 'white',
-                                  }}
-                                  onClick={() => setVisible(true)}
-                                >
-                                  Book Appointment
-                                </CButton>
-                              )}
+                <CCol md={3} className='mt-4'>
+                    {(role === 'admin' || role === 'receptionist') && (
+                        <CButton
+                            style={{
+                                backgroundColor: 'var(--color-black)',
+                                color: 'white',
+                            }}
+                            onClick={() => setVisible(true)}
+                        >
+                            Book Appointment
+                        </CButton>
+                    )}
+                </CCol>
             </CRow>
-
+            <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
             {/* Table */}
             <CTable
                 hover

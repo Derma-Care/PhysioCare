@@ -148,7 +148,7 @@ const handleMultiSelect = (key, value) => {
   });
 };
   return (
-    <CModal visible={visible} onClose={onClose} size="lg">
+    <CModal visible={visible} onClose={onClose} size="lg" backdrop="static" className="custom-modal">
 
       <CModalHeader>
         <CModalTitle>
