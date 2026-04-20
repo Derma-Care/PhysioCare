@@ -349,8 +349,8 @@ const Login = () => {
                         >
                           <option value="admin">Admin</option>
                           <option value="receptionist">Receptionist</option>
-                          <option value="physiotherapist">Therapist</option>
-                          <option value="intern">Intern</option>
+                          {/* <option value="physiotherapist">Therapist</option>
+                          <option value="intern">Intern</option> */}
                           {/* <option value="lab_technician">Lab Technician</option>
                           <option value="pharmacist">Pharmacist</option> */}
                           {/* <option value="wardBoy">Ward Boy / Attendant</option>
