@@ -383,8 +383,8 @@ const AppointmentDetails = () => {
 
 
   const handlePaymentClick = () => {
-    // if (showPayment && normalizedStatus === "active") {
-    if (normalizedStatus !== "active" || normalizedStatus !== "in-progress") {
+    if (showPayment && normalizedStatus === "active" || normalizedStatus === "in-progress") {
+    // if (normalizedStatus === "active" || normalizedStatus === "in-progress") {
       console.log("Navigating to payment with appointment:", appointment)
       navigate("/program-payment" + `/${id}`, {
         state: {
@@ -419,16 +419,15 @@ const AppointmentDetails = () => {
               Add Vitals
             </CButton>
           )}
-          {
-            // showPayment && (<CButton
-            <CButton
-              color="success"
-              onClick={() => handlePaymentClick()}
-            // disabled={!showPayment} // optional disable
-            >
-              Payment
-            </CButton>
-          }
+          {showPayment && (
+  <CButton
+    color="success"
+    onClick={handlePaymentClick}
+    disabled={!showPayment} // optional
+  >
+    Payment
+  </CButton>
+)}
           {/* <CButton
             color="secondary"
             size="sm"
@@ -619,15 +618,15 @@ const AppointmentDetails = () => {
             <strong>Paid Amount:</strong> ₹{appointment?.totalFee}
           </div>
           <div className="col-md-4">
-            <strong>Consultation Fee:</strong> ₹{appointment?.consultationFee[0]?.consulationFee || 'N/A'}
+            <strong>Consultation Fee:</strong> ₹{appointment?.listOfConsultationFee[0]?.consulationFee || 'N/A'}
           </div>
         </div>
 
         <hr />
 
         {/* Doctor & Service Details */}
-        <h6 className="fw-bold mb-3" style={{ color: 'var(--color-black)' }}>
-          Doctor & Service Details
+        {/* <h6 className="fw-bold mb-3" style={{ color: 'var(--color-black)' }}>
+          Doctor Details
         </h6>
         <div className="row">
           <div className="col-md-4">
@@ -636,13 +635,13 @@ const AppointmentDetails = () => {
           <div className="col-md-4">
             <strong>Consultation Type:</strong> {appointment?.consultationType}
           </div>
-          <div className="col-md-4">
+          {/* <div className="col-md-4">
             <strong>Service Name:</strong> {appointment?.subServiceName}
           </div>
           <div className="col-md-4">
             <strong>Service ID:</strong> {appointment?.subServiceId}
-          </div>
-        </div>
+          </div> */}
+        {/* </div> */}
 
 
         {/* Vitals Card */}

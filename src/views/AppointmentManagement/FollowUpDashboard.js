@@ -15,11 +15,13 @@ import {
     CBadge,
     CFormSelect,
     CFormInput,
+    CFormLabel,
     CButton, CModal,
     CModalHeader,
     CModalTitle,
     CModalBody,
-    CModalFooter
+    CModalFooter,
+    CFormTextarea
 } from '@coreui/react'
 
 
@@ -159,6 +161,8 @@ export default function FollowupDashboard() {
     const [loading, setLoading] = useState(false)
     const role = localStorage.getItem('role')
     const [visible, setVisible] = useState(false)
+const [showReasonModal, setShowReasonModal] = useState(false);
+const [selectedRow, setSelectedRow] = useState(null);
     // Add these states inside component
     const [reasonModal, setReasonModal] = useState(false)
     const [selectedBookingId, setSelectedBookingId] = useState("")
@@ -176,39 +180,27 @@ export default function FollowupDashboard() {
 
 
     // FETCH SLOTS WHEN RESCHEDULE CLICK
-    const updatePaymentStatus = async (bookingId, status, row) => {
-        if (status === "Rescheduled") {
-            setSelectedBookingId(bookingId)
-            setSelectedStatus(status)
-            setReason("")
-            setNewDate("")
-            setNewTime("")
-            setReasonModal(true)
+   const updatePaymentStatus = async (
+  bookingId,
+  status,
+  row,
+  reason,
+  newDate,
+  newTime
+) => {
+  const payload = {
+    bookingId,
+    followupStatus: status.toLowerCase(),
+    reason
+  };
 
-            // call doctor slot api
-            fetchSlots(row.doctorId, row.branchId)
+  if (status === "Rescheduled") {
+    payload.serviceDate = newDate;
+    payload.servicetime = newTime;
+  }
 
-            return
-        }
-
-        if (status === "Cancelled") {
-            setSelectedBookingId(bookingId)
-            setSelectedStatus(status)
-            setReason("")
-            setReasonModal(true)
-            return
-        }
-
-        try {
-            await bookingUpdate({
-                bookingId,
-                followupStatus: status.toLowerCase()
-            })
-            getTodayFollowUps()
-        } catch (err) {
-            console.error(err)
-        }
-    }
+  await bookingUpdate(payload);
+};
 
 
     // CHANGE DROPDOWN CALL
@@ -541,7 +533,7 @@ export default function FollowupDashboard() {
 
     return (
         <>
-            <CModalBody>
+            {/* <CModalBody>
                 <CFormInput
                     label="Reason"
                     value={reason}
@@ -553,26 +545,38 @@ export default function FollowupDashboard() {
                     <>
                         <h6>Select Date</h6>
 
-                        <div className="d-flex gap-2 flex-wrap mb-3">
-                            {(slotsForSelectedDate || []).map((s, idx) => {
-                                const dateValue = s.day || s.date
-                                const formattedDate =
-                                    new Date(dateValue).toISOString().split("T")[0]
+                       <div className="d-flex gap-2 flex-wrap mb-3">
+  {(slotsForSelectedDate || [])
+    .filter((s) => {
+      const dateValue = s.day || s.date;
+      const formattedDate = new Date(dateValue)
+        .toISOString()
+        .split("T")[0];
 
-                                return (
-                                    <CButton
-                                        key={idx}
-                                        color={newDate === formattedDate ? "primary" : "light"}
-                                        onClick={() => {
-                                            setNewDate(formattedDate)
-                                            setNewTime("")
-                                        }}
-                                    >
-                                        {formattedDate}
-                                    </CButton>
-                                )
-                            })}
-                        </div>
+      const today = new Date().toISOString().split("T")[0];
+
+      return formattedDate >= today; // ✅ only today & future
+    })
+    .map((s, idx) => {
+      const dateValue = s.day || s.date;
+      const formattedDate = new Date(dateValue)
+        .toISOString()
+        .split("T")[0];
+
+      return (
+        <CButton
+          key={idx}
+          color={newDate === formattedDate ? "primary" : "light"}
+          onClick={() => {
+            setNewDate(formattedDate);
+            setNewTime("");
+          }}
+        >
+          {formattedDate}
+        </CButton>
+      );
+    })}
+</div>
 
                         <h6>Select Time</h6>
 
@@ -624,7 +628,7 @@ export default function FollowupDashboard() {
                         )}
                     </>
                 )}
-            </CModalBody>
+            </CModalBody> */}
 
             <CContainer fluid  >
 
@@ -855,19 +859,33 @@ export default function FollowupDashboard() {
                                     </CTableDataCell>
 
                                     <CTableDataCell>
-                                        <CFormSelect
-                                            size="sm"
-                                            value={capitalizeWords(row.followUpStatus || row.followupStatus || "")}
-                                            onChange={(e) =>
-                                                updatePaymentStatus(row.bookingId, e.target.value, row)
-                                            }
-                                        >
-                                            {followUpStatus.slice(1).map((s) => (
-                                                <option key={s} value={s}>
-                                                    {s}
-                                                </option>
-                                            ))}
-                                        </CFormSelect>
+                                       <CFormSelect
+  size="sm"
+  value={capitalizeWords(row.followUpStatus || row.followupStatus || "")}
+ onChange={(e) => {
+  const value = e.target.value;
+
+  if (value === "Rescheduled" || value === "Cancelled") {
+    setSelectedRow(row);
+    setSelectedStatus(value);
+
+    // 🔥 CALL SLOT API HERE
+    if (value === "Rescheduled") {
+      fetchSlots(row.doctorId, row.branchId);
+    }
+
+    setShowReasonModal(true);
+  } else {
+    updatePaymentStatus(row.bookingId, value, row);
+  }
+}}
+>
+  {followUpStatus.slice(1).map((s) => (
+    <option key={s} value={s}>
+      {s}
+    </option>
+  ))}
+</CFormSelect>
                                     </CTableDataCell>
 
                                     <CTableDataCell>
@@ -902,6 +920,139 @@ export default function FollowupDashboard() {
                     />
                 )}
             </CContainer>
+            <CModal
+  visible={showReasonModal}
+  onClose={() => setShowReasonModal(false)}
+>
+  <CModalHeader>
+    <CModalTitle>Reason</CModalTitle>
+  </CModalHeader>
+
+ <CModalBody>
+
+  {/* 🔹 Reason (for both) */}
+  <CFormLabel>Reason</CFormLabel>
+  <CFormTextarea
+    value={reason}
+    onChange={(e) => setReason(e.target.value)}
+    placeholder="Enter reason..."
+    className="mb-3"
+  />
+
+  {/* 🔹 SHOW ONLY FOR RESCHEDULE */}
+  {selectedStatus === "Rescheduled" && (
+    <>
+      <h6>Select Date</h6>
+
+      <div className="d-flex gap-2 flex-wrap mb-3">
+        {(slotsForSelectedDate || [])
+          .filter((s) => {
+            const dateValue = s.day || s.date;
+            const formattedDate = new Date(dateValue)
+              .toISOString()
+              .split("T")[0];
+
+            const today = new Date().toISOString().split("T")[0];
+            return formattedDate >= today;
+          })
+          .map((s, idx) => {
+            const dateValue = s.day || s.date;
+            const formattedDate = new Date(dateValue)
+              .toISOString()
+              .split("T")[0];
+
+            return (
+              <CButton
+                key={idx}
+                color={newDate === formattedDate ? "primary" : "light"}
+                onClick={() => {
+                  setNewDate(formattedDate);
+                  setNewTime("");
+                }}
+              >
+                {formattedDate}
+              </CButton>
+            );
+          })}
+      </div>
+
+      <h6>Select Time</h6>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4,1fr)",
+          gap: "8px"
+        }}
+      >
+        {visibleSlots.map((slotObj, i) => (
+          <div
+            key={i}
+            onClick={() =>
+              !slotObj.slotbooked && setNewTime(slotObj.slot)
+            }
+            style={{
+              padding: "8px",
+              textAlign: "center",
+              border: "1px solid #ccc",
+              borderRadius: "6px",
+              cursor: slotObj.slotbooked ? "not-allowed" : "pointer",
+              backgroundColor: slotObj.slotbooked
+                ? "#f8d7da"
+                : newTime === slotObj.slot
+                ? "#0d6efd"
+                : "#fff",
+              color: newTime === slotObj.slot ? "#fff" : "#000"
+            }}
+          >
+            {slotObj.slot}
+          </div>
+        ))}
+      </div>
+    </>
+  )}
+
+</CModalBody>
+
+  <CModalFooter>
+    {/* Cancel */}
+    <CButton
+      color="secondary"
+      onClick={() => {
+        setShowReasonModal(false);
+        setReason("");
+      }}
+    >
+      Cancel
+    </CButton>
+
+    {/* Save */}
+    <CButton
+     style={{ backgroundColor: "var(--color-black)", color: "white" }}
+      onClick={() => {
+        if (!reason.trim()) {
+          alert("Reason is required");
+          return;
+        }
+
+        // ✅ CALL API AFTER REASON ENTERED
+        updatePaymentStatus(
+          selectedRow.bookingId,
+     selectedStatus ,
+          selectedRow,
+          reason,
+          newDate,
+  newTime
+        );
+
+        setShowReasonModal(false);
+        setReason("");
+      }}
+    >
+      Save
+    </CButton>
+  </CModalFooter>
+</CModal>
         </>
     )
 }

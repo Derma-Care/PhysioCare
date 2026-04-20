@@ -869,8 +869,9 @@ export default function ProgramPayment() {
       )}
 
       {/* 🔹 STEP 2 */}
-      {!isFollowUpPayment && (
+      {isFollowUpPayment && (
         <>
+
           {/* TABLE */}
           <CTable bordered className="pink-table m-3" >
             <CTableHead>
@@ -897,6 +898,7 @@ export default function ProgramPayment() {
 
       )}
       {/* PAYMENT */}
+      {isFollowUpPayment && (
       <CCard className="mt-3">
         <CCardHeader>Payment</CCardHeader>
         <CCardBody>
@@ -1086,6 +1088,7 @@ export default function ProgramPayment() {
 
         </CCardBody>
       </CCard>
+  )}
 
       {/*
 {showPrint && printData && (
