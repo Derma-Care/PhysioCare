@@ -13,7 +13,7 @@ const themeOptions = {
   Sunset: { name: 'Sunset Orange', bgcolor: '#E8E8E8', black: '#222222' },
   OceanBlue: { name: 'Ocean Blue', bgcolor: '#DCEEFF', black: '#1A2E40' },
   Mint: { name: 'Mint Green', bgcolor: '#DDE5B6', black: '#344E41' },
-  Lavender: { name: 'Lavender Purple', bgcolor: '#E8E2F6', black: '#1C1B33' },
+  Lavender: { name: 'Lavender Purple', bgcolor: '#041f3a', black: '#fff' },
   // Lavender: { name: 'KinetiX', bgcolor: '#113A3C', black: '#ffffff' },
 }
 

@@ -41,7 +41,7 @@ import LoadingIndicator from "../../Utils/loader"
 import { addProgram, deleteProgram, getProgramService, getProgramServicebyProgramId, updateProgram } from "./ProgramApi"
 import { showCustomToast } from "../../Utils/Toaster"
 
-
+import { useGlobalSearch } from "../Usecontext/GlobalSearchContext"
 export default function Programs() {
   const [list, setList] = useState([])
   const [exerciseOptions, setExerciseOptions] = useState([])
@@ -55,6 +55,7 @@ export default function Programs() {
   const [saveLoading, setSaveLoading] = useState(false)
   const [viewModal, setViewModal] = useState(false)
   const [viewLoading, setViewLoading] = useState(false)
+  const { searchQuery } = useGlobalSearch()
   const [viewData, setViewData] = useState(null)
   const clinicId = localStorage.getItem("HospitalId")
   const branchId = localStorage.getItem("branchId")
@@ -272,6 +273,21 @@ export default function Programs() {
       <LoadingIndicator />
     )
   }
+  const filteredList = list.filter((item) => {
+    const search = searchQuery.toLowerCase()
+
+    if (!search) return true
+
+    return (
+      (item.id || "").toString().toLowerCase().includes(search) ||
+      (item.programName || "").toLowerCase().includes(search) ||
+      (item.theraphyCount || "").toString().includes(search) ||
+      (item.therophy || [])
+        .map((t) => t.therapyName?.toLowerCase())
+        .join(" ")
+        .includes(search)
+    )
+  })
   return (
     <>
 
@@ -316,8 +332,8 @@ export default function Programs() {
         <CTableBody>
 
           {
-            list.length > 0 ? (
-              list.map((item, index) => (
+            filteredList.length > 0 ? (
+              filteredList.map((item, index) => (
                 <CTableRow key={item.id}>
                   <CTableDataCell>{index + 1}</CTableDataCell>
                   <CTableDataCell>{item.programName}</CTableDataCell>

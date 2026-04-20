@@ -1,4 +1,4 @@
-import React, { useEffect,useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     CCard,
     CCardBody,
@@ -171,6 +171,23 @@ export default function PaymentDetailsUI() {
 
     const paymentData = location.state.paymentData || {};
     const [data, setData] = useState(paymentData);
+    const allSessions =
+        data?.therapyWithSessions?.flatMap(pkg =>
+            pkg.programs.flatMap(program =>
+                program.therapyData.flatMap(therapy =>
+                    therapy.exercises.flatMap(exercise => exercise.sessions)
+                )
+            )
+        ) || [];
+
+    const paidSessions = allSessions.filter(
+        item => item.paymentStatus?.toLowerCase() === "paid"
+    ).length;
+
+    const percent =
+        allSessions.length > 0
+            ? Math.round((paidSessions / allSessions.length) * 100)
+            : 0;
 
     // alert(bookingId);
     return (
@@ -206,9 +223,16 @@ export default function PaymentDetailsUI() {
                 <CCardBody>
                     <div className="d-flex justify-content-between">
                         <strong>Payment Progress</strong>
-                        <span>{percent}%</span>
+                        <span>
+                            {paidSessions}/{allSessions.length} Sessions Paid ({percent}%)
+                        </span>
                     </div>
-                    <CProgress value={percent} className="mt-2" />
+
+                    <CProgress
+                        value={percent}
+                        color={percent === 100 ? "success" : "warning"}
+                        className="mt-2"
+                    />
                 </CCardBody>
             </CCard>
 
@@ -234,24 +258,35 @@ export default function PaymentDetailsUI() {
                                                         <span>₹{exercise.pricePerSession}/Session</span>
                                                     </div>
 
-                                                    <div className="d-flex flex-wrap gap-2">
-                                                        {exercise.sessions.map((session, si) => (
-                                                            <CButton
-                                                                key={si}
-                                                                size="sm"
-                                                                color={
-                                                                    session.paymentStatus === "PAID"
-                                                                        ? "success"
-                                                                        : "primary"
-                                                                }
-                                                                disabled={session.paymentStatus === "PAID"}
-                                                            >
-                                                                Session {session.sessionNo}{" "}
-                                                                {session.paymentStatus === "PAID"
-                                                                    ? "✓"
-                                                                    : "Pay"}
-                                                            </CButton>
-                                                        ))}
+                                                    <div className="d-flex flex-wrap gap-3">
+                                                        {exercise.sessions.map((session, si) => {
+                                                            const isPaid =
+                                                                session.paymentStatus?.toLowerCase() === "paid";
+
+                                                            return (
+                                                                <div key={si} className="text-center">
+                                                                    <CButton
+                                                                        size="sm"
+                                                                        color={isPaid ? "success" : "danger"}
+                                                                        disabled={isPaid}
+                                                                        className="fw-bold"
+                                                                    >
+                                                                        Session {session.sessionNo}{" "}
+                                                                        {isPaid ? "✓ Paid" : "Pay Now"}
+                                                                    </CButton>
+
+                                                                    <div
+                                                                        style={{
+                                                                            fontSize: "12px",
+                                                                            color: "#666",
+                                                                            marginTop: "4px",
+                                                                        }}
+                                                                    >
+                                                                        {session.date}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             ))}

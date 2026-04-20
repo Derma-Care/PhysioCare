@@ -28,19 +28,19 @@ export default function ProgramPayment() {
   // 🔥 STATES
   const [startDate, setStartDate] = useState("");
   const [tableData, setTableData] = useState([]);
-  const[packageId,setPackageId]=useState("");
-  const [formattedData, setformattedData] = useState([]); 
+  const [packageId, setPackageId] = useState("");
+  const [formattedData, setformattedData] = useState([]);
   const [sessionRows, setSessionRows] = useState([]);
   const [programData, setProgramData] = useState(null);
-const [viewModal, setViewModal] = useState(false);
-const [selectedfullExercise, setSelectedfullExercise] = useState([]);
+  const [viewModal, setViewModal] = useState(false);
+  const [selectedfullExercise, setSelectedfullExercise] = useState([]);
   const [apiData, setApiData] = useState([]);
   const [fullPaymentData, setFullPaymentData] = useState([])
-const [paymentData, setPaymentData] = useState(null);
+  const [paymentData, setPaymentData] = useState(null);
   const navigate = useNavigate();
   const [doctorName, setDoctorName] = useState("");
-const [therapistId, setTherapistId] = useState("");
-const [therapistName, setTherapistName] = useState("");
+  const [therapistId, setTherapistId] = useState("");
+  const [therapistName, setTherapistName] = useState("");
   const [loading, setLoading] = useState(false);
   const [therapistRecordId, setTherapistRecordId] = useState("");
   const [showTable, setShowTable] = useState(false);
@@ -49,8 +49,8 @@ const [therapistName, setTherapistName] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [selectedProgram, setSelectedProgram] = useState(null);
-const [selectedTherapy, setSelectedTherapy] = useState(null);
-const [selectedExercise, setSelectedExercise] = useState(null);
+  const [selectedTherapy, setSelectedTherapy] = useState(null);
+  const [selectedExercise, setSelectedExercise] = useState(null);
 
   const [selectedType, setSelectedType] = useState("");
   const [selectedValue, setSelectedValue] = useState([]);
@@ -62,17 +62,17 @@ const [selectedExercise, setSelectedExercise] = useState(null);
   const [finalAmount, setFinalAmount] = useState(0);
   const [discountIssuedBy, setDiscountIssuedBy] = useState("");
   const [paymentMode, setPaymentMode] = useState("cash");
-
+  const [backendServiceType, setBackendServiceType] = useState("")
 
   const [isFollowUpPayment, setIsFollowUpPayment] = useState(false);
   useEffect(() => {
-  if (apiData?.length && !selectedType) {
-    const types = getServiceTypes();
-    if (types.length) {
-      setSelectedType(types[0]); // ✅ auto select first
+    if (apiData?.length && !selectedType) {
+      const types = getServiceTypes();
+      if (types.length) {
+        setSelectedType(types[0]); // ✅ auto select first
+      }
     }
-  }
-}, [apiData]);
+  }, [apiData]);
 
 
 
@@ -167,19 +167,20 @@ const [selectedExercise, setSelectedExercise] = useState(null);
       const data = await res.json();
       console.log("API RESPONSE:", data);
       console.log("SERVICE TYPES:", getServiceTypes());
-console.log("SELECTED TYPE:", selectedType);
-setPackageId(data?.data?.[0]?.packageId || "");
-setSelectedfullExercise(data?.data?.therapySessions || []);
- // Set packageId from API response
+      console.log("SELECTED TYPE:", selectedType);
+      setPackageId(data?.data?.[0]?.packageId || "");
+      setSelectedfullExercise(data?.data?.therapySessions || []);
+      // Set packageId from API response
 
       const apiResponse = data?.data || [];
 
 
       setApiData(apiResponse);
-      
+      setBackendServiceType(apiResponse?.[0]?.serviceType || "")
+
       setDoctorName(apiResponse?.[0]?.doctorName || "");
-setTherapistId(apiResponse?.[0]?.therapistId || "");
-setTherapistName(apiResponse?.[0]?.therapistName || "");
+      setTherapistId(apiResponse?.[0]?.therapistId || "");
+      setTherapistName(apiResponse?.[0]?.therapistName || "");
 
       // ✅ ADD THIS LINE (CRITICAL FIX)
       setTherapistRecordId(apiResponse?.[0]?.therapistRecordId || "");
@@ -191,88 +192,73 @@ setTherapistName(apiResponse?.[0]?.therapistName || "");
   };
   console.log(packageId)
   useEffect(() => {
-  if (apiData?.length && !selectedType) {
-    setSelectedType("package"); // 🔥 MUST
-  }
-}, [apiData]);
-    const getServiceTypes = () => {
-      const types = new Set();
+    if (apiData?.length && !selectedType) {
+      setSelectedType("package"); // 🔥 MUST
+    }
+  }, [apiData]);
+  const getServiceTypes = () => {
+    const types = new Set();
 
-      (apiData || []).forEach(item => {
-        if (item.therapySessions?.length) types.add("program");
+    (apiData || []).forEach(item => {
+      if (item.therapySessions?.length) types.add("program");
 
-        item.therapySessions?.forEach(program => {
-          if (program.therapyData?.length) types.add("therapy");
+      item.therapySessions?.forEach(program => {
+        if (program.therapyData?.length) types.add("therapy");
 
-          program.therapyData?.forEach(therapy => {
-            if (therapy.exercises?.length) types.add("exercise");
+        program.therapyData?.forEach(therapy => {
+          if (therapy.exercises?.length) types.add("exercise");
 
-            therapy.exercises?.forEach(ex => {
-              if (ex.noOfSessions) types.add("session");
-            });
+          therapy.exercises?.forEach(ex => {
+            if (ex.noOfSessions) types.add("session");
           });
         });
       });
+    });
 
-      // ✅ ALWAYS FIRST
-      const orderedTypes = ["package", ...types];
+    // ✅ ALWAYS FIRST
+    const orderedTypes = ["package", ...types];
 
-      return [...new Set(orderedTypes)];
-    };
+    return [...new Set(orderedTypes)];
+  };
   const getOptionsByType = () => {
-    if (!apiData?.length) return [];
+    if (!fullPaymentData?.therapyWithSessions?.length) return [];
 
-    const item = apiData[0];
+    const root = fullPaymentData.therapyWithSessions[0];
 
     switch (selectedType) {
-
-      // 🔹 PACKAGE → NO VALUES
-      case "package":
-        return ;
-
-      // 🔹 PROGRAM → SHOW PROGRAM NAMES
-      case "program":
-        return (item.therapySessions || []).map(p => ({
-          label: p.programName,
-          value: p.programId,
-          price: p.totalPrice,
-        }));
-
-      // 🔹 THERAPY → SHOW THERAPIES
       case "therapy":
-        return (item.therapySessions || []).flatMap(p =>
-          (p.therapyData || []).map(t => ({
-            label: t.therapyName,
-            value: t.therapyId,
-            price: t.totalPrice,
-          }))
+        return root.programs.flatMap(program =>
+          program.therapyData
+            .filter(t => t.paymentStatus?.toLowerCase() !== "paid")
+            .map(t => ({
+              label: t.therapyName,
+              value: t.therapyId
+            }))
         );
 
-      // 🔹 EXERCISE → SHOW EXERCISES
       case "exercise":
-        return (item.therapySessions || []).flatMap(p =>
-          (p.therapyData || []).flatMap(t =>
-            (t.exercises || []).map(e => ({
-              label: e.exerciseName,
-              value: e.exerciseId,
-              price: e.totalSessionCost,
-            }))
+        return root.programs.flatMap(program =>
+          program.therapyData.flatMap(t =>
+            t.exercises
+              .filter(ex => ex.paymentStatus?.toLowerCase() !== "paid")
+              .map(ex => ({
+                label: ex.exerciseName,
+                value: ex.exerciseId
+              }))
           )
         );
 
-      // 🔹 SESSION → SHOW SESSIONS
       case "session":
-        return (item.therapySessions || []).flatMap(p =>
-          (p.therapyData || []).flatMap(t =>
-            (t.exercises || []).flatMap(e =>
-              Array.from(
-                { length: e.noOfSessions || 1 },
-                (_, i) => ({
-                  label: `${e.exerciseName} - Session ${i + 1}`,
-                  value: `${e.exerciseId}_${i + 1}`,
-                  price: e.pricePerSession,
-                })
-              )
+        return root.programs.flatMap(program =>
+          program.therapyData.flatMap(t =>
+            t.exercises.flatMap(ex =>
+              ex.sessions
+                .filter(s => s.paymentStatus?.toLowerCase() !== "paid")
+                .map(s => ({
+                  label: `${ex.exerciseName} - Session ${s.sessionNo}`,
+                  value: s.sessionId,
+                  price: ex.pricePerSession
+                }))
             )
           )
         );
@@ -281,37 +267,76 @@ setTherapistName(apiResponse?.[0]?.therapistName || "");
         return [];
     }
   };
-const handleSelectValue = (selected) => {
-  const selectedItems = selected || [];
-  setSelectedValue(selectedItems);
+  const getRemainingAmount = (type, ids = []) => {
+    if (!fullPaymentData?.therapyWithSessions?.length) return 0;
 
-  const item = selectedItems[0]; // use first item
+    let total = 0;
 
-  // 🔥 CASCADE LOGIC
-  if (selectedType === "package") {
-    setSelectedProgram(item?.data);
-    setSelectedTherapy(null);
-    setSelectedExercise(null);
-  }
+    fullPaymentData.therapyWithSessions.forEach((pkg) => {
+      pkg.programs?.forEach((program) => {
+        program.therapyData?.forEach((therapy) => {
 
-  if (selectedType === "program") {
-    setSelectedTherapy(item?.data);
-    setSelectedExercise(null);
-  }
+          // 🔹 THERAPY
+          if (type === "therapy" && ids.includes(therapy.therapyId)) {
+            therapy.exercises?.forEach((ex) => {
+              ex.sessions?.forEach((s) => {
+                if (s.paymentStatus?.toLowerCase() !== "paid") {
+                  total += Number(ex.pricePerSession || 0);
+                }
+              });
+            });
+          }
 
-  if (selectedType === "therapy") {
-    setSelectedExercise(item?.data);
-  }
+          therapy.exercises?.forEach((ex) => {
 
-  // 🔥 TOTAL CALCULATION
-  const total = selectedItems.reduce(
-    (sum, i) => sum + Number(i.price || 0),
-    0
-  );
+            // 🔹 EXERCISE
+            if (type === "exercise" && ids.includes(ex.exerciseId)) {
+              ex.sessions?.forEach((s) => {
+                if (s.paymentStatus?.toLowerCase() !== "paid") {
+                  total += Number(ex.pricePerSession || 0);
+                }
+              });
+            }
 
-  setPaymentAmount(total);
-  setFinalAmount(total);
-};
+            // 🔹 SESSION
+            if (type === "session") {
+              ex.sessions?.forEach((s) => {
+                if (
+                  ids.includes(s.sessionId) &&
+                  s.paymentStatus?.toLowerCase() !== "paid"
+                ) {
+                  total += Number(ex.pricePerSession || 0);
+                }
+              });
+            }
+
+          });
+        });
+      });
+    });
+
+    return total;
+  };
+  const handleSelectValue = (selected) => {
+    const selectedItems = selected || [];
+    setSelectedValue(selectedItems);
+
+    const ids = selectedItems.map((item) => item.value);
+
+    let total = 0;
+
+    if (isFollowUpPayment) {
+      total = getRemainingAmount(selectedType, ids);
+    } else {
+      total = selectedItems.reduce(
+        (sum, item) => sum + Number(item.price || 0),
+        0
+      );
+    }
+
+    setPaymentAmount(total);
+    setFinalAmount(total);
+  };
   // const bookingId = "B001";
   // const patientId = "P001";
 
@@ -395,22 +420,22 @@ const handleSelectValue = (selected) => {
 
       const apiResponse = Array.isArray(data?.data) ? data.data : [];
       const apiData = data?.data || [];
-console.log(apiData)
-const rows = apiData.flatMap(item =>
-  item?.therapyData?.flatMap(therapy =>
-    therapy?.exercises?.flatMap(exercise =>
-      exercise?.sessions?.map(session => ({
-        sessionId: session.sessionId,
-        date: session.date,
-        status: session.status,
-        paymentStatus: session.paymentStatus
-      })) || []
-    ) || []
-  ) || []
-);
+      console.log(apiData)
+      const rows = apiData.flatMap(item =>
+        item?.therapyData?.flatMap(therapy =>
+          therapy?.exercises?.flatMap(exercise =>
+            exercise?.sessions?.map(session => ({
+              sessionId: session.sessionId,
+              date: session.date,
+              status: session.status,
+              paymentStatus: session.paymentStatus
+            })) || []
+          ) || []
+        ) || []
+      );
 
-setSessionRows(apiData);
-setformattedData(rows);
+      setSessionRows(apiData);
+      setformattedData(rows);
 
       // setApiData(apiResponse);
 
@@ -428,190 +453,267 @@ setformattedData(rows);
   // 🔥 DROPDOWN OPTIONS (STATIC FOR NOW)
 
   // 🔥 SELECT VALUE
- 
-const handleTypeChange = (type) => {
-  setSelectedType(type);
-  setSelectedValue([]);
 
-  setSelectedProgram(null);
-  setSelectedTherapy(null);
-  setSelectedExercise(null);
+  const handleTypeChange = (type) => {
+    setSelectedType(type);
+    setSelectedValue([]);
 
-  // 🔥 PACKAGE PRICE LOGIC
-  if (type === "package") {
-    const packagePrice = apiData?.[0]?.total || 0;
+    setSelectedProgram(null);
+    setSelectedTherapy(null);
+    setSelectedExercise(null);
 
-    setPaymentAmount(packagePrice);
-    setFinalAmount(packagePrice);
-  } else {
-    setPaymentAmount(0);
-    setFinalAmount(0);
-  }
-};
-const buildTherapyPayload = () => {
-  if (!apiData?.length) return [];
+    // 🔥 PACKAGE PRICE LOGIC
+    if (type === "package") {
+      const packagePrice = apiData?.[0]?.total || 0;
 
-  const item = apiData[0];
-  const selectedIds = (selectedValue || []).map(i => i.value);
-
-  // 1. Helper to find sessions for a specific exercise
-  const getMatchedSessions = (exerciseId) => {
-    // We look into the sessionRows (the data returned from /generate-table)
-    // and extract the specific sessions for this exercise
-    const exerciseData = sessionRows.flatMap(prog => 
-      prog.therapyData?.flatMap(ther => 
-        ther.exercises?.find(ex => ex.exerciseId === exerciseId)
-      )
-    ).filter(Boolean)[0];
-
-    return exerciseData?.sessions || [];
+      setPaymentAmount(packagePrice);
+      setFinalAmount(packagePrice);
+    } else {
+      setPaymentAmount(0);
+      setFinalAmount(0);
+    }
   };
+  const buildTherapyPayload = () => {
+    if (!apiData?.length) return [];
 
-  // 2. Helper to map Exercise structure
-const mapExercise = (ex) => ({
-  exerciseId: String(ex.exerciseId || ""), // Ensure String
-  exerciseName: String(ex.exerciseName || ex.name || "Unknown"),
-  pricePerSession: Number(ex.pricePerSession) || 0, // Force Number
-  noOfSessions: Number(ex.noOfSessions) || 0,
-  totalExercisePrice: Number(ex.totalExercisePrice || ex.totalSessionCost) || 0,
-  paymentStatus: "UNPAID",
-  frequency: String(ex.frequency || ex.frequancy || ""),
-  sets: Number(ex.sets) || 0,
-  repetitions: Number(ex.repetitions) || 0,
-  youtubeUrl: String(ex.videoUrl || ""),
-  notes: String(ex.notes || ""),
-  // sessions: getMatchedSessions(ex.exerciseId) || [] // Ensure it's at least an empty array
-});
+    const item = apiData[0];
+    const selectedIds = (selectedValue || []).map(i => i.value);
 
-  // ================= PACKAGE LOGIC =================
-  if (selectedType === "package") {
-    return [{
-      packageId: item.packageId,
-      packageName: item.packageName,
-      programs: (item.therapySessions || []).map(program => ({
-        programId: program.programId,
-        programName: program.programName,
-        therapyData: (program.therapyData || []).map(therapy => ({
-          therapyId: therapy.therapyId,
-          therapyName: therapy.therapyName,
-          totalPrice: therapy.totalPrice,
-          exercises: (therapy.exercises || []).map(ex => mapExercise(ex))
+    // 1. Helper to find sessions for a specific exercise
+    const getMatchedSessions = (exerciseId) => {
+      // We look into the sessionRows (the data returned from /generate-table)
+      // and extract the specific sessions for this exercise
+      const exerciseData = sessionRows.flatMap(prog =>
+        prog.therapyData?.flatMap(ther =>
+          ther.exercises?.find(ex => ex.exerciseId === exerciseId)
+        )
+      ).filter(Boolean)[0];
+
+      return exerciseData?.sessions || [];
+    };
+
+    // 2. Helper to map Exercise structure
+    const mapExercise = (ex) => ({
+      exerciseId: String(ex.exerciseId || ""), // Ensure String
+      exerciseName: String(ex.exerciseName || ex.name || "Unknown"),
+      pricePerSession: Number(ex.pricePerSession) || 0, // Force Number
+      noOfSessions: Number(ex.noOfSessions) || 0,
+      totalExercisePrice: Number(ex.totalExercisePrice || ex.totalSessionCost) || 0,
+      paymentStatus: "UNPAID",
+      frequency: String(ex.frequency || ex.frequancy || ""),
+      sets: Number(ex.sets) || 0,
+      repetitions: Number(ex.repetitions) || 0,
+      youtubeUrl: String(ex.videoUrl || ""),
+      notes: String(ex.notes || ""),
+      // sessions: getMatchedSessions(ex.exerciseId) || [] // Ensure it's at least an empty array
+    });
+
+    // ================= PACKAGE LOGIC =================
+    if (selectedType === "package") {
+      return [{
+        packageId: item.packageId,
+        packageName: item.packageName,
+        programs: (item.therapySessions || []).map(program => ({
+          programId: program.programId,
+          programName: program.programName,
+          therapyData: (program.therapyData || []).map(therapy => ({
+            therapyId: therapy.therapyId,
+            therapyName: therapy.therapyName,
+            totalPrice: therapy.totalPrice,
+            exercises: (therapy.exercises || []).map(ex => mapExercise(ex))
+          }))
         }))
-      }))
-    }];
-  }
+      }];
+    }
 
-  // ================= PROGRAM LOGIC =================
-  if (selectedType === "program") {
-    return (item.therapySessions || [])
-      .filter(p => !selectedIds.length || selectedIds.includes(p.programId))
-      .map(program => ({
-        programId: program.programId,
-        programName: program.programName,
-        therapyData: (program.therapyData || []).map(therapy => ({
-          therapyId: therapy.therapyId,
-          therapyName: therapy.therapyName,
-          totalPrice: therapy.totalPrice,
-          exercises: (therapy.exercises || []).map(ex => mapExercise(ex))
+    // ================= PROGRAM LOGIC =================
+    if (selectedType === "program") {
+      return (item.therapySessions || [])
+        .filter(p => !selectedIds.length || selectedIds.includes(p.programId))
+        .map(program => ({
+          programId: program.programId,
+          programName: program.programName,
+          therapyData: (program.therapyData || []).map(therapy => ({
+            therapyId: therapy.therapyId,
+            therapyName: therapy.therapyName,
+            totalPrice: therapy.totalPrice,
+            exercises: (therapy.exercises || []).map(ex => mapExercise(ex))
+          }))
+        }));
+    }
+
+    return [];
+  }
+  // console.log(selectedValue);
+  const getTherapyWithSessions = () => {
+    if (!apiData?.length) return []
+
+    const root = apiData[0]
+    const selectedIds = selectedValue.map((i) => i.value)
+
+    // PACKAGE → all programs
+    if (selectedType === "package") {
+      return root.therapySessions || []
+    }
+
+    // PROGRAM → selected programs only
+    if (selectedType === "program") {
+      return (root.therapySessions || []).filter((p) =>
+        selectedIds.includes(p.programId)
+      )
+    }
+
+    // THERAPY → keep program + selected therapies
+    if (selectedType === "therapy") {
+      return (root.therapySessions || [])
+        .map((program) => ({
+          ...program,
+          therapyData: (program.therapyData || []).filter((t) =>
+            selectedIds.includes(t.therapyId)
+          ),
         }))
-      }));
-  }
+        .filter((p) => p.therapyData.length > 0)
+    }
 
-  return [];
-}
-    // console.log(selectedValue);
+    // EXERCISE → keep program + therapy + selected exercises
+    if (selectedType === "exercise") {
+      return (root.therapySessions || [])
+        .map((program) => ({
+          ...program,
+          therapyData: (program.therapyData || [])
+            .map((therapy) => ({
+              ...therapy,
+              exercises: (therapy.exercises || []).filter((ex) =>
+                selectedIds.includes(ex.exerciseId)
+              ),
+            }))
+            .filter((t) => t.exercises.length > 0),
+        }))
+        .filter((p) => p.therapyData.length > 0)
+    }
+
+    return []
+  }
 
   const createPayloadData = {
-    clinicId: localStorage.getItem("HospitalId"),
-    branchId: localStorage.getItem("branchId"),
+    clinicId,
+    branchId,
     bookingId,
     patientId,
     sessionStartDate: startDate,
 
-    doctorId: doctorId ,
-    doctorName: doctorName,
+    doctorId,
+    doctorName,
+    therapistId,
+    therapistName,
+    therapistRecordId,
 
-    therapistId: therapistId,
-    therapistName: therapistName,
-    therapistRecordId: therapistRecordId,
+    // ✅ keep current selected service type
+    // serviceType: selectedType.toUpperCase(),
+    // paymentLevel: selectedType.toUpperCase(),
+    serviceType: backendServiceType.toUpperCase(),
+    paymentLevel: selectedType.toUpperCase(),
 
-    serviceType: selectedType?.toUpperCase(),
+    amount: Number(finalAmount || 0),
+    paymentMode: paymentMode.toUpperCase(),
+    paymentType: paymentType.toUpperCase(),
+
+    totalSessionCount: 2,
+    discountAmount: Number(discountAmount || 0),
+    discountIssuedBy,
+    paymentDate: new Date().toISOString().split("T")[0],
+
+    // ✅ only selected ids
+    paymentTarget: {
+      packageIds:
+        selectedType === "package"
+          ? [packageId]
+          : [],
+
+      programIds:
+        selectedType === "program"
+          ? selectedValue.map((i) => i.value)
+          : [],
+
+      therapyIds:
+        selectedType === "therapy"
+          ? selectedValue.map((i) => i.value)
+          : [],
+
+      exerciseIds:
+        selectedType === "exercise"
+          ? selectedValue.map((i) => i.value)
+          : [],
+
+      sessionIds:
+        selectedType === "session"
+          ? selectedValue.map((i) => i.value)
+          : [],
+    },
+
+    // ✅ send backend full data unchanged
+    therapyWithSessions:
+      backendServiceType?.toLowerCase() === "package"
+        ? [
+          {
+            packageId: apiData?.[0]?.packageId || "",
+            packageName: apiData?.[0]?.packageName || "",
+            totalPrice: apiData?.[0]?.totalPrice || 0,
+            programs: apiData?.[0]?.therapySessions || [],
+          },
+        ]
+        : apiData?.[0]?.therapySessions || [],
+  }
+
+  const updatePayload = {
+    bookingId,
 
     amount: Number(finalAmount || 0),
     paymentMode: paymentMode?.toUpperCase(),
     paymentType: paymentType?.toUpperCase(),
-    totalSessionCount: 2,
-
-    discountAmount: Number(discountAmount || 0),
-    discountIssuedBy,
 
     paymentLevel: selectedType?.toUpperCase(),
 
- paymentTarget: {
     paymentTarget: {
-  ...(selectedType === "package" && packageId && {
-    packageIds: [packageId],
-  }),
-},
-    programIds: selectedType === "program" ? selectedValue.map(i => i.value) : [],
-    therapyIds: selectedType === "therapy" ? selectedValue.map(i => i.value) : [],
-    exerciseIds: [],
-    sessionIds: []
-  },
-    paymentDate: new Date().toISOString().split("T")[0],
+      ...(selectedType === "package" && {
+        packageIds: selectedValue.length
+          ? selectedValue.map(i => i.value)
+          : apiData.map(i => i.packageId),
+      }),
 
-    therapyWithSessions: buildTherapyPayload(),
-  };
+      ...(selectedType === "program" && {
+        programIds: selectedValue.length
+          ? selectedValue.map(i => i.value)
+          : apiData[0]?.therapySessions?.map(p => p.programId),
+      }),
 
-  const updatePayload = {
-  bookingId,
-
-  amount: Number(finalAmount || 0),
-  paymentMode: paymentMode?.toUpperCase(),
-  paymentType: paymentType?.toUpperCase(),
-
-  paymentLevel: selectedType?.toUpperCase(),
-
-  paymentTarget: {
-    ...(selectedType === "package" && {
-      packageIds: selectedValue.length
-        ? selectedValue.map(i => i.value)
-        : apiData.map(i => i.packageId),
-    }),
-
-    ...(selectedType === "program" && {
-      programIds: selectedValue.length
-        ? selectedValue.map(i => i.value)
-        : apiData[0]?.therapySessions?.map(p => p.programId),
-    }),
-
-    ...(selectedType === "therapy" && {
-      therapyIds: selectedValue.length
-        ? selectedValue.map(i => i.value)
-        : apiData[0]?.therapySessions?.flatMap(p =>
+      ...(selectedType === "therapy" && {
+        therapyIds: selectedValue.length
+          ? selectedValue.map(i => i.value)
+          : apiData[0]?.therapySessions?.flatMap(p =>
             p.therapyData?.map(t => t.therapyId)
           ),
-    }),
+      }),
 
-    ...(selectedType === "exercise" && {
-      exerciseIds: selectedValue.length
-        ? selectedValue.map(i => i.value)
-        : apiData[0]?.therapySessions?.flatMap(p =>
+      ...(selectedType === "exercise" && {
+        exerciseIds: selectedValue.length
+          ? selectedValue.map(i => i.value)
+          : apiData[0]?.therapySessions?.flatMap(p =>
             p.therapyData?.flatMap(t =>
               t.exercises?.map(e => e.therapyExercisesId)
             )
           ),
-    }),
+      }),
 
-    ...(selectedType === "session" && {
-      sessionIds: selectedValue.length
-        ? selectedValue.map(i => i.value)
-        : sessionRows.map(s => s.sessionId),
-    }),
-  },
+      ...(selectedType === "session" && {
+        sessionIds: selectedValue.length
+          ? selectedValue.map(i => i.value)
+          : sessionRows.map(s => s.sessionId),
+      }),
+    },
 
-  paymentDate: new Date().toISOString().split("T")[0],
-};
+    paymentDate: new Date().toISOString().split("T")[0],
+  };
 
 
   // 🔥 SUBMIT
@@ -665,7 +767,7 @@ const mapExercise = (ex) => ({
       console.error("Payment Error:", error);
     }
   };
-  useEffect(() => {     
+  useEffect(() => {
     fetchPaymentDetails();
   }, [bookingId]);
 
@@ -683,8 +785,13 @@ const mapExercise = (ex) => ({
       console.log(result)
 
       // 🔥 BASIC DETAILS
-      setPaymentAmount(result.totalAmount || 0);
-      setFinalAmount(result.finalAmount || result.totalAmount || 0);
+      if ((result.paymentHistory || []).length > 0) {
+        setPaymentAmount(result.balanceAmount || 0);
+        setFinalAmount(result.balanceAmount || 0);
+      } else {
+        setPaymentAmount(result.totalAmount || 0);
+        setFinalAmount(result.finalAmount || result.totalAmount || 0);
+      }
       setDiscountAmount(result.discountAmount || 0);
 
       setDoctorName(result.doctorName);
@@ -724,22 +831,22 @@ const mapExercise = (ex) => ({
   }, [paymentAmount, discountAmount]);
 
   return (
-    
+
     <div className="p-3">
-      {showTable&&(
+      {isFollowUpPayment && (
         <CButton onClick={() =>
           navigate("/paymentDetails", {
             state: { paymentData: fullPaymentData },
           })
-        }   style={{ backgroundColor: "var(--color-black)", color: "#fff", marginRight: "10px" }}>
+        } style={{ backgroundColor: "var(--color-black)", color: "#fff", marginRight: "10px" }}>
           Payment Details
         </CButton>
       )}
-       {/* <CButton onClick={() => fetchTherapySessions()
+      {/* <CButton onClick={() => fetchTherapySessions()
       } style={{ backgroundColor: "var(--color-black)", color: "#fff" }}>
         Program Details
       </CButton> */}
-      
+
 
       {/* 🔹 STEP 1 */}
       {!showTable && (
@@ -762,223 +869,225 @@ const mapExercise = (ex) => ({
       )}
 
       {/* 🔹 STEP 2 */}
-      {showTable && (
+      {!isFollowUpPayment && (
         <>
           {/* TABLE */}
-  <CTable bordered className="pink-table m-3" >
-  <CTableHead>
-    <CTableRow>
-      <CTableHeaderCell>Session ID</CTableHeaderCell>
-      <CTableHeaderCell>Date</CTableHeaderCell>
-      <CTableHeaderCell>Status</CTableHeaderCell>
-      <CTableHeaderCell>Payment Status</CTableHeaderCell>
-    </CTableRow>
-  </CTableHead>
+          <CTable bordered className="pink-table m-3" >
+            <CTableHead>
+              <CTableRow>
+                <CTableHeaderCell>Session ID</CTableHeaderCell>
+                <CTableHeaderCell>Date</CTableHeaderCell>
+                <CTableHeaderCell>Status</CTableHeaderCell>
+                <CTableHeaderCell>Payment Status</CTableHeaderCell>
+              </CTableRow>
+            </CTableHead>
 
-  <CTableBody>
-    {formattedData.map((session, i) => (
-      <CTableRow key={session.sessionId || i}>
-        <CTableDataCell>{session?.sessionId}</CTableDataCell>
-        <CTableDataCell>{session?.date}</CTableDataCell>
-        <CTableDataCell>{session?.status}</CTableDataCell>
-        <CTableDataCell>{session?.paymentStatus}</CTableDataCell>
-      </CTableRow>
-    ))}
-  </CTableBody>
-</CTable>
+            <CTableBody>
+              {formattedData.map((session, i) => (
+                <CTableRow key={session.sessionId || i}>
+                  <CTableDataCell>{session?.sessionId}</CTableDataCell>
+                  <CTableDataCell>{session?.date}</CTableDataCell>
+                  <CTableDataCell>{session?.status}</CTableDataCell>
+                  <CTableDataCell>{session?.paymentStatus}</CTableDataCell>
+                </CTableRow>
+              ))}
+            </CTableBody>
+          </CTable>
+        </>
 
-          {/* PAYMENT */}
-          <CCard className="mt-3">
-            <CCardHeader>Payment</CCardHeader>
-            <CCardBody>
+      )}
+      {/* PAYMENT */}
+      <CCard className="mt-3">
+        <CCardHeader>Payment</CCardHeader>
+        <CCardBody>
 
-              <CRow className="g-3 mb-3">
+          <CRow className="g-3 mb-3">
 
-                {/* 🔹 SERVICE TYPE */}
-                <CCol md={3}>
-                  <CFormLabel>Service Type</CFormLabel>
+            {/* 🔹 SERVICE TYPE */}
+            <CCol md={3}>
+              <CFormLabel>Service Type</CFormLabel>
 
-                 <CFormSelect
-  value={selectedType}
-  onChange={(e) => handleTypeChange(e.target.value)}
->
-  <option value="">Select Type</option>  {/* ✅ IMPORTANT */}
+              <CFormSelect
+                value={selectedType}
+                onChange={(e) => handleTypeChange(e.target.value)}
+              >
+                <option value="">Select Type</option>  {/* ✅ IMPORTANT */}
 
-  {getServiceTypes().map((type) => (
-    <option key={type} value={type}>
-      {type.charAt(0).toUpperCase() + type.slice(1)}
-    </option>
-  ))}
-</CFormSelect>
-                </CCol>
+                {getServiceTypes().map((type) => (
+                  <option key={type} value={type}>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </option>
+                ))}
+              </CFormSelect>
+            </CCol>
 
-                {/* 🔹 SELECT VALUE */}
-                <CCol md={4}>
-               {selectedType !== "package" && (
+            {/* 🔹 SELECT VALUE */}
+            <CCol md={4}>
+              {selectedType !== "package" && (
                 <>
-    <CFormLabel>Select Value</CFormLabel>
-    <Select
-      isMulti
-      options={getOptionsByType()}
-      value={selectedValue || []}
-      onChange={handleSelectValue}
-    />
-    </>
-)}
-
-                </CCol>
-
-                {/* 🔹 PAYMENT TYPE */}
-                <CCol md={2}>
-                  <CFormLabel>Payment Type</CFormLabel>
-                  <CFormSelect
-                    value={paymentType}
-                    onChange={(e) => {
-                      const type = e.target.value;
-                      setPaymentType(type);
-
-                      if (type === "partial") {
-                        setPaymentPercent(50);
-
-                        // ✅ also update payment amount based on %
-                        const amount = (paymentAmount * 50) / 100;
-                        setPaymentAmount(amount.toFixed(2));
-                      } else {
-                        setPaymentPercent(100);
-
-                        // ✅ reset to full amount
-                        const total = selectedValue.reduce(
-                          (sum, item) => sum + (item.price || 0),
-                          0
-                        );
-                        setPaymentAmount(total);
-                      }
-                    }}
-                  >
-                    <option value="full">Full</option>
-                    <option value="partial">Partial</option>
-                  </CFormSelect>
-                </CCol>
-
-              </CRow>
-
-              <CRow className="g-3">
-
-                {/* 🔹 TOTAL AMOUNT */}
-                <CCol md={2}>
-                  <CFormLabel>Total Amount</CFormLabel>
-                  <CFormInput value={paymentAmount} readOnly />
-                </CCol>
-
-                {/* 🔹 PAYMENT AMOUNT */}
-                <CCol md={2}>
-                  <CFormLabel>Payment Amount</CFormLabel>
-                  <CFormInput
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
+                  <CFormLabel>Select Value</CFormLabel>
+                  <Select
+                    isMulti
+                    options={getOptionsByType()}
+                    value={selectedValue || []}
+                    onChange={handleSelectValue}
                   />
-                </CCol>
+                </>
+              )}
 
-                {/* 🔹 PAYMENT % */}
+            </CCol>
+
+            {/* 🔹 PAYMENT TYPE */}
+            <CCol md={2}>
+              <CFormLabel>Payment Type</CFormLabel>
+              <CFormSelect
+                value={paymentType}
+                onChange={(e) => {
+                  const type = e.target.value;
+                  setPaymentType(type);
+
+                  if (type === "partial") {
+                    setPaymentPercent(50);
+
+                    // ✅ also update payment amount based on %
+                    const amount = (paymentAmount * 50) / 100;
+                    setPaymentAmount(amount.toFixed(2));
+                  } else {
+                    setPaymentPercent(100);
+
+                    // ✅ reset to full amount
+                    const total = selectedValue.reduce(
+                      (sum, item) => sum + (item.price || 0),
+                      0
+                    );
+                    setPaymentAmount(total);
+                  }
+                }}
+              >
+                <option value="full">Full</option>
+                <option value="partial">Partial</option>
+              </CFormSelect>
+            </CCol>
+
+          </CRow>
+
+          <CRow className="g-3">
+
+            {/* 🔹 TOTAL AMOUNT */}
+            <CCol md={2}>
+              <CFormLabel>Total Amount</CFormLabel>
+              <CFormInput value={paymentAmount} readOnly />
+            </CCol>
+
+            {/* 🔹 PAYMENT AMOUNT */}
+            <CCol md={2}>
+              <CFormLabel>Payment Amount</CFormLabel>
+              <CFormInput
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+              />
+            </CCol>
+
+            {/* 🔹 PAYMENT % */}
+            <CCol md={2}>
+              <CFormLabel>Payment %</CFormLabel>
+              <CFormInput
+                value={paymentPercent}
+                onChange={(e) => {
+                  const percent = Number(e.target.value || 0);
+                  setPaymentPercent(percent);
+
+                  const total = selectedValue.reduce(
+                    (sum, item) => sum + (item.price || 0),
+                    0
+                  );
+
+                  const amount = (total * percent) / 100;
+                  setPaymentAmount(amount.toFixed(2));
+                }}
+              />
+            </CCol>
+
+            {/* 🔹 DISCOUNT % */}
+            {!isFollowUpPayment && (
+              <>
+                {/* 🔹 DISCOUNT % */}
                 <CCol md={2}>
-                  <CFormLabel>Payment %</CFormLabel>
+                  <CFormLabel>Discount %</CFormLabel>
                   <CFormInput
-                    value={paymentPercent}
+                    value={discount}
                     onChange={(e) => {
                       const percent = Number(e.target.value || 0);
-                      setPaymentPercent(percent);
+                      setDiscount(percent);
 
-                      const total = selectedValue.reduce(
-                        (sum, item) => sum + (item.price || 0),
-                        0
-                      );
-
-                      const amount = (total * percent) / 100;
-                      setPaymentAmount(amount.toFixed(2));
+                      const amount = (paymentAmount * percent) / 100;
+                      setDiscountAmount(amount.toFixed(2));
                     }}
                   />
                 </CCol>
 
-                {/* 🔹 DISCOUNT % */}
-              {!isFollowUpPayment && (
-  <>
-    {/* 🔹 DISCOUNT % */}
-    <CCol md={2}>
-      <CFormLabel>Discount %</CFormLabel>
-      <CFormInput
-        value={discount}
-        onChange={(e) => {
-          const percent = Number(e.target.value || 0);
-          setDiscount(percent);
-
-          const amount = (paymentAmount * percent) / 100;
-          setDiscountAmount(amount.toFixed(2));
-        }}
-      />
-    </CCol>
-
-    {/* 🔹 DISCOUNT AMOUNT */}
-    <CCol md={2}>
-      <CFormLabel>Discount Amount</CFormLabel>
-      <CFormInput
-        value={discountAmount}
-        onChange={(e) => setDiscountAmount(e.target.value)}
-      />
-    </CCol>
-  </>
-)}
-
-                {/* 🔹 FINAL AMOUNT */}
+                {/* 🔹 DISCOUNT AMOUNT */}
                 <CCol md={2}>
-                  <CFormLabel>Final Amount</CFormLabel>
-                  <CFormInput value={finalAmount} readOnly />
+                  <CFormLabel>Discount Amount</CFormLabel>
+                  <CFormInput
+                    value={discountAmount}
+                    onChange={(e) => setDiscountAmount(e.target.value)}
+                  />
                 </CCol>
+              </>
+            )}
 
-              </CRow>
+            {/* 🔹 FINAL AMOUNT */}
+            <CCol md={2}>
+              <CFormLabel>Final Amount</CFormLabel>
+              <CFormInput value={finalAmount} readOnly />
+            </CCol>
 
-              <CRow className="g-3 mt-2">
+          </CRow>
 
-                {/* 🔹 APPROVED BY */}
-               
-                    <CCol md={3}>
-                      <CFormLabel>Approved By</CFormLabel>
-                      <CFormInput
-                        value={discountIssuedBy}
-                        onChange={(e) => setDiscountIssuedBy(e.target.value)}
-                      />
-                    </CCol>
-                  
+          <CRow className="g-3 mt-2">
 
-                {/* 🔹 PAYMENT MODE */}
-                <CCol md={3}>
-                  <CFormLabel>Payment Mode</CFormLabel>
-                  <CFormSelect
-                    value={paymentMode}
-                    onChange={(e) => setPaymentMode(e.target.value)}
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="upi">UPI</option>
-                    <option value="card">Card</option>
-                  </CFormSelect>
-                </CCol>
+            {/* 🔹 APPROVED BY */}
 
-              </CRow>
+            <CCol md={3}>
+              <CFormLabel>Approved By</CFormLabel>
+              <CFormInput
+                value={discountIssuedBy}
+                onChange={(e) => setDiscountIssuedBy(e.target.value)}
+              />
+            </CCol>
 
-              {/* 🔹 BUTTON */}
-              <div className="mt-3 text-end">
-               <CButton
-  onClick={handleSubmit}
-  // disabled={isFollowUpPayment && paymentStatus !== "UNPAID"}
-  style={{ backgroundColor: "var(--color-black)", color: "#fff" }}
->
-  {isFollowUpPayment ? "Update Payment" : "Submit Payment"}
-</CButton>
-              </div>
 
-            </CCardBody>
-          </CCard>
+            {/* 🔹 PAYMENT MODE */}
+            <CCol md={3}>
+              <CFormLabel>Payment Mode</CFormLabel>
+              <CFormSelect
+                value={paymentMode}
+                onChange={(e) => setPaymentMode(e.target.value)}
+              >
+                <option value="cash">Cash</option>
+                <option value="upi">UPI</option>
+                <option value="card">Card</option>
+              </CFormSelect>
+            </CCol>
 
-        {/*
+          </CRow>
+
+          {/* 🔹 BUTTON */}
+          <div className="mt-3 text-end">
+            <CButton
+              onClick={handleSubmit}
+              // disabled={isFollowUpPayment && paymentStatus !== "UNPAID"}
+              style={{ backgroundColor: "var(--color-black)", color: "#fff" }}
+            >
+              {isFollowUpPayment ? "Update Payment" : "Submit Payment"}
+            </CButton>
+          </div>
+
+        </CCardBody>
+      </CCard>
+
+      {/*
 {showPrint && printData && (
   <div className="print-container">
 
@@ -1042,9 +1151,7 @@ const mapExercise = (ex) => ({
   </div>
 )}
 */}
-        </>
 
-      )}
 
     </div>
 

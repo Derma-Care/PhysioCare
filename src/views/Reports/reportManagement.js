@@ -25,7 +25,7 @@ const ReportsManagement = () => {
   const [viewService, setViewService] = useState([])
   const navigate = useNavigate()
   const [filterTypes, setFilterTypes] = useState([])
-  const [statusFilters, setStatusFilters] = useState([])
+  const [statusFilter, setStatusFilter] = useState("All Status")
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
   const [availableServiceTypes, setAvailableServiceTypes] = useState([])
@@ -47,7 +47,7 @@ const ReportsManagement = () => {
   const fetchAppointments = async (hospitalId) => {
     // Added hospitalId parameter
     try {
-         setLoading(true)
+      setLoading(true)
       const data = await AppointmentData()
       if (data && data.data) {
         // Filter initial bookings by clinicId here if it exists
@@ -55,14 +55,14 @@ const ReportsManagement = () => {
           ? data.data.filter((booking) => normalize(booking.clinicId) === normalize(hospitalId))
           : data.data
         setBookings(relevantBookings || [])
-     
+
       }
     } catch (error) {
       console.error('Failed to fetch appointments:', error)
       setBookings([])
-       // Ensure bookings is an empty array on error
+      // Ensure bookings is an empty array on error
     }
-    finally{
+    finally {
       setLoading(false)
 
     }
@@ -82,13 +82,8 @@ const ReportsManagement = () => {
   }, [])
 
   const handleStatusChange = (e) => {
-    const value = e.target.value // "Completed" or "Active"
-
-    if (statusFilters.includes(value)) {
-      setStatusFilters([]) // remove if clicked again
-    } else {
-      setStatusFilters([value]) // only one selection at a time
-    }
+    setStatusFilter(e.target.value)
+    setCurrentPage(1)
   }
 
   useEffect(() => {
@@ -100,22 +95,21 @@ const ReportsManagement = () => {
     )
 
     // Apply user-selected status filters
-    if (statusFilters.length > 0) {
-      currentFiltered = currentFiltered.filter((booking) => {
-        const status = normalize(booking.status)
 
-        if (statusFilters.includes('Completed')) {
-          return status === 'completed'
-        }
 
-        if (statusFilters.includes('Active')) {
-          // Treat both active + in-progress as Active
-          return status === 'active' || status === 'in-progress'
-        }
-
-        return true
-      })
+    if (statusFilter === "Completed") {
+      currentFiltered = currentFiltered.filter(
+        (booking) => normalize(booking.status) === "completed"
+      )
     }
+
+    if (statusFilter === "Active") {
+      currentFiltered = currentFiltered.filter((booking) =>
+        ["active", "in-progress"].includes(normalize(booking.status))
+      )
+    }
+
+
 
     // Consultation type filter
     if (filterTypes.length === 1) {
@@ -138,7 +132,7 @@ const ReportsManagement = () => {
     }
 
     setFilteredData(currentFiltered)
-  }, [bookings, filterTypes, statusFilters])
+  }, [bookings, filterTypes, statusFilter])
 
   useEffect(() => {
     const serviceTypes = [...new Set(bookings.map((item) => item.servicename).filter(Boolean))]
@@ -211,7 +205,7 @@ const ReportsManagement = () => {
   return (
     <div style={{ overflowX: 'auto' }}>
       <div className="container  ">
-        <h5 className="mb-3">Completed Appointments</h5>
+        {/* <h5 className="mb-3">Completed Appointments</h5>
         <div className="d-flex gap-2 mb-3">
           {['Service & Treatment', 'In-clinic', 'Tele Consultation'].map((label) => (
             <button
@@ -222,32 +216,19 @@ const ReportsManagement = () => {
               {label}
             </button>
           ))}
-        </div>
+        </div> */}
 
-        <div className="mb-3 d-flex justify-content-between">
-          <div className="d-flex gap-3 mb-3" style={{ color: 'var(--color-black)' }}>
-            <CFormCheck
-              label="Completed"
-              value="Completed"
-              onChange={handleStatusChange}
-              checked={statusFilters.includes('Completed')}
-            />
-            <CFormCheck
-              label="Active"
-              value="Active"
-              onChange={handleStatusChange}
-              checked={statusFilters.includes('Active')}
-            />
-          </div>
-          <CButton
-            style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
-            onClick={() => {
-              setFilterTypes([])
-              setStatusFilters([])
-            }}
+        <div className="mb-3 d-flex justify-content-end">
+          <select
+            className="form-select w-auto"
+            value={statusFilter}
+            onChange={handleStatusChange}
+            style={{ color: "var(--color-black)" }}
           >
-            Reset Filters
-          </CButton>
+            <option>All Status</option>
+            <option>Active</option>
+            <option>Completed</option>
+          </select>
         </div>
 
         {loading ? (

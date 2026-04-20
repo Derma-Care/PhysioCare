@@ -29,7 +29,7 @@ import { BASE_URL, SBASE_URL } from '../../../baseUrl'
 import { useHospital } from '../../Usecontext/HospitalContext'
 import ResetPassword from '../../../views/Resetpassword'
 import { http, httpPublic } from '../../../Utils/Interceptors'
-import DermaLogo from 'src/assets/images/DermaCare.png' // adjust path if needed
+import DermaLogo from 'src/assets/CCMSLOgo.jpg' // adjust path if needed
 import { COLORS } from '../../../Constant/Themes'
 import { toast, ToastContainer } from 'react-toastify'
 import { showCustomToast } from '../../../Utils/Toaster'
@@ -179,36 +179,36 @@ const Login = () => {
           localStorage.setItem('HospitalId', HospitalId)
           await fetchAllData(HospitalId)
           showCustomToast(res.data?.message || 'Login successful!', 'success')
-      
-      if (
-  role.toLowerCase() === "physiotherapist" ||
-  role.toLowerCase() === "intern"
-) {
 
-  const theraphPayload = {
-    therapistId: payload.staffId,
-    therapistName: payload.staffName,
-    // physioType: payload.physioType,
-    permissions: payload.permissions,
-    branchId: payload.branchId,
-    clinicId: payload.hospitalId,
-    role:role,
-    branchName: branchName
-  }
+          if (
+            role.toLowerCase() === "physiotherapist" ||
+            role.toLowerCase() === "intern"
+          ) {
 
-  // save also in localStorage
-  localStorage.setItem(
-    "therapistData",
-    JSON.stringify(theraphPayload)
-  )
+            const theraphPayload = {
+              therapistId: payload.staffId,
+              therapistName: payload.staffName,
+              // physioType: payload.physioType,
+              permissions: payload.permissions,
+              branchId: payload.branchId,
+              clinicId: payload.hospitalId,
+              role: role,
+              branchName: branchName
+            }
 
-  navigate("/therapist", {
-    state: theraphPayload,
-  })
+            // save also in localStorage
+            localStorage.setItem(
+              "therapistData",
+              JSON.stringify(theraphPayload)
+            )
 
-} else {
-  navigate("/dashboard")
-}
+            navigate("/therapist", {
+              state: theraphPayload,
+            })
+
+          } else {
+            navigate("/dashboard")
+          }
         }
       }
     } catch (err) {
@@ -260,22 +260,22 @@ const Login = () => {
                     style={{ width: 120, height: 'auto' }}
                   />
                   <h2 className="fw-bold mb-3" style={{ color: COLORS.primary }}>
-                    Welcome to Derma Care
+                    Welcome to CCMS
                   </h2>
                   <p className="lead mb-4" style={{ opacity: 0.95, color: COLORS.primary }}>
-                    Manage dermatology operations seamlessly — appointments, records, billing &
+                    Manage CCMS operations seamlessly — appointments, records, billing &
                     more.
                   </p>
 
                   <div className="d-flex justify-content-center gap-3 flex-wrap">
-                    <span className="badge" style={{ color: COLORS.primary }}>
+                    {/* <span className="badge" style={{ color: COLORS.primary }}>
                       HIPAA-ready
-                    </span>
+                    </span> */}
                     <span className="badge" style={{ color: COLORS.primary }}>
                       e-Prescriptions
                     </span>
                     <span className="badge" style={{ color: COLORS.primary }}>
-                      Smart Scheduling
+                      Smart Booking
                     </span>
                   </div>
                 </div>
@@ -286,7 +286,7 @@ const Login = () => {
                 <CCard className="shadow-lg border-0 glass-card w-100" style={{ maxWidth: 460 }}>
                   <CCardBody className="p-4 p-md-5">
                     <h3 className="text-center fw-bold mb-3" style={{ color: COLORS.primary }}>
-                      Derma Portal
+                      CCMS Portal
                     </h3>
                     <p className="text-center mb-4" style={{ color: COLORS.primary }}>
                       Please choose your workspace to continue

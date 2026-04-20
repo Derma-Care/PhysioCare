@@ -39,7 +39,7 @@ import { Edit2, Eye, Loader, Trash2 } from "lucide-react"
 import { addTherapy, deleteTherapy, getExercises, getTherapiesService, getTherapiesServicebytherapyId, updateTherapy } from "./TherapyServiceApi"
 import LoadingIndicator from "../../Utils/loader"
 import { showCustomToast } from "../../Utils/Toaster"
-
+import { useGlobalSearch } from "../Usecontext/GlobalSearchContext"
 
 export default function TherapyManagement() {
   const [list, setList] = useState([])
@@ -60,9 +60,9 @@ export default function TherapyManagement() {
     therapyName: "",
     exercisesIds: [],
     exercises: [],
-    consentType: "",
+    // consentType: "",
   })
-
+  const { searchQuery } = useGlobalSearch()
   const [errors, setErrors] = useState({})
   const clinicId = localStorage.getItem("HospitalId")
   const branchId = localStorage.getItem("branchId")
@@ -153,7 +153,7 @@ export default function TherapyManagement() {
     if (!form.therapyName) err.therapyName = "Required"
     if (form.exercisesIds.length === 0)
       err.exercisesIds = "Select at least one"
-    if (!form.consentType) err.consentType = "Required"
+    // if (!form.consentType) err.consentType = "Required"
 
     setErrors(err)
     return Object.keys(err).length === 0
@@ -171,7 +171,7 @@ export default function TherapyManagement() {
         branchId: localStorage.getItem("branchId"),
         therapyName: form.therapyName,
         exerciseIds: form.exercisesIds,
-        consentType: form.consentType,
+        // consentType: form.consentType,
       }
 
       if (editId) {
@@ -227,7 +227,7 @@ export default function TherapyManagement() {
       therapyName: item.therapyName,
       exercises: selectedExercises,
       exercisesIds: selectedExercises.map(e => String(e.value)),
-      consentType: String(item.consentType),
+      // consentType: String(item.consentType),
     })
 
     setModal(true)
@@ -238,7 +238,7 @@ export default function TherapyManagement() {
     setForm({
       therapyName: "",
       exercises: [],
-      consentType: "",
+      // consentType: "",
     })
     setEditId(null)
     setModal(false)
@@ -250,6 +250,17 @@ export default function TherapyManagement() {
     setServiceIdToDelete(id)
     setIsModalVisible(true)
   }
+  const filteredList = list.filter((item) => {
+    const search = searchQuery.toLowerCase()
+
+    if (!search) return true
+
+    return (
+      (item.id || "").toString().toLowerCase().includes(search) ||
+      (item.therapyName || "").toLowerCase().includes(search) ||
+      (item.noExerciseIdCount || "").toString().includes(search)
+    )
+  })
   return (
     <>
 
@@ -287,19 +298,19 @@ export default function TherapyManagement() {
             <CTableHeaderCell>S.No</CTableHeaderCell>
             <CTableHeaderCell>Therapy Name</CTableHeaderCell>
             <CTableHeaderCell>No.Of Exercises</CTableHeaderCell>
-            <CTableHeaderCell>Consent</CTableHeaderCell>
+            {/* <CTableHeaderCell>Consent</CTableHeaderCell> */}
             <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
         <CTableBody>
-          {list.length > 0 ? (
-            list.map((item, index) => (
+          {filteredList.length > 0 ? (
+            filteredList.map((item, index) => (
               <CTableRow key={item.id}>
                 {/* <CTableDataCell>{item.id}</CTableDataCell> */}
                 <CTableDataCell>{index + 1}</CTableDataCell>
                 <CTableDataCell>{item.therapyName}</CTableDataCell>
                 <CTableDataCell>{item.noExerciseIdCount}</CTableDataCell>
-                <CTableDataCell>{item.consentType}</CTableDataCell>
+                {/* <CTableDataCell>{item.consentType}</CTableDataCell> */}
                 <CTableDataCell className="text-end">
                   <div className="d-flex justify-content-end gap-2  ">
                     {can('Therapy Management', 'read') && (
@@ -440,7 +451,7 @@ export default function TherapyManagement() {
               </CCol>
 
               {/* Consent */}
-              <CCol md={12} className="mt-3">
+              {/* <CCol md={12} className="mt-3">
                 <CFormLabel className="fw-bold">Consent Type</CFormLabel>
                 <CFormSelect
                   value={form.consentType}
@@ -457,7 +468,7 @@ export default function TherapyManagement() {
                     {errors.consentType}
                   </CFormText>
                 )}
-              </CCol>
+              </CCol> */}
 
             </CRow>
 
@@ -511,7 +522,7 @@ export default function TherapyManagement() {
                 <h5>Therapy Name: {viewTherapy.therapyName}</h5>
                 <div><strong>Therapy ID: </strong>{viewTherapy.id}</div>
                 <div><strong>No. of Exercises: </strong>{viewTherapy.noExerciseIdCount}</div>
-                <div><strong>Consent Type: </strong>{viewTherapy.consentType}</div>
+                {/* <div><strong>Consent Type: </strong>{viewTherapy.consentType}</div> */}
               </div>
 
               {/* 🔹 Exercise Table */}

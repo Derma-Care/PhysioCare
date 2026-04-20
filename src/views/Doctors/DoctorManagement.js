@@ -72,6 +72,7 @@ const DoctorManagement = () => {
       return updated
     })
   }
+  const userRole = localStorage.getItem('role')
   const [isSaving, setIsSaving] = useState(false)
   const [enabledTypes, setEnabledTypes] = useState({
     inClinic: false,
@@ -109,7 +110,7 @@ const DoctorManagement = () => {
     service: [],
     subServices: [], // Note: 'subSerives' in Java, but 'subServices' is more consistent in JS
     specialization: '',
-    
+
     gender: '',
     experience: '',
     qualification: '',
@@ -120,7 +121,7 @@ const DoctorManagement = () => {
     profileDescription: '',
     doctorSignature: null,
     doctorFees: {
-      
+
       inClinicFee: '',
       vedioConsultationFee: '',
     },
@@ -130,7 +131,7 @@ const DoctorManagement = () => {
     availableConsultations: [],
     consultation: {
       inClinic: 0,
-      videoOrOnline: 0, 
+      videoOrOnline: 0,
       serviceAndTreatments: 0,
     },
   }
@@ -608,8 +609,8 @@ const DoctorManagement = () => {
         },
         consultation: {
           serviceAndTreatments: form.availableConsultations.includes('Services & Treatments') ? 3 : 0,
-  inClinic: form.availableConsultations.includes('In-Clinic') ? 1 : 0,
-  videoOrOnline: form.availableConsultations.includes('Video/Online') ? 2 : 0,
+          inClinic: form.availableConsultations.includes('In-Clinic') ? 1 : 0,
+          videoOrOnline: form.availableConsultations.includes('Video/Online') ? 2 : 0,
         },
       }
       console.log(payload)
@@ -759,7 +760,7 @@ const DoctorManagement = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           />
-          <button className="btn"  style={{backgroundColor:'var(--color-black)', color: 'white' }}onClick={handleAdd}>
+          <button className="btn" style={{ backgroundColor: 'var(--color-black)', color: 'white' }} onClick={handleAdd}>
             Add
           </button>
         </div>
@@ -828,24 +829,29 @@ const DoctorManagement = () => {
   return (
     <div>
       <ToastContainer />
-      <div className="d-flex justify-content-end mb-3">
-        <button
-          className="btn btn-info text-white d-flex align-items-center gap-2 shadow-sm px-4 py-2"
-          onClick={() => {
-            setFormErrors({})
-            setModalVisible(true)
-          }}
-          style={{
-            background: 'linear-gradient(to right, var(--color-black),var(--color-black)',
-            border: 'none',
-            fontWeight: '600',
-            fontSize: '16px',
-          }}
-        >
-          <FontAwesomeIcon icon={faUserDoctor} />
-          <span style={{ color: 'white' }}>Add Doctor</span>
-        </button>
-      </div>
+      {
+        userRole.toLowerCase() !== "admin" && (
+          <div className="d-flex justify-content-end mb-3">
+            <button
+              className="btn btn-info text-white d-flex align-items-center gap-2 shadow-sm px-4 py-2"
+              onClick={() => {
+                setFormErrors({})
+                setModalVisible(true)
+              }}
+              style={{
+                background: 'linear-gradient(to right, var(--color-black),var(--color-black)',
+                border: 'none',
+                fontWeight: '600',
+                fontSize: '16px',
+              }}
+            >
+              <FontAwesomeIcon icon={faUserDoctor} />
+              <span style={{ color: 'white' }}>Add Doctor</span>
+            </button>
+          </div>
+        )
+      }
+
 
       {loading ? (
         <div className="centered-message">
@@ -1315,17 +1321,17 @@ const DoctorManagement = () => {
               )}
             </CCol>
             <CCol xs={12} md={6}>
-  <CFormLabel>
-    Monthly Paid Leaves
-  </CFormLabel>
+              <CFormLabel>
+                Monthly Paid Leaves
+              </CFormLabel>
 
-  <CFormInput
-    type="number"
-    value={monthlyLeaves}
-    onChange={(e) => setMonthlyLeaves(e.target.value)}
-    min={0}
-  />
-</CCol>
+              <CFormInput
+                type="number"
+                value={monthlyLeaves}
+                onChange={(e) => setMonthlyLeaves(e.target.value)}
+                min={0}
+              />
+            </CCol>
 
           </CRow>
 
@@ -1459,75 +1465,75 @@ const DoctorManagement = () => {
               <div className="d-flex gap-4 flex-wrap">
                 {/* In-Clinic Fee Input */}
                 {enabledTypes.inClinic && (
-  <div style={{ flex: 1 }}>
-    <CFormLabel>
-      In-Clinic Consultation Fee
-      <span className="text-danger">*</span>
-    </CFormLabel>
+                  <div style={{ flex: 1 }}>
+                    <CFormLabel>
+                      In-Clinic Consultation Fee
+                      <span className="text-danger">*</span>
+                    </CFormLabel>
 
-    <CFormInput
-      type="number"
-      placeholder="In-Clinic Consultation Fee"
-      value={form.doctorFees.inClinicFee}
-      onChange={(e) => {
-        const value = e.target.value
-        setForm((prev) => ({
-          ...prev,
-          doctorFees: {
-            ...prev.doctorFees,
-            inClinicFee: value,
-          },
-        }))
+                    <CFormInput
+                      type="number"
+                      placeholder="In-Clinic Consultation Fee"
+                      value={form.doctorFees.inClinicFee}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        setForm((prev) => ({
+                          ...prev,
+                          doctorFees: {
+                            ...prev.doctorFees,
+                            inClinicFee: value,
+                          },
+                        }))
 
-        if (value && Number(value) > 0) {
-          setFormErrors((prev) => ({ ...prev, inClinicFee: '' }))
-        }
-      }}
-    />
+                        if (value && Number(value) > 0) {
+                          setFormErrors((prev) => ({ ...prev, inClinicFee: '' }))
+                        }
+                      }}
+                    />
 
-    {formErrors.inClinicFee && (
-      <div className="text-danger">{formErrors.inClinicFee}</div>
-    )}
-  </div>
-)}
+                    {formErrors.inClinicFee && (
+                      <div className="text-danger">{formErrors.inClinicFee}</div>
+                    )}
+                  </div>
+                )}
 
 
                 {/* Video/Online Fee Input */}
-             {enabledTypes.online && (
-  <div style={{ flex: 1 }}>
-    <CFormLabel>
-      Online Consultation Fee
-      <span className="text-danger">*</span>
-    </CFormLabel>
+                {enabledTypes.online && (
+                  <div style={{ flex: 1 }}>
+                    <CFormLabel>
+                      Online Consultation Fee
+                      <span className="text-danger">*</span>
+                    </CFormLabel>
 
-    <CFormInput
-      type="number"
-      placeholder="Online Consultation Fee"
-      value={form.doctorFees.vedioConsultationFee}
-      onChange={(e) => {
-        const value = e.target.value
-        setForm((prev) => ({
-          ...prev,
-          doctorFees: {
-            ...prev.doctorFees,
-            vedioConsultationFee: value,
-          },
-        }))
+                    <CFormInput
+                      type="number"
+                      placeholder="Online Consultation Fee"
+                      value={form.doctorFees.vedioConsultationFee}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        setForm((prev) => ({
+                          ...prev,
+                          doctorFees: {
+                            ...prev.doctorFees,
+                            vedioConsultationFee: value,
+                          },
+                        }))
 
-        if (value && Number(value) > 0) {
-          setFormErrors((prev) => ({
-            ...prev,
-            vedioConsultationFee: '',
-          }))
-        }
-      }}
-    />
+                        if (value && Number(value) > 0) {
+                          setFormErrors((prev) => ({
+                            ...prev,
+                            vedioConsultationFee: '',
+                          }))
+                        }
+                      }}
+                    />
 
-    {formErrors.vedioConsultationFee && (
-      <div className="text-danger">{formErrors.vedioConsultationFee}</div>
-    )}
-  </div>
-)}
+                    {formErrors.vedioConsultationFee && (
+                      <div className="text-danger">{formErrors.vedioConsultationFee}</div>
+                    )}
+                  </div>
+                )}
 
               </div>
             </CCol>

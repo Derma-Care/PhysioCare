@@ -33,7 +33,7 @@ import {
 import ConfirmationModal from "../../../components/ConfirmationModal"
 import { Edit2, Trash2, Eye } from "lucide-react"
 import LoadingIndicator from "../../../Utils/loader"
-
+import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext"
 export default function ExerciseTable() {
 
   const clinicId = localStorage.getItem("HospitalId")
@@ -63,12 +63,12 @@ export default function ExerciseTable() {
   const [visible, setVisible] = useState(false)
   const [editIndex, setEditIndex] = useState(null)
   const [loading, setLoading] = useState(false)
-
+  const { searchQuery } = useGlobalSearch()
 
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false)
   const [exerciseIdToDelete, setExerciseIdToDelete] = useState(null)
   const [delloading, setDelLoading] = useState(false)
-
+  const [errors, setErrors] = useState({})
   // ✅ VIEW STATE
   const [viewVisible, setViewVisible] = useState(false)
   const [viewData, setViewData] = useState(null)
@@ -92,87 +92,43 @@ export default function ExerciseTable() {
 
   // ================= VALIDATION =================
   const validateForm = () => {
-    // Name
-    if (!form.name.trim()) {
-      showCustomToast("Name is required", "error")
-      return false
+    let newErrors = {}
+
+    if (!form.name.trim()) newErrors.name = "Name is required"
+    if (!form.frequency.trim()) newErrors.frequency = "Frequency is required"
+    if (!form.notes.trim()) newErrors.notes = "Notes are required"
+
+    if (!form.pricePerSession || Number(form.pricePerSession) <= 0)
+      newErrors.pricePerSession = "Enter valid price"
+
+    if (!form.sets || Number(form.sets) <= 0)
+      newErrors.sets = "Enter valid sets"
+
+    if (!form.repetitions || Number(form.repetitions) <= 0)
+      newErrors.repetitions = "Enter valid repetitions"
+
+    if (
+      form.discountPercentage !== "" &&
+      (Number(form.discountPercentage) < 0 ||
+        Number(form.discountPercentage) > 100)
+    ) {
+      newErrors.discountPercentage = "0 to 100 only"
     }
 
-    // Session (fixed = 1, so just check existence)
-    if (!form.session || Number(form.session) !== 1) {
-      showCustomToast("Session must be 1", "error")
-      return false
-    }
-
-    // Frequency
-    if (!form.frequency.trim()) {
-      showCustomToast("Frequency is required", "error")
-      return false
-    }
-
-    // Notes
-    if (!form.notes.trim()) {
-      showCustomToast("Notes are required", "error")
-      return false
-    }
-
-    // Image
-    // if (!form.image) {
-    //   showCustomToast("Image is required", "error")
-    //   return false
+    // if (form.video && !/^https?:\/\/.+/.test(form.video)) {
+    //   newErrors.video = "Enter valid URL"
     // }
-
-    // Price
-    if (form.pricePerSession === "" || Number(form.pricePerSession) <= 0) {
-      showCustomToast("Enter valid price", "error")
-      return false
+    if (!form.sets || Number(form.sets) <= 0) {
+      newErrors.sets = "Sets is required"
     }
 
-    // Discount %
-    // if (form.discountPercentage === "") {
-    //   showCustomToast("Discount is required", "error")
-    //   return false
-    // }
-
-    if (Number(form.discountPercentage) < 0 || Number(form.discountPercentage) > 100) {
-      showCustomToast("Discount must be between 0 and 100", "error")
-      return false
+    if (!form.repetitions || Number(form.repetitions) <= 0) {
+      newErrors.repetitions = "Repetitions is required"
     }
 
-    // GST (optional but must be valid if entered)
-    if (form.gst !== "" && Number(form.gst) < 0) {
-      showCustomToast("GST cannot be negative", "error")
-      return false
-    }
+    setErrors(newErrors)
 
-    // Other Tax
-    if (form.otherTax !== "" && Number(form.otherTax) < 0) {
-      showCustomToast("Other tax cannot be negative", "error")
-      return false
-    }
-
-    // Sets
-    if (form.sets === "" || Number(form.sets) <= 0) {
-      showCustomToast("Enter valid sets", "error")
-      return false
-    }
-
-    // Repetitions
-    if (form.repetitions === "" || Number(form.repetitions) <= 0) {
-      showCustomToast("Enter valid repetitions", "error")
-      return false
-    }
-
-    // Video (optional)
-    if (form.video) {
-      const url = form.video.trim()
-
-      if (!/^https?:\/\/.+/.test(url)) {
-        return showCustomToast("Enter valid video URL (must start with http/https)", "error")
-      }
-    }
-
-    return true
+    return Object.keys(newErrors).length === 0
   }
 
   // ================= SAVE =================
@@ -200,10 +156,12 @@ export default function ExerciseTable() {
       setVisible(false)
       loadExercises()
 
+
     } catch {
       showCustomToast("Error", "error")
     } finally {
       setLoading(false)
+      setErrors
     }
   }
 
@@ -240,6 +198,7 @@ export default function ExerciseTable() {
     setForm({ ...ex, imagePreview: ex.image })
     setEditIndex(index)
     setVisible(true)
+    setErrors
   }
 
   // ================= VIEW =================
@@ -267,6 +226,21 @@ export default function ExerciseTable() {
       })
     }
   }
+  const filteredExercises = exercises.filter((item) => {
+    const search = searchQuery.toLowerCase()
+
+    if (!search) return true
+
+    return (
+      (item.name || "").toLowerCase().includes(search) ||
+      (item.therapyExercisesId || "").toString().toLowerCase().includes(search) ||
+      (item.frequency || "").toLowerCase().includes(search) ||
+      (item.notes || "").toLowerCase().includes(search) ||
+      (item.pricePerSession || "").toString().includes(search) ||
+      (item.sets || "").toString().includes(search) ||
+      (item.repetitions || "").toString().includes(search)
+    )
+  })
 
   return (
     <>
@@ -300,58 +274,65 @@ export default function ExerciseTable() {
                 </CTableHead>
 
                 <CTableBody>
-                  {exercises.map((ex, i) => (
-                    <CTableRow key={i}>
-                      <CTableDataCell>{i + 1}</CTableDataCell>
+                  {filteredExercises.length > 0 ? (
+                    filteredExercises.map((ex, i) => (
+                      <CTableRow key={i}>
+                        <CTableDataCell>{i + 1}</CTableDataCell>
 
-                      <CTableDataCell>{ex.name}</CTableDataCell>
-                      <CTableDataCell>{ex.discountPercentage || 0}%</CTableDataCell>
-                      <CTableDataCell>₹{ex.discountAmount || 0}</CTableDataCell>
+                        <CTableDataCell>{ex.name}</CTableDataCell>
+                        <CTableDataCell>{ex.discountPercentage || 0}%</CTableDataCell>
+                        <CTableDataCell>₹{ex.discountAmount || 0}</CTableDataCell>
 
-                      <CTableDataCell>₹{ex.pricePerSession}</CTableDataCell>
+                        <CTableDataCell>₹{ex.pricePerSession}</CTableDataCell>
 
-                      <CTableDataCell>
-                        {/* VIEW */}
-                        <CButton
-                          size="sm"
-                          className="actionBtn me-2"
-                          style={{
-                            backgroundColor: "var(--color-bgcolor)",
-                            color: "var(--color-black)",
-                          }}
-                          onClick={() => handleView(ex)}
-                        >
-                          <Eye size={18} />
-                        </CButton>
+                        <CTableDataCell>
+                          {/* VIEW */}
+                          <CButton
+                            size="sm"
+                            className="actionBtn me-2"
+                            style={{
+                              backgroundColor: "var(--color-bgcolor)",
+                              color: "var(--color-black)",
+                            }}
+                            onClick={() => handleView(ex)}
+                          >
+                            <Eye size={18} />
+                          </CButton>
 
-                        {/* EDIT */}
-                        <CButton
-                          size="sm"
-                          className="actionBtn me-2"
-                          style={{
-                            backgroundColor: "var(--color-bgcolor)",
-                            color: "var(--color-black)",
-                          }}
-                          onClick={() => handleEdit(i)}
-                        >
-                          <Edit2 size={18} />
-                        </CButton>
+                          {/* EDIT */}
+                          <CButton
+                            size="sm"
+                            className="actionBtn me-2"
+                            style={{
+                              backgroundColor: "var(--color-bgcolor)",
+                              color: "var(--color-black)",
+                            }}
+                            onClick={() => handleEdit(i)}
+                          >
+                            <Edit2 size={18} />
+                          </CButton>
 
-                        {/* DELETE */}
-                        <CButton
-                          size="sm"
-                          className="actionBtn"
-                          style={{
-                            backgroundColor: "var(--color-bgcolor)",
-                            color: "var(--color-black)",
-                          }}
-                          onClick={() => openDeleteModal(i)}
-                        >
-                          <Trash2 size={18} />
-                        </CButton>
+                          {/* DELETE */}
+                          <CButton
+                            size="sm"
+                            className="actionBtn"
+                            style={{
+                              backgroundColor: "var(--color-bgcolor)",
+                              color: "var(--color-black)",
+                            }}
+                            onClick={() => openDeleteModal(i)}
+                          >
+                            <Trash2 size={18} />
+                          </CButton>
+                        </CTableDataCell>
+                      </CTableRow>
+                    ))) : (
+                    <CTableRow>
+                      <CTableDataCell colSpan={6} className="text-center">
+                        No matching exercises found
                       </CTableDataCell>
                     </CTableRow>
-                  ))}
+                  )}
                 </CTableBody>
               </CTable>
             </>
@@ -371,7 +352,15 @@ export default function ExerciseTable() {
 
             <CCol md={6}>
               <CFormLabel>Name</CFormLabel>
-              <CFormInput value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <CFormInput
+                value={form.name}
+                invalid={!!errors.name}
+                onChange={(e) => {
+                  setForm({ ...form, name: e.target.value })
+                  setErrors({ ...errors, name: "" })
+                }}
+              />
+              {errors.name && <small className="text-danger">{errors.name}</small>}
             </CCol>
 
             <CCol md={6}>
@@ -390,15 +379,16 @@ export default function ExerciseTable() {
               <CFormLabel>Price</CFormLabel>
               <CFormInput
                 type="number"
-                min="0"
                 value={form.pricePerSession}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    pricePerSession: Math.max(0, e.target.value),
-                  })
-                }
+                invalid={!!errors.pricePerSession}
+                onChange={(e) => {
+                  setForm({ ...form, pricePerSession: e.target.value })
+                  setErrors({ ...errors, pricePerSession: "" })
+                }}
               />
+              {errors.pricePerSession && (
+                <small className="text-danger">{errors.pricePerSession}</small>
+              )}
             </CCol>
 
             <CCol md={4}>
@@ -447,37 +437,79 @@ export default function ExerciseTable() {
             </CCol>
 
             <CCol md={4}>
-              <CFormLabel>Sets</CFormLabel>
-              <CFormInput type="number" value={form.sets} onChange={(e) => setForm({ ...form, sets: e.target.value })} />
+              <CFormLabel>No. of Sets</CFormLabel>
+              <CFormInput
+                type="number"
+                min="1"
+                value={form.sets}
+                invalid={!!errors.sets}
+                onChange={(e) => {
+                  setForm({ ...form, sets: e.target.value })
+                  setErrors({ ...errors, sets: "" })
+                }}
+              />
+              {errors.sets && (
+                <small className="text-danger">{errors.sets}</small>
+              )}
             </CCol>
 
             <CCol md={4}>
               <CFormLabel>Repetitions</CFormLabel>
-              <CFormInput type="number" value={form.repetitions} onChange={(e) => setForm({ ...form, repetitions: e.target.value })} />
+              <CFormInput
+                type="number"
+                min="1"
+                value={form.repetitions}
+                invalid={!!errors.repetitions}
+                onChange={(e) => {
+                  setForm({ ...form, repetitions: e.target.value })
+                  setErrors({ ...errors, repetitions: "" })
+                }}
+              />
+              {errors.repetitions && (
+                <small className="text-danger">{errors.repetitions}</small>
+              )}
             </CCol>
 
             <CCol md={4}>
               <CFormLabel>Frequency</CFormLabel>
-              <CFormInput value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value })} />
+              <CFormInput
+                value={form.frequency}
+                invalid={!!errors.frequency}
+                onChange={(e) => {
+                  setForm({ ...form, frequency: e.target.value })
+                  setErrors({ ...errors, frequency: "" })
+                }}
+              />
+              {errors.frequency && (
+                <small className="text-danger">{errors.frequency}</small>
+              )}
             </CCol>
 
             <CCol md={12}>
               <CFormLabel>Notes</CFormLabel>
-              <CFormInput value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              <CFormInput
+                value={form.notes}
+                invalid={!!errors.notes}
+                onChange={(e) => {
+                  setForm({ ...form, notes: e.target.value })
+                  setErrors({ ...errors, notes: "" })
+                }}
+              />
+              {errors.notes && <small className="text-danger">{errors.notes}</small>}
             </CCol>
 
-            <CCol md={12}>
+            {/* <CCol md={12}>
               <CFormLabel>Image</CFormLabel>
               <CFormInput type="file" onChange={(e) => handleImage(e.target.files[0])} />
               {form.imagePreview && <CImage src={form.imagePreview} width={80} className="mt-2" />}
-            </CCol>
+            </CCol> */}
 
           </CRow>
         </CModalBody>
 
         <CModalFooter>
-          <CButton onClick={() => setVisible(false)}>Cancel</CButton>
-          <CButton onClick={handleSave}>
+          <CButton onClick={() => setVisible(false)} style={{ backgroundColor: "var(--color-bgcolor", color: "var(--color-black)" }}>Cancel</CButton>
+          <CButton onClick={handleSave} style={{ backgroundColor: "var(--color-black", color: "white" }}>
             {loading ? "Saving..." : "Save"}
           </CButton>
         </CModalFooter>
@@ -532,7 +564,7 @@ export default function ExerciseTable() {
               <CCol md={6}><strong>Discount:</strong> {viewData.discountPercentage}%</CCol>
               <CCol md={6}><strong>Discount Amount:</strong> ₹{viewData.discountAmount?.toFixed(2)}</CCol>
 
-              <CCol md={6}><strong>Other Tax:</strong> {viewData.otherTax}%</CCol>
+              <CCol md={6}><strong>Other Taxes:</strong> {viewData.otherTax}%</CCol>
 
               <CCol md={6}>
                 <strong>Total:</strong> ₹

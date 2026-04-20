@@ -72,10 +72,10 @@ const DoctorDetailsPage = () => {
   const [selectedSubServices, setSelectedSubServices] = useState([])
   const [saveloading, setSaveLoading] = useState(false)
   const [enabledTypes, setEnabledTypes] = useState({
-      inClinic: false,
-      online: false,
-      serviceTreatment: false,
-    })
+    inClinic: false,
+    online: false,
+    serviceTreatment: false,
+  })
 
 
   const { state } = useLocation()
@@ -120,6 +120,7 @@ const DoctorDetailsPage = () => {
   const [isSubServiceComplete, setIsSubServiceComplete] = useState(true)
 
   const handleEditToggle = () => setIsEditing(!isEditing)
+  const role = localStorage.getItem('role')
 
   const handleDeleteToggleE = async (id) => {
     setDelLoading(true)
@@ -136,10 +137,10 @@ const DoctorDetailsPage = () => {
     }
   }
   const buildConsultationPayload = (availableConsultations = []) => ({
-  serviceAndTreatments: availableConsultations.includes('Services & Treatments') ? 3 : 0,
-  inClinic: availableConsultations.includes('In-Clinic') ? 1 : 0,
-  videoOrOnline: availableConsultations.includes('Video/Online') ? 2 : 0,
-})
+    serviceAndTreatments: availableConsultations.includes('Services & Treatments') ? 3 : 0,
+    inClinic: availableConsultations.includes('In-Clinic') ? 1 : 0,
+    videoOrOnline: availableConsultations.includes('Video/Online') ? 2 : 0,
+  })
 
 
   const handleInputChange = (e) => {
@@ -215,7 +216,7 @@ const DoctorDetailsPage = () => {
       setSaveLoading(true)
       const payload = {
         ...formData,
-         consultation: buildConsultationPayload(formData.availableConsultations),
+        consultation: buildConsultationPayload(formData.availableConsultations),
         branches:
           formData.branch?.map((b) => ({
             branchId: b.branchId,
@@ -226,9 +227,9 @@ const DoctorDetailsPage = () => {
 
         subCategory: formData.subCategory
           ? {
-              subCategoryId: formData.subCategory.subCategoryId,
-              subCategoryName: formData.subCategory.subCategoryName,
-            }
+            subCategoryId: formData.subCategory.subCategoryId,
+            subCategoryName: formData.subCategory.subCategoryName,
+          }
           : null,
         service:
           formData.services?.map((s) => ({
@@ -570,7 +571,7 @@ const DoctorDetailsPage = () => {
       }
     }
   }
- 
+
 
 
 
@@ -960,21 +961,21 @@ const DoctorDetailsPage = () => {
     const slots = await fetchDoctorSlots(doctorId, branchId, date, intervaltime, start, end)
     console.log(slots)
 
-   if (!slots || slots.length === 0) {
-  setSlots([])        // grid
-  setTimeSlots([])    // modal
-  setSelectedSlots([])
+    if (!slots || slots.length === 0) {
+      setSlots([])        // grid
+      setTimeSlots([])    // modal
+      setSelectedSlots([])
 
- showCustomToast("Timing not available for this doctor", "error")
-  return
-}
+      showCustomToast("Timing not available for this doctor", "error")
+      return
+    }
 
-// If slots exist
-setSlots(slots)
-setTimeSlots(slots)
-setSelectedSlots([])
+    // If slots exist
+    setSlots(slots)
+    setTimeSlots(slots)
+    setSelectedSlots([])
 
-showCustomToast(`Generated ${slots.length} slots`, "success")
+    showCustomToast(`Generated ${slots.length} slots`, "success")
   }
 
   const checkSubServiceDetails = async (ids) => {
@@ -991,17 +992,17 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
 
     setIsSubServiceComplete(!incomplete)
   }
- useEffect(() => {
-  if (!doctorData) return;
+  useEffect(() => {
+    if (!doctorData) return;
 
-  setEnabledTypes({
-    inClinic: Number(doctorData?.doctorFees?.inClinicFee) > 0,
-    online: Number(doctorData?.doctorFees?.vedioConsultationFee) > 0,
-    serviceTreatment:
-      Array.isArray(doctorData?.subServices) && doctorData.subServices.length > 0 ||
-      Array.isArray(doctorData?.service) && doctorData.service.length > 0
-  });
-}, [doctorData, isEditing]);
+    setEnabledTypes({
+      inClinic: Number(doctorData?.doctorFees?.inClinicFee) > 0,
+      online: Number(doctorData?.doctorFees?.vedioConsultationFee) > 0,
+      serviceTreatment:
+        Array.isArray(doctorData?.subServices) && doctorData.subServices.length > 0 ||
+        Array.isArray(doctorData?.service) && doctorData.service.length > 0
+    });
+  }, [doctorData, isEditing]);
 
 
 
@@ -1041,13 +1042,14 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
           </div>
 
           <CNav variant="tabs" className="mt-3 navhover" role="tablist">
+
             <CNavItem>
               <CNavLink
                 active={activeKey === 1}
                 onClick={() => setActiveKey(1)}
                 style={{ color: 'var(--color-black)' }}
               >
-                Doctor Profile
+                Doctor Slots
               </CNavLink>
             </CNavItem>
             <CNavItem>
@@ -1056,10 +1058,10 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
                 onClick={() => setActiveKey(2)}
                 style={{ color: 'var(--color-black)' }}
               >
-                Doctor Slots
+                Doctor Profile
               </CNavLink>
             </CNavItem>
-            <CNavItem>
+            {/* <CNavItem>
               <CNavLink
                 active={activeKey === 3}
                 onClick={() => setActiveKey(3)}
@@ -1067,8 +1069,8 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
               >
                 Rating & Comments
               </CNavLink>
-            </CNavItem>
-            <CNavItem>
+            </CNavItem> */}
+            {/* <CNavItem>
               <CNavLink
                 active={activeKey === 4}
                 onClick={() => setActiveKey(4)}
@@ -1076,12 +1078,164 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
               >
                 Services
               </CNavLink>
-            </CNavItem>
+            </CNavItem> */}
           </CNav>
 
           <CTabContent>
+
+
+            <CTabPane
+              visible={activeKey === 1}
+              className="pt-3"
+              style={{ color: 'var(--color-black)' }}
+            >
+              <h5>
+                <strong>Slot Management</strong>
+              </h5>
+
+              <div className="d-flex gap-2 flex-wrap mb-3">
+                {days.map((dayObj, idx) => {
+                  const isSelected = selectedDate === format(dayObj.date, 'yyyy-MM-dd')
+
+                  return (
+                    <CButton
+                      key={idx}
+                      onClick={() => handleDateClick(dayObj, idx)}
+                      style={{
+                        backgroundColor: isSelected ? 'var(--color-black)' : COLORS.white, // ✅ pink when selected
+                        color: isSelected ? COLORS.white : 'var(--color-black)', // ✅ text turns white when pink bg
+                        border: `1px solid ${'var(--color-black)'}`,
+                      }}
+                    >
+                      <div style={{ fontSize: '14px' }}>{dayObj.dayLabel}</div>
+                      <div style={{ fontSize: '12px' }}>{dayObj.dateLabel}</div>
+                    </CButton>
+                  )
+                })}
+              </div>
+
+              <div className="slot-grid mt-3">
+                <CCard className="mb-4">
+                  <CCardBody>
+                    {loading ? (
+                      <LoadingIndicator message="Loading slots..." />
+                    ) : (
+                      <div
+                        className="slot-container d-grid "
+                        style={{
+                          display: 'grid',
+                          color: 'var(--color-black)',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+                          gap: '12px',
+                        }}
+                      >
+                        {slotsForSelectedDate.map((slotObj, i) => {
+                          const isSelected = selectedSlots.includes(slotObj.slot)
+                          const isBooked = slotObj?.slotbooked
+                          const now = new Date()
+                          const slotTime = new Date(`${selectedDate} ${slotObj.slot}`)
+                          const today = format(now, 'yyyy-MM-dd') === selectedDate
+
+                          // ✅ Only allow future slots for current date, all slots for other days
+                          const isPastTime = !today || slotTime > now
+                          return (
+                            isPastTime && (
+                              <div
+                                key={i}
+                                className={`slot-item text-center border rounded   ${isBooked
+                                  ? 'bg-danger text-white' // booked = red
+                                  : isSelected
+                                    ? 'text-white'
+                                    : 'bg-light'
+                                  }`}
+                                onClick={() => {
+                                  if (isBooked) return // ❌ Prevent click for booked slots
+                                  if (isSelected) {
+                                    setSelectedSlots((prev) =>
+                                      prev.filter((s) => s !== slotObj.slot),
+                                    )
+                                  } else {
+                                    setSelectedSlots((prev) => [...prev, slotObj.slot])
+                                  }
+                                }}
+                                style={{
+                                  padding: '10px 0',
+                                  borderRadius: '8px',
+                                  cursor: isBooked ? 'not-allowed' : 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  opacity: isBooked ? 0.7 : 1,
+                                  color: 'var(--color-black)',
+                                  backgroundColor: isBooked
+                                    ? 'red'
+                                    : isSelected
+                                      ? 'var(--color-black)'
+                                      : undefined,
+                                }}
+                                title={isBooked ? 'Booked' : 'Not Booked'}
+                              >
+                                {slotObj?.slot}
+                              </div>
+                            )
+                          )
+                        })}
+                      </div>
+                    )}
+                    <div className="w-100">
+                      {slotsForSelectedDate.length === 0 && (
+                        <p style={{ color: 'var(--color-black)' }}>
+                          No available slots for this date
+                        </p>
+                      )}
+                    </div>
+                  </CCardBody>
+                </CCard>
+              </div>
+
+              <div className="mt-3 d-flex gap-2">
+                <CButton
+                  style={{
+                    color: 'var(--color-black)',
+                    border: `1px solid ${'var(--color-black)'}`,
+                  }}
+                  variant="outline"
+                  onClick={openModal}
+                >
+                  Add Slot
+                </CButton>
+
+                <CButton
+                  style={{
+                    color: 'var(--color-black)',
+                    border: `1px solid ${'var(--color-black)'}`,
+                  }}
+                  variant="outline"
+                  disabled={selectedSlots.length === 0}
+                  onClick={() => {
+                    if (selectedSlots.length === 0) {
+                      showCustomToast('Please select slot(s) to delete.', 'success')
+                      return
+                    }
+                    setDeleteMode('selected') // mark which action we are confirming
+                    setShowDeleteConfirmModal(true) // show modal
+                  }}
+                >
+                  Delete Selected ({selectedSlots.length})
+                </CButton>
+
+                <CButton
+                  style={{ backgroundColor: 'var(--color-black)', color: COLORS.white }}
+                  variant="outline"
+                  onClick={() => {
+                    setDeleteMode('all')
+                    setShowDeleteConfirmModal(true)
+                  }}
+                >
+                  Delete All for Date
+                </CButton>
+              </div>
+            </CTabPane>
             <CTabContent>
-              <CTabPane visible={activeKey === 1} className="pt-3">
+              <CTabPane visible={activeKey === 2} className="pt-3">
                 <CCard className="mb-4 shadow-sm">
                   <CCardBody>
                     <h5 className="mb-3" style={{ color: 'var(--color-black)' }}>
@@ -1533,7 +1687,7 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
                           // View-only mode
                           <div>
                             {Array.isArray(doctorData.branches) &&
-                            doctorData.branches.length > 0 ? (
+                              doctorData.branches.length > 0 ? (
                               doctorData.branches.map((b, idx) => <p key={idx}>{b.branchName}</p>)
                             ) : (
                               <p>No branches assigned</p>
@@ -1628,7 +1782,7 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
                         </ul>
                       )}
                     </CCol>
-                 
+
                     <CCol>
                       <h6 className="mt-4 mb-2">
                         <strong>🏅 Achievements</strong>
@@ -1671,8 +1825,8 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
                         </ul>
                       )}
                     </CCol>
-                       <CCol xs={12}>
-              {/* <div className="d-flex align-items-center flex-wrap gap-4">
+                    <CCol xs={12}>
+                      {/* <div className="d-flex align-items-center flex-wrap gap-4">
                 <strong>Consultation Type:</strong>
 
                 <CFormCheck
@@ -1694,7 +1848,7 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
                   onChange={() => toggleType('online')}
                 />
               </div> */}
-            </CCol>
+                    </CCol>
 
                     <CRow style={{ color: 'var(--color-black)' }}>
                       <CCol md={6}>
@@ -1872,53 +2026,58 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
                         )}
                       </CCol>
                     </CRow>
+                    {
+                      role.toLowerCase() === "admin" && (
+                        <div className="text-end mt-4">
+                          {isEditing ? (
+                            <>
+                              {/* Cancel Button */}
+                              <CButton className="me-2" color="secondary" onClick={handleEditToggle}>
+                                Cancel
+                              </CButton>
 
-                    <div className="text-end mt-4">
-                      {isEditing ? (
-                        <>
-                          {/* Cancel Button */}
-                          <CButton className="me-2" color="secondary" onClick={handleEditToggle}>
-                            Cancel
-                          </CButton>
+                              {/* Update Button with loading spinner */}
+                              <CButton
+                                style={{ backgroundColor: 'var(--color-black)' }}
+                                className="text-white"
+                                onClick={handleUpdateWithValidation}
+                                disabled={saveloading || !isSubServiceComplete}
+                              >
+                                {saveloading ? (
+                                  <>
+                                    <span
+                                      className="spinner-border spinner-border-sm me-2 text-white"
+                                      role="status"
+                                    />
+                                    Updating...
+                                  </>
+                                ) : (
+                                  'Update'
+                                )}
+                              </CButton>
+                            </>
+                          ) : (
+                            <div>
+                              {/* Edit Button */}
 
-                          {/* Update Button with loading spinner */}
-                          <CButton
-                            style={{ backgroundColor: 'var(--color-black)' }}
-                            className="text-white"
-                            onClick={handleUpdateWithValidation}
-                            disabled={saveloading || !isSubServiceComplete}
-                          >
-                            {saveloading ? (
-                              <>
-                                <span
-                                  className="spinner-border spinner-border-sm me-2 text-white"
-                                  role="status"
-                                />
-                                Updating...
-                              </>
-                            ) : (
-                              'Update'
-                            )}
-                          </CButton>
-                        </>
-                      ) : (
-                        <div>
-                          {/* Edit Button */}
-
-                          {/* Delete Button */}
-                          <CButton color="danger " className="text-white" onClick={handleShow}>
-                            Delete
-                          </CButton>
-                          <CButton
-                            style={{ backgroundColor: 'var(--color-black)' }}
-                            className="text-white ms-2"
-                            onClick={handleEditToggle}
-                          >
-                            Edit
-                          </CButton>
+                              {/* Delete Button */}
+                              <CButton color="danger " className="text-white" onClick={handleShow}>
+                                Delete
+                              </CButton>
+                              <CButton
+                                style={{ backgroundColor: 'var(--color-black)' }}
+                                className="text-white ms-2"
+                                onClick={handleEditToggle}
+                              >
+                                Edit
+                              </CButton>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      )
+                    }
+
+
 
                     <ConfirmationModal
                       isVisible={showModal}
@@ -1947,158 +2106,6 @@ showCustomToast(`Generated ${slots.length} slots`, "success")
                 </CCard>
               </CTabPane>
             </CTabContent>
-
-            <CTabPane
-              visible={activeKey === 2}
-              className="pt-3"
-              style={{ color: 'var(--color-black)' }}
-            >
-              <h5>
-                <strong>Slot Management</strong>
-              </h5>
-
-              <div className="d-flex gap-2 flex-wrap mb-3">
-                {days.map((dayObj, idx) => {
-                  const isSelected = selectedDate === format(dayObj.date, 'yyyy-MM-dd')
-
-                  return (
-                    <CButton
-                      key={idx}
-                      onClick={() => handleDateClick(dayObj, idx)}
-                      style={{
-                        backgroundColor: isSelected ? 'var(--color-black)' : COLORS.white, // ✅ pink when selected
-                        color: isSelected ? COLORS.white : 'var(--color-black)', // ✅ text turns white when pink bg
-                        border: `1px solid ${'var(--color-black)'}`,
-                      }}
-                    >
-                      <div style={{ fontSize: '14px' }}>{dayObj.dayLabel}</div>
-                      <div style={{ fontSize: '12px' }}>{dayObj.dateLabel}</div>
-                    </CButton>
-                  )
-                })}
-              </div>
-
-              <div className="slot-grid mt-3">
-                <CCard className="mb-4">
-                  <CCardBody>
-                    {loading ? (
-                      <LoadingIndicator message="Loading slots..." />
-                    ) : (
-                      <div
-                        className="slot-container d-grid "
-                        style={{
-                          display: 'grid',
-                          color: 'var(--color-black)',
-                          gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
-                          gap: '12px',
-                        }}
-                      >
-                        {slotsForSelectedDate.map((slotObj, i) => {
-                          const isSelected = selectedSlots.includes(slotObj.slot)
-                          const isBooked = slotObj?.slotbooked
-                          const now = new Date()
-                          const slotTime = new Date(`${selectedDate} ${slotObj.slot}`)
-                          const today = format(now, 'yyyy-MM-dd') === selectedDate
-
-                          // ✅ Only allow future slots for current date, all slots for other days
-                          const isPastTime = !today || slotTime > now
-                          return (
-                            isPastTime && (
-                              <div
-                                key={i}
-                                className={`slot-item text-center border rounded   ${
-                                  isBooked
-                                    ? 'bg-danger text-white' // booked = red
-                                    : isSelected
-                                      ? 'text-white'
-                                      : 'bg-light'
-                                }`}
-                                onClick={() => {
-                                  if (isBooked) return // ❌ Prevent click for booked slots
-                                  if (isSelected) {
-                                    setSelectedSlots((prev) =>
-                                      prev.filter((s) => s !== slotObj.slot),
-                                    )
-                                  } else {
-                                    setSelectedSlots((prev) => [...prev, slotObj.slot])
-                                  }
-                                }}
-                                style={{
-                                  padding: '10px 0',
-                                  borderRadius: '8px',
-                                  cursor: isBooked ? 'not-allowed' : 'pointer',
-                                  transition: 'all 0.2s ease',
-                                  opacity: isBooked ? 0.7 : 1,
-                                  color: 'var(--color-black)',
-                                  backgroundColor: isBooked
-                                    ? 'red'
-                                    : isSelected
-                                      ? 'var(--color-black)'
-                                      : undefined,
-                                }}
-                                title={isBooked ? 'Booked' : 'Not Booked'}
-                              >
-                                {slotObj?.slot}
-                              </div>
-                            )
-                          )
-                        })}
-                      </div>
-                    )}
-                    <div className="w-100">
-                      {slotsForSelectedDate.length === 0 && (
-                        <p style={{ color: 'var(--color-black)' }}>
-                          No available slots for this date
-                        </p>
-                      )}
-                    </div>
-                  </CCardBody>
-                </CCard>
-              </div>
-
-              <div className="mt-3 d-flex gap-2">
-                <CButton
-                  style={{
-                    color: 'var(--color-black)',
-                    border: `1px solid ${'var(--color-black)'}`,
-                  }}
-                  variant="outline"
-                  onClick={openModal}
-                >
-                  Add Slot
-                </CButton>
-
-                <CButton
-                  style={{
-                    color: 'var(--color-black)',
-                    border: `1px solid ${'var(--color-black)'}`,
-                  }}
-                  variant="outline"
-                  disabled={selectedSlots.length === 0}
-                  onClick={() => {
-                    if (selectedSlots.length === 0) {
-                      showCustomToast('Please select slot(s) to delete.', 'success')
-                      return
-                    }
-                    setDeleteMode('selected') // mark which action we are confirming
-                    setShowDeleteConfirmModal(true) // show modal
-                  }}
-                >
-                  Delete Selected ({selectedSlots.length})
-                </CButton>
-
-                <CButton
-                  style={{ backgroundColor: 'var(--color-black)', color: COLORS.white }}
-                  variant="outline"
-                  onClick={() => {
-                    setDeleteMode('all')
-                    setShowDeleteConfirmModal(true)
-                  }}
-                >
-                  Delete All for Date
-                </CButton>
-              </div>
-            </CTabPane>
 
             <CTabPane visible={activeKey === 3} className="pt-3">
               {ratings ? (

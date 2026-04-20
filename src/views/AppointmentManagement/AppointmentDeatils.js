@@ -384,7 +384,7 @@ const AppointmentDetails = () => {
 
   const handlePaymentClick = () => {
     // if (showPayment && normalizedStatus === "active") {
-    if (normalizedStatus !== "active") {
+    if (normalizedStatus !== "active" || normalizedStatus !== "in-progress") {
       console.log("Navigating to payment with appointment:", appointment)
       navigate("/program-payment" + `/${id}`, {
         state: {

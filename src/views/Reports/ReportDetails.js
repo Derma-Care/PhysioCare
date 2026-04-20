@@ -47,6 +47,7 @@ import { saveAs } from 'file-saver'
 import Select from 'react-select'
 import { TestDataById } from '../TestsManagement/TestsManagementAPI'
 import { BASE_URL } from '../../baseUrl'
+import { http } from '../../Utils/Interceptors'
 const ReportDetails = () => {
   const { id } = useParams()
   const location = useLocation()
@@ -105,32 +106,32 @@ const ReportDetails = () => {
     fetchTestNames()
   }, [])
 
- 
-   useEffect(() => {
-  const fetchRecommendedTests = async () => {
-    try {
-      if (!appointmentInfo?.bookingId) return
 
-      const response = await http.get(
-        `${BASE_URL}/getReportByBookingId/${appointmentInfo.bookingId}`
-      )
+  useEffect(() => {
+    const fetchRecommendedTests = async () => {
+      try {
+        if (!appointmentInfo?.bookingId) return
 
-      console.log("Recommended Tests API =>", response.data)
+        const response = await http.get(
+          `${BASE_URL}/getReportByBookingId/${appointmentInfo.bookingId}`
+        )
 
-      const reportsArray = response.data?.data || []
+        console.log("Recommended Tests API =>", response.data)
 
-      // flatten all reportsList items
-      const extracted =
-        reportsArray.flatMap(item => item.reportsList || [])
+        const reportsArray = response.data?.data || []
 
-      setRecommendedTests(extracted)
-    } catch (error) {
-      console.error("Error fetching recommended tests:", error)
+        // flatten all reportsList items
+        const extracted =
+          reportsArray.flatMap(item => item.reportsList || [])
+
+        setRecommendedTests(extracted)
+      } catch (error) {
+        console.error("Error fetching recommended tests:", error)
+      }
     }
-  }
 
-  fetchRecommendedTests()
-}, [appointmentInfo?.bookingId])
+    fetchRecommendedTests()
+  }, [appointmentInfo?.bookingId])
 
 
   const patientId =
@@ -245,43 +246,43 @@ const ReportDetails = () => {
   }, [appointmentInfo?.bookingId])
 
   // Handle file input change and convert to Base64
- const handleFileChange = (e) => {
-  const files = Array.from(e.target.files)
-  if (!files.length) return
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files)
+    if (!files.length) return
 
-  // validate only pdf
-  const pdfFiles = files.filter(file => file.type === "application/pdf")
+    // validate only pdf
+    const pdfFiles = files.filter(file => file.type === "application/pdf")
 
-  if (pdfFiles.length !== files.length) {
-    alert("Only PDF files are allowed!")
-    e.target.value = "" // reset input
-    return
-  }
+    if (pdfFiles.length !== files.length) {
+      alert("Only PDF files are allowed!")
+      e.target.value = "" // reset input
+      return
+    }
 
-  const readers = pdfFiles.map(
-    (file) =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          const base64String = reader.result.split(",")[1]
-          resolve(base64String)
-        }
-        reader.onerror = reject
-        reader.readAsDataURL(file)
+    const readers = pdfFiles.map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            const base64String = reader.result.split(",")[1]
+            resolve(base64String)
+          }
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+    )
+
+    Promise.all(readers)
+      .then((base64Files) => {
+        setNewReport((prev) => ({
+          ...prev,
+          reportFile: base64Files,
+        }))
       })
-  )
-
-  Promise.all(readers)
-    .then((base64Files) => {
-      setNewReport((prev) => ({
-        ...prev,
-        reportFile: base64Files,
-      }))
-    })
-    .catch((error) => {
-      console.error("Error reading files:", error)
-    })
-}
+      .catch((error) => {
+        console.error("Error reading files:", error)
+      })
+  }
 
   // Handle report upload submission
   const handleUploadSubmit = async () => {
@@ -447,8 +448,8 @@ const ReportDetails = () => {
             <p>
               <strong>Gender:</strong> {appointmentInfo.gender}
             </p>
-             <p>
-           <strong>Problem:</strong> {appointmentInfo.problem || 'N/A'}</p>
+            <p>
+              <strong>Problem:</strong> {appointmentInfo.problem || 'N/A'}</p>
           </div>
           <div className="col-md-6 ps-md-4">
             <p>
@@ -457,29 +458,29 @@ const ReportDetails = () => {
             <p>
               <strong>Hospital ID:</strong> {appointmentInfo.item?.clinicId || 'N/A'}
             </p>
-            
-              <p>
-                <strong>Recommended Test:</strong>
-              </p>
-        {recommendedTests.length > 0 ? (
-  <ul style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-    {recommendedTests.map((test, index) => (
-      <li key={test.id || index}>
-        {test.reportName}
-      </li>
-    ))}
-  </ul>
-) : (
-  <p>No recommended tests found.</p>
-)}
+
+            <p>
+              <strong>Recommended Test:</strong>
+            </p>
+            {recommendedTests.length > 0 ? (
+              <ul style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+                {recommendedTests.map((test, index) => (
+                  <li key={test.id || index}>
+                    {test.reportName}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No recommended tests found.</p>
+            )}
 
 
-            
+
           </div>
-          
+
         </div>
       </div>
-      
+
       {/* Header and Upload Button */}
       <div
         className=" text-white p-3 d-flex justify-content-between align-items-center rounded"
@@ -841,7 +842,7 @@ const ReportDetails = () => {
                 disabled
               />
             </div>
-           <div className="mb-2">
+            <div className="mb-2">
               <CFormLabel>Report Name (File Name)<span style={{ color: 'red' }}>*</span>
 
               </CFormLabel>
