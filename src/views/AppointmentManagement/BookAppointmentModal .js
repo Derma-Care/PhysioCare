@@ -197,6 +197,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     },
   }
   const [bookingDetails, setBookingDetails] = useState(initialBookingDetails)
+
+  console.log('bookingDetails', selectedBooking)
   const handleChange = (level) => {
     if (activityLevels.includes(level)) {
       // remove if already selected
@@ -1086,7 +1088,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     setBookingDetails(prev => ({
       ...prev,
       activityLevels: activityLevels,
-      reasonForVisit: reasonForVisit
+
     }))
   }, [activityLevels, reasonForVisit])
   // const [part, setPart] = useState("");
@@ -1172,6 +1174,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   //   setMarkedImage(data.image);
   //   setTheraphyQuestions(actualData.answerData || {});
   // };
+  console.log(`part ${selectedBooking}`)
   return (
     <COffcanvas
       placement="end"
@@ -1908,9 +1911,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               </CCol>
 
               <CCol md={6}>
-                <CFormLabel>Reason for Visit</CFormLabel>
+                <h6 >Reason for Visit</h6>
 
-                <div className="d-flex gap-3 mt-1">
+                <div className="d-flex gap-3 mt-1" >
                   {reasonforVisitOption.map((item) => (
                     <div key={item} className="d-flex align-items-center">
                       <input
@@ -1920,7 +1923,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                         checked={bookingDetails.reasonForVisit === item}
                         onChange={() => handleReasonChange(item)}
                       />
-                      <label className="ms-1">{item}</label>
+                      <label className="ms-1" style={{ color: "var(--color-black" }}>{item}</label>
                     </div>
                   ))}
                 </div>
@@ -2299,7 +2302,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           )}
         </div>
 
-        {selectedBooking == null && (
+        {selectedBooking?.customerId === "" && (
           <>
             <div className="form-check mt-3">
               <input

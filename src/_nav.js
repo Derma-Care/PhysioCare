@@ -75,7 +75,7 @@ export const getNavigation = (permissions = {}) => {
     {
       component: CNavItem,
       to: '/report-management',
-      name: 'Reports', //report management
+      name: 'Reports Management', //report management
       as: NavLink,
       icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
     },
@@ -97,14 +97,14 @@ export const getNavigation = (permissions = {}) => {
     {
       component: CNavItem,
       to: '/therapy-programs',
-      name: 'Therapy Programs', //Program Management
+      name: 'Program Management', //Program Management
       as: NavLink,
       icon: <CIcon icon={cilLayers} customClassName="nav-icon" />,
     },
     {
       component: CNavItem,
       to: '/exercises',
-      name: 'Exercises', //Exercises Management
+      name: 'Exercises Management', //Exercises Management
 
       as: NavLink,
       icon: <CIcon icon={cilRunning} customClassName="nav-icon" />,

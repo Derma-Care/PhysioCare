@@ -80,6 +80,9 @@ const DoctorManagement = () => {
     serviceTreatment: false,
   })
 
+  const { user } = useHospital()
+  const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
+
   const toggleType = (type) => {
     setEnabledTypes((prev) => {
       const updated = { ...prev, [type]: !prev[type] }
@@ -829,28 +832,30 @@ const DoctorManagement = () => {
   return (
     <div>
       <ToastContainer />
-      {
-        userRole.toLowerCase() !== "admin" && (
-          <div className="d-flex justify-content-end mb-3">
-            <button
-              className="btn btn-info text-white d-flex align-items-center gap-2 shadow-sm px-4 py-2"
-              onClick={() => {
-                setFormErrors({})
-                setModalVisible(true)
-              }}
-              style={{
-                background: 'linear-gradient(to right, var(--color-black),var(--color-black)',
-                border: 'none',
-                fontWeight: '600',
-                fontSize: '16px',
-              }}
-            >
-              <FontAwesomeIcon icon={faUserDoctor} />
-              <span style={{ color: 'white' }}>Add Doctor</span>
-            </button>
-          </div>
-        )
-      }
+      {/* {
+        userRole.toLowerCase() !== "admin" && ( */}
+      {can('Doctors', 'create') && (
+        <div className="d-flex justify-content-end mb-3">
+          <button
+            className="btn btn-info text-white d-flex align-items-center gap-2 shadow-sm px-4 py-2"
+            onClick={() => {
+              setFormErrors({})
+              setModalVisible(true)
+            }}
+            style={{
+              background: 'linear-gradient(to right, var(--color-black),var(--color-black)',
+              border: 'none',
+              fontWeight: '600',
+              fontSize: '16px',
+            }}
+          >
+            <FontAwesomeIcon icon={faUserDoctor} />
+            <span style={{ color: 'white' }}>Add Doctor</span>
+          </button>
+        </div>
+      )}
+      {/* ) */}
+      {/* } */}
 
 
       {loading ? (

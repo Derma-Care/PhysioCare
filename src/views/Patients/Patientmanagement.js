@@ -14,7 +14,7 @@ import {
   CTableHeaderCell,
   CTableRow,
   CSpinner,
-  CButton,
+  CButton, CRow, CCol,
   CModal,
   CModalBody,
   CModalHeader,
@@ -28,36 +28,40 @@ import { BASE_URL, wifiUrl } from '../../baseUrl'
 import Pagination from '../../Utils/Pagination'
 import LoadingIndicator from '../../Utils/loader'
 import { http } from '../../Utils/Interceptors'
+import { useLocation } from 'react-router-dom'
 
 const PatientManagement = () => {
+  const location = useLocation();
+  const patientInfo = location.state;
+  console.log(patientInfo);
   const [activeKey, setActiveKey] = useState(1)
-  const [patients, setPatients] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [report, setReport] = useState([]);
+  // const [loading, setLoading] = useState(false)
+  // const [report, setReport] = useState([]);
   const [appointmentInfo, setAppointmentInfo] = useState(null);
 
   const [reportLoading, setReportLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
+  const [visible, setVisible] = useState(false);
 
   const [error, setError] = useState(null)
-  const [selectedPatient, setSelectedPatient] = useState(null)
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedHistory, setSelectedHistory] = useState(null)
-  const [viewModal, setViewModal] = useState(false)
 
-  const [visible, setVisible] = useState(false)
-  const [appointments, setAppointments] = useState([])
-  const [history, setHistory] = useState([])
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [selectedHistory, setSelectedHistory] = useState(null)
+
+  const [showModal, setShowModal] = useState(false);
+
+
   const [responseMessage, setResponseMessage] = useState('')
   const [appointmentTab, setAppointmentTab] = useState('active')
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedPatients = patients.slice(startIndex, startIndex + pageSize);
 
-  const totalPages = Math.ceil(patients.length / pageSize);
 
+  const [selectedPatient, setSelectedPatient] = useState(patientInfo || null);
+
+  const [appointments, setAppointments] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [report, setReport] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [viewModal, setViewModal] = useState(false);
   const openBase64File = (base64Data, fileType, fileName) => {
     if (!base64Data) return;
 
@@ -82,24 +86,24 @@ const PatientManagement = () => {
   };
 
 
-  // 🔹 Fetch Patients List
-  useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const hospitalId = localStorage.getItem('HospitalId')
-        const branchId = localStorage.getItem('branchId')
-        const data = await CustomerByClinicNdBranchId(hospitalId, branchId)
-        setPatients(data || [])
-      } catch (err) {
-        console.error('Error fetching patients:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchPatients()
-  }, [])
+  // // 🔹 Fetch Patients List
+  // useEffect(() => {
+  //   const fetchPatients = async () => {
+  //     try {
+  //       setLoading(true)
+  //       setError(null)
+  //       const hospitalId = localStorage.getItem('HospitalId')
+  //       const branchId = localStorage.getItem('branchId')
+  //       const data = await CustomerByClinicNdBranchId(hospitalId, branchId)
+  //       setPatients(data || [])
+  //     } catch (err) {
+  //       console.error('Error fetching patients:', err)
+  //     } finally {
+  //       setLoading(false)
+  //     }
+  //   }
+  //   fetchPatients()
+  // }, [])
 
 
 
@@ -174,6 +178,12 @@ const PatientManagement = () => {
       setReportLoading(false);
     }
   };
+  // useEffect(() => {
+  //   if (selectedPatient?.patientId) {
+  //     fetchAppointments(selectedPatient.patientId);
+  //     fetchVisitHistory(selectedPatient.patientId);
+  //   }
+  // }, [selectedPatient]);
 
 
   useEffect(() => {
@@ -195,7 +205,12 @@ const PatientManagement = () => {
 
 
 
-
+  useEffect(() => {
+    if (selectedPatient?.patientId) {
+      fetchAppointments(selectedPatient.patientId);
+      fetchVisitHistory(selectedPatient.patientId);
+    }
+  }, [selectedPatient]);
 
 
 
@@ -205,167 +220,70 @@ const PatientManagement = () => {
       <CCard className="shadow-sm border-0">
         <CCardBody>
           {/* Tabs */}
-          <CNav variant="tabs" role="tablist" style={{ cursor: "pointer" }}>
+          <CNav variant="tabs" className="mb-3">
             <CNavItem>
               <CNavLink
                 active={activeKey === 1}
-                onClick={() => {
-                  setActiveKey(1)
-                  setSelectedPatient(null)
-                  setAppointments([])
-                  setReport([])
-                  setHistory([])
-                  setSelectedAppointment(null)
-                }}
-                style={{ color: "var(--color-black)" }}
-              >e
+                onClick={() => setActiveKey(1)}
+                style={{ cursor: "pointer" }}
+              >
                 Patient Info
               </CNavLink>
             </CNavItem>
 
-            {selectedPatient && (
-              <>
-                <CNavItem>
-                  <CNavLink
-                    active={activeKey === 2}
-                    onClick={() => setActiveKey(2)}
-                    style={{ color: "var(--color-black)" }}
-                  >
-                    Appointments
-                  </CNavLink>
-                </CNavItem>
+            <CNavItem>
+              <CNavLink
+                active={activeKey === 2}
+                onClick={() => setActiveKey(2)}
+                style={{ cursor: "pointer" }}
+              >
+                Appointments
+              </CNavLink>
+            </CNavItem>
 
-                <CNavItem>
-                  <CNavLink
-                    active={activeKey === 3}
-                    onClick={() => setActiveKey(3)}
-                    style={{ color: "var(--color-black)" }}
-                  >
-                    Reports
-                  </CNavLink>
-                </CNavItem>
+            <CNavItem>
+              <CNavLink
+                active={activeKey === 3}
+                onClick={() => setActiveKey(3)}
+                style={{ cursor: "pointer" }}
+              >
+                Reports
+              </CNavLink>
+            </CNavItem>
 
-                <CNavItem>
-                  <CNavLink
-                    active={activeKey === 4}
-                    onClick={() => setActiveKey(4)}
-                    style={{ color: "var(--color-black)" }}
-                  >
-                    History
-                  </CNavLink>
-                </CNavItem>
-              </>
-            )}
+            <CNavItem>
+              <CNavLink
+                active={activeKey === 4}
+                onClick={() => setActiveKey(4)}
+                style={{ cursor: "pointer" }}
+              >
+                History
+              </CNavLink>
+            </CNavItem>
           </CNav>
 
           <CTabContent className="mt-3">
             {/* 🔹 Patient Info Tab */}
-            <CTabPane role="tabpanel" visible={activeKey === 1}>
-              {loading ? (
-                <LoadingIndicator message='Patient management' />
-                // <div className="text-center py-3">
-                //   <CSpinner color="primary" /> Loading...
-                // </div>
-              ) : error ? (
-                <p className="text-danger">{error}</p>
-              ) : (
-                <CTable >
-                  <CTableHead className="pink-table w-auto">
-                    <CTableRow>
-                      <CTableHeaderCell>S.No</CTableHeaderCell>
-                      <CTableHeaderCell>Patient ID</CTableHeaderCell>
-                      <CTableHeaderCell>Full Name</CTableHeaderCell>
-                      <CTableHeaderCell>Age</CTableHeaderCell>
-                      <CTableHeaderCell>Gender</CTableHeaderCell>
-                      <CTableHeaderCell>Mobile Number</CTableHeaderCell>
-                      <CTableHeaderCell>City</CTableHeaderCell>
-                      <CTableHeaderCell >Actions</CTableHeaderCell>
-                    </CTableRow>
-                  </CTableHead>
-
-                  <CTableBody className="pink-table">
-                    {patients.length > 0 ? (
-                      paginatedPatients.map((p, index) => (
-
-                        <CTableRow key={p.patientId || index}>
-                          <CTableDataCell>{startIndex + index + 1}</CTableDataCell>
-
-
-                          {/* Patient ID as clickable link */}
-                          <CTableDataCell>
-                            <span
-                              style={{
-                                color: '#007bff',
-                                textDecoration: 'underline',
-                                cursor: 'pointer',
-                              }}
-                              onClick={() => {
-                                setSelectedPatient(p)
-                                setActiveKey(2) // Navigate to appointments tab
-                              }}
-                            >
-                              {p.patientId}
-                            </span>
-                          </CTableDataCell>
-
-                          <CTableDataCell>{p.fullName || '-'}</CTableDataCell>
-                          <CTableDataCell>{p.age || '-'}</CTableDataCell>
-                          <CTableDataCell>{p.gender || '-'}</CTableDataCell>
-                          <CTableDataCell>{p.mobileNumber || '-'}</CTableDataCell>
-                          <CTableDataCell>{p.address?.city || '-'}</CTableDataCell>
-
-                          <CTableDataCell className="text-center">
-                            <div className="d-flex gap-2">
-                              {/* View Button */}
-                              <CButton
-                                color="info"
-                                size="sm"
-                                className="actionBtn"
-                                style={{ color: 'var(--color-black)' }}
-                                onClick={() => {
-                                  setSelectedPatient(p)
-                                  setVisible(true)
-                                }}
-                              >
-                                <Eye size={18} />
-                              </CButton>
-
-                              {/* Edit Button */}
-                              {/* <CButton
-    color="info"
-    size="sm"
-     style={{ color: 'var(--color-black)' }}
-    className="actionBtn"
-    onClick={() => handleEdit(p)}
-  >
-    <Edit2 size={18} />
-  </CButton> */}
-
-                              {/* Delete Button */}
-                              {/* <CButton
-    color="info"
-    size="sm"
-    className="actionBtn"
-     style={{ color: 'var(--color-black)' }}
-    onClick={() => handleDelete(p.patientId)}
-  >
-    <Trash size={18} />
-  </CButton> */}
-                            </div>
-
-                          </CTableDataCell>
-                        </CTableRow>
-                      ))
-                    ) : (
-                      <CTableRow>
-                        <CTableDataCell colSpan="8" className="text-center text-muted">
-                          No patient records found.
-                        </CTableDataCell>
-                      </CTableRow>
-                    )}
-                  </CTableBody>
-                </CTable>
-
+            <CTabPane visible={activeKey === 1}>
+              {selectedPatient && (
+                <CRow className="g-3">
+                  <CCol md={6}><strong>Customer ID:</strong> {selectedPatient.customerId}</CCol>
+                  <CCol md={6}><strong>Patient ID:</strong> {selectedPatient.patientId}</CCol>
+                  <CCol md={6}><strong>Full Name:</strong> {selectedPatient.fullName}</CCol>
+                  <CCol md={6}><strong>Gender:</strong> {selectedPatient.gender}</CCol>
+                  <CCol md={6}><strong>Age:</strong> {selectedPatient.age}</CCol>
+                  <CCol md={6}><strong>DOB:</strong> {selectedPatient.dateOfBirth}</CCol>
+                  <CCol md={6}><strong>Mobile:</strong> {selectedPatient.mobileNumber}</CCol>
+                  <CCol md={6}><strong>Email:</strong> {selectedPatient.email}</CCol>
+                  <CCol md={12}>
+                    <strong>Address:</strong>{" "}
+                    {selectedPatient.address?.houseNo},{" "}
+                    {selectedPatient.address?.street},{" "}
+                    {selectedPatient.address?.city},{" "}
+                    {selectedPatient.address?.state},{" "}
+                    {selectedPatient.address?.postalCode}
+                  </CCol>
+                </CRow>
               )}
             </CTabPane>
 
@@ -440,7 +358,7 @@ const PatientManagement = () => {
                         <CTableBody className="pink-table">
                           {filteredAppointments.map((a, index) => (
                             <CTableRow key={index}>
-                              <CTableDataCell>{startIndex + index + 1}</CTableDataCell>
+                              <CTableDataCell>{index + 1}</CTableDataCell>
 
                               <CTableDataCell>{a.serviceDate || '-'}</CTableDataCell>
                               <CTableDataCell>{a.doctorName || '-'}</CTableDataCell>
@@ -529,7 +447,7 @@ const PatientManagement = () => {
                     <CTableBody className="pink-table">
                       {history.map((h, index) => (
                         <CTableRow key={h.id || index}>
-                          <CTableDataCell>{startIndex + index + 1}</CTableDataCell>
+                          <CTableDataCell>{index + 1}</CTableDataCell>
 
                           <CTableDataCell>
                             {h.visitDateTime
@@ -585,10 +503,10 @@ const PatientManagement = () => {
           <CModalTitle>Patient Details</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          {selectedPatient ? (
+          {patientInfo ? (
             <div>
-              <p><b>Patient ID:</b> {selectedPatient.patientId}</p>
-              <p><b>Customer ID:</b> {selectedPatient.customerId}</p>
+              <p><b>Patient ID:</b> {patientInfo.patientId}</p>
+              <p><b>Customer ID:</b> {patientInfo.customerId}</p>
               <p><b>Full Name:</b> {selectedPatient.fullName}</p>
               <p><b>Gender:</b> {selectedPatient.gender}</p>
               <p><b>Age:</b> {selectedPatient.age}</p>
@@ -871,7 +789,7 @@ const PatientManagement = () => {
           <p className="text-center py-3">No reports available for {selectedPatient?.fullName}</p>
         )}
       </CTabPane>
-      <Pagination
+      {/* <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
         pageSize={pageSize}
@@ -880,7 +798,7 @@ const PatientManagement = () => {
           setPageSize(size);
           setCurrentPage(1); // reset to page 1
         }}
-      />
+      /> */}
 
 
 

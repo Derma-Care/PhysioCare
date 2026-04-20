@@ -80,7 +80,7 @@ const DoctorDetailsPage = () => {
 
   const { state } = useLocation()
   const [doctorData, setDoctorData] = useState(state?.doctor || {})
-  const { fetchHospitalDetails, selectedHospital, fetchDoctors } = useHospital()
+  const { fetchHospitalDetails, selectedHospital, fetchDoctors, user } = useHospital()
   const navigate = useNavigate()
   const [activeKey, setActiveKey] = useState(1)
   const minDate = format(startOfToday(), 'yyyy-MM-dd')
@@ -113,6 +113,8 @@ const DoctorDetailsPage = () => {
     setSelectedDate(format(dateObj.date, 'yyyy-MM-dd'))
     setSelectedDateIndex(index)
   }
+  // const { user } = useHospital()
+  const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
   const [selectedSlots, setSelectedSlots] = useState([])
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
   const [deleteMode, setDeleteMode] = useState(null)
@@ -2026,56 +2028,61 @@ const DoctorDetailsPage = () => {
                         )}
                       </CCol>
                     </CRow>
-                    {
-                      role.toLowerCase() === "admin" && (
-                        <div className="text-end mt-4">
-                          {isEditing ? (
-                            <>
-                              {/* Cancel Button */}
-                              <CButton className="me-2" color="secondary" onClick={handleEditToggle}>
-                                Cancel
-                              </CButton>
+                    {/* { */}
+                    {/* // role.toLowerCase() === "admin" && ( */}
+                    <div className="text-end mt-4">
+                      {isEditing ? (
+                        <>
+                          {/* Cancel Button */}
+                          <CButton className="me-2" color="secondary" onClick={handleEditToggle}>
+                            Cancel
+                          </CButton>
 
-                              {/* Update Button with loading spinner */}
-                              <CButton
-                                style={{ backgroundColor: 'var(--color-black)' }}
-                                className="text-white"
-                                onClick={handleUpdateWithValidation}
-                                disabled={saveloading || !isSubServiceComplete}
-                              >
-                                {saveloading ? (
-                                  <>
-                                    <span
-                                      className="spinner-border spinner-border-sm me-2 text-white"
-                                      role="status"
-                                    />
-                                    Updating...
-                                  </>
-                                ) : (
-                                  'Update'
-                                )}
-                              </CButton>
-                            </>
-                          ) : (
-                            <div>
-                              {/* Edit Button */}
+                          {/* Update Button with loading spinner */}
+                          <CButton
+                            style={{ backgroundColor: 'var(--color-black)' }}
+                            className="text-white"
+                            onClick={handleUpdateWithValidation}
+                            disabled={saveloading || !isSubServiceComplete}
+                          >
+                            {saveloading ? (
+                              <>
+                                <span
+                                  className="spinner-border spinner-border-sm me-2 text-white"
+                                  role="status"
+                                />
+                                Updating...
+                              </>
+                            ) : (
+                              'Update'
+                            )}
+                          </CButton>
+                        </>
+                      ) : (
 
-                              {/* Delete Button */}
-                              <CButton color="danger " className="text-white" onClick={handleShow}>
-                                Delete
-                              </CButton>
-                              <CButton
-                                style={{ backgroundColor: 'var(--color-black)' }}
-                                className="text-white ms-2"
-                                onClick={handleEditToggle}
-                              >
-                                Edit
-                              </CButton>
-                            </div>
+                        <div>
+                          {can('Doctors', 'delete') && (
+                            <CButton
+                              color="danger"
+                              className="text-white"
+                              onClick={handleShow}
+                            >
+                              Delete
+                            </CButton>
+                          )}
+                          {can('Doctors', 'update') && (
+                            <CButton
+                              style={{ backgroundColor: 'var(--color-black)' }}
+                              className="text-white ms-2"
+                              onClick={handleEditToggle}
+                            >
+                              Edit
+                            </CButton>
                           )}
                         </div>
-                      )
-                    }
+                      )}
+                    </div>
+
 
 
 

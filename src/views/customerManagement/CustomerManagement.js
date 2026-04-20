@@ -59,6 +59,7 @@ import {
 import { emailPattern } from '../../Constant/Constants'
 import { showCustomToast } from '../../Utils/Toaster'
 import Pagination from '../../Utils/Pagination'
+import PatientManagement from '../Patients/Patientmanagement'
 const CustomerManagement = () => {
   const navigate = useNavigate()
   const [customerData, setCustomerData] = useState([])
@@ -241,11 +242,11 @@ const CustomerManagement = () => {
     if (!str) return ''
     return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase())
   }
-  const handleCustomerViewDetails = async (customerId) => {
+  const handleCustomerViewDetails = async (customer) => {
     try {
       setLoading(true)
-      const response = await CustomerByCustomerId(customerId)
-      const customer = Array.isArray(response) ? response[0] : response
+      // const response = await CustomerByCustomerId(customerId)
+      // const customer = Array.isArray(response) ? response[0] : response
 
       setViewCustomerData(customer)
       setIsViewModalVisible(true)
@@ -273,11 +274,11 @@ const CustomerManagement = () => {
     }
   }
 
-  const handleEditCustomer = async (customerId) => {
+  const handleEditCustomer = async (customer) => {
     try {
       setLoading(true)
-      const response = await CustomerByCustomerId(customerId)
-      const customer = Array.isArray(response) ? response[0] : response
+      // const response = await CustomerByCustomerId(customerId)
+      // const customer = Array.isArray(response) ? response[0] : response
 
       // Format date to YYYY-MM-DD for <input type="date">
       let formattedDate = ''
@@ -534,26 +535,26 @@ const CustomerManagement = () => {
   }, []) // run once on mount
 
   useEffect(() => {
-  const postalInput = document.querySelector('input[placeholder="6-digit PIN"]');
-  if (!postalInput) return;
+    const postalInput = document.querySelector('input[placeholder="6-digit PIN"]');
+    if (!postalInput) return;
 
-  // Run once on mount or when browser autofills value
-  const checkAutofill = () => {
-    const val = postalInput.value?.trim();
-    if (val && val.length === 6) {
-      // Ensure formData updates if autofilled value not detected by onChange
-      handlePincodeChange(val);
-    }
-  };
+    // Run once on mount or when browser autofills value
+    const checkAutofill = () => {
+      const val = postalInput.value?.trim();
+      if (val && val.length === 6) {
+        // Ensure formData updates if autofilled value not detected by onChange
+        handlePincodeChange(val);
+      }
+    };
 
-  // Run immediately (for already autofilled fields)
-  checkAutofill();
+    // Run immediately (for already autofilled fields)
+    checkAutofill();
 
-  // Listen for autofill after a short delay
-  const interval = setInterval(checkAutofill, 500);
+    // Listen for autofill after a short delay
+    const interval = setInterval(checkAutofill, 500);
 
-  return () => clearInterval(interval);
-}, []);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (formData.dateOfBirth) {
@@ -664,26 +665,26 @@ const CustomerManagement = () => {
 
     if (!address.city?.trim()) errors.city = 'City is required'
     if (!address.state?.trim()) errors.state = 'State is required'
-   // ✅ Smart Post Office validation
-if (!address.postalCode?.trim()) {
-  errors.postalCode = 'Postal code is required'
-} else if (!/^\d{6}$/.test(address.postalCode)) {
-  errors.postalCode = 'Postal code must be 6 digits'
-} else {
-  // ✅ Handle autofill case: if city/state already filled, skip "Select PO" error
-  const hasAutoPO =
-    address.city?.trim() &&
-    address.state?.trim() &&
-    postOffices.some(
-      (po) =>
-        po.Name?.toLowerCase() === address.city.toLowerCase() &&
-        po.State?.toLowerCase() === address.state.toLowerCase()
-    )
+    // ✅ Smart Post Office validation
+    if (!address.postalCode?.trim()) {
+      errors.postalCode = 'Postal code is required'
+    } else if (!/^\d{6}$/.test(address.postalCode)) {
+      errors.postalCode = 'Postal code must be 6 digits'
+    } else {
+      // ✅ Handle autofill case: if city/state already filled, skip "Select PO" error
+      const hasAutoPO =
+        address.city?.trim() &&
+        address.state?.trim() &&
+        postOffices.some(
+          (po) =>
+            po.Name?.toLowerCase() === address.city.toLowerCase() &&
+            po.State?.toLowerCase() === address.state.toLowerCase()
+        )
 
-  if (!(selectedPO || hasAutoPO)) {
-    errors.postOffice = 'Please select a Post Office'
-  }
-}
+      if (!(selectedPO || hasAutoPO)) {
+        errors.postOffice = 'Please select a Post Office'
+      }
+    }
 
 
     setFormErrors(errors)
@@ -804,7 +805,10 @@ if (!address.postalCode?.trim()) {
                             {can('Customer Management', 'read') && (
                               <button
                                 className="actionBtn"
-                                onClick={() => handleCustomerViewDetails(customer?.customerId)}
+                                // onClick={() => handleCustomerViewDetails(customer)}
+                                onClick={() => navigate("/patient-management", {
+                                  state: { patientInfo: viewCustomerData }
+                                })}
                                 title="View"
                               >
                                 <Eye size={18} />
@@ -813,7 +817,7 @@ if (!address.postalCode?.trim()) {
                             {can('Customer Management', 'update') && (
                               <button
                                 className="actionBtn"
-                                onClick={() => handleEditCustomer(customer?.customerId)}
+                                onClick={() => handleEditCustomer(customer)}
                                 title="Edit"
                               >
                                 <Edit2 size={18} />
@@ -844,7 +848,18 @@ if (!address.postalCode?.trim()) {
                   )}
                 </CTableBody>
               </CTable>
-              <CModal
+
+              {
+                loading ? (
+                  <div className="text-center py-5">Loading...</div>
+                ) : viewCustomerData ? (
+
+                  <PatientManagement patientInfo={viewCustomerData} />
+                ) : (
+                  <div>No Data Found</div>
+                )
+              }
+              {/* <CModal
                 visible={isViewModalVisible}
                 onClose={() => setIsViewModalVisible(false)}
                 size="lg"
@@ -858,7 +873,7 @@ if (!address.postalCode?.trim()) {
                     <div className="text-center py-5">Loading...</div>
                   ) : viewCustomerData ? (
                     <div className="customer-details-modal">
-                      {/* Personal Info */}
+                 
                       <CRow className="mb-4">
                         <CCol md={6} className="mb-2">
                           <strong>
@@ -951,12 +966,15 @@ if (!address.postalCode?.trim()) {
                     <p className="text-center text-muted py-4">No customer data available.</p>
                   )}
                 </CModalBody>
+                <CModalBody>
+                 
+                </CModalBody>
                 <CModalFooter>
                   <CButton color="secondary" onClick={() => setIsViewModalVisible(false)}>
                     Close
                   </CButton>
                 </CModalFooter>
-              </CModal>
+              </CModal> */}
 
               {displayData.length > 0 && (
                 <Pagination
@@ -1111,7 +1129,7 @@ if (!address.postalCode?.trim()) {
                   onPaste={(e) => e.preventDefault()} // block pasting
                   maxLength={10}
                   invalid={!!formErrors.mobileNumber}
-                  // disabled={isEditing}
+                // disabled={isEditing}
                 />
 
                 {formErrors.mobileNumber && (

@@ -41,7 +41,7 @@ export const addCustomer = async (customerDTO) => {
 // Update existing customer
 export const updateCustomerData = async (customerId, customerDTO) => {
   try {
-    const url = `${BASE_URL}/${Customer}/${customerId}`
+    const url = `${BASE_URL}/${Customer}/id/${customerId}`
     const response = await axios.put(url, customerDTO, {
       //TODO:chnage when apigetway call axios to http
       headers: { 'Content-Type': 'application/json' },
@@ -56,7 +56,7 @@ export const updateCustomerData = async (customerId, customerDTO) => {
 // Delete a customer
 export const deleteCustomerData = async (customerId) => {
   try {
-    const url = `${BASE_URL}/${Customer}/${customerId}`
+    const url = `${BASE_URL}/${Customer}/id/${customerId}`
     const response = await axios.delete(url) //TODO:chnage when apigetway call axios to http
     return response.data
   } catch (error) {
@@ -111,4 +111,4 @@ export const CustomerByClinicNdBranchId = async (hospitalId, branchId) => {
     throw error
   }
 }
-export const getCustomerByMobile = async (mobileNumber) => {}
+export const getCustomerByMobile = async (mobileNumber) => { }
