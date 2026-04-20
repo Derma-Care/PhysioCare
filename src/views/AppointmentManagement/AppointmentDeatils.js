@@ -383,8 +383,8 @@ const AppointmentDetails = () => {
 
 
   const handlePaymentClick = () => {
-    if (showPayment && normalizedStatus === "active" || normalizedStatus === "in-progress") {
-    // if (normalizedStatus === "active" || normalizedStatus === "in-progress") {
+    if (showPayment && normalizedStatus === "active" || appointment?.status === "in-progress") {
+      // if (normalizedStatus === "active" || normalizedStatus === "in-progress") {
       console.log("Navigating to payment with appointment:", appointment)
       navigate("/program-payment" + `/${id}`, {
         state: {
@@ -420,14 +420,14 @@ const AppointmentDetails = () => {
             </CButton>
           )}
           {showPayment && (
-  <CButton
-    color="success"
-    onClick={handlePaymentClick}
-    disabled={!showPayment} // optional
-  >
-    Payment
-  </CButton>
-)}
+            <CButton
+              color="success"
+              onClick={handlePaymentClick}
+              disabled={!showPayment} // optional
+            >
+              Payment
+            </CButton>
+          )}
           {/* <CButton
             color="secondary"
             size="sm"

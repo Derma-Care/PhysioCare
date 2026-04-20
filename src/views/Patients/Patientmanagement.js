@@ -112,7 +112,7 @@ const PatientManagement = () => {
   const fetchAppointments = async (patientId) => {
     try {
       setLoading(true);
-      const response = await http.get(`${BASE_URL}/bookings/byPatientId/${patientId}`);
+      const response = await http.get(`${wifiUrl}/api/customer/bookings/byPatientId/${patientId}`);
       console.log('Full API response:', response.data);
 
       const data = response.data?.data || [];
