@@ -32,7 +32,7 @@ import { useLocation } from 'react-router-dom'
 
 const PatientManagement = () => {
   const location = useLocation();
-  const patientInfo = location.state;
+  const patientInfo = location.state?.patientInfo;
   console.log(patientInfo);
   const [activeKey, setActiveKey] = useState(1)
   // const [loading, setLoading] = useState(false)

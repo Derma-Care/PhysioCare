@@ -807,7 +807,7 @@ const CustomerManagement = () => {
                                 className="actionBtn"
                                 // onClick={() => handleCustomerViewDetails(customer)}
                                 onClick={() => navigate("/patient-management", {
-                                  state: { patientInfo: viewCustomerData }
+                                  state: { patientInfo: customer }
                                 })}
                                 title="View"
                               >
