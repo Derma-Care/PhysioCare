@@ -19,8 +19,8 @@ const UserPermissionModal = ({
   const employeeRelatedFeatures = [
     'Doctors',
     'Nurses',
-    'Pharmacist',
-    'Lab Technician',
+    // 'Pharmacist',
+    // 'Lab Technician',
     'Administrator',
     'FrontDesk',
     'Security',
@@ -36,13 +36,13 @@ const UserPermissionModal = ({
   const handleFeatureToggle = (feature) => {
     // Block Employee Management dependencies
     if (employeeRelatedFeatures.includes(feature) && !isEmployeeManagementChecked) {
-      showCustomToast('Please select Employee Management first.','warning')
+      showCustomToast('Please select Employee Management first.', 'warning')
       return
     }
 
     // Block Appointment-related features (like Reports)
     if (appointmnetRelatedFeatures.includes(feature) && !isAppointmnetManagementChecked) {
-      showCustomToast('Please select Appointments first.','warning')
+      showCustomToast('Please select Appointments first.', 'warning')
       return
     }
 
