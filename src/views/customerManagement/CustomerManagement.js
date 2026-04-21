@@ -849,7 +849,7 @@ const CustomerManagement = () => {
                 </CTableBody>
               </CTable>
 
-              {
+              {/* {
                 loading ? (
                   <div className="text-center py-5">Loading...</div>
                 ) : viewCustomerData ? (
@@ -858,7 +858,7 @@ const CustomerManagement = () => {
                 ) : (
                   <div>No Data Found</div>
                 )
-              }
+              } */}
               {/* <CModal
                 visible={isViewModalVisible}
                 onClose={() => setIsViewModalVisible(false)}
