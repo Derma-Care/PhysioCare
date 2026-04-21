@@ -445,7 +445,13 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   // ✅ Example: Fetch Doctors when Branch & SubService are chosen
   // ✅ Fetch Doctors when Branch & SubService are chosen
 
+  const isFirstVisit =
+    visitType === "first" &&
+    selectedBooking?.isFollowupStatus === false;
 
+  const isFollowupVisit =
+    visitType === "followup" &&
+    selectedBooking?.isFollowupStatus === true;
 
   // const fetchDoctors = async () => {
   //   setLoadingDoctors(true)
@@ -1032,6 +1038,15 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       servicetime: bookingDetails.servicetime,
       patientId: followupData.patientId,
       bookingFor: followupData.bookingFor,
+      partImage: markedImage,
+      theraphyAnswers: theraphyQuestions,
+      parts: part,
+      listOfConsultationFee: [  //TODO:listOfConsultationFee
+        {
+          consulationFee: Number(bookingDetails.consultationFee || 0),
+        },
+      ],
+
     }
 
     console.log('📦 Follow-up Payload:', payload)
@@ -2098,7 +2113,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             </CCol>
           </>
         )}
-        {visitType !== 'followup' && (
+        {visitType !== 'followup' && !isFollowupVisit && (
           <>
             <h6 className="mb-3 border-bottom pb-2 mt-4">Payment Details</h6>
 
@@ -2311,7 +2326,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             <p className="text-danger small">{errors.markedImage}</p>
           )}
         </div>
-        {(!selectedBooking || !selectedBooking.customerId) && (
+        {(!selectedBooking || !selectedBooking.customerId) && visitType !== 'followup' && (
           <div className="form-check mt-3">
             <input
               className="form-check-input"

@@ -71,26 +71,26 @@ const BookingSearch = ({
   }
 
   // ⚡ Auto-fetch on typing (debounced)
-  useEffect(() => {
-    if (!patientSearch.trim()) {
-      setBookingData([])
-      setSelectedBooking(null)
-      setModalVisible(false)
-      return
-    }
+  // useEffect(() => {
+  //   if (!patientSearch.trim()) {
+  //     setBookingData([])
+  //     setSelectedBooking(null)
+  //     setModalVisible(false)
+  //     return
+  //   }
 
-    const delayDebounce = setTimeout(async () => {
-      setSelectedBooking(null)
-      setModalVisible(false)
-      if (visitType === 'followup') {
-        await fetchBookings(getBookingsForFollowUps, patientSearch)
-      } else {
-        await fetchBookings(getBookingsByPatientId, patientSearch)
-      }
-    }, 600)
+  //   const delayDebounce = setTimeout(async () => {
+  //     setSelectedBooking(null)
+  //     setModalVisible(false)
+  //     if (visitType === 'followup') {
+  //       await fetchBookings(getBookingsForFollowUps, patientSearch)
+  //     } else {
+  //       await fetchBookings(getBookingsByPatientId, patientSearch)
+  //     }
+  //   }, 600)
 
-    return () => clearTimeout(delayDebounce)
-  }, [patientSearch, visitType])
+  //   return () => clearTimeout(delayDebounce)
+  // }, [patientSearch, visitType])
 
   // // ⚡ Auto-fetch on typing (debounced)
   // useEffect(() => {
@@ -234,7 +234,7 @@ const BookingSearch = ({
                     <strong>Consultation Type:</strong> {selectedBooking.consultationType}
                   </p>
                   <p>
-                    <strong>Consultation Fee:</strong> ₹{selectedBooking.consultationFee[0]?.consultationFee}
+                    <strong>Consultation Fee:</strong> ₹{selectedBooking.consultationFee}
                   </p>
                   <p>
                     <strong>Total Fee:</strong> ₹{selectedBooking.totalFee}

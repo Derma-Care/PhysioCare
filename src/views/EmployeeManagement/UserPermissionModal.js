@@ -18,7 +18,7 @@ const UserPermissionModal = ({
   // List of features that depend on Employee Management
   const employeeRelatedFeatures = [
     'Doctors',
-    'Nurses',
+    'Therapist',
     // 'Pharmacist',
     // 'Lab Technician',
     'Administrator',

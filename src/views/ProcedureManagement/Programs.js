@@ -295,27 +295,27 @@ export default function Programs() {
 
       <div>
         <CForm className="d-flex justify-content-end mb-3">
-          {/* {can('Therapy Management', 'create') && ( */}
-          <div
-            className=" w-100"
-            style={{
-              display: 'flex',
-              justifyContent: 'end',
-              alignContent: 'end',
-              alignItems: 'end',
-            }}
-          >
-            <CButton
+          {can('Program Management', 'create') && (
+            <div
+              className=" w-100"
               style={{
-                color: 'var(--color-black)',
-                backgroundColor: 'var(--color-bgcolor)',
+                display: 'flex',
+                justifyContent: 'end',
+                alignContent: 'end',
+                alignItems: 'end',
               }}
-              onClick={() => setModal(true)}
             >
-              Add Programs
-            </CButton>
-          </div>
-          {/* )} */}
+              <CButton
+                style={{
+                  color: 'var(--color-black)',
+                  backgroundColor: 'var(--color-bgcolor)',
+                }}
+                onClick={() => setModal(true)}
+              >
+                Add Programs
+              </CButton>
+            </div>
+          )}
         </CForm>
       </div>
       {/* TABLE */}
@@ -341,35 +341,35 @@ export default function Programs() {
                   {/* <CTableDataCell>{item.consentType}</CTableDataCell> */}
                   <CTableDataCell className="text-end">
                     <div className="d-flex justify-content-end gap-2  ">
-                      {/* {can('Therapy programs', 'read') && ( */}
-                      <button
-                        className="actionBtn"
-                        onClick={() => handleView(item.id)}
-                        title="View"
-                      >
-                        <Eye size={18} />
-                      </button>
-                      {/* )}
-                  {can('Therapy programs', 'update') && ( */}
-                      <button
-                        className="actionBtn"
-                        onClick={() => handleEdit(item)}
-                        title="Edit"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      {/* )}
+                      {can('Program Management', 'read') && (
+                        <button
+                          className="actionBtn"
+                          onClick={() => handleView(item.id)}
+                          title="View"
+                        >
+                          <Eye size={18} />
+                        </button>
+                      )}
+                      {can('Program Management', 'update') && (
+                        <button
+                          className="actionBtn"
+                          onClick={() => handleEdit(item)}
+                          title="Edit"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                      )}
 
-                  {can('Therapy programs', 'delete') && ( */}
-                      <button
-                        className="actionBtn"
+                      {can('Program Management', 'delete') && (
+                        <button
+                          className="actionBtn"
 
-                        onClick={() => handleServiceDelete(item.id)}
-                        title="Delete"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                      {/* )} */}
+                          onClick={() => handleServiceDelete(item.id)}
+                          title="Delete"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
 
                     </div>
                   </CTableDataCell>

@@ -297,7 +297,10 @@ const Login = () => {
                       <CNavItem>
                         <CNavLink
                           active={activeTab === 'clinic'}
-                          onClick={() => setActiveTab('clinic')}
+                          onClick={() => {
+                            setActiveTab('clinic')
+                            setRole('admin')
+                          }}
                           style={{
                             backgroundColor: activeTab === 'clinic' ? COLORS.primary : COLORS.white,
                             color: activeTab === 'clinic' ? COLORS.white : COLORS.primary,
@@ -315,9 +318,10 @@ const Login = () => {
                       <CNavItem>
                         <CNavLink
                           active={activeTab === 'doctor'}
-                          onClick={() =>
+                          onClick={() => {
+                            setActiveTab('doctor')
                             setRole('receptionist')
-                          }
+                          }}
                           style={{
                             backgroundColor: activeTab === 'doctor' ? COLORS.primary : COLORS.white,
                             color: activeTab === 'doctor' ? COLORS.white : COLORS.primary,
@@ -337,97 +341,45 @@ const Login = () => {
                     {errorMessage && (
                       <div className="alert alert-danger text-center py-2 mb-3">{errorMessage}</div>
                     )}
-
+                    <h6 className='text-center'>{role === "admin" ? "Admin Login" : "Receptionist Login"}</h6>
                     {/* CLINIC TAB */}
-                    {activeTab === 'clinic' && (
+                    {(activeTab === 'clinic' || activeTab === 'doctor') && (
                       <CForm onSubmit={handleClinicLogin} noValidate>
-                        {/* Role */}
-                        {/* <CFormSelect
-                          className="mb-3"
-                          value={role}
-                          onChange={(e) => setRole(e.target.value)}
-                        >
-                          <option value="admin">Admin</option>
-                          <option value="receptionist">Receptionist</option> */}
-                        {/* <option value="physiotherapist">Therapist</option>
-                          <option value="intern">Intern</option> */}
-                        {/* <option value="lab_technician">Lab Technician</option>
-                          <option value="pharmacist">Pharmacist</option> */}
-                        {/* <option value="wardBoy">Ward Boy / Attendant</option>
-                        <option value="security">Security Staff</option> */}
-                        {/* </CFormSelect> */}
-
-                        {/* Username */}
                         <CInputGroup className="mb-2">
                           <CInputGroupText>
                             <CIcon icon={cilUser} />
                           </CInputGroupText>
+
                           <CFormInput
                             placeholder="Username"
                             value={userName}
-                            onChange={(e) => {
-                              setUserName(e.target.value)
-                              if (fieldErrors.userName)
-                                setFieldErrors((p) => ({ ...p, userName: '' }))
-                            }}
-                            aria-invalid={!!fieldErrors.userName}
-                            autoComplete="username"
+                            onChange={(e) => setUserName(e.target.value)}
                           />
                         </CInputGroup>
-                        {fieldErrors.userName && (
-                          <small className="text-danger">{fieldErrors.userName}</small>
-                        )}
 
-                        {/* Password */}
                         <CInputGroup className="mt-3 mb-2">
                           <CInputGroupText
                             onClick={() => setShowPassword((s) => !s)}
-                            style={{ cursor: 'pointer' }}
-                            title={showPassword ? 'Hide password' : 'Show password'}
+                            style={{ cursor: "pointer" }}
                           >
                             <CIcon icon={showPassword ? cilLockUnlocked : cilLockLocked} />
                           </CInputGroupText>
+
                           <CFormInput
-                            type={showPassword ? 'text' : 'password'}
+                            type={showPassword ? "text" : "password"}
                             placeholder="Password"
                             value={password}
-                            onChange={(e) => {
-                              setPassword(e.target.value)
-                              if (fieldErrors.password)
-                                setFieldErrors((p) => ({ ...p, password: '' }))
-                            }}
-                            aria-invalid={!!fieldErrors.password}
-                            autoComplete="current-password"
+                            onChange={(e) => setPassword(e.target.value)}
                           />
                         </CInputGroup>
-                        {fieldErrors.password && (
-                          <small className="text-danger">{fieldErrors.password}</small>
-                        )}
-
-                        <div
-                          className="d-flex justify-content-between mt-2"
-                          style={{ color: COLORS.primary }}
-                        >
-                          <a
-                            style={{ color: COLORS.primary }}
-                            href="#"
-                            className="text-decoration-none derma-link"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              setShowResetModal(true)
-                            }}
-                          >
-                            Forgot password?
-                          </a>
-                        </div>
 
                         <CButton
                           type="submit"
                           disabled={isLoading}
-                          className="w-100 mt-4 derma-btn"
-                          style={{ backgroundColor: COLORS.primary, color: 'white' }}
+                          className="w-100 mt-4"
+                          style={{ backgroundColor: COLORS.primary, color: "white" }}
                         >
-                          {isLoading ? <CSpinner size="sm" /> : 'Login'}
+                          {isLoading ? <CSpinner size="sm" /> : "Login"}
                         </CButton>
                       </CForm>
                     )}

@@ -34,6 +34,7 @@ import ConfirmationModal from "../../../components/ConfirmationModal"
 import { Edit2, Trash2, Eye } from "lucide-react"
 import LoadingIndicator from "../../../Utils/loader"
 import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext"
+import { useHospital } from "../../Usecontext/HospitalContext"
 export default function ExerciseTable() {
 
   const clinicId = localStorage.getItem("HospitalId")
@@ -72,6 +73,9 @@ export default function ExerciseTable() {
   // ✅ VIEW STATE
   const [viewVisible, setViewVisible] = useState(false)
   const [viewData, setViewData] = useState(null)
+
+  const { user } = useHospital()
+  const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 
   // ================= GET =================
   const loadExercises = async () => {
@@ -250,13 +254,14 @@ export default function ExerciseTable() {
             <LoadingIndicator message="Loading exercises..." />
           ) : (
             <>
-
-              <div className="d-flex justify-content-between mb-3">
-                <h5>Exercises</h5>
-                <CButton onClick={handleAdd} disabled={loading} style={{ backgroundColor: "var(--color-black)", color: "#fff" }}>
-                  + Add Exercise
-                </CButton>
-              </div>
+              {can('Exercise Management', 'create') && (
+                <div className="d-flex justify-content-between mb-3">
+                  <h5>Exercises</h5>
+                  <CButton onClick={handleAdd} disabled={loading} style={{ backgroundColor: "var(--color-black)", color: "#fff" }}>
+                    + Add Exercise
+                  </CButton>
+                </div>
+              )}
 
               <CTable bordered className="pink-table">
                 <CTableHead>
@@ -287,43 +292,48 @@ export default function ExerciseTable() {
 
                         <CTableDataCell>
                           {/* VIEW */}
-                          <CButton
-                            size="sm"
-                            className="actionBtn me-2"
-                            style={{
-                              backgroundColor: "var(--color-bgcolor)",
-                              color: "var(--color-black)",
-                            }}
-                            onClick={() => handleView(ex)}
-                          >
-                            <Eye size={18} />
-                          </CButton>
-
+                          {can('Exercise Management', 'read') && (
+                            <CButton
+                              size="sm"
+                              className="actionBtn me-2"
+                              style={{
+                                backgroundColor: "var(--color-bgcolor)",
+                                color: "var(--color-black)",
+                              }}
+                              onClick={() => handleView(ex)}
+                            >
+                              <Eye size={18} />
+                            </CButton>
+                          )}
                           {/* EDIT */}
-                          <CButton
-                            size="sm"
-                            className="actionBtn me-2"
-                            style={{
-                              backgroundColor: "var(--color-bgcolor)",
-                              color: "var(--color-black)",
-                            }}
-                            onClick={() => handleEdit(i)}
-                          >
-                            <Edit2 size={18} />
-                          </CButton>
+                          {can('Exercise Management', 'update') && (
+                            <CButton
+                              size="sm"
+                              className="actionBtn me-2"
+                              style={{
+                                backgroundColor: "var(--color-bgcolor)",
+                                color: "var(--color-black)",
+                              }}
+                              onClick={() => handleEdit(i)}
+                            >
+                              <Edit2 size={18} />
+                            </CButton>
+                          )}
 
                           {/* DELETE */}
-                          <CButton
-                            size="sm"
-                            className="actionBtn"
-                            style={{
-                              backgroundColor: "var(--color-bgcolor)",
-                              color: "var(--color-black)",
-                            }}
-                            onClick={() => openDeleteModal(i)}
-                          >
-                            <Trash2 size={18} />
-                          </CButton>
+                          {can('Exercise Management', 'delete') && (
+                            <CButton
+                              size="sm"
+                              className="actionBtn"
+                              style={{
+                                backgroundColor: "var(--color-bgcolor)",
+                                color: "var(--color-black)",
+                              }}
+                              onClick={() => openDeleteModal(i)}
+                            >
+                              <Trash2 size={18} />
+                            </CButton>
+                          )}
                         </CTableDataCell>
                       </CTableRow>
                     ))) : (

@@ -29,7 +29,7 @@ function Root() {
   //   const detach = attachInterceptors(() => localStorage.getItem('token'))
   //   return () => detach()
   // }, [])
-  
+
   useEffect(() => {
     const detach = attachInterceptors()
     return () => detach()
@@ -49,16 +49,17 @@ function Root() {
                   theme="dark" // base dark theme
                   toastStyle={{
                     backgroundColor: 'var(--color-black)',
+
                     color: 'white',
                   }}
                 />
                 <App />
-                
-                
-                      {/* <BodyAssessment   /> */}
-                
-                     
-                
+
+
+                {/* <BodyAssessment   /> */}
+
+
+
                 {/* <ExerciseTable /> */}
                 {/* <TherapistDashboard /> */}
               </MedicineProvider>

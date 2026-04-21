@@ -264,7 +264,7 @@ export default function PackagesManagement() {
     <>
       {/* Add Button */}
       <div className="d-flex justify-content-end mb-3">
-        {can("Therapy Management", "create") && (
+        {can("Package Management", "create") && (
           <CButton
             onClick={() => setModal(true)}
             style={{
@@ -299,46 +299,49 @@ export default function PackagesManagement() {
 
               <CTableDataCell className="d-flex gap-2">
                 {/* VIEW */}
-                <CButton
-                  size="sm"
-                  className="actionBtn"
-                  style={{
-                    backgroundColor: 'var(--color-bgcolor)',
-                    color: 'var(--color-black)'
-                  }}
-                  onClick={() => handleView(item)}
-                >
-                  <Eye size={18} />
-                </CButton>
-
+                {can("Package Management", "read") && (
+                  <CButton
+                    size="sm"
+                    className="actionBtn"
+                    style={{
+                      backgroundColor: 'var(--color-bgcolor)',
+                      color: 'var(--color-black)'
+                    }}
+                    onClick={() => handleView(item)}
+                  >
+                    <Eye size={18} />
+                  </CButton>
+                )}
                 {/* EDIT */}
-                <CButton
-                  size="sm"
-                  className="actionBtn"
-                  style={{
-                    backgroundColor: 'var(--color-bgcolor)',
-                    color: 'var(--color-black)'
-                  }}
-                  onClick={() => handleEdit(item)}
-                >
-                  <Edit2 size={18} />
-                </CButton>
-
+                {can("Package Management", "update") && (
+                  <CButton
+                    size="sm"
+                    className="actionBtn"
+                    style={{
+                      backgroundColor: 'var(--color-bgcolor)',
+                      color: 'var(--color-black)'
+                    }}
+                    onClick={() => handleEdit(item)}
+                  >
+                    <Edit2 size={18} />
+                  </CButton>
+                )}
                 {/* DELETE */}
-                <CButton
-                  size="sm"
-                  className="actionBtn"
-                  style={{
-                    backgroundColor: 'var(--color-bgcolor)',
-                    color: 'var(--color-black)'
-                  }}
-                  onClick={() => {
-                    setServiceIdToDelete(item.packageId)
-                    setIsModalVisible(true)
-                  }}
-                >
-                  <Trash2 size={18} />
-                </CButton>
+                {can("Package Management", "delete") && (
+                  <CButton
+                    size="sm"
+                    className="actionBtn"
+                    style={{
+                      backgroundColor: 'var(--color-bgcolor)',
+                      color: 'var(--color-black)'
+                    }}
+                    onClick={() => {
+                      setServiceIdToDelete(item.packageId)
+                      setIsModalVisible(true)
+                    }}
+                  >
+                    <Trash2 size={18} />
+                  </CButton>)}
               </CTableDataCell>
             </CTableRow>
           ))}
