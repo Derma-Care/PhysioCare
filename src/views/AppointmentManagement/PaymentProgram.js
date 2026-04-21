@@ -63,7 +63,7 @@ export default function ProgramPayment() {
   const [discountIssuedBy, setDiscountIssuedBy] = useState("");
   const [paymentMode, setPaymentMode] = useState("cash");
   const [backendServiceType, setBackendServiceType] = useState("")
-
+  const [allPaid, setAllPaid] = useState(false);
   const [isFollowUpPayment, setIsFollowUpPayment] = useState(false);
   useEffect(() => {
     if (apiData?.length && !selectedType) {
@@ -221,47 +221,74 @@ export default function ProgramPayment() {
     return [...new Set(orderedTypes)];
   };
   const getOptionsByType = () => {
-    if (!fullPaymentData?.therapyWithSessions?.length) return [];
+    const root =
+      fullPaymentData?.therapyWithSessions?.[0] ||
+      apiData?.[0];
 
-    const root = fullPaymentData.therapyWithSessions[0];
+    if (!root) return [];
+
+    const programs = root.programs || root.therapySessions || [];
 
     switch (selectedType) {
+      case "program":
+        return programs
+          .filter(
+            (program) =>
+              program.paymentStatus?.toLowerCase() !== "paid"
+          )
+          .map((program) => ({
+            label: program.programName,
+            value: program.programId,
+            price: Number(program.totalPrice || 0),
+          }));
+
       case "therapy":
-        return root.programs.flatMap(program =>
-          program.therapyData
-            .filter(t => t.paymentStatus?.toLowerCase() !== "paid")
-            .map(t => ({
-              label: t.therapyName,
-              value: t.therapyId
+        return programs.flatMap((program) =>
+          (program.therapyData || [])
+            .filter(
+              (therapy) =>
+                therapy.paymentStatus?.toLowerCase() !== "paid"
+            )
+            .map((therapy) => ({
+              label: therapy.therapyName,
+              value: therapy.therapyId,
+              price: Number(therapy.totalPrice || 0),
             }))
         );
 
       case "exercise":
-        return root.programs.flatMap(program =>
-          program.therapyData.flatMap(t =>
-            t.exercises
-              .filter(ex => ex.paymentStatus?.toLowerCase() !== "paid")
-              .map(ex => ({
+        return programs.flatMap((program) =>
+          (program.therapyData || []).flatMap((therapy) =>
+            (therapy.exercises || [])
+              .filter(
+                (ex) =>
+                  ex.paymentStatus?.toLowerCase() !== "paid"
+              )
+              .map((ex) => ({
                 label: ex.exerciseName,
-                value: ex.exerciseId
+                value: ex.exerciseId,
+                price: Number(
+                  ex.totalSessionCost || ex.pricePerSession || 0
+                ),
               }))
           )
         );
 
       case "session":
-        return root.programs.flatMap(program =>
-          program.therapyData.flatMap(t =>
-            t.exercises.flatMap(ex =>
-              ex.sessions
-                .filter(s => s.paymentStatus?.toLowerCase() !== "paid")
-                .map(s => ({
-                  label: `${ex.exerciseName} - Session ${s.sessionNo}`,
-                  value: s.sessionId,
-                  price: ex.pricePerSession
-                }))
-            )
+        return (formattedData || [])
+          .filter(
+            (session) =>
+              session.paymentStatus?.toLowerCase() !== "paid"
           )
-        );
+          .map((session) => ({
+            label: `${session.sessionId} - ${session.date}`,
+            value: session.sessionId,
+            price: Number(
+              session.price ||
+              session.pricePerSession ||
+              0
+            ),
+          }));
 
       default:
         return [];
@@ -473,6 +500,26 @@ export default function ProgramPayment() {
       setFinalAmount(0);
     }
   };
+  const checkAllSessionsPaid = (data) => {
+    const programs =
+      data?.therapyWithSessions?.[0]?.programs ||
+      data?.therapyWithSessions ||
+      [];
+
+    const sessions = programs.flatMap((program) =>
+      (program.therapyData || []).flatMap((therapy) =>
+        (therapy.exercises || []).flatMap(
+          (ex) => ex.sessions || []
+        )
+      )
+    );
+
+    if (!sessions.length) return false;
+
+    return sessions.every(
+      (s) => s.paymentStatus?.toLowerCase() === "paid"
+    );
+  };
   const buildTherapyPayload = () => {
     if (!apiData?.length) return [];
 
@@ -594,6 +641,79 @@ export default function ProgramPayment() {
 
     return []
   }
+  useEffect(() => {
+    if (!apiData?.length) return;
+
+    const root = apiData[0];
+    const type = (root.serviceType || selectedType || "").toLowerCase();
+
+    let amount = 0;
+
+    if (type === "package") {
+      amount = Number(root.total || root.totalPrice || 0);
+      setSelectedType("package");
+    }
+
+    else if (type === "program") {
+      const firstProgram = root.therapySessions?.[0];
+      amount = Number(firstProgram?.totalPrice || 0);
+      setSelectedType("program");
+
+      if (firstProgram) {
+        setSelectedValue([
+          {
+            label: firstProgram.programName,
+            value: firstProgram.programId,
+            price: amount,
+          },
+        ]);
+      }
+    }
+
+    else if (type === "therapy") {
+      const firstTherapy =
+        root.therapySessions?.[0]?.therapyData?.[0];
+
+      amount = Number(firstTherapy?.totalPrice || 0);
+      setSelectedType("therapy");
+
+      if (firstTherapy) {
+        setSelectedValue([
+          {
+            label: firstTherapy.therapyName,
+            value: firstTherapy.therapyId,
+            price: amount,
+          },
+        ]);
+      }
+    }
+
+    else if (type === "exercise") {
+      const firstExercise =
+        root.therapySessions?.[0]?.therapyData?.[0]?.exercises?.[0];
+
+      amount = Number(
+        firstExercise?.totalSessionCost ||
+        firstExercise?.pricePerSession ||
+        0
+      );
+
+      setSelectedType("exercise");
+
+      if (firstExercise) {
+        setSelectedValue([
+          {
+            label: firstExercise.exerciseName,
+            value: firstExercise.exerciseId,
+            price: amount,
+          },
+        ]);
+      }
+    }
+
+    setPaymentAmount(amount);
+    setFinalAmount(amount);
+  }, [apiData]);
 
   const createPayloadData = {
     clinicId,
@@ -781,6 +901,7 @@ export default function ProgramPayment() {
       if (!data.success) return;
 
       const result = data.data;
+      setAllPaid(checkAllSessionsPaid(result));
       setFullPaymentData(result)
       console.log(result)
 
@@ -833,7 +954,7 @@ export default function ProgramPayment() {
   return (
 
     <div className="p-3">
-      {isFollowUpPayment && (
+      {isFollowUpPayment && !allPaid && (
         <CButton onClick={() =>
           navigate("/paymentDetails", {
             state: { paymentData: fullPaymentData },
@@ -869,7 +990,7 @@ export default function ProgramPayment() {
       )}
 
       {/* 🔹 STEP 2 */}
-      {isFollowUpPayment && (
+      {showTable && !allPaid && (
         <>
 
           {/* TABLE */}
@@ -897,198 +1018,240 @@ export default function ProgramPayment() {
         </>
 
       )}
+      {allPaid && (
+        <div
+          className="d-flex justify-content-center align-items-center"
+          style={{ minHeight: "60vh" }}
+        >
+          <div
+            className="text-center shadow p-5 rounded"
+            style={{
+              background: "#ffffff",
+              maxWidth: "450px",
+              width: "100%",
+              border: "1px solid #d1e7dd",
+            }}
+          >
+            <div style={{ fontSize: "60px" }}>✅</div>
+
+            <h3 className="mt-3 text-success fw-bold">
+              All Sessions Paid
+            </h3>
+
+            <p className="text-muted mb-4">
+              All session payments have been completed successfully.
+            </p>
+
+            <CButton
+              onClick={() =>
+                navigate("/paymentDetails", {
+                  state: { paymentData: fullPaymentData },
+                })
+              }
+              style={{
+                backgroundColor: "var(--color-black)",
+                color: "#fff",
+                padding: "10px 20px",
+                borderRadius: "8px",
+              }}
+            >
+              Payment Details
+            </CButton>
+          </div>
+        </div>
+      )}
       {/* PAYMENT */}
-      {isFollowUpPayment && (
-      <CCard className="mt-3">
-        <CCardHeader>Payment</CCardHeader>
-        <CCardBody>
+      {showTable && !allPaid && (
+        <CCard className="mt-3">
+          <CCardHeader>Payment</CCardHeader>
+          <CCardBody>
 
-          <CRow className="g-3 mb-3">
+            <CRow className="g-3 mb-3">
 
-            {/* 🔹 SERVICE TYPE */}
-            <CCol md={3}>
-              <CFormLabel>Service Type</CFormLabel>
+              {/* 🔹 SERVICE TYPE */}
+              <CCol md={3}>
+                <CFormLabel>Service Type</CFormLabel>
 
-              <CFormSelect
-                value={selectedType}
-                onChange={(e) => handleTypeChange(e.target.value)}
-              >
-                <option value="">Select Type</option>  {/* ✅ IMPORTANT */}
+                <CFormSelect
+                  value={selectedType}
+                  onChange={(e) => handleTypeChange(e.target.value)}
+                >
+                  <option value="">Select Type</option>  {/* ✅ IMPORTANT */}
 
-                {getServiceTypes().map((type) => (
-                  <option key={type} value={type}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </option>
-                ))}
-              </CFormSelect>
-            </CCol>
+                  {getServiceTypes().map((type) => (
+                    <option key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </CCol>
 
-            {/* 🔹 SELECT VALUE */}
-            <CCol md={4}>
-              {selectedType !== "package" && (
-                <>
-                  <CFormLabel>Select Value</CFormLabel>
-                  <Select
-                    isMulti
-                    options={getOptionsByType()}
-                    value={selectedValue || []}
-                    onChange={handleSelectValue}
-                  />
-                </>
-              )}
+              {/* 🔹 SELECT VALUE */}
+              <CCol md={4}>
+                {selectedType !== "package" && (
+                  <>
+                    <CFormLabel>Select Value</CFormLabel>
+                    <Select
+                      isMulti
+                      options={getOptionsByType()}
+                      value={selectedValue || []}
+                      onChange={handleSelectValue}
+                    />
+                  </>
+                )}
 
-            </CCol>
+              </CCol>
 
-            {/* 🔹 PAYMENT TYPE */}
-            <CCol md={2}>
-              <CFormLabel>Payment Type</CFormLabel>
-              <CFormSelect
-                value={paymentType}
-                onChange={(e) => {
-                  const type = e.target.value;
-                  setPaymentType(type);
+              {/* 🔹 PAYMENT TYPE */}
+              <CCol md={2}>
+                <CFormLabel>Payment Type</CFormLabel>
+                <CFormSelect
+                  value={paymentType}
+                  onChange={(e) => {
+                    const type = e.target.value;
+                    setPaymentType(type);
 
-                  if (type === "partial") {
-                    setPaymentPercent(50);
+                    if (type === "partial") {
+                      setPaymentPercent(50);
 
-                    // ✅ also update payment amount based on %
-                    const amount = (paymentAmount * 50) / 100;
-                    setPaymentAmount(amount.toFixed(2));
-                  } else {
-                    setPaymentPercent(100);
+                      // ✅ also update payment amount based on %
+                      const amount = (paymentAmount * 50) / 100;
+                      setPaymentAmount(amount.toFixed(2));
+                    } else {
+                      setPaymentPercent(100);
 
-                    // ✅ reset to full amount
+                      // ✅ reset to full amount
+                      const total = selectedValue.reduce(
+                        (sum, item) => sum + (item.price || 0),
+                        0
+                      );
+                      setPaymentAmount(total);
+                    }
+                  }}
+                >
+                  <option value="full">Full</option>
+                  <option value="partial">Partial</option>
+                </CFormSelect>
+              </CCol>
+
+            </CRow>
+
+            <CRow className="g-3">
+
+              {/* 🔹 TOTAL AMOUNT */}
+              <CCol md={2}>
+                <CFormLabel>Total Amount</CFormLabel>
+                <CFormInput value={paymentAmount} readOnly />
+              </CCol>
+
+              {/* 🔹 PAYMENT AMOUNT */}
+              <CCol md={2}>
+                <CFormLabel>Payment Amount</CFormLabel>
+                <CFormInput
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                />
+              </CCol>
+
+              {/* 🔹 PAYMENT % */}
+              <CCol md={2}>
+                <CFormLabel>Payment %</CFormLabel>
+                <CFormInput
+                  value={paymentPercent}
+                  onChange={(e) => {
+                    const percent = Number(e.target.value || 0);
+                    setPaymentPercent(percent);
+
                     const total = selectedValue.reduce(
                       (sum, item) => sum + (item.price || 0),
                       0
                     );
-                    setPaymentAmount(total);
-                  }
-                }}
+
+                    const amount = (total * percent) / 100;
+                    setPaymentAmount(amount.toFixed(2));
+                  }}
+                />
+              </CCol>
+
+              {/* 🔹 DISCOUNT % */}
+              {!isFollowUpPayment && (
+                <>
+                  {/* 🔹 DISCOUNT % */}
+                  <CCol md={2}>
+                    <CFormLabel>Discount %</CFormLabel>
+                    <CFormInput
+                      value={discount}
+                      onChange={(e) => {
+                        const percent = Number(e.target.value || 0);
+                        setDiscount(percent);
+
+                        const amount = (paymentAmount * percent) / 100;
+                        setDiscountAmount(amount.toFixed(2));
+                      }}
+                    />
+                  </CCol>
+
+                  {/* 🔹 DISCOUNT AMOUNT */}
+                  <CCol md={2}>
+                    <CFormLabel>Discount Amount</CFormLabel>
+                    <CFormInput
+                      value={discountAmount}
+                      onChange={(e) => setDiscountAmount(e.target.value)}
+                    />
+                  </CCol>
+                </>
+              )}
+
+              {/* 🔹 FINAL AMOUNT */}
+              <CCol md={2}>
+                <CFormLabel>Final Amount</CFormLabel>
+                <CFormInput value={finalAmount} readOnly />
+              </CCol>
+
+            </CRow>
+
+            <CRow className="g-3 mt-2">
+
+              {/* 🔹 APPROVED BY */}
+
+              <CCol md={3}>
+                <CFormLabel>Approved By</CFormLabel>
+                <CFormInput
+                  value={discountIssuedBy}
+                  onChange={(e) => setDiscountIssuedBy(e.target.value)}
+                />
+              </CCol>
+
+
+              {/* 🔹 PAYMENT MODE */}
+              <CCol md={3}>
+                <CFormLabel>Payment Mode</CFormLabel>
+                <CFormSelect
+                  value={paymentMode}
+                  onChange={(e) => setPaymentMode(e.target.value)}
+                >
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI</option>
+                  <option value="card">Card</option>
+                </CFormSelect>
+              </CCol>
+
+            </CRow>
+
+            {/* 🔹 BUTTON */}
+            <div className="mt-3 text-end">
+              <CButton
+                onClick={handleSubmit}
+                // disabled={isFollowUpPayment && paymentStatus !== "UNPAID"}
+                style={{ backgroundColor: "var(--color-black)", color: "#fff" }}
               >
-                <option value="full">Full</option>
-                <option value="partial">Partial</option>
-              </CFormSelect>
-            </CCol>
+                {isFollowUpPayment ? "Update Payment" : "Submit Payment"}
+              </CButton>
+            </div>
 
-          </CRow>
-
-          <CRow className="g-3">
-
-            {/* 🔹 TOTAL AMOUNT */}
-            <CCol md={2}>
-              <CFormLabel>Total Amount</CFormLabel>
-              <CFormInput value={paymentAmount} readOnly />
-            </CCol>
-
-            {/* 🔹 PAYMENT AMOUNT */}
-            <CCol md={2}>
-              <CFormLabel>Payment Amount</CFormLabel>
-              <CFormInput
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
-              />
-            </CCol>
-
-            {/* 🔹 PAYMENT % */}
-            <CCol md={2}>
-              <CFormLabel>Payment %</CFormLabel>
-              <CFormInput
-                value={paymentPercent}
-                onChange={(e) => {
-                  const percent = Number(e.target.value || 0);
-                  setPaymentPercent(percent);
-
-                  const total = selectedValue.reduce(
-                    (sum, item) => sum + (item.price || 0),
-                    0
-                  );
-
-                  const amount = (total * percent) / 100;
-                  setPaymentAmount(amount.toFixed(2));
-                }}
-              />
-            </CCol>
-
-            {/* 🔹 DISCOUNT % */}
-            {!isFollowUpPayment && (
-              <>
-                {/* 🔹 DISCOUNT % */}
-                <CCol md={2}>
-                  <CFormLabel>Discount %</CFormLabel>
-                  <CFormInput
-                    value={discount}
-                    onChange={(e) => {
-                      const percent = Number(e.target.value || 0);
-                      setDiscount(percent);
-
-                      const amount = (paymentAmount * percent) / 100;
-                      setDiscountAmount(amount.toFixed(2));
-                    }}
-                  />
-                </CCol>
-
-                {/* 🔹 DISCOUNT AMOUNT */}
-                <CCol md={2}>
-                  <CFormLabel>Discount Amount</CFormLabel>
-                  <CFormInput
-                    value={discountAmount}
-                    onChange={(e) => setDiscountAmount(e.target.value)}
-                  />
-                </CCol>
-              </>
-            )}
-
-            {/* 🔹 FINAL AMOUNT */}
-            <CCol md={2}>
-              <CFormLabel>Final Amount</CFormLabel>
-              <CFormInput value={finalAmount} readOnly />
-            </CCol>
-
-          </CRow>
-
-          <CRow className="g-3 mt-2">
-
-            {/* 🔹 APPROVED BY */}
-
-            <CCol md={3}>
-              <CFormLabel>Approved By</CFormLabel>
-              <CFormInput
-                value={discountIssuedBy}
-                onChange={(e) => setDiscountIssuedBy(e.target.value)}
-              />
-            </CCol>
-
-
-            {/* 🔹 PAYMENT MODE */}
-            <CCol md={3}>
-              <CFormLabel>Payment Mode</CFormLabel>
-              <CFormSelect
-                value={paymentMode}
-                onChange={(e) => setPaymentMode(e.target.value)}
-              >
-                <option value="cash">Cash</option>
-                <option value="upi">UPI</option>
-                <option value="card">Card</option>
-              </CFormSelect>
-            </CCol>
-
-          </CRow>
-
-          {/* 🔹 BUTTON */}
-          <div className="mt-3 text-end">
-            <CButton
-              onClick={handleSubmit}
-              // disabled={isFollowUpPayment && paymentStatus !== "UNPAID"}
-              style={{ backgroundColor: "var(--color-black)", color: "#fff" }}
-            >
-              {isFollowUpPayment ? "Update Payment" : "Submit Payment"}
-            </CButton>
-          </div>
-
-        </CCardBody>
-      </CCard>
-  )}
+          </CCardBody>
+        </CCard>
+      )}
 
       {/*
 {showPrint && printData && (
