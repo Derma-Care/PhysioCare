@@ -29,7 +29,7 @@ import { BASE_URL, SBASE_URL } from '../../../baseUrl'
 import { useHospital } from '../../Usecontext/HospitalContext'
 import ResetPassword from '../../../views/Resetpassword'
 import { http, httpPublic } from '../../../Utils/Interceptors'
-import DermaLogo from 'src/assets/CCMSLOgo.jpg' // adjust path if needed
+import DermaLogo from 'src/assets/images/DermaCare.png' // adjust path if needed
 import { COLORS } from '../../../Constant/Themes'
 import { toast, ToastContainer } from 'react-toastify'
 import { showCustomToast } from '../../../Utils/Toaster'
@@ -308,7 +308,7 @@ const Login = () => {
                             cursor: 'pointer',
                           }}
                         >
-                          Clinic
+                          Admin
                         </CNavLink>
                       </CNavItem>
 
@@ -316,7 +316,7 @@ const Login = () => {
                         <CNavLink
                           active={activeTab === 'doctor'}
                           onClick={() =>
-                            (window.location.href = 'https://doctorweb.aesthetech.life')
+                            setRole('receptionist')
                           }
                           style={{
                             backgroundColor: activeTab === 'doctor' ? COLORS.primary : COLORS.white,
@@ -328,7 +328,7 @@ const Login = () => {
                             cursor: 'pointer',
                           }}
                         >
-                          Doctor
+                          Receptionist
                         </CNavLink>
                       </CNavItem>
                     </CNav>
@@ -342,20 +342,20 @@ const Login = () => {
                     {activeTab === 'clinic' && (
                       <CForm onSubmit={handleClinicLogin} noValidate>
                         {/* Role */}
-                        <CFormSelect
+                        {/* <CFormSelect
                           className="mb-3"
                           value={role}
                           onChange={(e) => setRole(e.target.value)}
                         >
                           <option value="admin">Admin</option>
-                          <option value="receptionist">Receptionist</option>
-                          {/* <option value="physiotherapist">Therapist</option>
+                          <option value="receptionist">Receptionist</option> */}
+                        {/* <option value="physiotherapist">Therapist</option>
                           <option value="intern">Intern</option> */}
-                          {/* <option value="lab_technician">Lab Technician</option>
+                        {/* <option value="lab_technician">Lab Technician</option>
                           <option value="pharmacist">Pharmacist</option> */}
-                          {/* <option value="wardBoy">Ward Boy / Attendant</option>
+                        {/* <option value="wardBoy">Ward Boy / Attendant</option>
                         <option value="security">Security Staff</option> */}
-                        </CFormSelect>
+                        {/* </CFormSelect> */}
 
                         {/* Username */}
                         <CInputGroup className="mb-2">

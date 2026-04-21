@@ -12,8 +12,10 @@ import {
   faShieldHalved,
   faUsers,
   faUserTie,
+  faHandsHelping,
 } from '@fortawesome/free-solid-svg-icons'
 import { useHospital } from '../Usecontext/HospitalContext'
+
 
 const EmployeeManagement = () => {
   const navigate = useNavigate()
@@ -22,7 +24,7 @@ const EmployeeManagement = () => {
   // Map employee types to icons
   const iconMap = {
     doctor: faUserDoctor,
-    nurse: faUserNurse,
+    nurse: faHandsHelping,
     // pharmacist: faPills,
     // laboratory: faVials,
     admin: faUserAlt,
@@ -66,7 +68,7 @@ const EmployeeManagement = () => {
         `}
       </style>
 
-      <h2 className="text-center mb-4" style={{color:'var(--color-black)'}}>Employee Management</h2>
+      <h2 className="text-center mb-4" style={{ color: 'var(--color-black)' }}>Employee Management</h2>
 
       <CRow className="g-4 justify-content-start">
         {visibleEmployees.map((emp, index) => (
