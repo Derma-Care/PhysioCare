@@ -15,7 +15,7 @@ export const features = [
   'Reports Management',
   'Disease-Management',
   'Therapy Management',
-  'Exercise Management',
+  // 'Exercise Management',
   'Program Management',
   'Package Management',
 

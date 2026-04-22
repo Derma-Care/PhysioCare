@@ -104,7 +104,7 @@ export const getNavigation = (permissions = {}) => {
     {
       component: CNavItem,
       to: '/exercises',
-      name: 'Exercises Management', //Exercises Management
+      name: 'Exercise Management', //Exercises Management
 
       as: NavLink,
       icon: <CIcon icon={cilRunning} customClassName="nav-icon" />,
