@@ -401,15 +401,26 @@ const CustomerManagement = () => {
     if (!validateForm()) return
     setSaveLoading(true)
     try {
-      const updatedFormData = {
-        ...formData,
-        // Ensure fullName is combined
-        fullName: `${formData.title} ${formData.firstName} ${formData.lastName}`.trim(),
-        // Include hospital info from localStorage
-        hospitalId: localStorage.getItem('HospitalId') || '',
-        hospitalName: localStorage.getItem('HospitalName') || '',
-        branchId: localStorage.getItem('branchId') || '',
-      }
+     const updatedFormData = {
+  ...formData,
+
+  // ✅ SAFE FULL NAME
+  fullName: [
+    formData.title,
+    formData.firstName,
+    formData.lastName
+  ].filter(Boolean).join(" "),
+
+  // ✅ DO NOT OVERWRITE EXISTING VALUES
+  hospitalId:
+    localStorage.getItem('HospitalId') || formData.hospitalId,
+
+  hospitalName:
+    localStorage.getItem('HospitalName') || formData.hospitalName,
+
+  branchId:
+    localStorage.getItem('branchId') || formData.branchId,
+};
 
       // Format DOB to DD-MM-YYYY
       if (updatedFormData.dateOfBirth) {

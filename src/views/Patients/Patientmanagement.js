@@ -112,7 +112,7 @@ const PatientManagement = () => {
   const fetchAppointments = async (patientId) => {
     try {
       setLoading(true);
-      const response = await http.get(`${wifiUrl}/api/customer/bookings/byPatientId/${patientId}`);
+      const response = await http.get(`${BASE_URL}/bookings/byPatientId//${patientId}`);
       console.log('Full API response:', response.data);
 
       const data = response.data?.data || [];
@@ -162,7 +162,7 @@ const PatientManagement = () => {
       setReportLoading(true);
 
       const response = await http.get(
-        `${BASE_URL}/getReportByBookingId/${bookingId}`
+        `${BASE_URL}/reports/patientId/${bookingId}`
       );
 
       console.log("Report By Booking ID:", response.data);
@@ -274,7 +274,7 @@ const PatientManagement = () => {
                   <CCol md={6}><strong>Age:</strong> {selectedPatient.age}</CCol>
                   <CCol md={6}><strong>DOB:</strong> {selectedPatient.dateOfBirth}</CCol>
                   <CCol md={6}><strong>Mobile:</strong> {selectedPatient.mobileNumber}</CCol>
-                  <CCol md={6}><strong>Email:</strong> {selectedPatient.email}</CCol>
+                  <CCol md={6}><strong>Email:</strong> {selectedPatient.email || 'N/A'}</CCol>
                   <CCol md={12}>
                     <strong>Address:</strong>{" "}
                     {selectedPatient.address?.houseNo},{" "}
@@ -299,7 +299,7 @@ const PatientManagement = () => {
               ) : appointments && appointments.length > 0 ? (
                 <>
                   <h5 className="mb-3">
-                    Appointments for {selectedPatient?.fullName} ({selectedPatient?.patientId})
+                    Appointments for {selectedPatient?.fullName} ({selectedPatient?.customerId})
                   </h5>
 
                   {/* 🔹 Sub-tabs for Active | Pending | Completed */}
