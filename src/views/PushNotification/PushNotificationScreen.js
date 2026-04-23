@@ -75,49 +75,49 @@ const FCMNotification = () => {
   }
 
   // Fetch notifications
-const fetchNotifications = async () => {
-  const clinicId = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
+  const fetchNotifications = async () => {
+    const clinicId = localStorage.getItem('HospitalId')
+    const branchId = localStorage.getItem('branchId')
 
-  try {
-    const res = await http.get(`/priceDropNotification/${clinicId}/${branchId}`)
-    if (res.data.success) {
-      const dataList = Array.isArray(res.data.data) ? res.data.data : [res.data.data]
+    try {
+      const res = await http.get(`/priceDropNotification/${clinicId}/${branchId}`)
+      if (res.data.success) {
+        const dataList = Array.isArray(res.data.data) ? res.data.data : [res.data.data]
 
-      const mapped = dataList.map((n) => {
-        let selectedCustomers = []
+        const mapped = dataList.map((n) => {
+          let selectedCustomers = []
 
-        // If tokens exist, use them
-        if (n.tokens && Array.isArray(n.tokens)) {
-          selectedCustomers = n.tokens
-            .map((token) => customerOptions.find((c) => c.value === token))
-            .filter(Boolean)
-        }
+          // If tokens exist, use them
+          if (n.tokens && Array.isArray(n.tokens)) {
+            selectedCustomers = n.tokens
+              .map((token) => customerOptions.find((c) => c.value === token))
+              .filter(Boolean)
+          }
 
-        // If tokens are null, extract from customerData
-        else if (n.customerData && Array.isArray(n.customerData)) {
-          selectedCustomers = n.customerData.map((c) => {
-            const name = Object.keys(c)[0]
-            const data = c[name]
-            return {
-              value: data.customerId || data.patientId || name,
-              label: `${name} (${data.patientId || data.customerId || ''})`,
-            }
-          })
-        }
+          // If tokens are null, extract from customerData
+          else if (n.customerData && Array.isArray(n.customerData)) {
+            selectedCustomers = n.customerData.map((c) => {
+              const name = Object.keys(c)[0]
+              const data = c[name]
+              return {
+                value: data.customerId || data.patientId || name,
+                label: `${name} (${data.patientId || data.customerId || ''})`,
+              }
+            })
+          }
 
-        return {
-          ...n,
-          selectedCustomers,
-        }
-      })
+          return {
+            ...n,
+            selectedCustomers,
+          }
+        })
 
-      setSentNotifications(mapped)
+        setSentNotifications(mapped)
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
     }
-  } catch (error) {
-    console.error('Error fetching notifications:', error)
   }
-}
 
 
   // Fetch customers
@@ -144,11 +144,11 @@ const fetchNotifications = async () => {
     fetchCustomers()
   }, [fetchCustomers])
 
- useEffect(() => {
-  if (customerOptions.length > 0) {
-    fetchNotifications()
-  }
-}, [customerOptions])
+  useEffect(() => {
+    if (customerOptions.length > 0) {
+      fetchNotifications()
+    }
+  }, [customerOptions])
 
 
   // Submit form (send or update)
@@ -209,36 +209,36 @@ const fetchNotifications = async () => {
   }
 
   // Delete notification
- const handleDelete = async () => {
-  const clinicId = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
+  const handleDelete = async () => {
+    const clinicId = localStorage.getItem('HospitalId')
+    const branchId = localStorage.getItem('branchId')
 
- 
 
-  try {
-    // Optional: show a loading state
-    setIsLoading(true)
 
-    const res = await http.delete(
-      `${BASE_URL}/deletePriceDropNotification/${clinicId}/${branchId}/${selectedItem}`
-    )
+    try {
+      // Optional: show a loading state
+      setIsLoading(true)
 
-    if (res.data.success) {
-      showCustomToast('Notification deleted successfully!')
-      fetchNotifications()
-    } 
-    // else {
-    //   showCustomToast('Failed to delete notification', 'error')
-    // }
-  } catch (error) {
-    console.error('Error deleting notification:', error)
-    // showCustomToast('Error while deleting notification', 'error')
-  } finally {
-    setIsLoading(false)
-    setDeleteConfirm(false)
-  
+      const res = await http.delete(
+        `${BASE_URL}/deletePriceDropNotification/${clinicId}/${branchId}/${selectedItem}`
+      )
+
+      if (res.data.success) {
+        showCustomToast('Notification deleted successfully!')
+        fetchNotifications()
+      }
+      // else {
+      //   showCustomToast('Failed to delete notification', 'error')
+      // }
+    } catch (error) {
+      console.error('Error deleting notification:', error)
+      // showCustomToast('Error while deleting notification', 'error')
+    } finally {
+      setIsLoading(false)
+      setDeleteConfirm(false)
+
+    }
   }
-}
 
 
   // Load notification into form for editing
@@ -247,7 +247,7 @@ const fetchNotifications = async () => {
     setBody(n.body)
     setImage(n.image || null)
     setSendAll(n.sendAll || false)
-   setSelectedCustomers(n.sendAll ? [] : n.selectedCustomers || [])
+    setSelectedCustomers(n.sendAll ? [] : n.selectedCustomers || [])
 
     setIsEditing(true)
     setEditId(n._id)
@@ -326,7 +326,7 @@ const fetchNotifications = async () => {
                   option: (base, { isFocused, isSelected }) => ({
                     ...base,
                     backgroundColor: isSelected ? '#000' : isFocused ? '#f1f1f1' : 'white',
-                    color: isSelected ? 'white' : 'var(--color-black)',
+                    color: isSelected ? 'white' : 'var(--color-bgcolor)',
                     cursor: 'pointer',
                   }),
                 }}
@@ -344,7 +344,7 @@ const fetchNotifications = async () => {
             className="mt-4 w-100"
             onClick={handleSubmit}
             disabled={isLoading}
-            style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+            style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white' }}
           >
             {isLoading ? (
               <>
@@ -361,7 +361,7 @@ const fetchNotifications = async () => {
       {/* Table */}
       <CCard className="mb-2">
         <CCardHeader className="bg-light">
-          <h6 className="mb-0">📋 Sent Notifications Log</h6>
+          <h6 className="mb-0 textColor" >📋 Sent Notifications Log</h6>
         </CCardHeader>
         <CCardBody>
           {responseMessage && (
@@ -412,9 +412,9 @@ const fetchNotifications = async () => {
                           className="actionBtn"
                           title="Delete"
                           onClick={() => {
-    setSelectedItem(n.id)      // store the selected item
-    setDeleteConfirm(true)  // show confirmation modal
-  }}
+                            setSelectedItem(n.id)      // store the selected item
+                            setDeleteConfirm(true)  // show confirmation modal
+                          }}
                         >
                           <Trash2 size={18} />
                         </button>
@@ -542,18 +542,18 @@ const fetchNotifications = async () => {
       </CModal>
 
       {/* Delete Modal */}
-  <ConfirmationModal
-  isVisible={deleteConfirm}
-  title="Delete Notification"
-  message={`Are you sure you want to delete this notification? This action cannot be undone.`}
-  isLoading={isLoading}
-  confirmText="Yes, Delete"
-  cancelText="Cancel"
-  confirmColor="danger"
-  cancelColor="secondary"
-  onConfirm={handleDelete}
-  onCancel={() => setDeleteConfirm(false)}
-/>
+      <ConfirmationModal
+        isVisible={deleteConfirm}
+        title="Delete Notification"
+        message={`Are you sure you want to delete this notification? This action cannot be undone.`}
+        isLoading={isLoading}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        confirmColor="danger"
+        cancelColor="secondary"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirm(false)}
+      />
 
 
     </div>

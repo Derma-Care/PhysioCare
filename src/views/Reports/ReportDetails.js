@@ -491,12 +491,12 @@ const ReportDetails = () => {
           <CButton color="secondary" size="sm" onClick={() => navigate(-1)}>
             Back
           </CButton>
-          {can('Reports', 'create') && (
+          {can('Reports Management', 'create') && (
             <CButton
               color="success"
               size="sm"
               onClick={() => setUploadModal(true)}
-              style={{ backgroundColor: 'var(--color-black)', color: 'white', border: 'none' }}
+              style={{ backgroundColor: 'var(--color-white)', color: 'var(--color-bgcolor)', border: 'none' }}
             >
               Upload Report
             </CButton>
@@ -577,28 +577,28 @@ const ReportDetails = () => {
                         {base64File ? (
                           <div className="d-flex gap-2">
                             {/* 👁️ Preview Button */}
-                            {/* {can('Reports', 'read') && ( */}
-                            <CButton
-                              className="border-0"
-                              style={{
-                                backgroundColor: 'var(--color-bgcolor)',
-                                color: 'var(--color-black)',
-                              }}
-                              size="sm"
-                              onClick={() => {
-                                const filesArray = Array.isArray(reportItem.reportFile)
-                                  ? reportItem.reportFile
-                                  : [reportItem.reportFile]
-                                setSelectedReportFiles(filesArray)
-                                setSelectedReport(reportItem)
-                                setDeleteId(reportItem)
-                                setShowModal(true)
-                              }}
-                            >
-                              <Eye size={20} />
-                            </CButton>
+                            {can('Reports Management', 'read') && (
+                              <CButton
+                                className="border-0"
+                                style={{
+                                  backgroundColor: 'var(--color-bgcolor)',
+                                  color: 'var(--color-black)',
+                                }}
+                                size="sm"
+                                onClick={() => {
+                                  const filesArray = Array.isArray(reportItem.reportFile)
+                                    ? reportItem.reportFile
+                                    : [reportItem.reportFile]
+                                  setSelectedReportFiles(filesArray)
+                                  setSelectedReport(reportItem)
+                                  setDeleteId(reportItem)
+                                  setShowModal(true)
+                                }}
+                              >
+                                <Eye size={20} />
+                              </CButton>
 
-                            {/* )} */}
+                            )}
                             {/* ⬇️ Download Button */}
                             <CButton
                               className="btn btn-sm"
@@ -658,8 +658,8 @@ const ReportDetails = () => {
               <CTableRow>
                 <CTableDataCell
                   colSpan="7"
-                  className="text-center"
-                  style={{ color: 'var(--color-black)' }}
+                  className="text-center textColor"
+
                 >
                   No Reports Found
                 </CTableDataCell>

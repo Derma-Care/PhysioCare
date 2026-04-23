@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { CCard, CCardBody, CRow, CCol } from "@coreui/react"
 
- const RevenueCards = () => {
+const RevenueCards = () => {
   const [data, setData] = useState({
     today: 0,
     week: 0,
@@ -28,7 +28,7 @@ import { CCard, CCardBody, CRow, CCol } from "@coreui/react"
     <CRow>
       {/* Today */}
       <CCol md={3}>
-        <CCard style={{ borderLeft: "5px solid green" }}>
+        <CCard style={{ borderLeft: "5px solid green" }} className="textColor">
           <CCardBody>
             <h6>Today Revenue</h6>
             <h4>₹{data.today}</h4>
@@ -38,7 +38,7 @@ import { CCard, CCardBody, CRow, CCol } from "@coreui/react"
 
       {/* Week */}
       <CCol md={3}>
-        <CCard style={{ borderLeft: "5px solid blue" }}>
+        <CCard style={{ borderLeft: "5px solid blue" }} className="textColor">
           <CCardBody>
             <h6>This Week</h6>
             <h4>₹{data.week}</h4>
@@ -48,7 +48,7 @@ import { CCard, CCardBody, CRow, CCol } from "@coreui/react"
 
       {/* Month */}
       <CCol md={3}>
-        <CCard style={{ borderLeft: "5px solid orange" }}>
+        <CCard style={{ borderLeft: "5px solid orange" }} className="textColor">
           <CCardBody>
             <h6>This Month</h6>
             <h4>₹{data.month}</h4>
@@ -59,7 +59,7 @@ import { CCard, CCardBody, CRow, CCol } from "@coreui/react"
         <CCard style={{ borderLeft: "5px solid orange" }}>
           <CCardBody>
             <h6>Expence</h6>
-            <h4 style={{color:"red"}}>- {data.expences}</h4>
+            <h4 style={{ color: "red" }}>- {data.expences}</h4>
           </CCardBody>
         </CCard>
       </CCol>

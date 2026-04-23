@@ -223,7 +223,7 @@ const ReportsManagement = () => {
             className="form-select w-auto"
             value={statusFilter}
             onChange={handleStatusChange}
-            style={{ color: "var(--color-black)" }}
+            style={{ color: "var(--color-bgcolorr)" }}
           >
             <option>All Status</option>
             <option>Active</option>
@@ -271,8 +271,8 @@ const ReportsManagement = () => {
                       <CTableDataCell>
                         {can('Appointments', 'read') && (
                           <CButton
-                            style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
-                            className="text-white"
+
+                            className="text-white actionBtn"
                             size="sm"
                             onClick={() =>
                               navigate(`/report-details/${item.bookingId}`, {

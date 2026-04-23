@@ -68,7 +68,7 @@ const EmployeeManagement = () => {
         `}
       </style>
 
-      <h2 className="text-center mb-4" style={{ color: 'var(--color-black)' }}>Employee Management</h2>
+      <h2 className="text-center mb-4"  >Employee Management</h2>
 
       <CRow className="g-4 justify-content-start">
         {visibleEmployees.map((emp, index) => (
@@ -81,10 +81,10 @@ const EmployeeManagement = () => {
               <CCardBody>
                 <FontAwesomeIcon
                   icon={iconMap[emp.type]}
-                  style={{ fontSize: '70px', color: 'var(--color-black)' }}
+                  style={{ fontSize: '70px', color: '#fff', }}
                   className="mb-3"
                 />
-                <h5 style={{ color: 'var(--color-black)' }}>{emp.title}</h5>
+                <h5 style={{ color: 'var(--color-white)' }}>{emp.title}</h5>
               </CCardBody>
             </CCard>
           </CCol>

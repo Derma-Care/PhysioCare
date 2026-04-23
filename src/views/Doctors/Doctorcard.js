@@ -21,9 +21,9 @@ const DoctorCard = ({ doctor }) => {
 
     const success = await updateDoctorAvailability(doctor.doctorId, value)
     if (success) {
-     showCustomToast(`Availability set to ${value ? 'Available' : 'Not Available'}`,'success')
+      showCustomToast(`Availability set to ${value ? 'Available' : 'Not Available'}`, 'success')
     } else {
-      showCustomToast('Failed to update availability','error')
+      showCustomToast('Failed to update availability', 'error')
       setAvailability(!value) // revert change if failed
     }
   }
@@ -65,7 +65,7 @@ const DoctorCard = ({ doctor }) => {
             checked={availability}
             onChange={handleToggle}
             style={{
-              backgroundColor: 'var(--color-black)',
+              backgroundColor: 'var(--color-bgcolor)',
               marginTop: '-10px',
               borderColor: 'var(--color-bgcolor)',
             }}
@@ -82,7 +82,7 @@ const DoctorCard = ({ doctor }) => {
         >
           View Details
         </button>
-        <p className="mb-0 " style={{ color: 'var(--color-black)' }}>
+        <p className="mb-0 " style={{ color: 'var(--color-bgcolor)' }}>
           <strong>ID:</strong> {doctor.doctorId}
         </p>
       </div>
@@ -122,7 +122,7 @@ const DoctorCard = ({ doctor }) => {
 }
 
 .doctor-info h2 {
-  color:${'var(--color-black)'};
+  color:${'var(--color-bgcolor)'};
   font-size: 18px;
   margin: 0 0 6px;
   font-weight: 700;
@@ -130,20 +130,20 @@ const DoctorCard = ({ doctor }) => {
 
 .speciality {
   margin: 4px 0;
-  color:${'var(--color-black)'};
+  color:${'var(--color-bgcolor)'};
   font-size: 14px;
 }
 
 .doctor-info p {
  
-  color:${'var(--color-black)'};
+  color:${'var(--color-bgcolor)'};
   font-size: 14px;
 }
 
 .availability-toggle label {
 margin-top:-30px;
   font-size: 14px;
-  color:${'var(--color-black)'};
+  color:${'var(--color-bgcolor)'};
 }
 
 .doctor-action {
@@ -152,7 +152,7 @@ margin-top:-30px;
   align-items: center;
   gap: 6px;
   padding: 10px;
-  border: 1px solid ${'var(--color-black)'};
+  border: 1px solid ${'var(--color-bgcolor)'};
   border-radius: 10px;
   background-color: #fafafa;
   min-width: 160px;
@@ -160,7 +160,7 @@ margin-top:-30px;
 }
 
 .doctor-action button {
-  background-color:${'var(--color-black)'};
+  background-color:${'var(--color-bgcolor)'};
   color: white;
   border: none;
   padding: 8px 12px;
@@ -172,7 +172,7 @@ margin-top:-30px;
 }
 
 .doctor-action button:hover {
-  background-color:${'var(--color-black)'};
+  background-color:${'var(--color-bgcolor)'};
 }
 
       `}</style>

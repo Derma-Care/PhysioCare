@@ -1,5 +1,6 @@
 import React from 'react'
 import { CButton, CFormSelect } from '@coreui/react'
+import { COLORS } from '../Constant/Themes'
 
 const Pagination = ({ currentPage, totalPages, pageSize, onPageChange, onPageSizeChange }) => {
   const handlePrev = () => {
@@ -26,11 +27,11 @@ const Pagination = ({ currentPage, totalPages, pageSize, onPageChange, onPageSiz
     <div className="d-flex justify-content-between align-items-center mt-3">
       {/* Rows per page */}
       <div className="d-flex align-items-center gap-2">
-        <span>Rows per page:</span>
+        <span style={{ color: "var(--color-bgcolor)" }}>Rows per page:</span>
         <CFormSelect
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          style={{ width: '100px' }}
+          style={{ width: '100px', color: "var(--color-bgcolor)" }}
         >
           <option value={5}>5</option>
           <option value={10}>10</option>
@@ -50,7 +51,7 @@ const Pagination = ({ currentPage, totalPages, pageSize, onPageChange, onPageSiz
             key={page}
             size="sm"
             style={{
-              backgroundColor: currentPage === page ? 'var(--color-black)' : '#fff',
+              backgroundColor: currentPage === page ? 'var(--color-bgcolor)' : COLORS.orange,
               color: currentPage === page ? '#fff' : 'var(--color-black)',
               border: '1px solid #ccc',
               borderRadius: '5px',

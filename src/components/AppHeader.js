@@ -66,7 +66,7 @@ const AppHeader = () => {
       <CContainer className="border-bottom px-4" fluid>
         <CHeaderToggler
           onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
-          style={{ marginInlineStart: '-14px' }}
+          style={{ marginInlineStart: '-14px', color: "white" }}
         >
           <CIcon icon={cilMenu} size="lg" />
         </CHeaderToggler>
@@ -79,10 +79,10 @@ const AppHeader = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
-              color: 'var(--color-black)',
+              color: 'var(--color-white)',
               borderRadius: '10px', // Rounded corners
               padding: '10px 15px', // Inner spacing
-              border: `1px solid ${'var(--color-black)'}`, // Light gray border
+              border: `1px solid ${'var(--color-white)'}`, // Light gray border
               outline: 'none', // Removes focus border
               width: '350px', // Adjust width as needed
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // Subtle shadow
@@ -91,7 +91,7 @@ const AppHeader = () => {
             }}
           />
         </div>
-      
+
         {/* Notification Icons */}
         <div className="d-flex align-items-center ms-auto">
           {/* Bell icon with badge */}

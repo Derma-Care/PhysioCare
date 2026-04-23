@@ -129,7 +129,7 @@ function Help() {
       <PageLayout branch={mainBranch} />
       <div className="help-container">
         {/* 🔍 Search Bar */}
-        <div className="mb-4 text-center ">
+        {/* <div className="mb-4 text-center ">
           <CFormInput
             placeholder="Search for help topics (e.g., Appointment, )..."
             value={searchTerm}
@@ -138,10 +138,10 @@ function Help() {
               margin: '0 auto',
             }}
           />
-        </div>
+        </div> */}
 
         {/* 📘 Accordion Section */}
-        <div
+        {/* <div
           className="mx-auto mb-4"
           style={{
             transition: 'all 0.2s ease', // Smooth transition
@@ -153,7 +153,7 @@ function Help() {
                 <CAccordionHeader>{topic.title}</CAccordionHeader>
                 <CAccordionBody
                   style={{
-                    color: 'var(--color-black)',
+                    color: 'var(--color-bgcolor)',
 
                     fontSize: '0.95rem',
                     transition: 'all 0.2s ease',
@@ -170,7 +170,7 @@ function Help() {
               </p>
             )}
           </CAccordion>
-        </div>
+        </div> */}
 
         {/* 📞 Contact Support Section */}
         <div className="text-center mb-4">
@@ -178,19 +178,14 @@ function Help() {
           <p className="text-muted mb-4">Contact our support team for personalized assistance.</p>
 
           <CButton
-            style={{
-              backgroundColor: 'var(--color-black)',
-              color: 'white',
-              borderRadius: '8px',
-              padding: '8px 16px',
-            }}
-            className="me-3"
+
+            className="me-3 actionBtn "
             onClick={() => {
               const email = mainBranch.email
               const subject = 'Support Request'
               const body = 'Hello,\n\nI need assistance with...'
               const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
-                email,
+                email, actionBtn
               )}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
               window.open(gmailUrl, '_blank')
             }}
@@ -200,12 +195,7 @@ function Help() {
 
           <a href={`tel:${mainBranch.phone}`} style={{ textDecoration: 'none' }}>
             <CButton
-              style={{
-                backgroundColor: 'var(--color-bgcolor)',
-                color: 'var(--color-black)',
-                borderRadius: '8px',
-                padding: '8px 16px',
-              }}
+              className='actionBtn'
             >
               <Phone size={18} className="me-2" /> Call Support
             </CButton>

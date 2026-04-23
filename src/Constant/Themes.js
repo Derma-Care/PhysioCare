@@ -1,7 +1,7 @@
 // src/styles/constants.ts
 
 export const COLORS = {
-  primary: '#041f3a',
+  primary: '#1B4F8A',
   secondary: '#0196ee',
   danger: '#ff4d4f',
   success: '#28a745',
@@ -10,7 +10,7 @@ export const COLORS = {
   gray: '#6c757d',
   lowgray: '#6c757d3e',
   teal: '#16a085',
-  orange: '#f39c12',
+  orange: '#f9c571',
   theme: '#f3f4f7',
   bgcolor: '#a5c4d4ff',
   logocolor: '#000',

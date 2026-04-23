@@ -763,7 +763,7 @@ const DoctorManagement = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           />
-          <button className="btn" style={{ backgroundColor: 'var(--color-black)', color: 'white' }} onClick={handleAdd}>
+          <button className="btn" style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white' }} onClick={handleAdd}>
             Add
           </button>
         </div>
@@ -843,7 +843,7 @@ const DoctorManagement = () => {
               setModalVisible(true)
             }}
             style={{
-              background: 'linear-gradient(to right, var(--color-black),var(--color-black)',
+              background: 'linear-gradient(to right, var(--color-bgcolor),var(--color-bgcolor)',
               border: 'none',
               fontWeight: '600',
               fontSize: '16px',
@@ -1932,7 +1932,7 @@ const DoctorManagement = () => {
 
           <CButton
             style={{
-              backgroundColor: 'var(--color-black)',
+              backgroundColor: 'var(--color-bgcolor)',
               color: 'white',
             }}
             onClick={handleSubmit}

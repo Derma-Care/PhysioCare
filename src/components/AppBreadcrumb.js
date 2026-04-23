@@ -38,7 +38,7 @@ const AppBreadcrumb = () => {
     <div className="d-flex justify-content-between align-items-center align-content-center  w-100">
       <CBreadcrumb className="my-0 custom-breadcrumb mb-0">
 
-        <CBreadcrumbItem href="/dashboard">Home</CBreadcrumbItem>
+        <CBreadcrumbItem href="/dashboard" >Home</CBreadcrumbItem>
 
 
         {breadcrumbs.map((breadcrumb, index) => (

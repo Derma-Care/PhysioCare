@@ -18,8 +18,8 @@ import SupplierApp from './components/PharmacyManagement/Reorder/SupplierApp'
 // import { listenNotification } from './firebase'
 import { LogoLoader } from './Utils/LogoLoder'
 
- 
- 
+
+
 
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
@@ -36,11 +36,11 @@ const App = () => {
   // useEffect(() => {
   //   listenNotification()
   // }, [])
- 
- 
+
+
   return (
     <Suspense fallback={<LogoLoader />}>
-    {/* <Suspense> */}
+      {/* <Suspense> */}
       <Routes>
         {/* ✅ Lowercase redirect for consistency */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

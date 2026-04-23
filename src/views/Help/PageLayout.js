@@ -39,7 +39,7 @@ const PageLayout = ({ title, children, branch }) => {
           className="mb-4"
           style={{
             fontWeight: 600,
-            color: 'var(--color-black)',
+            color: 'var(--color-bgcolor)',
             borderBottom: '2px solid #e6e6e6',
             paddingBottom: '8px',
           }}
@@ -51,7 +51,7 @@ const PageLayout = ({ title, children, branch }) => {
       {/* 🔸 Hospital Information Card */}
       {branch && hospital && (
         <div
-          className="p-4 rounded shadow-sm mb-5 bg-white"
+          className="p-4 rounded shadow-sm mb-5 bg-white textColor"
           style={{ border: '1px solid #f1f1f1' }}
         >
           <div className="d-flex align-items-start" style={{ gap: '16px', flexWrap: 'wrap' }}>
@@ -69,7 +69,7 @@ const PageLayout = ({ title, children, branch }) => {
                   height: '80px',
                   objectFit: 'fill',
                   borderRadius: '8px',
-                  border: '1px solid #ddd',
+                  border: '1px solid #ddd', color: "var(--color-bgcolor)"
                 }}
               />
             ) : (
@@ -90,7 +90,7 @@ const PageLayout = ({ title, children, branch }) => {
             <div style={{ flex: 1, minWidth: '200px' }}>
               <h4
                 className="fw-bold mb-1"
-                style={{ fontSize: '1rem', color: 'var(--color-black)' }}
+                style={{ fontSize: '1rem', color: 'var(--color-bgcolor)' }}
               >
                 {hospital.name}
               </h4>
@@ -119,7 +119,7 @@ const PageLayout = ({ title, children, branch }) => {
 
           {/* 🔹 Branch Section */}
           <div className="mt-4">
-            <h6 className="fw-bold mb-3 pb-2 border-bottom" style={{ color: 'var(--color-black)' }}>
+            <h6 className="fw-bold mb-3 pb-2 border-bottom" style={{ color: 'var(--color-bgcolor)' }}>
               🏥 Our Branches
             </h6>
 

@@ -9,11 +9,11 @@ const LoadingIndicator = ({ message = 'Loading...' }) => {
       style={{
         height: '50vh', // full screen height
 
-        color: 'var(--color-black)',
+        color: 'var(--color-bgcolor)',
       }}
     >
       <CSpinner size="sm" className="me-2" />
-      <span>{message}</span>
+      <span style={{ color: 'var(--color-bgcolor)', }}>{message}</span>
     </div>
   )
 }

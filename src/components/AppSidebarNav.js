@@ -13,15 +13,15 @@ export const AppSidebarNav = ({ items }) => {
     return (
       <>
         {icon
-          ? React.cloneElement(icon, { style: { color: 'var(--color-black)' } })
+          ? React.cloneElement(icon, { style: { color: 'var(--color-white)' } })
           : indent && (
-              <span className="nav-icon">
-                <span className="nav-icon-bullet"></span>
-              </span>
-            )}
+            <span className="nav-icon">
+              <span className="nav-icon-bullet"></span>
+            </span>
+          )}
         {name && name}
         {badge && (
-          <CBadge color={badge.color} className="ms-auto">
+          <CBadge color={badge.color} className="ms-auto"  >
             {badge.text}
           </CBadge>
         )}
@@ -38,7 +38,7 @@ export const AppSidebarNav = ({ items }) => {
           <CNavLink
             {...(rest.to && { as: NavLink })}
             {...rest}
-            style={{ color: 'var(--color-black)' }}
+            style={{ color: 'var(--color-white)' }}
           >
             {navLink(name, icon, badge, indent)}
           </CNavLink>

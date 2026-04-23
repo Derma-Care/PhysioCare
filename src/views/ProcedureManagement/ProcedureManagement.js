@@ -327,6 +327,7 @@ export default function TherapyManagement() {
                         className="actionBtn"
                         onClick={() => handleEdit(item)}
                         title="Edit"
+
                       >
                         <Edit2 size={18} />
                       </button>
