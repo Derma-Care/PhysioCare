@@ -552,251 +552,23 @@ const WidgetsDropdown = (props) => {
   }
   return (
     <>
-      {role.toLowerCase() === "admin" && (
-        <>
-          {/*to display cards*/}
-          <CRow className={props.className} xs={{ gutter: 4 }}>
-            {/* <CCol sm={6} xl={3}>
-          <CCard>
-            <CCardBody style={{ textAlign: "center" }}>
-              <h5>🏥Chiselon Clinic Management System</h5>
-
-              <p style={{ margin: "5px 0" }}>
-                Developed by <strong>ss</strong>
-              </p>
-
-              <p style={{ margin: "5px 0" }}>
-                Company: <strong>BP Tech Solutions</strong>
-              </p>
-
-              <p style={{ margin: "5px 0" }}>
-                📧 support@bptech.com | 📞 +91 9876543210
-              </p>
-
-              <small style={{ color: "gray" }}>
-                © 2026 All Rights Reserved
-              </small>
-            </CCardBody>
-          </CCard>
-        </CCol> */}
-            {/* <CCol sm={6} xl={4}>
-
-              <CCard
-                onClick={() => navigate("/appointment-management")}
-                style={{
-                  cursor: "pointer",
-                  border: "1px solid #var(--color-black)",
-                  borderRadius: "14px",
-                  backgroundColor: "#ffffff",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)"
-                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)"
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
-                }}
-              >
-                <CCardBody
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "14px 18px",
-                  }}
-                >
-           
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", }}>
-
-                
-                    <div
-                      style={{
-                        width: "42px",
-                        height: "42px",
-                        borderRadius: "50%",
-                        backgroundColor: "#e7f1ff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "bold",
-                        color: "var(--color-black)",
-                        fontSize: "16px",
-                      }}
-                    >
-                      {totalAppointmentsCount}
-                    </div>
-                    <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
-                      Total Appointments
-                    </div>
-          
-                  </div>
-
-         
-                  <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
-                </CCardBody>
-              </CCard>
-
-
-            </CCol> */}
-
-            <CCol sm={6} xl={4}>
-
-
-              <CCard
-                onClick={() => navigate("/patient-management")}
-                style={{
-                  cursor: "pointer",
-                  border: "1px solid #var(--color-black)",
-                  borderRadius: "14px",
-                  backgroundColor: "#ffffff",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)"
-                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)"
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
-                }}
-              >
-                <CCardBody
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "14px 18px",
-                  }}
-                >
-                  {/* 🔹 Left Side (Count + Text) */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-
-                    {/* 🔵 Rounded Count */}
-                    <div
-                      style={{
-                        width: "42px",
-                        height: "42px",
-                        borderRadius: "50%",
-                        backgroundColor: "#e7f1ff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "bold",
-                        color: "var(--color-black)",
-
-                        fontSize: "16px",
-                      }}
-                    >
-                      {totalPatientsCount}
-                    </div>
-
-                    {/* 📝 Text */}
-                    <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
-                      Search Patients
-                    </div>
-                  </div>
-
-                  {/* ➡️ Arrow */}
-                  <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
-                </CCardBody>
-              </CCard>
-
-
-            </CCol>
-
-            {/* <CCol sm={6} xl={4}>
-          <CWidgetStatsA
-            color="success"
-            value={totalPatientsCount}
-            title="Total Patients"
-
-          />
-        </CCol> */}
-            <CCol sm={6} xl={4}>
-              <CCard
-                onClick={() => navigate("/employee-management/doctor")}
-                style={{
-                  cursor: "pointer",
-                  border: "1px solid #var(--color-black)",
-                  borderRadius: "14px",
-                  backgroundColor: "#ffffff",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)"
-                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)"
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
-                }}
-              >
-                <CCardBody
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "14px 18px",
-                  }}
-                >
-                  {/* 🔹 Left Side (Count + Text) */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-
-                    {/* 🔵 Rounded Count */}
-                    <div
-                      style={{
-                        width: "42px",
-                        height: "42px",
-                        borderRadius: "50%",
-                        backgroundColor: "#e7f1ff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "bold",
-                        color: "var(--color-black)",
-
-                        fontSize: "16px",
-                      }}
-                    >
-                      {totalDoctorsCount}
-                    </div>
-
-                    {/* 📝 Text */}
-                    <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
-                      Search Doctors
-                    </div>
-                  </div>
-
-                  {/* ➡️ Arrow */}
-                  <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
-                </CCardBody>
-              </CCard>
-            </CCol>
-
-          </CRow>
-        </>
-      )}
+    
       {/* Carousel Section */}
-      <CCard
-        className="mt-4 text-center border-2 border-dashed rounded"
-        style={{ backgroundColor: 'var(--color-bgcolor)' }}
-      >
-        <CCardBody className="fw-bold fs-3" style={{ color: 'var(--color-black)' }}>
+      {/* <CCard */}
+        {/* className="mt-4 text-center border-2 border-dashed rounded" */}
+        {/* style={{ backgroundColor: 'var(--color-bgcolor)' }} */}
+      {/* > */}
+        {/* <CCardBody className="fw-bold fs-3" style={{ color: 'var(--color-black)' }}> */}
           {/* Ad Space */}
-        </CCardBody>
-      </CCard>
+        {/* </CCardBody> */}
+      {/* </CCard> */}
 
       {/*to display today Appointments Table */}
       <div className="container mt-3 ">
 
         <div className="row">
           <div className="d-flex justify-content-between align-items-center align-content-center  ">
-            <h5 className="mb-4">Today Appointments</h5>
+            <h5 className="mb-4 text-md">Today's Appointments</h5>
 
             {/* 
             <div className="d-flex gap-2">
@@ -1069,6 +841,235 @@ const WidgetsDropdown = (props) => {
           </CTableBody>
         </CTable>
       </div>
+        {role.toLowerCase() === "admin" && (
+        <>
+          {/*to display cards*/}
+          <CRow className={props.className} xs={{ gutter: 4 }}>
+            {/* <CCol sm={6} xl={3}>
+          <CCard>
+            <CCardBody style={{ textAlign: "center" }}>
+              <h5>🏥Chiselon Clinic Management System</h5>
+
+              <p style={{ margin: "5px 0" }}>
+                Developed by <strong>ss</strong>
+              </p>
+
+              <p style={{ margin: "5px 0" }}>
+                Company: <strong>BP Tech Solutions</strong>
+              </p>
+
+              <p style={{ margin: "5px 0" }}>
+                📧 support@bptech.com | 📞 +91 9876543210
+              </p>
+
+              <small style={{ color: "gray" }}>
+                © 2026 All Rights Reserved
+              </small>
+            </CCardBody>
+          </CCard>
+        </CCol> */}
+            {/* <CCol sm={6} xl={4}>
+
+              <CCard
+                onClick={() => navigate("/appointment-management")}
+                style={{
+                  cursor: "pointer",
+                  border: "1px solid #var(--color-black)",
+                  borderRadius: "14px",
+                  backgroundColor: "#ffffff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)"
+                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)"
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
+                }}
+              >
+                <CCardBody
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "14px 18px",
+                  }}
+                >
+           
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", }}>
+
+                
+                    <div
+                      style={{
+                        width: "42px",
+                        height: "42px",
+                        borderRadius: "50%",
+                        backgroundColor: "#e7f1ff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: "bold",
+                        color: "var(--color-black)",
+                        fontSize: "16px",
+                      }}
+                    >
+                      {totalAppointmentsCount}
+                    </div>
+                    <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
+                      Total Appointments
+                    </div>
+          
+                  </div>
+
+         
+                  <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
+                </CCardBody>
+              </CCard>
+
+
+            </CCol> */}
+
+            <CCol sm={6} xl={4}>
+
+
+              <CCard
+                onClick={() => navigate("/patient-management")}
+                style={{
+                  cursor: "pointer",
+                  border: "1px solid #var(--color-black)",
+                  borderRadius: "14px",
+                  backgroundColor: "#ffffff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)"
+                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)"
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
+                }}
+              >
+                <CCardBody
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "14px 18px",
+                  }}
+                >
+                  {/* 🔹 Left Side (Count + Text) */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+
+                    {/* 🔵 Rounded Count */}
+                    <div
+                      style={{
+                        width: "42px",
+                        height: "42px",
+                        borderRadius: "50%",
+                        backgroundColor: "#e7f1ff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: "bold",
+                        color: "var(--color-black)",
+
+                        fontSize: "16px",
+                      }}
+                    >
+                      {totalPatientsCount}
+                    </div>
+
+                    {/* 📝 Text */}
+                    <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
+                      Search Patients
+                    </div>
+                  </div>
+
+                  {/* ➡️ Arrow */}
+                  <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
+                </CCardBody>
+              </CCard>
+
+
+            </CCol>
+
+            {/* <CCol sm={6} xl={4}>
+          <CWidgetStatsA
+            color="success"
+            value={totalPatientsCount}
+            title="Total Patients"
+
+          />
+        </CCol> */}
+            <CCol sm={6} xl={4}>
+              <CCard
+                onClick={() => navigate("/employee-management/doctor")}
+                style={{
+                  cursor: "pointer",
+                  border: "1px solid #var(--color-black)",
+                  borderRadius: "14px",
+                  backgroundColor: "#ffffff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)"
+                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)"
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
+                }}
+              >
+                <CCardBody
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "14px 18px",
+                  }}
+                >
+                  {/* 🔹 Left Side (Count + Text) */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+
+                    {/* 🔵 Rounded Count */}
+                    <div
+                      style={{
+                        width: "42px",
+                        height: "42px",
+                        borderRadius: "50%",
+                        backgroundColor: "#e7f1ff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: "bold",
+                        color: "var(--color-black)",
+
+                        fontSize: "16px",
+                      }}
+                    >
+                      {totalDoctorsCount}
+                    </div>
+
+                    {/* 📝 Text */}
+                    <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
+                      Search Doctors
+                    </div>
+                  </div>
+
+                  {/* ➡️ Arrow */}
+                  <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
+                </CCardBody>
+              </CCard>
+            </CCol>
+
+          </CRow>
+        </>
+      )}
       {todayBookings.length > 0 && (
         <Pagination
           currentPage={currentPage}

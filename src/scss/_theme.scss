@@ -62,3 +62,36 @@ body {
     }
   }
 }
+
+// 🔹 TEXT THEME STYLES
+
+.main-heading {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-black);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sub-heading {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-black);
+  display: inline-block;
+  padding-bottom: 4px;
+}
+
+.text-md {
+  font-size: 16px;
+ color: var(--color-black);
+}
+
+.text-sm {
+  font-size: 14px;
+ color: var(--color-black);
+}
+
+.text-lg {
+  font-size: 18px;
+ color: var(--color-black);
+}

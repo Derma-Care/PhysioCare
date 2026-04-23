@@ -135,16 +135,16 @@ export default function PackagesManagement() {
     if (form.programIds.length === 0)
       err.programIds = "Select at least one"
 
-    if (!form.offerType) err.offerType = "Required"
+    // if (!form.offerType) err.offerType = "Required"
 
-    if (form.discountPercentage === "") {
-      err.discountPercentage = "Required"
-    } else if (Number(form.discountPercentage) < 0) {
-      err.discountPercentage = "Cannot be negative"
-    }
+    // if (form.discountPercentage === "") {
+    //   err.discountPercentage = "Required"
+    // } else if (Number(form.discountPercentage) < 0) {
+    //   err.discountPercentage = "Cannot be negative"
+    // }
 
-    if (!form.startOfferDate) err.startOfferDate = "Required"
-    if (!form.endOfferDate) err.endOfferDate = "Required"
+    // if (!form.startOfferDate) err.startOfferDate = "Required"
+    // if (!form.endOfferDate) err.endOfferDate = "Required"
 
     if (
       form.startOfferDate &&
@@ -399,7 +399,7 @@ export default function PackagesManagement() {
               </CCol>
 
               <CCol md={6} className="mt-3">
-                <CFormLabel>Offer Type <span className="text-danger">*</span></CFormLabel>
+                <CFormLabel>Offer Type </CFormLabel>
                 <CFormInput
                   value={form.offerType}
                   onChange={(e) =>
@@ -412,7 +412,7 @@ export default function PackagesManagement() {
               </CCol>
 
               <CCol md={6} className="mt-3">
-                <CFormLabel>Discount  <span className="text-danger">*</span></CFormLabel>
+                <CFormLabel>Discount  </CFormLabel>
                 <CFormInput
                   type="number"
                   value={form.discountPercentage}
@@ -426,7 +426,7 @@ export default function PackagesManagement() {
               </CCol>
 
               <CCol md={6} className="mt-3">
-                <CFormLabel>Start Date <span className="text-danger">*</span></CFormLabel>
+                <CFormLabel>Start Date </CFormLabel>
                 <CFormInput
                   type="date"
                   value={form.startOfferDate}
@@ -440,7 +440,7 @@ export default function PackagesManagement() {
               </CCol>
 
               <CCol md={6} className="mt-3">
-                <CFormLabel>End Date <span className="text-danger">*</span></CFormLabel>
+                <CFormLabel>End Date </CFormLabel>
                 <CFormInput
                   type="date"
                   value={form.endOfferDate}

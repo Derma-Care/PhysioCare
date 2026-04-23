@@ -1012,7 +1012,7 @@ const DoctorDetailsPage = () => {
   return (
     <div className="doctor-details-page" style={{ padding: '1rem' }}>
       <ToastContainer />
-      <h3 style={{ color: 'var(--color-black)' }}>Doctor Details & Slots Management</h3>
+      <h3 className="mb-3 sub-heading">Doctor Details & Slots Management</h3>
 
       <CCard className="mb-3">
         <CCardBody>

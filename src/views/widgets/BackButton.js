@@ -52,15 +52,15 @@ const goBackTherapist = () => {
       Back
     </CButton>
     } 
-     <CButton variant="outline" style={{
-        borderColor: 'var(--color-black)',
-        color: isAHovered ? 'white' : 'var(--color-black)',
-        backgroundColor: isAHovered ? 'var(--color-black)' : 'transparent',
-        transition: 'all 0.3s ease', marginRight: '10px'
-      }}  onClick={() => navigate('/attendance')}  onMouseEnter={() => setIsAHovered(true)}
-      onMouseLeave={() => setIsAHovered(false)}>
-                   Attendance
-                 </CButton>
+      {/* <CButton variant="outline" style={{
+          borderColor: 'var(--color-black)',
+          color: isAHovered ? 'white' : 'var(--color-black)',
+          backgroundColor: isAHovered ? 'var(--color-black)' : 'transparent',
+          transition: 'all 0.3s ease', marginRight: '10px'
+        }}  onClick={() => navigate('/attendance')}  onMouseEnter={() => setIsAHovered(true)}
+        onMouseLeave={() => setIsAHovered(false)}>
+                    Attendance
+                  </CButton> */}
     </>
   )
 }

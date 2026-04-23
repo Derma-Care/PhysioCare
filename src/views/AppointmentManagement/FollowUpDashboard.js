@@ -177,6 +177,66 @@ const [selectedRow, setSelectedRow] = useState(null);
     const [selectedDate, setSelectedDate] = useState("")
     const [loadingSlots, setLoadingSlots] = useState(false)
     const [showAllSlots, setShowAllSlots] = useState(false)
+    const getCardStyle = (type) => ({
+  cursor: "pointer",
+  borderRadius: "16px",
+
+  border:
+    activeCard === type
+      ? "2px solid var(--color-black)"
+      : "1px solid var(--cui-border-color)",
+
+  backgroundColor: "var(--cui-card-bg, #fff)",
+  color: "var(--color-black)",
+
+  boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+  transition: "all 0.25s ease",
+  minHeight: "90px",
+});
+const handleMouseEnter = (e) => {
+  e.currentTarget.style.transform = "translateY(-3px)";
+  e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.08)";
+};
+
+const handleMouseLeave = (e) => {
+  e.currentTarget.style.transform = "translateY(0)";
+  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.04)";
+};
+const CardContent = ({ icon, label, value }) => {
+  return (
+    <CCardBody className="d-flex align-items-center justify-content-between">
+
+      <div className="d-flex align-items-center gap-3">
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "12px",
+            background: "var(--cui-tertiary-bg, #f5f5f5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "18px",
+          }}
+        >
+          {icon}
+        </div>
+
+        <div>
+          <div style={{ fontSize: "13px", fontWeight: "600" }}>
+            {label}
+          </div>
+          <div style={{ fontSize: "20px", fontWeight: "700" }}>
+            {value}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ color: "#bbb" }}>➝</div>
+
+    </CCardBody>
+  );
+};
 
 
     // FETCH SLOTS WHEN RESCHEDULE CLICK
@@ -634,111 +694,73 @@ const [selectedRow, setSelectedRow] = useState(null);
 
 
                 {/* Cards */}
-                <CRow className="mb-4 g-3">
+           <CRow className="mb-4 g-3">
 
-                    {/* Today */}
-                    <CCol md={3}>
-                        <CCard
-                            onClick={() => {
-                                setActiveCard("today")
-                                getTodayFollowUps()
-                                setCurrentPage(1)
-                            }}
-                            style={{
-                                cursor: "pointer",
-                                textAlign: "center",
-                                height: "85px",
-                                borderRadius: "12px",
-                                border:
-                                    activeCard === "today"
-                                        ? "2px solid var(--color-bgcolor)"
-                                        : "1px solid #e5e5e5",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center"
-                            }}
-                        >
-                            <div>
-                                <h6 className="mb-1 fw-semibold">Today</h6>
-                                <h4 className="mb-0 fw-bold">{todayCount}</h4>
-                            </div>
-                        </CCard>
-                    </CCol>
+  {/* TODAY */}
+  <CCol md={3}>
+    <CCard
+      onClick={() => {
+        setActiveCard("today");
+        getTodayFollowUps();
+        setCurrentPage(1);
+      }}
+      style={getCardStyle("today")}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <CardContent icon="📅" label="Today" value={todayCount} />
+    </CCard>
+  </CCol>
 
-                    {/* 1 Week */}
-                    <CCol md={3}>
-                        <CCard
-                            onClick={() => {
-                                setActiveCard("upcoming")
-                                getUpcomingAppointments()
-                                setCurrentPage(1)
-                            }}
-                            style={{
-                                cursor: "pointer",
-                                textAlign: "center",
-                                height: "85px",
-                                borderRadius: "12px",
-                                border:
-                                    activeCard === "upcoming"
-                                        ? "2px solid var(--color-bgcolor)"
-                                        : "1px solid #e5e5e5",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center"
-                            }}
-                        >
-                            <div>
-                                <h6 className="mb-1 fw-semibold">1 Week</h6>
-                                <h4 className="mb-0 fw-bold">{weekCount}</h4>
-                            </div>
-                        </CCard>
-                    </CCol>
+  {/* 1 WEEK */}
+  <CCol md={3}>
+    <CCard
+      onClick={() => {
+        setActiveCard("upcoming");
+        getUpcomingAppointments();
+        setCurrentPage(1);
+      }}
+      style={getCardStyle("upcoming")}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <CardContent icon="🗓️" label="1 Week" value={weekCount} />
+    </CCard>
+  </CCol>
 
-                    {/* Pending */}
-                    <CCol md={3}>
-                        <CCard
-                            style={{
-                                textAlign: "center",
-                                height: "85px",
-                                borderRadius: "12px",
-                                border: "1px solid #e5e5e5",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center"
-                            }}
-                        >
-                            <div>
-                                <h6 className="mb-1 fw-semibold">Confirmed</h6>
-                                <h4 className="mb-0 fw-bold">{confirmedCount}</h4>
-                            </div>
-                        </CCard>
-                    </CCol>
+  {/* CONFIRMED */}
+  <CCol md={3}>
+    <CCard
+    onClick={() => {
+  setActiveCard("confirmed")
+  setFilter("Confirmed")
+  setCurrentPage(1)
+}}
+      style={getCardStyle("confirmed")}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <CardContent icon="✅" label="Confirmed" value={confirmedCount} />
+    </CCard>
+  </CCol>
 
-                    {/* In Progress */}
-                    <CCol md={3}>
-                        <CCard
-                            style={{
-                                textAlign: "center",
-                                height: "85px",
-                                borderRadius: "12px",
-                                border: "1px solid #e5e5e5",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center"
-                            }}
-                        >
-                            <div>
-                                <h6 className="mb-1 fw-semibold">In Progress</h6>
-                                <h4 className="mb-0 fw-bold">{inProgressCount}</h4>
-                            </div>
-                        </CCard>
-                    </CCol>
+  {/* IN PROGRESS */}
+  <CCol md={3}>
+    <CCard
+    onClick={() => {
+  setActiveCard("inprogress")
+  setFilter("In Progress")
+  setCurrentPage(1)
+}}
+      style={getCardStyle("progress")}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <CardContent icon="⏳" label="In Progress" value={inProgressCount} />
+    </CCard>
+  </CCol>
 
-                </CRow>
+</CRow>
                 {/* Filters */}
                 <CRow className="mb-3 d-flex justify-content-center align-items-center align-content-center" style={{ color: 'var(--color-black)' }} >
                     <CCol md={3}>
