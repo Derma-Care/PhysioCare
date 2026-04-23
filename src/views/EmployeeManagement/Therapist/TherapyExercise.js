@@ -255,9 +255,12 @@ export default function ExerciseTable() {
           ) : (
             <>
               {can('Exercise Management', 'create') && (
-                <div className="d-flex justify-content-between mb-3">
-                  <h5>Exercises</h5>
-                  <CButton onClick={handleAdd} disabled={loading} style={{ backgroundColor: "var(--color-black)", color: "#fff" }}>
+                <div className="d-flex justify-content-end mb-3 ">
+                  {/* <h5>Exercises</h5> */}
+                  <CButton onClick={handleAdd} disabled={loading}  style={{
+                  color: 'var(--color-black)',
+                  backgroundColor: 'var(--color-bgcolor)',
+                }}>
                     + Add Exercise
                   </CButton>
                 </div>
@@ -298,7 +301,7 @@ export default function ExerciseTable() {
                               className="actionBtn me-2"
                               style={{
                                 backgroundColor: "var(--color-bgcolor)",
-                                color: "var(--color-black)",
+                                color: "var(--color-white)",
                               }}
                               onClick={() => handleView(ex)}
                             >
@@ -312,7 +315,7 @@ export default function ExerciseTable() {
                               className="actionBtn me-2"
                               style={{
                                 backgroundColor: "var(--color-bgcolor)",
-                                color: "var(--color-black)",
+                                color: "var(--color-white)",
                               }}
                               onClick={() => handleEdit(i)}
                             >
@@ -327,7 +330,7 @@ export default function ExerciseTable() {
                               className="actionBtn"
                               style={{
                                 backgroundColor: "var(--color-bgcolor)",
-                                color: "var(--color-black)",
+                                color: "var(--color-white)",
                               }}
                               onClick={() => openDeleteModal(i)}
                             >

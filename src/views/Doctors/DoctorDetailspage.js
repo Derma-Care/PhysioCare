@@ -1012,7 +1012,7 @@ const DoctorDetailsPage = () => {
   return (
     <div className="doctor-details-page" style={{ padding: '1rem' }}>
       <ToastContainer />
-      <h3 className="mb-3 sub-heading">Doctor Details & Slots Management</h3>
+      <h3  >Doctor Details & Slots Management</h3>
 
       <CCard className="mb-3">
         <CCardBody>
@@ -1021,13 +1021,13 @@ const DoctorDetailsPage = () => {
             <div>
               <p className="mb-1">
                 <strong
-                  style={{ color: 'var(--color-black)', fontWeight: 'bold', fontSize: '24px' }}
+                  style={{ color: 'var(--color-bgcolor)', fontWeight: 'bold', fontSize: '24px' }}
                 >
                   {' '}
                   {capitalizeWords(doctorData.doctorName)}
                 </strong>
               </p>
-              <p className="mb-1" style={{ color: 'var(--color-black)' }}>
+              <p className="mb-1"  >
                 ID:
                 <strong> {doctorData.doctorId} </strong>
               </p>
@@ -1049,7 +1049,7 @@ const DoctorDetailsPage = () => {
               <CNavLink
                 active={activeKey === 1}
                 onClick={() => setActiveKey(1)}
-                style={{ color: 'var(--color-black)' }}
+                style={{ color: 'var(--color-bgcolor)' }}
               >
                 Doctor Slots
               </CNavLink>
@@ -1058,7 +1058,7 @@ const DoctorDetailsPage = () => {
               <CNavLink
                 active={activeKey === 2}
                 onClick={() => setActiveKey(2)}
-                style={{ color: 'var(--color-black)' }}
+                style={{ color: 'var(--color-bgcolor)' }}
               >
                 Doctor Profile
               </CNavLink>
@@ -1091,9 +1091,7 @@ const DoctorDetailsPage = () => {
               className="pt-3"
               style={{ color: 'var(--color-black)' }}
             >
-              <h5>
-                <strong>Slot Management</strong>
-              </h5>
+
 
               <div className="d-flex gap-2 flex-wrap mb-3">
                 {days.map((dayObj, idx) => {
@@ -1126,7 +1124,7 @@ const DoctorDetailsPage = () => {
                         className="slot-container d-grid "
                         style={{
                           display: 'grid',
-                          color: 'var(--color-black)',
+                          color: 'var(--color-bgcolor)',
                           gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
                           gap: '12px',
                         }}
@@ -1166,11 +1164,11 @@ const DoctorDetailsPage = () => {
                                   cursor: isBooked ? 'not-allowed' : 'pointer',
                                   transition: 'all 0.2s ease',
                                   opacity: isBooked ? 0.7 : 1,
-                                  color: 'var(--color-black)',
+                                  color: 'var(--color-bgcolor)',
                                   backgroundColor: isBooked
                                     ? 'red'
                                     : isSelected
-                                      ? 'var(--color-black)'
+                                      ? 'var(--color-bgcolor)'
                                       : undefined,
                                 }}
                                 title={isBooked ? 'Booked' : 'Not Booked'}
@@ -1184,7 +1182,7 @@ const DoctorDetailsPage = () => {
                     )}
                     <div className="w-100">
                       {slotsForSelectedDate.length === 0 && (
-                        <p style={{ color: 'var(--color-black)' }}>
+                        <p style={{ color: 'var(--color-bgcolor)' }}>
                           No available slots for this date
                         </p>
                       )}
@@ -1196,8 +1194,8 @@ const DoctorDetailsPage = () => {
               <div className="mt-3 d-flex gap-2">
                 <CButton
                   style={{
-                    color: 'var(--color-black)',
-                    border: `1px solid ${'var(--color-black)'}`,
+                    color: 'var(--color-bgcolor)',
+                    border: `1px solid ${'var(--color-bgcolor)'}`,
                   }}
                   variant="outline"
                   onClick={openModal}
@@ -1207,8 +1205,8 @@ const DoctorDetailsPage = () => {
 
                 <CButton
                   style={{
-                    color: 'var(--color-black)',
-                    border: `1px solid ${'var(--color-black)'}`,
+                    color: 'var(--color-bgcolor)',
+                    border: `1px solid ${'var(--color-bgcolor)'}`,
                   }}
                   variant="outline"
                   disabled={selectedSlots.length === 0}
@@ -1225,7 +1223,7 @@ const DoctorDetailsPage = () => {
                 </CButton>
 
                 <CButton
-                  style={{ backgroundColor: 'var(--color-black)', color: COLORS.white }}
+                  style={{ backgroundColor: 'var(--color-bgcolor)', color: COLORS.white }}
                   variant="outline"
                   onClick={() => {
                     setDeleteMode('all')
@@ -2260,7 +2258,7 @@ const DoctorDetailsPage = () => {
         className="custom-modal"
         backdrop="static"
       >
-        <CModalHeader style={{ color: 'var(--color-black)' }}>
+        <CModalHeader  >
           Select Available Time Slots - ({selectedDate})
         </CModalHeader>
         <CModalBody>
@@ -2297,7 +2295,7 @@ const DoctorDetailsPage = () => {
               </label>
 
               <CButton
-                style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+                style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white' }}
                 onClick={handleGenerate}
               >
                 Generate Slots
@@ -2328,7 +2326,7 @@ const DoctorDetailsPage = () => {
                 <label
                   className="form-check-label"
                   htmlFor="selectAllSlots"
-                  style={{ color: 'var(--color-black)' }}
+                  style={{ color: 'var(--color-bgcolor)' }}
                 >
                   Select All Slots
                 </label>
@@ -2359,7 +2357,7 @@ const DoctorDetailsPage = () => {
                       backgroundColor: !slotObj.available
                         ? 'lightgray'
                         : isSelected
-                          ? 'var(--color-black)'
+                          ? 'var(--color-bgcolor)'
                           : 'gray',
                       color: 'white',
                       border: 'none',
@@ -2382,7 +2380,7 @@ const DoctorDetailsPage = () => {
             color="info"
             onClick={handleAddSlot}
             disabled={selectedSlots.length === 0}
-            style={{ backgroundColor: 'var(--color-black)', color: 'white', border: 'none' }}
+            style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white', border: 'none' }}
           >
             Save Slots ({selectedSlots.length})
           </CButton>

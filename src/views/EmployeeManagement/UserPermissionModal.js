@@ -20,7 +20,7 @@ const UserPermissionModal = ({
     'Doctors',
     'Therapist',
     // 'Pharmacist',
-    // 'Lab Technician',
+    'Lab Technician',
     'Administrator',
     'FrontDesk',
     'Security',

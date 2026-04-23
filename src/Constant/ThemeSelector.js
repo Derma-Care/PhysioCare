@@ -5,14 +5,15 @@ import { cilContrast } from '@coreui/icons'
 
 // Theme options
 const themeOptions = {
-  classic: { name: 'Classic', bgcolor: '#a5c4d4', black: '#7e3a93' }, // default
-  light: { name: 'Light', bgcolor: '#F2E8CF', black: '#2B2B2B' },
-  neutral: { name: 'Neutral', bgcolor: '#F6E2E7', black: '#3C0A21' },
-  Ocean: { name: 'Ocean', bgcolor: '#6898c9ff', black: '#1b4ca0ff' },
-  Midnight: { name: 'Midnight Black', bgcolor: '#E0F7F4', black: '#004D40' },
-  Sunset: { name: 'Sunset Orange', bgcolor: '#E8E8E8', black: '#222222' },
-  OceanBlue: { name: 'Ocean Blue', bgcolor: '#DCEEFF', black: '#1A2E40' },
-  Mint: { name: 'Mint Green', bgcolor: '#DDE5B6', black: '#344E41' },
+  // classic: { name: 'Classic', bgcolor: '#a5c4d4', black: '#7e3a93' }, // default
+  // light: { name: 'Light', bgcolor: '#F2E8CF', black: '#2B2B2B' },
+  // neutral: { name: 'Neutral', bgcolor: '#F6E2E7', black: '#3C0A21' },
+  // Ocean: { name: 'Ocean', bgcolor: '#6898c9ff', black: '#1b4ca0ff' },
+  // Midnight: { name: 'Midnight Black', bgcolor: '#E0F7F4', black: '#004D40' },
+  // Sunset: { name: 'Sunset Orange', bgcolor: '#E8E8E8', black: '#222222' },
+  // OceanBlue: { name: 'Ocean Blue', bgcolor: '#DCEEFF', black: '#1A2E40' },
+  // Mint: { name: 'Mint Green', bgcolor: '#DDE5B6', black: '#344E41' },
+  default: { name: 'Default', bgcolor: '#1B4F8A', black: '#F0F6FF' }
   // Lavender: { name: 'Lavender Purple', bgcolor: '#041f3a', black: '#ffffff' },
   // Lavender: { name: 'KinetiX', bgcolor: '#113A3C', black: '#ffffff' },
 }

@@ -789,7 +789,7 @@ const CardContent = ({ icon, label, value }) => {
                     </CCol>
 
                     <CCol md={3}>
-                        <div  >
+                        <div style={{ color: 'var(--color-bgcolor)' }}  >
                             <CFormSelect
                                 value={filter}
                                 label="Fiter By Status"
@@ -797,6 +797,7 @@ const CardContent = ({ icon, label, value }) => {
                                     setFilter(e.target.value)
                                     setCurrentPage(1)
                                 }}
+                                style={{ color: 'var(--color-bgcolor)' }}
                             >
                                 {followUpStatus.map((s) => (
                                     <option key={s}>{s}</option>
@@ -808,12 +809,12 @@ const CardContent = ({ icon, label, value }) => {
                         {(role === 'admin' || role === 'receptionist') && (
                             <CButton
                                 style={{
-                                    backgroundColor: 'var(--color-black)',
-                                    color: 'white',
+                                    backgroundColor: 'var(--color-bgcolor)',
+                                    color: 'var(--color-white)',
                                 }}
                                 onClick={() => setVisible(true)}
                             >
-                                Book Appointment
+                                Book New Appointment
                             </CButton>
                         )}
                     </CCol>
@@ -884,6 +885,7 @@ const CardContent = ({ icon, label, value }) => {
                                        <CFormSelect
   size="sm"
   value={capitalizeWords(row.followUpStatus || row.followupStatus || "")}
+  style={{color:"(--var--bgcolor)"}}
  onChange={(e) => {
   const value = e.target.value;
 
@@ -913,7 +915,7 @@ const CardContent = ({ icon, label, value }) => {
                                     <CTableDataCell>
                                         <CButton
                                             size="sm"
-                                            style={{ backgroundColor: "var(--color-black)", color: "white" }}
+                                            style={{ backgroundColor: "var(--color-bgcolor)", color: "white" }}
                                             onClick={() =>
                                                 navigate(`/appointment-details/${row.bookingId}`, {
                                                     state: { appointment: row }

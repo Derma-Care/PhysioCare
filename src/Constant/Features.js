@@ -6,7 +6,7 @@ export const features = [
   'Therapist',
   'Exercise Management',
   // 'Pharmacist',
-  // 'Lab Technician',
+  'Lab Technician',
   'Administrator',
   'FrontDesk',
   'Security',
