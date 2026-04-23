@@ -445,53 +445,60 @@ const PatientManagement = () => {
                     </CTableHead>
 
                     <CTableBody className="pink-table">
-                      {history.map((h, index) => (
-                        <CTableRow key={h.id || index}>
-                          <CTableDataCell>{index + 1}</CTableDataCell>
+                   {Array.isArray(history) && history.length > 0 &&
+  history.map((h, index) => (
+    <CTableRow key={h.id || index}>
+      <CTableDataCell>{index + 1}</CTableDataCell>
 
-                          <CTableDataCell>
-                            {h.visitDateTime
-                              ? new Date(h.visitDateTime).toLocaleDateString()
-                              : '-'}
-                          </CTableDataCell>
-                          <CTableDataCell>{h.doctorName || '-'}</CTableDataCell>
-                          <CTableDataCell>{h.visitType || '-'}</CTableDataCell>
-                          <CTableDataCell>{h.symptoms?.diagnosis || '-'}</CTableDataCell>
-                          <CTableDataCell>
-                            {h.treatments?.generatedData
-                              ? Object.keys(h.treatments.generatedData).join(', ')
-                              : '-'}
-                          </CTableDataCell>
-                          <CTableDataCell>
-                            {h.followUp?.nextFollowUpDate || '-'}
-                          </CTableDataCell>
+      <CTableDataCell>
+        {h.visitDateTime
+          ? new Date(h.visitDateTime).toLocaleDateString()
+          : '-'}
+      </CTableDataCell>
 
-                          {/* View Button */}
-                          <CTableDataCell className="text-center">
-                            <CButton
-                              color="info"
-                              size="sm"
-                              className="actionBtn"
-                              style={{ color: 'var(--color-black)' }}
-                              onClick={() => {
-                                setSelectedHistory(h)
-                                setViewModal(true)
-                              }}
-                            >
-                              <Eye size={18} />
-                            </CButton>
-                          </CTableDataCell>
-                        </CTableRow>
-                      ))}
+      <CTableDataCell>{h.doctorName || '-'}</CTableDataCell>
+      <CTableDataCell>{h.visitType || '-'}</CTableDataCell>
+      <CTableDataCell>{h.symptoms?.diagnosis || '-'}</CTableDataCell>
+
+      <CTableDataCell>
+        {h.treatments?.generatedData
+          ? Object.keys(h.treatments.generatedData).join(', ')
+          : '-'}
+      </CTableDataCell>
+
+      <CTableDataCell>
+        {h.followUp?.nextFollowUpDate || '-'}
+      </CTableDataCell>
+
+      <CTableDataCell className="text-center">
+        <CButton
+          size="sm"
+          style={{
+            backgroundColor: 'var(--color-bgcolor)',
+            color: 'var(--color-white)',
+            border: 'none',
+          }}
+          onClick={() => {
+            setSelectedHistory(h)
+            setViewModal(true)
+          }}
+        >
+          <Eye size={18} />
+        </CButton>
+      </CTableDataCell>
+    </CTableRow>
+  ))}
                     </CTableBody>
                   </CTable>
                 </>
-              ) : (
+              ) 
+              : 
+              (
                 <p className="text-center py-3">
-                  {responseMessage ||
-                    `No visit history found for ${selectedPatient?.fullName}`}
+                  {/* {responseMessage} */}
                 </p>
-              )}
+              )
+              }
             </CTabPane>
           </CTabContent>
         </CCardBody>

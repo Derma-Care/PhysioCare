@@ -97,7 +97,7 @@ const DoctorCard = ({ doctor }) => {
   border-radius: 12px;
   margin-bottom: 16px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  background-color: #fff;
+  background-color:rgba(39, 30, 30, 0.07);
   gap: 16px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }

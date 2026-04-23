@@ -1271,7 +1271,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 {/* Name */}
 
                 <CCol md={2}>
-                  <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                     Title <span className="text-danger">*</span>
                   </CFormLabel>
                   <CFormSelect
@@ -1306,7 +1306,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                   {errors.title && <div className="text-danger small">{errors.title}</div>}
                 </CCol>
                 <CCol md={6} className="mb-3">
-                  <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                     Name <span className="text-danger">*</span>
                   </CFormLabel>
 
@@ -1322,7 +1322,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
                 {/* DOB */}
                 <CCol md={4} className="mb-3">
-                  <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                     Date of Birth <span className="text-danger">*</span>
                   </CFormLabel>
                   <CFormInput
@@ -1337,7 +1337,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
                 {/* Age */}
                 <CCol md={2} className="mb-3">
-                  <CFormLabel style={{ color: 'var(--color-black)' }}>Age</CFormLabel>
+                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>Age</CFormLabel>
                   <CFormInput
                     type="number"
                     name="age"
@@ -1353,7 +1353,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
                 {/* Gender */}
                 <CCol md={4} className="mb-3">
-                  <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                     Gender <span className="text-danger">*</span>
                   </CFormLabel>
                   <CFormSelect
@@ -1371,7 +1371,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
                 {/* Mobile Number */}
                 <CCol md={6} className="mb-3">
-                  <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                     Mobile Number <span className="text-danger">*</span>
                   </CFormLabel>
                   <CFormInput
@@ -1411,7 +1411,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                         {rowFields.map((field) => (
                           <CCol md={4} key={field}>
                             <CFormLabel
-                              style={{ color: 'var(--color-black)' }}
+                              style={{ color: 'var(--color-bgcolor)' }}
                               className="text-capitalize"
                             >
                               {field === 'po' ? 'PO Address' : field}{' '}
@@ -1482,7 +1482,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             <h6 className="mb-3 border-bottom pb-2">Patient & Booking Details</h6>
             <CRow className="mb-4">
               <CCol md={6}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Branch <span className="text-danger">*</span>
                 </CFormLabel>
                 <CFormSelect
@@ -1516,12 +1516,12 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               </CCol>
 
               <CCol md={6}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Doctor Name <span className="text-danger">*</span>
                 </CFormLabel>
 
                 {loadingDoctors ? (
-                  <div className="text-center py-2" style={{ color: 'var(--color-black)' }}>
+                  <div className="text-center py-2" style={{ color: 'var(--color-bgcolor)' }}>
                     Loading doctors...
                   </div>
                 ) : (
@@ -1623,13 +1623,13 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             </CRow>
             <CRow className='mb-4'>
               <CCol md={6}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Consultation Fee <span className="text-danger">*</span>
                 </CFormLabel>
                 <CFormInput type="number" value={bookingDetails.consultationFee || 0} disabled />
               </CCol>
               <CCol md={6}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Consultation Fee Type <span className="text-danger">*</span>
                 </CFormLabel>
                 <CFormSelect
@@ -1644,7 +1644,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               </CCol>
               {bookingDetails.foc === 'FOC' && (
                 <CCol md={6} className='mt-3'>
-                  <CFormLabel>
+                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                     Reason for FOC <span className="text-danger">*</span>
                   </CFormLabel>
                   <CFormInput
@@ -1713,8 +1713,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                         }))
                       }}
                       style={{
-                        backgroundColor: isSelected ? 'var(--color-black)' : '#fff',
-                        color: isSelected ? '#fff' : 'var(--color-black)',
+                        backgroundColor: isSelected ? '#ffff00':"white",
+                        color: isSelected ? 'yellow' : 'var(--color-black)',
                         border: '1px solid var(--color-black)',
                         minWidth: '80px',
                       }}
@@ -1752,7 +1752,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                           return (
                             <div
                               key={i}
-                              style={{ cursor: 'pointer', color: 'var(--color-black)' }}
+                              style={{ cursor: 'pointer', color: 'var(--color-bgcolor)' }}
                               className={`slot-item text-center border rounded px-2 py-1 transition-all duration-200
                         ${isBooked ? 'bg-danger text-white cursor-not-allowed opacity-60' : ''}
                         ${isSelectedSlot && !isBooked ? 'bg-primary text-white' : ''}
@@ -1814,7 +1814,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
             <CRow className="mb-4">
               <CCol md={5}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Patient Complaints
                   {appointmentType?.toLowerCase().trim() !== 'services' && (
                     <span className="text-danger">*</span>
@@ -1833,7 +1833,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               </CCol>
 
               <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Symptoms Duration
                   {appointmentType?.toLowerCase().trim() !== 'services' && (
                     <span className="text-danger">*</span>
@@ -1860,7 +1860,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               </CCol>
 
               <CCol md={3}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Unit
                   {appointmentType?.toLowerCase().trim() !== 'services' && (
                     <span className="text-danger">*</span>
@@ -1884,7 +1884,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             </CRow>
             <CRow>
               <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Previous Injuries
 
                 </CFormLabel>
@@ -1896,7 +1896,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               </CCol>
 
               <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Current Medications
 
                 </CFormLabel>
@@ -1908,7 +1908,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               </CCol>
 
               <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Allergies
 
                 </CFormLabel>
@@ -1924,7 +1924,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
 
               <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Occupation
 
                 </CFormLabel>
@@ -1948,7 +1948,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                         checked={bookingDetails.reasonForVisit === item}
                         onChange={() => handleReasonChange(item)}
                       />
-                      <label className="ms-1" style={{ color: "var(--color-black" }}>{item}</label>
+                      <label className="ms-1" style={{ color: "var(--color-bgcolor)" }}>{item}</label>
                     </div>
                   ))}
                 </div>
@@ -1970,7 +1970,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             <div className='mt-3'>
               <h6 className="mb-3 border-bottom pb-2" >Activity Level</h6>
 
-              <div className="d-flex gap-3 align-items-center mt-1" style={{ color: 'var(--color-black)' }}>
+              <div className="d-flex gap-3 align-items-center mt-1" style={{ color: 'var(--color-bgcolor)' }}>
                 {activityOptions.map((level) => (
                   <div key={level} className="d-flex align-items-center">
                     <input
@@ -1992,7 +1992,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
             <CRow className="mt-3">
               <h6 className="mb-3 border-bottom pb-2" >Insurance Info</h6>
-              <CCol md={6} style={{ color: "var(--color-black)" }}>
+              <CCol md={6} style={{ color: "var(--color-bgcolor)" }}>
                 <CFormLabel>Insurance Provider</CFormLabel>
                 <CFormInput
                   name="insuranceProvider"
@@ -2001,7 +2001,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 />
               </CCol>
 
-              <CCol md={6} style={{ color: "var(--color-black)" }}>
+              <CCol md={6} style={{ color: "var(--color-bgcolor)" }}>
                 <CFormLabel>Policy Number</CFormLabel>
                 <CFormInput
                   name="policyNumber"
@@ -2122,7 +2122,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               {/* g-3 adds horizontal & vertical gap */}
               {/* Payment Type */}
               <CCol md={5}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
+                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                   Payment Type <span className="text-danger">*</span>
                 </CFormLabel>
 
@@ -2191,7 +2191,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               {/* ✅ Show only when Partial selected */}
               {bookingDetails.paymentMode === 'Partial' && (
                 <CCol md={5}>
-                  <CFormLabel style={{ color: 'var(--color-black)' }}>
+                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
                     Part Amount <span className="text-danger">*</span>
                   </CFormLabel>
 
@@ -2219,7 +2219,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               )}
               {/* Doctor Referral Code */}
               <CCol md={6}>
-                <CFormLabel style={{ color: "var(--color-black)" }}>Referred By</CFormLabel>
+                <CFormLabel style={{ color: "var(--color-bgcolor)" }}>Referred By</CFormLabel>
 
                 <Select
                   name="doctorRefCode"
@@ -2260,7 +2260,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
                   {/* Referral Type */}
                   <CCol md={6}>
-                    <CFormLabel style={{ color: "var(--color-black)" }}>Referred By</CFormLabel>
+                    <CFormLabel style={{ color: "var(--color-bgcolor)" }}>Referred By</CFormLabel>
                     <CFormSelect
                       value={bookingDetails.referredByType || ''}
                       onChange={(e) =>
@@ -2283,7 +2283,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
                   {/* Name Input */}
                   <CCol md={6}>
-                    <CFormLabel style={{ color: "var(--color-black)" }}>Referred Person Name</CFormLabel>
+                    <CFormLabel style={{ color: "var(--color-bgcolor)" }}>Referred Person Name</CFormLabel>
                     <CFormInput
                       type="text"
                       placeholder="Enter name"
@@ -2338,7 +2338,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             <label
               className="form-check-label"
               htmlFor="onboardCheckbox"
-              style={{ color: 'var(--color-black)', cursor: 'pointer' }}
+              style={{ color: 'var(--color-bgcolor)', cursor: 'pointer' }}
             >
               Customer Registration
             </label>

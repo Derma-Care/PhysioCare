@@ -15,6 +15,7 @@ import {
   faHandsHelping,
 } from '@fortawesome/free-solid-svg-icons'
 import { useHospital } from '../Usecontext/HospitalContext'
+import { FONT_SIZES } from '../../Constant/Themes'
 
 
 const EmployeeManagement = () => {
@@ -68,7 +69,7 @@ const EmployeeManagement = () => {
         `}
       </style>
 
-      <h2 className="text-center mb-4"  >Employee Management</h2>
+      <h2 className="text-center mb-4" style={{fontSize: FONT_SIZES.lg,fontWeight: 'bold'}}  >Employee Management</h2>
 
       <CRow className="g-4 justify-content-start">
         {visibleEmployees.map((emp, index) => (
@@ -84,7 +85,7 @@ const EmployeeManagement = () => {
                   style={{ fontSize: '70px', color: '#fff', }}
                   className="mb-3"
                 />
-                <h5 style={{ color: 'var(--color-white)' }}>{emp.title}</h5>
+                <h6 style={{ color: 'var(--color-white)' ,fontSize: FONT_SIZES.md}}>{emp.title}</h6>
               </CCardBody>
             </CCard>
           </CCol>

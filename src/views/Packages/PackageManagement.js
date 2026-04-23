@@ -348,7 +348,7 @@ useEffect(() => {
       <CModal visible={deleteModal} onClose={() => setDeleteModal(false)}>
   <CModalHeader>Confirm Delete</CModalHeader>
 
-  <CModalBody>
+  <CModalBody style={{ color: 'var(--color-bgcolor)' }}>
     <p>Are you sure you want to delete this package?</p>
 
     <div className="d-flex justify-content-end gap-2 mt-3">

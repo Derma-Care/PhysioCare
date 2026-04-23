@@ -26,6 +26,25 @@ const ExpenseScreen = () => {
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value })
     }
+    const tabStyle = (type) => {
+  const isActive = filter === type;
+
+  return {
+    // borderRadius: "20px",
+    padding: "6px 16px",
+    fontSize: "13px",
+    cursor: "pointer",
+
+    // ✅ ACTIVE
+    backgroundColor: isActive ? "var(--color-bgcolor)" : "#fff",
+    color: isActive ? "#fff" : "var(--color-bgcolor)",
+
+    // ✅ INACTIVE BORDER
+    border: "1px solid var(--color-bgcolor)",
+
+    transition: "all 0.2s ease",
+  };
+};
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -94,7 +113,7 @@ const ExpenseScreen = () => {
             {/* FORM */}
             <CCard>
                 <CCardBody>
-                    <h4>Add Expense</h4>
+                    <h5 className="textColor mb-4">Add Expense</h5>
                     <CForm onSubmit={handleSubmit}>
                         <CRow> {/* Title */}
                             <CRow className="mb-3">
@@ -160,7 +179,7 @@ const ExpenseScreen = () => {
                                     rows={3} />
                             </CCol> {/* Submit */}
                             <CCol md={12} className="mt-3 text-end">
-                                <CButton type="submit" color="primary">
+                                <CButton type="submit" className="actionBtn">
                                     Save Expense
                                 </CButton>
                             </CCol>
@@ -173,14 +192,25 @@ const ExpenseScreen = () => {
             <CCol md={12} className="mt-3">
                 <CCard>
                     <CCardBody>
-                        <h5>Expense List</h5>
+                        <h5 className="textColor mb-4">Expense List</h5>
 
                         {/* Filters */}
                         <div className="mb-3">
-                            <CButton color={filter === "today" ? "primary" : "light"} onClick={() => setFilter("today")}>Today</CButton>
-                            <CButton color={filter === "week" ? "primary" : "light"} onClick={() => setFilter("week")}>Week</CButton>
-                            <CButton color={filter === "month" ? "primary" : "light"} onClick={() => setFilter("month")}>Month</CButton>
-                            <CButton color={filter === "custom" ? "primary" : "light"} onClick={() => setFilter("custom")}>Custom</CButton>
+                           <CButton className="mx-2" style={tabStyle("today")} onClick={() => setFilter("today")}>
+  Today
+</CButton>
+
+<CButton className="mx-2" style={tabStyle("week")} onClick={() => setFilter("week")}>
+  Week
+</CButton>
+
+<CButton className="mx-2" style={tabStyle("month")} onClick={() => setFilter("month")}>
+  Month
+</CButton>
+
+<CButton className="mx-2" style={tabStyle("custom")} onClick={() => setFilter("custom")}>
+  Custom
+</CButton>
                         </div>
 
                         {filter === "custom" && (
@@ -195,7 +225,7 @@ const ExpenseScreen = () => {
                         )}
 
                         {/* Table */}
-                        <CTable bordered hover responsive>
+                        <CTable bordered hover responsive className="pink-table">
                             <CTableHead color="light">
                                 <CTableRow>
                                     <CTableHeaderCell>#</CTableHeaderCell>

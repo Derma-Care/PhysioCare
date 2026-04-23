@@ -610,6 +610,7 @@ export default function PackagesManagement() {
                       <div
                         id={`program-${pIndex}`}
                         className="accordion-collapse collapse"
+                        style={{color:"var(--color--black)"}}
                         data-bs-parent="#programAccordion"
                       >
                         <div className="accordion-body">
@@ -629,8 +630,8 @@ export default function PackagesManagement() {
                                       data-bs-toggle="collapse"
                                       data-bs-target={`#therapy-${pIndex}-${tIndex}`}
                                       style={{
-                                        backgroundColor: 'var(--color-bg-light)',
-                                        color: 'var(--color-black)',
+                                        backgroundColor: 'var(--color-bgcolor)',
+                                        color: 'var(--color-white)',
                                       }}
                                     >
                                       {tIndex + 1}. {therapy.therapyName}

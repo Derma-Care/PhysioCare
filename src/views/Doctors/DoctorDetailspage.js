@@ -48,7 +48,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import { getCustomerByMobile } from '../customerManagement/CustomerManagementAPI'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import { COLORS } from '../../Constant/Themes'
+import { COLORS, FONT_SIZES } from '../../Constant/Themes'
 import LoadingIndicator from '../../Utils/loader'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { http } from '../../Utils/Interceptors'
@@ -1012,7 +1012,7 @@ const DoctorDetailsPage = () => {
   return (
     <div className="doctor-details-page" style={{ padding: '1rem' }}>
       <ToastContainer />
-      <h3  >Doctor Details & Slots Management</h3>
+      <h3  style={{ fontSize: FONT_SIZES.lg  }}>Doctor Details & Slots Management</h3>
 
       <CCard className="mb-3">
         <CCardBody>
@@ -1021,7 +1021,7 @@ const DoctorDetailsPage = () => {
             <div>
               <p className="mb-1">
                 <strong
-                  style={{ color: 'var(--color-bgcolor)', fontWeight: 'bold', fontSize: '24px' }}
+                  style={{ color: 'var(--color-bgcolor)', fontWeight: 'bold', fontSize: FONT_SIZES.md }}
                 >
                   {' '}
                   {capitalizeWords(doctorData.doctorName)}
@@ -2070,7 +2070,7 @@ const DoctorDetailsPage = () => {
                           )}
                           {can('Doctors', 'update') && (
                             <CButton
-                              style={{ backgroundColor: 'var(--color-black)' }}
+                              style={{ backgroundColor: 'var(--color-bgcolor)' }}
                               className="text-white ms-2"
                               onClick={handleEditToggle}
                             >

@@ -17,11 +17,11 @@ const ConfirmationModal = ({
     <CModal visible={isVisible} onClose={onCancel} alignment="center" backdrop="static">
       {/* Header */}
       <CModalHeader>
-        <CModalTitle style={{ color: 'var(--color-black)' }}>⚠ {title}</CModalTitle>
+        <CModalTitle style={{ color: 'var(--color-bgcolor)' }}>⚠ {title}</CModalTitle>
       </CModalHeader>
 
       {/* Body */}
-      <CModalBody style={{ color: 'var(--color-black)', textAlign: 'center' }}>
+      <CModalBody style={{ color: 'var(--color-bgcolor)', textAlign: 'center' }}>
         {message}
       </CModalBody>
 
@@ -35,7 +35,7 @@ const ConfirmationModal = ({
           style={{
             minWidth: '100px',
             color: 'white',
-            backgroundColor: 'var(--color-black)',
+            backgroundColor: 'var(--color-bgcolor)',
           }}
           disabled={isLoading} // disable while deleting
         >

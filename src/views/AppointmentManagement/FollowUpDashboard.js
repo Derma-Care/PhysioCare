@@ -521,48 +521,51 @@ const CardContent = ({ icon, label, value }) => {
         )
     }
 
-    const getColor = (status = '') => {
-        switch (status.toLowerCase()) {
-            case 'pending':
-                return 'warning'
+  const getColor = (status) => {
+  if (!status || typeof status !== 'string') return 'light';
 
-            case 'confirmed':
-                return 'info'
+  const normalizedStatus = status.trim().toLowerCase();
 
-            case 'due for investigation':
-                return 'danger'
+  switch (normalizedStatus) {
+    case 'pending':
+      return 'warning';
 
-            case 'investigation done':
-                return 'primary'
+    case 'confirmed':
+      return 'info';
 
-            case 'in-progress':
-                return 'success'
+    case 'due for investigation':
+      return 'danger';
 
-            case 'follow-up':
-            case 'follow-up needed':
-                return 'secondary'
+    case 'investigation done':
+      return 'primary';
 
-            case 'cancelled':
-                return 'danger'
+    case 'in-progress':
+    case 'in progress':
+      return 'info';
 
-            case 'rescheduled':
-            case 'drop':
-            case 'no calls':
-                return 'dark'
+    case 'follow-up':
+    case 'follow up':
+    case 'follow-up needed':
+      return 'secondary';
 
-            case 'no reply':
-                return 'secondary'
+    case 'cancelled':
+      return 'danger';
 
-            // case 'no follow-up':
-            //     return 'warning'
+    case 'rescheduled':
+    case 'drop':
+    case 'no calls':
+      return 'dark';
 
-            case 'completed':
-                return 'success'
+    case 'no reply':
+      return 'secondary';
 
-            default:
-                return 'light'
-        }
-    }
+    case 'completed':
+      return 'success';
+
+    default:
+      return 'light';
+  }
+};
     const updateFollowUpStatus = (id, value) => {
         setRows(
             rows.map((r) => {
@@ -885,7 +888,7 @@ const CardContent = ({ icon, label, value }) => {
                                        <CFormSelect
   size="sm"
   value={capitalizeWords(row.followUpStatus || row.followupStatus || "")}
-  style={{color:"(--var--bgcolor)"}}
+  style={{color: 'var(--color-bgcolor)'}}
  onChange={(e) => {
   const value = e.target.value;
 

@@ -68,10 +68,10 @@ const AppHeaderDropdown = () => {
         </CDropdownToggle>
 
         <CDropdownMenu className="pt-0" placement="bottom-end">
-          <CDropdownItem>
+          {/* <CDropdownItem>
             <CIcon icon={cilSettings} className="me-2" />
             Settings
-          </CDropdownItem>
+          </CDropdownItem> */}
 
           <CDropdownItem onClick={() => setShowLogoutModal(true)}>
             <CIcon icon={cilAccountLogout} className="me-2" />

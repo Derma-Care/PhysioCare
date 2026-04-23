@@ -204,6 +204,7 @@ const handleClear = () => {
   <button
     className="btn btn-primary"
     onClick={sendToParent}
+    style={{ backgroundColor: 'var(--color-bgcolor)' }}
   >
     {!loading ? (
       "Done"

@@ -406,11 +406,11 @@ const AppointmentDetails = () => {
         className="p-3 d-flex justify-content-between align-items-center rounded"
         style={{ backgroundColor: 'var(--color-bgcolor)' }}
       >
-        <h5 className="mb-0">Patient File Name: {appointment.patientId}</h5>
+        <h5 className="mb-0 " style={{color:'var(--color-white)'}}>Patient File Name: {appointment.patientId}</h5>
         <div className="d-flex gap-2">
           {showConfirmed && !vitals && (
             <CButton
-              style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+              style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white' }}
               onClick={() => {
                 setFormData({ height: '', weight: '', bloodPressure: '', temperature: '', bmi: '' })
                 setShowModal(true)
@@ -466,7 +466,7 @@ const AppointmentDetails = () => {
         style={{ color: 'var(--color-black)' }}
       >
         <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-          <h5 className="fw-bold mb-0" style={{ color: 'var(--color-black)' }}>
+          <h5 className="fw-bold mb-0" style={{ color: 'var(--color-bgcolor)' }}>
             Patient Details
           </h5>
           <div className="d-flex align-items-center gap-2">
@@ -486,7 +486,7 @@ const AppointmentDetails = () => {
             <CModalTitle>Add Vitals</CModalTitle>
           </CModalHeader>
           <CModalBody>
-            <CForm style={{ color: 'var(--color-black)' }}>
+            <CForm style={{ color: 'var(--color-bgcolor)' }}>
               <CFormInput
                 label="Height"
                 name="height"
@@ -554,7 +554,7 @@ const AppointmentDetails = () => {
               Close
             </CButton>
             <CButton
-              style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+              style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white' }}
               onClick={handleSubmitVitals}
               disabled={loading} // disable while loading
             >
@@ -596,15 +596,15 @@ const AppointmentDetails = () => {
           </div>
 
           <div className="col-12">
-            <strong>Problem:</strong>{' '}
-            <p style={{ color: 'var(--color-black)' }}>{appointment?.problem}</p>
+            <strong>Problem:</strong>{appointment?.problem || 'N/A'}
+            {/* <p style={{ color: 'var(--color-bgcolor)' }}></p> */}
           </div>
         </div>
 
         <hr />
 
         {/* Slot & Payment */}
-        <h6 className="fw-bold mb-3" style={{ color: 'var(--color-black)' }}>
+        <h6 className="fw-bold mb-3" style={{ color: 'var(--color-bgcolor)' }}>
           Slot & Payment Details
         </h6>
         <div className="row">
@@ -653,7 +653,7 @@ const AppointmentDetails = () => {
               <h5>Vitals Card</h5>
               {showConfirmed && !vitals && (
                 <CButton
-                  style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+                  style={{backgroundColor: '#FFD700'}}
                   onClick={() => setShowModal(true)}
                 >
                   Add Vitals
