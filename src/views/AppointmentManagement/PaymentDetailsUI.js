@@ -15,6 +15,7 @@ import {
     CTableDataCell,
 } from "@coreui/react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { FONT_SIZES } from "../../Constant/Themes";
 
 const data = {
     bookingId: "BOOK1234",
@@ -190,156 +191,222 @@ export default function PaymentDetailsUI() {
             : 0;
 
     // alert(bookingId);
-    return (
-        <div className="p-4">
-            <h2 className="fw-bold mb-4">Patient Payment Dashboard</h2>
+  return (
+  <div className="p-4" style={{ background: "#f4f6f9", minHeight: "100vh" }}>
+    <h2 className="fw-bold mb-4 " style={{fontSize:FONT_SIZES.xl}}>Patient Payment Dashboard</h2>
 
-            {/* Top Summary */}
-            <CRow className="g-3 mb-4">
-                <CCol md={3}>
-                    <CCard><CCardBody><small>Booking ID</small><h5>{data.bookingId}</h5></CCardBody></CCard>
-                </CCol>
-                <CCol md={3}>
-                    <CCard><CCardBody><small>Patient</small><h5>{data.patientName}</h5><small>{data.mobile}</small></CCardBody></CCard>
-                </CCol>
-                <CCol md={3}>
-                    <CCard><CCardBody><small>Doctor</small><h5>{data.doctorName}</h5></CCardBody></CCard>
-                </CCol>
-                <CCol md={3}>
-                    <CCard><CCardBody><small>Status</small><div className="mt-2"><StatusBadge status={data.paymentStatus} /></div></CCardBody></CCard>
-                </CCol>
-            </CRow>
+    {/* 🔹 Top Summary */}
+    <CRow className="g-3 mb-4">
+      {[ 
+        { label: "Booking ID", value: data.bookingId },
+        { label: "Patient", value: data.patientName, sub: data.mobile },
+        { label: "Doctor", value: data.doctorName },
+        { label: "Status", value: <StatusBadge status={data.paymentStatus} /> },
+      ].map((item, i) => (
+        <CCol md={3} key={i}>
+          <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px" }}>
+            <CCardBody>
+              <small className="text-muted">{item.label}</small>
+              <h5 className="fw-bold mt-1">{item.value}</h5>
+              {item.sub && <small className="text-muted">{item.sub}</small>}
+            </CCardBody>
+          </CCard>
+        </CCol>
+      ))}
+    </CRow>
 
-            {/* Amount Cards */}
-            <CRow className="g-3 mb-4">
-                <CCol md={3}><CCard><CCardBody><small>Total</small><h4>₹{data.totalAmount}</h4></CCardBody></CCard></CCol>
-                <CCol md={3}><CCard><CCardBody><small>Discount</small><h4>₹{data.discountAmount}</h4></CCardBody></CCard></CCol>
-                <CCol md={3}><CCard><CCardBody><small>Paid</small><h4>₹{data.totalPaid}</h4></CCardBody></CCard></CCol>
-                <CCol md={3}><CCard><CCardBody><small>Balance</small><h4 className="text-danger">₹{data.balanceAmount}</h4></CCardBody></CCard></CCol>
-            </CRow>
+    {/* 🔹 Amount Cards */}
+    <CRow className="g-3 mb-4">
+      <CCol md={3}>
+        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#fff" }}>
+          <CCardBody>
+            <small>Total</small>
+            <h4 className="fw-bold">₹{data.totalAmount}</h4>
+          </CCardBody>
+        </CCard>
+      </CCol>
 
-            {/* Progress */}
-            <CCard className="mb-4">
-                <CCardBody>
-                    <div className="d-flex justify-content-between">
-                        <strong>Payment Progress</strong>
-                        <span>
-                            {paidSessions}/{allSessions.length} Sessions Paid ({percent}%)
-                        </span>
-                    </div>
+      <CCol md={3}>
+        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#fff3cd" }}>
+          <CCardBody>
+            <small>Discount</small>
+            <h4 className="fw-bold text-warning">₹{data.discountAmount}</h4>
+          </CCardBody>
+        </CCard>
+      </CCol>
 
-                    <CProgress
-                        value={percent}
-                        color={percent === 100 ? "success" : "warning"}
-                        className="mt-2"
-                    />
-                </CCardBody>
-            </CCard>
+      <CCol md={3}>
+        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#d1e7dd" }}>
+          <CCardBody>
+            <small>Paid</small>
+            <h4 className="fw-bold text-success">₹{data.totalPaid}</h4>
+          </CCardBody>
+        </CCard>
+      </CCol>
 
-            {/* Session Data */}
-            {data.therapyWithSessions.map((pkg, pi) => (
-                <div key={pi}>
-                    <h4 className="mb-3">{pkg.packageName}</h4>
+      <CCol md={3}>
+        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#f8d7da" }}>
+          <CCardBody>
+            <small>Balance</small>
+            <h4 className="fw-bold text-danger">₹{data.balanceAmount}</h4>
+          </CCardBody>
+        </CCard>
+      </CCol>
+    </CRow>
 
-                    {pkg.programs.map((program, gi) => (
-                        <CCard className="mb-4" key={gi}>
-                            <CCardBody>
-                                <h5 className="text-primary mb-4">{program.programName}</h5>
-
-                                {program.therapyData.map((therapy, ti) => (
-                                    <CCard className="mb-3 border-start border-4 border-info" key={ti}>
-                                        <CCardBody>
-                                            <h6 className="fw-bold">{therapy.therapyName}</h6>
-
-                                            {therapy.exercises.map((exercise, ei) => (
-                                                <div key={ei} className="border rounded p-3 mt-3 bg-light">
-                                                    <div className="d-flex justify-content-between mb-2">
-                                                        <strong>{exercise.exerciseName}</strong>
-                                                        <span>₹{exercise.pricePerSession}/Session</span>
-                                                    </div>
-
-                                                    <div className="d-flex flex-wrap gap-3">
-                                                        {exercise.sessions.map((session, si) => {
-                                                            const isPaid =
-                                                                session.paymentStatus?.toLowerCase() === "paid";
-
-                                                            return (
-                                                                <div key={si} className="text-center">
-                                                                    <CButton
-                                                                        size="sm"
-                                                                        color={isPaid ? "success" : "danger"}
-                                                                        disabled={isPaid}
-                                                                        className="fw-bold"
-                                                                    >
-                                                                        Session {session.sessionNo}{" "}
-                                                                        {isPaid ? "✓ Paid" : "Pay Now"}
-                                                                    </CButton>
-
-                                                                    <div
-                                                                        style={{
-                                                                            fontSize: "12px",
-                                                                            color: "#666",
-                                                                            marginTop: "4px",
-                                                                        }}
-                                                                    >
-                                                                        {session.date}
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </CCardBody>
-                                    </CCard>
-                                ))}
-                            </CCardBody>
-                        </CCard>
-                    ))}
-                </div>
-            ))}
-
-            {/* Payment History */}
-            <CCard className="mt-4">
-                <CCardBody>
-                    <h5 className="mb-3">Payment History</h5>
-                    <CTable striped responsive>
-                        <CTableHead>
-                            <CTableRow>
-                                <CTableHeaderCell>#</CTableHeaderCell>
-                                <CTableHeaderCell>Date</CTableHeaderCell>
-                                <CTableHeaderCell>Amount</CTableHeaderCell>
-                                <CTableHeaderCell>Mode</CTableHeaderCell>
-                                <CTableHeaderCell>Type</CTableHeaderCell>
-                                <CTableHeaderCell>Payment Level</CTableHeaderCell>
-                            </CTableRow>
-                        </CTableHead>
-                        <CTableBody>
-                            {data.paymentHistory.map((item, i) => (
-                                <CTableRow key={i}>
-                                    <CTableDataCell>{i + 1}</CTableDataCell>
-                                    <CTableDataCell>{item.paymentDate}</CTableDataCell>
-                                    <CTableDataCell>₹{item.amount}</CTableDataCell>
-                                    <CTableDataCell>{item.paymentMode}</CTableDataCell>
-                                    <CTableDataCell>{item.paymentType}</CTableDataCell>
-                                    <CTableDataCell>{item.paymentLevel}</CTableDataCell>
-
-
-                                </CTableRow>
-                            ))}
-                        </CTableBody>
-                    </CTable>
-
-                    <div className="text-end mt-3">
-                        <CButton
-                            color="danger"
-                            onClick={() => navigate(-1)}
-                        >
-                            Pay Balance ₹{data.balanceAmount}
-                        </CButton>
-                    </div>
-                </CCardBody>
-            </CCard>
+    {/* 🔹 Progress */}
+    <CCard className="mb-4 shadow-sm border-0" style={{ borderRadius: "12px" }}>
+      <CCardBody>
+        <div className="d-flex justify-content-between">
+          <strong>Payment Progress</strong>
+          <span className="fw-semibold">
+            {paidSessions}/{allSessions.length} ({percent}%)
+          </span>
         </div>
-    );
+
+        <CProgress
+          value={percent}
+          className="mt-3"
+          style={{ height: "10px", borderRadius: "10px" }}
+          color={percent === 100 ? "success" : "warning"}
+        />
+      </CCardBody>
+    </CCard>
+
+    {/* 🔹 Therapy Sessions */}
+    {data.therapyWithSessions.map((pkg, pi) => (
+      <div key={pi}>
+        <h4 className="mb-3" style={{fontSize: FONT_SIZES.lg}}>
+          {pkg.packageName}
+        </h4>
+
+        {pkg.programs.map((program, gi) => (
+          <CCard key={gi} className="mb-4 shadow-sm border-0" style={{ borderRadius: "12px" }}>
+            <CCardBody>
+              <h5 className="text-primary fw-bold mb-3" style={{fontSize: FONT_SIZES.md}}>
+                {program.programName}
+              </h5>
+
+              {program.therapyData.map((therapy, ti) => (
+                <div
+                  key={ti}
+                  style={{
+                    borderLeft: "4px solid #0d6efd",
+                    padding: "12px",
+                    marginBottom: "16px",
+                    background: "#fff",
+                    borderRadius: "10px",
+                  }}
+                >
+                  <h6 className="fw-bold">{therapy.therapyName}</h6>
+
+                  {therapy.exercises.map((exercise, ei) => (
+                    <div
+                      key={ei}
+                      style={{
+                        background: "#f9fafb",
+                        padding: "12px",
+                        borderRadius: "10px",
+                        marginTop: "10px",
+                        border: "1px solid #eee",
+                      }}
+                    >
+                      <div className="d-flex justify-content-between mb-2">
+                        <strong>{exercise.exerciseName}</strong>
+                        <span>₹{exercise.pricePerSession}/Session</span>
+                      </div>
+
+                      <div className="d-flex flex-wrap gap-2">
+                        {exercise.sessions.map((session, si) => {
+                          const isPaid =
+                            session.paymentStatus?.toLowerCase() === "paid";
+
+                          return (
+                            <CButton
+                              key={si}
+                              size="sm"
+                              disabled={isPaid}
+                              style={{
+                                borderRadius: "20px",
+                                padding: "4px 10px",
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                border: isPaid
+                                  ? "none"
+                                  : "1px solid #dc3545",
+                                backgroundColor: isPaid
+                                  ? "#198754"
+                                  : "#fff",
+                                color: isPaid ? "#fff" : "#dc3545",
+                                boxShadow:
+                                  "0 2px 6px rgba(0,0,0,0.1)",
+                              }}
+                            >
+                              {isPaid ? "✓ Paid" : `Session ${session.sessionNo}`}
+                            </CButton>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </CCardBody>
+          </CCard>
+        ))}
+      </div>
+    ))}
+
+    {/* 🔹 Payment History */}
+    <CCard className="mt-4 shadow-sm border-0" style={{ borderRadius: "12px" }}>
+      <CCardBody>
+        <h5 className="mb-3" style={{fontSize: FONT_SIZES.md}}>
+          Payment History
+        </h5>
+
+        <CTable striped hover responsive className="align-middle">
+          <CTableHead style={{ background: "#f1f3f5" }}>
+            <CTableRow>
+              <CTableHeaderCell>#</CTableHeaderCell>
+              <CTableHeaderCell>Date</CTableHeaderCell>
+              <CTableHeaderCell>Amount</CTableHeaderCell>
+              <CTableHeaderCell>Mode</CTableHeaderCell>
+              <CTableHeaderCell>Type</CTableHeaderCell>
+              <CTableHeaderCell>Level</CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
+
+          <CTableBody>
+            {data.paymentHistory.map((item, i) => (
+              <CTableRow key={i}>
+                <CTableDataCell>{i + 1}</CTableDataCell>
+                <CTableDataCell>{item.paymentDate}</CTableDataCell>
+                <CTableDataCell>₹{item.amount}</CTableDataCell>
+                <CTableDataCell>{item.paymentMode}</CTableDataCell>
+                <CTableDataCell>{item.paymentType}</CTableDataCell>
+                <CTableDataCell>{item.paymentLevel}</CTableDataCell>
+              </CTableRow>
+            ))}
+          </CTableBody>
+        </CTable>
+
+        <div className="text-end mt-3">
+          <CButton
+            style={{
+              background: "linear-gradient(135deg, #dc3545, #b02a37)",
+              border: "none",
+              borderRadius: "8px",
+              padding: "8px 16px",
+              fontWeight: "600",
+              color: "#fff",
+            }}
+            onClick={() => navigate(-1)}
+          >
+            Pay Balance ₹{data.balanceAmount}
+          </CButton>
+        </div>
+      </CCardBody>
+    </CCard>
+  </div>
+);
 }
