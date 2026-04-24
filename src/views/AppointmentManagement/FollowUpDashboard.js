@@ -1,27 +1,27 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
-    CContainer,
-    CRow,
-    CCol,
-    CCard,
-    CCardBody,
-    CCardTitle,
-    CTable,
-    CTableHead,
-    CTableRow,
-    CTableHeaderCell,
-    CTableBody,
-    CTableDataCell,
-    CBadge,
-    CFormSelect,
-    CFormInput,
-    CFormLabel,
-    CButton, CModal,
-    CModalHeader,
-    CModalTitle,
-    CModalBody,
-    CModalFooter,
-    CFormTextarea
+  CContainer,
+  CRow,
+  CCol,
+  CCard,
+  CCardBody,
+  CCardTitle,
+  CTable,
+  CTableHead,
+  CTableRow,
+  CTableHeaderCell,
+  CTableBody,
+  CTableDataCell,
+  CBadge,
+  CFormSelect,
+  CFormInput,
+  CFormLabel,
+  CButton, CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
+  CFormTextarea
 } from '@coreui/react'
 
 
@@ -124,479 +124,479 @@ import { BASE_URL } from '../../baseUrl'
 // ]
 
 const followUpStatus = [
-    'All',
-    'Pending',
-    'Confirmed',
-    'Due for Investigation',
-    'Investigation Done',
-    // 'In-Progress',
-    'Follow-up Needed',
-    'Cancelled',
-    'Rescheduled',
-    'Drop',
-    'No Reply',
-    // 'No Follow-up',
-    // 'No Calls',
-    'Completed'
+  'All',
+  'Pending',
+  'Confirmed',
+  'Due for Investigation',
+  'Investigation Done',
+  // 'In-Progress',
+  'Follow-up Needed',
+  'Cancelled',
+  'Rescheduled',
+  'Drop',
+  'No Reply',
+  // 'No Follow-up',
+  // 'No Calls',
+  'Completed'
 ]
 
 export default function FollowupDashboard() {
 
 
-    const navigate = useNavigate()
+  const navigate = useNavigate()
 
 
-    const [activeCard, setActiveCard] = useState("today")
+  const [activeCard, setActiveCard] = useState("today")
 
-    const [rows, setRows] = useState([])
-    const [filter, setFilter] = useState('All')
-    const [fromDate, setFromDate] = useState('')
-    const [toDate, setToDate] = useState('')
-    const [currentPage, setCurrentPage] = useState(1)
-    const [pageSize, setPageSize] = useState(10)
-    const [todayCount, setTodayCount] = useState(0)
-    const [weekCount, setWeekCount] = useState(0)
-    const [confirmedCount, setConfirmedCount] = useState(0)
-    const [inProgressCount, setInProgressCount] = useState(0)
-    const [loading, setLoading] = useState(false)
-    const role = localStorage.getItem('role')
-    const [visible, setVisible] = useState(false)
-const [showReasonModal, setShowReasonModal] = useState(false);
-const [selectedRow, setSelectedRow] = useState(null);
-    // Add these states inside component
-    const [reasonModal, setReasonModal] = useState(false)
-    const [selectedBookingId, setSelectedBookingId] = useState("")
-    const [selectedStatus, setSelectedStatus] = useState("")
-    const [reason, setReason] = useState("")
-    const [newDate, setNewDate] = useState("")
-    const [newTime, setNewTime] = useState("")
-    const { searchQuery } = useGlobalSearch()
-    // Replace updatePaymentStatus function with this
-    // ADD STATES
-    const [slotsForSelectedDate, setSlotsForSelectedDate] = useState([])
-    const [selectedDate, setSelectedDate] = useState("")
-    const [loadingSlots, setLoadingSlots] = useState(false)
-    const [showAllSlots, setShowAllSlots] = useState(false)
-    const getCardStyle = (type) => ({
-  cursor: "pointer",
-  borderRadius: "16px",
+  const [rows, setRows] = useState([])
+  const [filter, setFilter] = useState('All')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [todayCount, setTodayCount] = useState(0)
+  const [weekCount, setWeekCount] = useState(0)
+  const [confirmedCount, setConfirmedCount] = useState(0)
+  const [inProgressCount, setInProgressCount] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const role = localStorage.getItem('role')
+  const [visible, setVisible] = useState(false)
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+  // Add these states inside component
+  const [reasonModal, setReasonModal] = useState(false)
+  const [selectedBookingId, setSelectedBookingId] = useState("")
+  const [selectedStatus, setSelectedStatus] = useState("")
+  const [reason, setReason] = useState("")
+  const [newDate, setNewDate] = useState("")
+  const [newTime, setNewTime] = useState("")
+  const { searchQuery } = useGlobalSearch()
+  // Replace updatePaymentStatus function with this
+  // ADD STATES
+  const [slotsForSelectedDate, setSlotsForSelectedDate] = useState([])
+  const [selectedDate, setSelectedDate] = useState("")
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [showAllSlots, setShowAllSlots] = useState(false)
+  const getCardStyle = (type) => ({
+    cursor: "pointer",
+    borderRadius: "16px",
 
-  border:
-    activeCard === type
-      ? "2px solid var(--color-black)"
-      : "1px solid var(--cui-border-color)",
+    border:
+      activeCard === type
+        ? "2px solid var(--color-black)"
+        : "1px solid var(--cui-border-color)",
 
-  backgroundColor: "var(--cui-card-bg, #fff)",
-  color: "var(--color-black)",
+    backgroundColor: "var(--cui-card-bg, #fff)",
+    color: "var(--color-black)",
 
-  boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
-  transition: "all 0.25s ease",
-  minHeight: "90px",
-});
-const handleMouseEnter = (e) => {
-  e.currentTarget.style.transform = "translateY(-3px)";
-  e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.08)";
-};
-
-const handleMouseLeave = (e) => {
-  e.currentTarget.style.transform = "translateY(0)";
-  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.04)";
-};
-const CardContent = ({ icon, label, value }) => {
-  return (
-    <CCardBody className="d-flex align-items-center justify-content-between">
-
-      <div className="d-flex align-items-center gap-3">
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: "12px",
-            background: "var(--cui-tertiary-bg, #f5f5f5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "18px",
-          }}
-        >
-          {icon}
-        </div>
-
-        <div>
-          <div style={{ fontSize: "13px", fontWeight: "600" }}>
-            {label}
-          </div>
-          <div style={{ fontSize: "20px", fontWeight: "700" }}>
-            {value}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ color: "#bbb" }}>➝</div>
-
-    </CCardBody>
-  );
-};
-
-
-    // FETCH SLOTS WHEN RESCHEDULE CLICK
-   const updatePaymentStatus = async (
-  bookingId,
-  status,
-  row,
-  reason,
-  newDate,
-  newTime
-) => {
-  const payload = {
-    bookingId,
-    followupStatus: status.toLowerCase(),
-    reason
+    boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+    transition: "all 0.25s ease",
+    minHeight: "90px",
+  });
+  const handleMouseEnter = (e) => {
+    e.currentTarget.style.transform = "translateY(-3px)";
+    e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.08)";
   };
 
-  if (status === "Rescheduled") {
-    payload.serviceDate = newDate;
-    payload.servicetime = newTime;
-  }
+  const handleMouseLeave = (e) => {
+    e.currentTarget.style.transform = "translateY(0)";
+    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.04)";
+  };
+  const CardContent = ({ icon, label, value }) => {
+    return (
+      <CCardBody className="d-flex align-items-center justify-content-between">
 
-  await bookingUpdate(payload);
-};
+        <div className="d-flex align-items-center gap-3">
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: "12px",
+              background: "var(--cui-tertiary-bg, #f5f5f5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "18px",
+            }}
+          >
+            {icon}
+          </div>
+
+          <div>
+            <div style={{ fontSize: "13px", fontWeight: "600" }}>
+              {label}
+            </div>
+            <div style={{ fontSize: "20px", fontWeight: "700" }}>
+              {value}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ color: "#bbb" }}>➝</div>
+
+      </CCardBody>
+    );
+  };
 
 
-    // CHANGE DROPDOWN CALL
+  // FETCH SLOTS WHEN RESCHEDULE CLICK
+  const updatePaymentStatus = async (
+    bookingId,
+    status,
+    row,
+    reason,
+    newDate,
+    newTime
+  ) => {
+    const payload = {
+      bookingId,
+      followupStatus: status.toLowerCase(),
+      reason
+    };
 
-
-
-    // FETCH SLOT FUNCTION
-    const fetchSlots = async (doctorId, branchId) => {
-        try {
-            setLoadingSlots(true)
-
-            const hospitalId = localStorage.getItem("HospitalId")
-
-            const response = await axios.get(
-                `${BASE_URL}/getDoctorSlots/${hospitalId}/${branchId}/${doctorId}`
-            )
-
-            if (response.data.success) {
-                setSlotsForSelectedDate(response.data.data || [])
-            } else {
-                setSlotsForSelectedDate([])
-            }
-        } catch (error) {
-            console.error(error)
-            setSlotsForSelectedDate([])
-        } finally {
-            setLoadingSlots(false)
-        }
+    if (status === "Rescheduled") {
+      payload.serviceDate = newDate;
+      payload.servicetime = newTime;
     }
 
+    await bookingUpdate(payload);
+  };
 
-    // FILTER SLOT LOGIC
-    const now = new Date()
 
-    const slotsToShow = (slotsForSelectedDate || [])
-        .filter(
-            (s) =>
-                new Date(s.day || s.date).toDateString() ===
-                new Date(newDate).toDateString()
-        )
-        .flatMap((s) => s.availableSlots || [])
-        .filter((slotObj) => {
-            const slotDate = new Date(newDate)
+  // CHANGE DROPDOWN CALL
 
-            const [time, meridian] = slotObj.slot.split(" ")
-            let [hours, minutes] = time.split(":").map(Number)
 
-            if (meridian === "PM" && hours !== 12) hours += 12
-            if (meridian === "AM" && hours === 12) hours = 0
 
-            slotDate.setHours(hours, minutes, 0, 0)
+  // FETCH SLOT FUNCTION
+  const fetchSlots = async (doctorId, branchId) => {
+    try {
+      setLoadingSlots(true)
 
-            const isToday =
-                new Date(newDate).toDateString() === now.toDateString()
+      const hospitalId = localStorage.getItem("HospitalId")
 
-            if (isToday) return slotDate > now
-            return true
-        })
+      const response = await axios.get(
+        `${BASE_URL}/getDoctorSlots/${hospitalId}/${branchId}/${doctorId}`
+      )
 
-    const sortedSlots = slotsToShow.sort((a, b) => {
-        const parseTime = (slot) => {
-            const [time, meridian] = slot.slot.split(" ")
-            let [hours, minutes] = time.split(":").map(Number)
+      if (response.data.success) {
+        setSlotsForSelectedDate(response.data.data || [])
+      } else {
+        setSlotsForSelectedDate([])
+      }
+    } catch (error) {
+      console.error(error)
+      setSlotsForSelectedDate([])
+    } finally {
+      setLoadingSlots(false)
+    }
+  }
 
-            if (meridian === "PM" && hours !== 12) hours += 12
-            if (meridian === "AM" && hours === 12) hours = 0
 
-            return hours * 60 + minutes
-        }
+  // FILTER SLOT LOGIC
+  const now = new Date()
 
-        return parseTime(a) - parseTime(b)
+  const slotsToShow = (slotsForSelectedDate || [])
+    .filter(
+      (s) =>
+        new Date(s.day || s.date).toDateString() ===
+        new Date(newDate).toDateString()
+    )
+    .flatMap((s) => s.availableSlots || [])
+    .filter((slotObj) => {
+      const slotDate = new Date(newDate)
+
+      const [time, meridian] = slotObj.slot.split(" ")
+      let [hours, minutes] = time.split(":").map(Number)
+
+      if (meridian === "PM" && hours !== 12) hours += 12
+      if (meridian === "AM" && hours === 12) hours = 0
+
+      slotDate.setHours(hours, minutes, 0, 0)
+
+      const isToday =
+        new Date(newDate).toDateString() === now.toDateString()
+
+      if (isToday) return slotDate > now
+      return true
     })
 
-    const visibleSlots = showAllSlots
-        ? sortedSlots
-        : sortedSlots.slice(0, 12)
-    // Add submit function
-    const submitReasonUpdate = async () => {
-        try {
-            const payload = {
-                bookingId: selectedBookingId,
-                followupStatus: selectedStatus.toLowerCase(),
-                reason: reason
-            }
+  const sortedSlots = slotsToShow.sort((a, b) => {
+    const parseTime = (slot) => {
+      const [time, meridian] = slot.slot.split(" ")
+      let [hours, minutes] = time.split(":").map(Number)
 
-            if (selectedStatus === "Rescheduled") {
-                payload.serviceDate = newDate
-                payload.servicetime = newTime
-            }
+      if (meridian === "PM" && hours !== 12) hours += 12
+      if (meridian === "AM" && hours === 12) hours = 0
 
-            await bookingUpdate(payload)
-
-            setReasonModal(false)
-            getTodayFollowUps()
-        } catch (err) {
-            console.error(err)
-        }
-    }
-    // useEffect(() => {
-    //     getTodayFollowUps()
-    // }, [])
-    useEffect(() => {
-        getTodayFollowUps()
-        // loadWeekCountOnly()
-    }, [])
-
-    const getTodayFollowUps = async () => {
-        setLoading(true)
-        try {
-            const res = await getBookingsTodayFollowUps()
-
-            if (res.status === 200) {
-                const todayData = Array.isArray(res?.data?.data)
-                    ? res.data.data
-                    : []
-
-                setRows(todayData)
-                setTodayCount(todayData.length)
-                setConfirmedCount(
-                    todayData.filter(
-                        x => (x.status || "").toLowerCase() === "confirmed"
-                    ).length
-                )
-
-                setInProgressCount(
-                    todayData.filter(
-                        x => (x.status || "").toLowerCase() === "in progress"
-                    ).length
-                )
-            } else {
-                setRows([])
-            }
-        } catch (err) {
-            console.error(err)
-            setRows([])
-        } finally {
-            setLoading(false)
-        }
-    }
-    const getUpcomingAppointments = async () => {
-        setLoading(true)
-        try {
-            const res = await getUpcomingFollowUps()
-
-            if (res.status === 200) {
-                const weekData = Array.isArray(res?.data?.data)
-                    ? res.data.data
-                    : []
-
-                setRows(weekData)
-
-                setWeekCount(weekData.length)
-
-                setConfirmedCount(
-                    weekData.filter(
-                        x => (x.status || "").toLowerCase() === "confirmed"
-                    ).length
-                )
-
-                setInProgressCount(
-                    weekData.filter(
-                        x => (x.status || "").toLowerCase() === "in progress"
-                    ).length
-                )
-
-            } else {
-                setRows([])
-            }
-        } catch (error) {
-            console.error(error)
-            setRows([])
-        } finally {
-            setLoading(false)
-        }
+      return hours * 60 + minutes
     }
 
-    const getDateRangeAppointments = async () => {
-        if (!fromDate || !toDate) return;
-        console.log(fromDate, toDate)
-        setLoading(true);
-        try {
-            const res = await getDateRangeFollowUps(
-                fromDate,
-                toDate
-            );
+    return parseTime(a) - parseTime(b)
+  })
 
-            const data = Array.isArray(res?.data?.data)
-                ? res.data.data
-                : Array.isArray(res?.data)
-                    ? res.data
-                    : [];
+  const visibleSlots = showAllSlots
+    ? sortedSlots
+    : sortedSlots.slice(0, 12)
+  // Add submit function
+  const submitReasonUpdate = async () => {
+    try {
+      const payload = {
+        bookingId: selectedBookingId,
+        followupStatus: selectedStatus.toLowerCase(),
+        reason: reason
+      }
 
-            setRows(data);
-            setCurrentPage(1);
-        } catch (error) {
-            console.error(error);
-            setRows([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-    // const updatePaymentStatus = async (bookingId, status) => {
-    //     console.log(`Updating booking ${bookingId} with payment type: ${status}`);
-    //     try {
-    //         await bookingUpdate({ bookingId, followupStatus: status.toLowerCase() }) // Assuming bookingUpdate accepts an object with these properties
+      if (selectedStatus === "Rescheduled") {
+        payload.serviceDate = newDate
+        payload.servicetime = newTime
+      }
 
-    //         getTodayFollowUps()
+      await bookingUpdate(payload)
 
-    //     } catch (err) {
-    //         console.error("Payment update failed", err);
-    //     }
-    // };
+      setReasonModal(false)
+      getTodayFollowUps()
+    } catch (err) {
+      console.error(err)
+    }
+  }
+  // useEffect(() => {
+  //     getTodayFollowUps()
+  // }, [])
+  useEffect(() => {
+    getTodayFollowUps()
+    // loadWeekCountOnly()
+  }, [])
 
-    // const list = useMemo(() => {
-    //     return rows.filter((row) => {
-    //         const matchStatus =
-    //             filter === "All" || row.status === filter
+  const getTodayFollowUps = async () => {
+    setLoading(true)
+    try {
+      const res = await getBookingsTodayFollowUps()
 
-    //         const matchDate =
-    //             row.date >= fromDate &&
-    //             row.date <= toDate
+      if (res.status === 200) {
+        const todayData = Array.isArray(res?.data?.data)
+          ? res.data.data
+          : []
 
-    //         return matchStatus && matchDate
-    //     })
-    // }, [rows, filter, fromDate, toDate])
-    useEffect(() => {
-        if (fromDate && toDate) {
-            getDateRangeAppointments();
-        }
-    }, [fromDate, toDate]);
-    const list = useMemo(() => {
-        return rows.filter((row) => {
-            const matchStatus =
-                filter === "All" ||
-                (row.followUpStatus || "").toLowerCase() === filter.toLowerCase() ||
-                (row.status || "").toLowerCase() === filter.toLowerCase()
-
-            const search = searchQuery.toLowerCase()
-
-            const matchSearch =
-                !search ||
-                (row.bookingId || "").toLowerCase().includes(search) ||
-                (row.name || "").toLowerCase().includes(search) ||
-                (row.patientMobileNumber || "").toLowerCase().includes(search) ||
-                (row.doctorName || "").toLowerCase().includes(search) ||
-                (row.paymentType || "").toLowerCase().includes(search) ||
-                (row.visitType || "").toLowerCase().includes(search) ||
-                (row.status || "").toLowerCase().includes(search)
-
-            return matchStatus && matchSearch
-        })
-    }, [rows, filter, searchQuery])
-    const updateStatus = (id, value) => {
-        setRows(
-            rows.map((r) =>
-                r.id === id ? { ...r, status: value } : r
-            )
+        setRows(todayData)
+        setTodayCount(todayData.length)
+        setConfirmedCount(
+          todayData.filter(
+            x => (x.status || "").toLowerCase() === "confirmed"
+          ).length
         )
+
+        setInProgressCount(
+          todayData.filter(
+            x => (x.status || "").toLowerCase() === "in progress"
+          ).length
+        )
+      } else {
+        setRows([])
+      }
+    } catch (err) {
+      console.error(err)
+      setRows([])
+    } finally {
+      setLoading(false)
     }
+  }
+  const getUpcomingAppointments = async () => {
+    setLoading(true)
+    try {
+      const res = await getUpcomingFollowUps()
+
+      if (res.status === 200) {
+        const weekData = Array.isArray(res?.data?.data)
+          ? res.data.data
+          : []
+
+        setRows(weekData)
+
+        setWeekCount(weekData.length)
+
+        setConfirmedCount(
+          weekData.filter(
+            x => (x.status || "").toLowerCase() === "confirmed"
+          ).length
+        )
+
+        setInProgressCount(
+          weekData.filter(
+            x => (x.status || "").toLowerCase() === "in progress"
+          ).length
+        )
+
+      } else {
+        setRows([])
+      }
+    } catch (error) {
+      console.error(error)
+      setRows([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getDateRangeAppointments = async () => {
+    if (!fromDate || !toDate) return;
+    console.log(fromDate, toDate)
+    setLoading(true);
+    try {
+      const res = await getDateRangeFollowUps(
+        fromDate,
+        toDate
+      );
+
+      const data = Array.isArray(res?.data?.data)
+        ? res.data.data
+        : Array.isArray(res?.data)
+          ? res.data
+          : [];
+
+      setRows(data);
+      setCurrentPage(1);
+    } catch (error) {
+      console.error(error);
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // const updatePaymentStatus = async (bookingId, status) => {
+  //     console.log(`Updating booking ${bookingId} with payment type: ${status}`);
+  //     try {
+  //         await bookingUpdate({ bookingId, followupStatus: status.toLowerCase() }) // Assuming bookingUpdate accepts an object with these properties
+
+  //         getTodayFollowUps()
+
+  //     } catch (err) {
+  //         console.error("Payment update failed", err);
+  //     }
+  // };
+
+  // const list = useMemo(() => {
+  //     return rows.filter((row) => {
+  //         const matchStatus =
+  //             filter === "All" || row.status === filter
+
+  //         const matchDate =
+  //             row.date >= fromDate &&
+  //             row.date <= toDate
+
+  //         return matchStatus && matchDate
+  //     })
+  // }, [rows, filter, fromDate, toDate])
+  useEffect(() => {
+    if (fromDate && toDate) {
+      getDateRangeAppointments();
+    }
+  }, [fromDate, toDate]);
+  const list = useMemo(() => {
+    return rows.filter((row) => {
+      const matchStatus =
+        filter === "All" ||
+        (row.followUpStatus || "").toLowerCase() === filter.toLowerCase() ||
+        (row.status || "").toLowerCase() === filter.toLowerCase()
+
+      const search = searchQuery.toLowerCase()
+
+      const matchSearch =
+        !search ||
+        (row.bookingId || "").toLowerCase().includes(search) ||
+        (row.name || "").toLowerCase().includes(search) ||
+        (row.patientMobileNumber || "").toLowerCase().includes(search) ||
+        (row.doctorName || "").toLowerCase().includes(search) ||
+        (row.paymentType || "").toLowerCase().includes(search) ||
+        (row.visitType || "").toLowerCase().includes(search) ||
+        (row.status || "").toLowerCase().includes(search)
+
+      return matchStatus && matchSearch
+    })
+  }, [rows, filter, searchQuery])
+  const updateStatus = (id, value) => {
+    setRows(
+      rows.map((r) =>
+        r.id === id ? { ...r, status: value } : r
+      )
+    )
+  }
 
   const getColor = (status) => {
-  if (!status || typeof status !== 'string') return 'light';
+    if (!status || typeof status !== 'string') return 'light';
 
-  const normalizedStatus = status.trim().toLowerCase();
+    const normalizedStatus = status.trim().toLowerCase();
 
-  switch (normalizedStatus) {
-    case 'pending':
-      return 'warning';
+    switch (normalizedStatus) {
+      case 'pending':
+        return 'warning';
 
-    case 'confirmed':
-      return 'info';
+      case 'confirmed':
+        return 'info';
 
-    case 'due for investigation':
-      return 'danger';
+      case 'due for investigation':
+        return 'danger';
 
-    case 'investigation done':
-      return 'primary';
+      case 'investigation done':
+        return 'primary';
 
-    case 'in-progress':
-    case 'in progress':
-      return 'info';
+      case 'in-progress':
+      case 'in progress':
+        return 'info';
 
-    case 'follow-up':
-    case 'follow up':
-    case 'follow-up needed':
-      return 'secondary';
+      case 'follow-up':
+      case 'follow up':
+      case 'follow-up needed':
+        return 'secondary';
 
-    case 'cancelled':
-      return 'danger';
+      case 'cancelled':
+        return 'danger';
 
-    case 'rescheduled':
-    case 'drop':
-    case 'no calls':
-      return 'dark';
+      case 'rescheduled':
+      case 'drop':
+      case 'no calls':
+        return 'dark';
 
-    case 'no reply':
-      return 'secondary';
+      case 'no reply':
+        return 'secondary';
 
-    case 'completed':
-      return 'success';
+      case 'completed':
+        return 'success';
 
-    default:
-      return 'light';
-  }
-};
-    const updateFollowUpStatus = (id, value) => {
-        setRows(
-            rows.map((r) => {
-                if (r.id !== id) return r
-
-                let newStatus = r.status
-
-                if (
-                    value === 'Rescheduled' ||
-                    value === 'Cancelled' ||
-                    value === 'Drop'
-                ) {
-                    newStatus = value
-                }
-
-                return {
-                    ...r,
-                    followUpStatus: value,
-                    status: newStatus
-                }
-            })
-        )
+      default:
+        return 'light';
     }
-    const startIndex = (currentPage - 1) * pageSize
-    const endIndex = startIndex + pageSize
+  };
+  const updateFollowUpStatus = (id, value) => {
+    setRows(
+      rows.map((r) => {
+        if (r.id !== id) return r
 
-    const todayBookings = list.slice(startIndex, endIndex)
+        let newStatus = r.status
 
-    return (
-        <>
-            {/* <CModalBody>
+        if (
+          value === 'Rescheduled' ||
+          value === 'Cancelled' ||
+          value === 'Drop'
+        ) {
+          newStatus = value
+        }
+
+        return {
+          ...r,
+          followUpStatus: value,
+          status: newStatus
+        }
+      })
+    )
+  }
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+
+  const todayBookings = list.slice(startIndex, endIndex)
+
+  return (
+    <>
+      {/* <CModalBody>
                 <CFormInput
                     label="Reason"
                     value={reason}
@@ -693,393 +693,391 @@ const CardContent = ({ icon, label, value }) => {
                 )}
             </CModalBody> */}
 
-            <CContainer fluid  >
+      <CContainer fluid  >
 
 
-                {/* Cards */}
-           <CRow className="mb-4 g-3">
+        {/* Cards */}
+        <CRow className="mb-4 g-3">
 
-  {/* TODAY */}
-  <CCol md={3}>
-    <CCard
-      onClick={() => {
-        setActiveCard("today");
-        getTodayFollowUps();
-        setCurrentPage(1);
-      }}
-      style={getCardStyle("today")}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <CardContent icon="📅" label="Today" value={todayCount} />
-    </CCard>
-  </CCol>
+          {/* TODAY */}
+          <CCol md={3}>
+            <CCard
+              onClick={() => {
+                setActiveCard("today");
+                getTodayFollowUps();
+                setCurrentPage(1);
+              }}
+              style={getCardStyle("today")}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
+              <CardContent icon="📅" label="Today" value={todayCount} />
+            </CCard>
+          </CCol>
 
-  {/* 1 WEEK */}
-  <CCol md={3}>
-    <CCard
-      onClick={() => {
-        setActiveCard("upcoming");
-        getUpcomingAppointments();
-        setCurrentPage(1);
-      }}
-      style={getCardStyle("upcoming")}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <CardContent icon="🗓️" label="1 Week" value={weekCount} />
-    </CCard>
-  </CCol>
+          {/* 1 WEEK */}
+          <CCol md={3}>
+            <CCard
+              onClick={() => {
+                setActiveCard("upcoming");
+                getUpcomingAppointments();
+                setCurrentPage(1);
+              }}
+              style={getCardStyle("upcoming")}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
+              <CardContent icon="🗓️" label="1 Week" value={weekCount} />
+            </CCard>
+          </CCol>
 
-  {/* CONFIRMED */}
-  <CCol md={3}>
-    <CCard
-    onClick={() => {
-  setActiveCard("confirmed")
-  setFilter("Confirmed")
-  setCurrentPage(1)
-}}
-      style={getCardStyle("confirmed")}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <CardContent icon="✅" label="Confirmed" value={confirmedCount} />
-    </CCard>
-  </CCol>
+          {/* CONFIRMED */}
+          <CCol md={3}>
+            <CCard
+              onClick={() => {
+                setActiveCard("confirmed")
+                setFilter("Confirmed")
+                setCurrentPage(1)
+              }}
+              style={getCardStyle("confirmed")}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
+              <CardContent icon="✅" label="Confirmed" value={confirmedCount} />
+            </CCard>
+          </CCol>
 
-  {/* IN PROGRESS */}
-  <CCol md={3}>
-    <CCard
-    onClick={() => {
-  setActiveCard("inprogress")
-  setFilter("In Progress")
-  setCurrentPage(1)
-}}
-      style={getCardStyle("progress")}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <CardContent icon="⏳" label="In Progress" value={inProgressCount} />
-    </CCard>
-  </CCol>
+          {/* IN PROGRESS */}
+          <CCol md={3}>
+            <CCard
+              onClick={() => {
+                setActiveCard("inprogress")
+                setFilter("In Progress")
+                setCurrentPage(1)
+              }}
+              style={getCardStyle("progress")}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
+              <CardContent icon="⏳" label="In Progress" value={inProgressCount} />
+            </CCard>
+          </CCol>
 
-</CRow>
-                {/* Filters */}
-                <CRow className="mb-3 d-flex justify-content-center align-items-center align-content-center" style={{ color: 'var(--color-black)' }} >
-                    <CCol md={3}>
-                        <CFormInput
-                            type="date"
-                            label="From Date"
-                            value={fromDate}
-                            onChange={(e) => {
-                                setFromDate(e.target.value)
-                                setCurrentPage(1)
-                            }}
-                        />
-                    </CCol>
+        </CRow>
+        {/* Filters */}
+        <CRow className="mb-3 d-flex justify-content-center align-items-center align-content-center" style={{ color: 'var(--color-black)' }} >
+          <CCol md={3}>
+            <CFormInput
+              type="date"
+              label="From Date"
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value)
+                setCurrentPage(1)
+              }}
+            />
+          </CCol>
 
-                    <CCol md={3}>
-                        <CFormInput
-                            type="date"
-                            label="To Date"
-                            value={toDate}
+          <CCol md={3}>
+            <CFormInput
+              type="date"
+              label="To Date"
+              value={toDate}
 
-                            onChange={(e) => {
-                                setToDate(e.target.value)
-                                setCurrentPage(1)
-                            }}
-                        />
-                    </CCol>
+              onChange={(e) => {
+                setToDate(e.target.value)
+                setCurrentPage(1)
+              }}
+            />
+          </CCol>
 
-                    <CCol md={3}>
-                        <div style={{ color: 'var(--color-bgcolor)' }}  >
-                            <CFormSelect
-                                value={filter}
-                                label="Fiter By Status"
-                                onChange={(e) => {
-                                    setFilter(e.target.value)
-                                    setCurrentPage(1)
-                                }}
-                                style={{ color: 'var(--color-bgcolor)' }}
-                            >
-                                {followUpStatus.map((s) => (
-                                    <option key={s}>{s}</option>
-                                ))}
-                            </CFormSelect>
-                        </div>
-                    </CCol>
-                    <CCol md={3} className='mt-4'>
-                        {(role === 'admin' || role === 'receptionist') && (
-                            <CButton
-                                style={{
-                                    backgroundColor: 'var(--color-bgcolor)',
-                                    color: 'var(--color-white)',
-                                }}
-                                onClick={() => setVisible(true)}
-                            >
-                                Book New Appointment
-                            </CButton>
-                        )}
-                    </CCol>
-                </CRow>
-                <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
-                {/* Table */}
-                <CTable
-                    hover
-                    responsive
-                    bordered
-                    className="pink-table"
-                >
-                    <CTableHead color="light">
-                        <CTableRow>
-                            <CTableHeaderCell>S.No</CTableHeaderCell>
-                            <CTableHeaderCell>Booking Id</CTableHeaderCell>
-                            <CTableHeaderCell>Date</CTableHeaderCell>
-                            <CTableHeaderCell>Time</CTableHeaderCell>
-                            <CTableHeaderCell>Patient</CTableHeaderCell>
-                            <CTableHeaderCell>Mobile</CTableHeaderCell>
-                            <CTableHeaderCell>Doctor</CTableHeaderCell>
-                            <CTableHeaderCell>Payment Type</CTableHeaderCell>
-                            <CTableHeaderCell>Visit Type</CTableHeaderCell>
-                            <CTableHeaderCell>Status</CTableHeaderCell>
-                            <CTableHeaderCell>Update</CTableHeaderCell>
-                            <CTableHeaderCell>Action</CTableHeaderCell>
-                        </CTableRow>
-                    </CTableHead>
-
-                    <CTableBody>
-
-                        {loading ? (
-                            <CTableRow>
-                                <CTableDataCell colSpan={12} className="text-center py-4">
-                                    <LoadingIndicator message='Loading appointments...' />
-
-                                </CTableDataCell>
-                            </CTableRow>
-                        ) : todayBookings.length === 0 ? (
-                            <CTableRow>
-                                <CTableDataCell colSpan={12} className="text-center py-4">
-                                    No appointments found
-                                </CTableDataCell>
-                            </CTableRow>
-                        ) : (
-                            todayBookings.map((row, index) => (
-                                <CTableRow key={row.bookingId}>
-                                    <CTableDataCell>
-                                        {(currentPage - 1) * pageSize + index + 1}
-                                    </CTableDataCell>
-
-                                    <CTableDataCell>{row.bookingId}</CTableDataCell>
-                                    <CTableDataCell>{row.serviceDate}</CTableDataCell>
-                                    <CTableDataCell>{row.servicetime}</CTableDataCell>
-                                    <CTableDataCell>{row.name}</CTableDataCell>
-                                    <CTableDataCell>{row.patientMobileNumber}</CTableDataCell>
-                                    <CTableDataCell>{row.doctorName}</CTableDataCell>
-                                    <CTableDataCell>{row.paymentType}</CTableDataCell>
-                                    <CTableDataCell>{capitalizeWords(row.visitType)}</CTableDataCell>
-
-                                    <CTableDataCell>
-                                        <CBadge color={getColor(row.status)}>
-                                            {row.status}
-                                        </CBadge>
-                                    </CTableDataCell>
-
-                                    <CTableDataCell>
-                                       <CFormSelect
-  size="sm"
-  value={capitalizeWords(row.followUpStatus || row.followupStatus || "")}
-  style={{color: 'var(--color-bgcolor)'}}
- onChange={(e) => {
-  const value = e.target.value;
-
-  if (value === "Rescheduled" || value === "Cancelled") {
-    setSelectedRow(row);
-    setSelectedStatus(value);
-
-    // 🔥 CALL SLOT API HERE
-    if (value === "Rescheduled") {
-      fetchSlots(row.doctorId, row.branchId);
-    }
-
-    setShowReasonModal(true);
-  } else {
-    updatePaymentStatus(row.bookingId, value, row);
-  }
-}}
->
-  {followUpStatus.slice(1).map((s) => (
-    <option key={s} value={s}>
-      {s}
-    </option>
-  ))}
-</CFormSelect>
-                                    </CTableDataCell>
-
-                                    <CTableDataCell>
-                                        <CButton
-                                            size="sm"
-                                            style={{ backgroundColor: "var(--color-bgcolor)", color: "white" }}
-                                            onClick={() =>
-                                                navigate(`/appointment-details/${row.bookingId}`, {
-                                                    state: { appointment: row }
-                                                })
-                                            }
-                                        >
-                                            View
-                                        </CButton>
-                                    </CTableDataCell>
-                                </CTableRow>
-                            ))
-                        )}
-
-                    </CTableBody>
-                </CTable>
-                {!loading && todayBookings.length > 0 && (
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={Math.ceil(rows.length / pageSize)}
-                        pageSize={pageSize}
-                        onPageChange={setCurrentPage}
-                        onPageSizeChange={(size) => {
-                            setPageSize(size)
-                            setCurrentPage(1)
-                        }}
-                    />
-                )}
-            </CContainer>
-            <CModal
-  visible={showReasonModal}
-  onClose={() => setShowReasonModal(false)}
->
-  <CModalHeader>
-    <CModalTitle>Reason</CModalTitle>
-  </CModalHeader>
-
- <CModalBody>
-
-  {/* 🔹 Reason (for both) */}
-  <CFormLabel>Reason</CFormLabel>
-  <CFormTextarea
-    value={reason}
-    onChange={(e) => setReason(e.target.value)}
-    placeholder="Enter reason..."
-    className="mb-3"
-  />
-
-  {/* 🔹 SHOW ONLY FOR RESCHEDULE */}
-  {selectedStatus === "Rescheduled" && (
-    <>
-      <h6>Select Date</h6>
-
-      <div className="d-flex gap-2 flex-wrap mb-3">
-        {(slotsForSelectedDate || [])
-          .filter((s) => {
-            const dateValue = s.day || s.date;
-            const formattedDate = new Date(dateValue)
-              .toISOString()
-              .split("T")[0];
-
-            const today = new Date().toISOString().split("T")[0];
-            return formattedDate >= today;
-          })
-          .map((s, idx) => {
-            const dateValue = s.day || s.date;
-            const formattedDate = new Date(dateValue)
-              .toISOString()
-              .split("T")[0];
-
-            return (
+          <CCol md={3}>
+            <div style={{ color: 'var(--color-bgcolor)' }}  >
+              <CFormSelect
+                value={filter}
+                label="Fiter By Status"
+                onChange={(e) => {
+                  setFilter(e.target.value)
+                  setCurrentPage(1)
+                }}
+                style={{ color: 'var(--color-bgcolor)' }}
+              >
+                {followUpStatus.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </CFormSelect>
+            </div>
+          </CCol>
+          <CCol md={3} className='mt-4'>
+            {(role === 'admin' || role === 'receptionist') && (
               <CButton
-                key={idx}
-                color={newDate === formattedDate ? "primary" : "light"}
-                onClick={() => {
-                  setNewDate(formattedDate);
-                  setNewTime("");
+                style={{
+                  backgroundColor: 'var(--color-bgcolor)',
+                  color: 'var(--color-white)',
+                }}
+                onClick={() => setVisible(true)}
+              >
+                Book New Appointment
+              </CButton>
+            )}
+          </CCol>
+        </CRow>
+        <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
+        {/* Table */}
+        <CTable
+
+          className="pink-table"
+        >
+          <CTableHead >
+            <CTableRow className="text-center">
+              <CTableHeaderCell>S.No</CTableHeaderCell>
+              <CTableHeaderCell>Booking Id</CTableHeaderCell>
+              <CTableHeaderCell>Date</CTableHeaderCell>
+              <CTableHeaderCell>Time</CTableHeaderCell>
+              <CTableHeaderCell>Patient</CTableHeaderCell>
+              <CTableHeaderCell>Mobile</CTableHeaderCell>
+              <CTableHeaderCell>Doctor</CTableHeaderCell>
+              <CTableHeaderCell>Payment Type</CTableHeaderCell>
+              <CTableHeaderCell>Visit Type</CTableHeaderCell>
+              <CTableHeaderCell>Status</CTableHeaderCell>
+              <CTableHeaderCell>Update</CTableHeaderCell>
+              <CTableHeaderCell>Action</CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
+
+          <CTableBody>
+
+            {loading ? (
+              <CTableRow className="text-center">
+                <CTableDataCell colSpan={12} className="text-center py-4">
+                  <LoadingIndicator message='Loading appointments...' />
+
+                </CTableDataCell>
+              </CTableRow>
+            ) : todayBookings.length === 0 ? (
+              <CTableRow>
+                <CTableDataCell colSpan={12} className="text-center py-4">
+                  No appointments found
+                </CTableDataCell>
+              </CTableRow>
+            ) : (
+              todayBookings.map((row, index) => (
+                <CTableRow key={row.bookingId}>
+                  <CTableDataCell>
+                    {(currentPage - 1) * pageSize + index + 1}
+                  </CTableDataCell>
+
+                  <CTableDataCell>{row.bookingId}</CTableDataCell>
+                  <CTableDataCell>{row.serviceDate}</CTableDataCell>
+                  <CTableDataCell>{row.servicetime}</CTableDataCell>
+                  <CTableDataCell>{row.name}</CTableDataCell>
+                  <CTableDataCell>{row.patientMobileNumber}</CTableDataCell>
+                  <CTableDataCell>{row.doctorName}</CTableDataCell>
+                  <CTableDataCell>{row.paymentType}</CTableDataCell>
+                  <CTableDataCell>{capitalizeWords(row.visitType)}</CTableDataCell>
+
+                  <CTableDataCell>
+                    <CBadge color={getColor(row.status)}>
+                      {row.status}
+                    </CBadge>
+                  </CTableDataCell>
+
+                  <CTableDataCell>
+                    <CFormSelect
+                      size="sm"
+                      value={capitalizeWords(row.followUpStatus || row.followupStatus || "")}
+                      style={{ color: 'var(--color-bgcolor)' }}
+                      onChange={(e) => {
+                        const value = e.target.value;
+
+                        if (value === "Rescheduled" || value === "Cancelled") {
+                          setSelectedRow(row);
+                          setSelectedStatus(value);
+
+                          // 🔥 CALL SLOT API HERE
+                          if (value === "Rescheduled") {
+                            fetchSlots(row.doctorId, row.branchId);
+                          }
+
+                          setShowReasonModal(true);
+                        } else {
+                          updatePaymentStatus(row.bookingId, value, row);
+                        }
+                      }}
+                    >
+                      {followUpStatus.slice(1).map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </CFormSelect>
+                  </CTableDataCell>
+
+                  <CTableDataCell>
+                    <CButton
+                      size="sm"
+                      style={{ backgroundColor: "var(--color-bgcolor)", color: "white" }}
+                      onClick={() =>
+                        navigate(`/appointment-details/${row.bookingId}`, {
+                          state: { appointment: row }
+                        })
+                      }
+                    >
+                      View
+                    </CButton>
+                  </CTableDataCell>
+                </CTableRow>
+              ))
+            )}
+
+          </CTableBody>
+        </CTable>
+        {!loading && todayBookings.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(rows.length / pageSize)}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setCurrentPage(1)
+            }}
+          />
+        )}
+      </CContainer>
+      <CModal
+        visible={showReasonModal}
+        onClose={() => setShowReasonModal(false)}
+      >
+        <CModalHeader>
+          <CModalTitle>Reason</CModalTitle>
+        </CModalHeader>
+
+        <CModalBody>
+
+          {/* 🔹 Reason (for both) */}
+          <CFormLabel>Reason</CFormLabel>
+          <CFormTextarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Enter reason..."
+            className="mb-3"
+          />
+
+          {/* 🔹 SHOW ONLY FOR RESCHEDULE */}
+          {selectedStatus === "Rescheduled" && (
+            <>
+              <h6>Select Date</h6>
+
+              <div className="d-flex gap-2 flex-wrap mb-3">
+                {(slotsForSelectedDate || [])
+                  .filter((s) => {
+                    const dateValue = s.day || s.date;
+                    const formattedDate = new Date(dateValue)
+                      .toISOString()
+                      .split("T")[0];
+
+                    const today = new Date().toISOString().split("T")[0];
+                    return formattedDate >= today;
+                  })
+                  .map((s, idx) => {
+                    const dateValue = s.day || s.date;
+                    const formattedDate = new Date(dateValue)
+                      .toISOString()
+                      .split("T")[0];
+
+                    return (
+                      <CButton
+                        key={idx}
+                        color={newDate === formattedDate ? "primary" : "light"}
+                        onClick={() => {
+                          setNewDate(formattedDate);
+                          setNewTime("");
+                        }}
+                      >
+                        {formattedDate}
+                      </CButton>
+                    );
+                  })}
+              </div>
+
+              <h6>Select Time</h6>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4,1fr)",
+                  gap: "8px"
                 }}
               >
-                {formattedDate}
-              </CButton>
-            );
-          })}
-      </div>
+                {visibleSlots.map((slotObj, i) => (
+                  <div
+                    key={i}
+                    onClick={() =>
+                      !slotObj.slotbooked && setNewTime(slotObj.slot)
+                    }
+                    style={{
+                      padding: "8px",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                      borderRadius: "6px",
+                      cursor: slotObj.slotbooked ? "not-allowed" : "pointer",
+                      backgroundColor: slotObj.slotbooked
+                        ? "#f8d7da"
+                        : newTime === slotObj.slot
+                          ? "#0d6efd"
+                          : "#fff",
+                      color: newTime === slotObj.slot ? "#fff" : "#000"
+                    }}
+                  >
+                    {slotObj.slot}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
-      <h6>Select Time</h6>
+        </CModalBody>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: "8px"
-        }}
-      >
-        {visibleSlots.map((slotObj, i) => (
-          <div
-            key={i}
-            onClick={() =>
-              !slotObj.slotbooked && setNewTime(slotObj.slot)
-            }
-            style={{
-              padding: "8px",
-              textAlign: "center",
-              border: "1px solid #ccc",
-              borderRadius: "6px",
-              cursor: slotObj.slotbooked ? "not-allowed" : "pointer",
-              backgroundColor: slotObj.slotbooked
-                ? "#f8d7da"
-                : newTime === slotObj.slot
-                ? "#0d6efd"
-                : "#fff",
-              color: newTime === slotObj.slot ? "#fff" : "#000"
+        <CModalFooter>
+          {/* Cancel */}
+          <CButton
+            color="secondary"
+            onClick={() => {
+              setShowReasonModal(false);
+              setReason("");
             }}
           >
-            {slotObj.slot}
-          </div>
-        ))}
-      </div>
+            Cancel
+          </CButton>
+
+          {/* Save */}
+          <CButton
+            style={{ backgroundColor: "var(--color-black)", color: "white" }}
+            onClick={() => {
+              if (!reason.trim()) {
+                alert("Reason is required");
+                return;
+              }
+
+              // ✅ CALL API AFTER REASON ENTERED
+              updatePaymentStatus(
+                selectedRow.bookingId,
+                selectedStatus,
+                selectedRow,
+                reason,
+                newDate,
+                newTime
+              );
+
+              setShowReasonModal(false);
+              setReason("");
+            }}
+          >
+            Save
+          </CButton>
+        </CModalFooter>
+      </CModal>
     </>
-  )}
-
-</CModalBody>
-
-  <CModalFooter>
-    {/* Cancel */}
-    <CButton
-      color="secondary"
-      onClick={() => {
-        setShowReasonModal(false);
-        setReason("");
-      }}
-    >
-      Cancel
-    </CButton>
-
-    {/* Save */}
-    <CButton
-     style={{ backgroundColor: "var(--color-black)", color: "white" }}
-      onClick={() => {
-        if (!reason.trim()) {
-          alert("Reason is required");
-          return;
-        }
-
-        // ✅ CALL API AFTER REASON ENTERED
-        updatePaymentStatus(
-          selectedRow.bookingId,
-     selectedStatus ,
-          selectedRow,
-          reason,
-          newDate,
-  newTime
-        );
-
-        setShowReasonModal(false);
-        setReason("");
-      }}
-    >
-      Save
-    </CButton>
-  </CModalFooter>
-</CModal>
-        </>
-    )
+  )
 }

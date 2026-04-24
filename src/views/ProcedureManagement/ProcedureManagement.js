@@ -294,26 +294,26 @@ export default function TherapyManagement() {
       {/* TABLE */}
       <CTable className="pink-table">
         <CTableHead>
-          <CTableRow>
+          <CTableRow className="text-center">
             <CTableHeaderCell>S.No</CTableHeaderCell>
             <CTableHeaderCell>Therapy Name</CTableHeaderCell>
             <CTableHeaderCell>No.Of Exercises</CTableHeaderCell>
             {/* <CTableHeaderCell>Consent</CTableHeaderCell> */}
-            <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
+            <CTableHeaderCell >Actions</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
         <CTableBody>
           {filteredList.length > 0 ? (
             filteredList.map((item, index) => (
-              <CTableRow key={item.id}>
+              <CTableRow key={item.id} className="text-center">
                 {/* <CTableDataCell>{item.id}</CTableDataCell> */}
                 <CTableDataCell>{index + 1}</CTableDataCell>
                 <CTableDataCell>{item.therapyName}</CTableDataCell>
                 <CTableDataCell>{item.noExerciseIdCount}</CTableDataCell>
                 {/* <CTableDataCell>{item.consentType}</CTableDataCell> */}
-                <CTableDataCell className="text-end">
-                  <div className="d-flex justify-content-end gap-2  ">
-                    {can('Therapy Management', 'read') && (
+                <CTableDataCell>
+                 <div  className="d-flex justify-content-center gap-2  ">  
+                  {can('Therapy Management', 'read') && (
                       <button
                         className="actionBtn"
                         onClick={() => handleView(item.id)}
@@ -342,9 +342,9 @@ export default function TherapyManagement() {
                       >
                         <Trash2 size={18} />
                       </button>
-                    )}
+                    )}</div>
+                  
 
-                  </div>
                 </CTableDataCell>
                 {/* <CTableDataCell>
                 <CButton size="sm" onClick={() => handleEdit(item)}>

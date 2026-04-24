@@ -101,9 +101,9 @@ const PhysioManagement = () => {
           </CButton>
         </div>
       )}
-      <CTable striped className='pink-table'>
+      <CTable className="pink-table">
         <CTableHead>
-          <CTableRow>
+          <CTableRow className="text-center">
             <CTableHeaderCell>#</CTableHeaderCell>
 
             <CTableHeaderCell>Photo</CTableHeaderCell>
@@ -116,9 +116,9 @@ const PhysioManagement = () => {
           </CTableRow>
         </CTableHead>
 
-        <CTableBody>
+        <CTableBody className="text-center">
           {physios.map((p, index) => (
-            <CTableRow key={p.id}>
+            <CTableRow key={p.id} className="text-center">
               <CTableDataCell>
                 {index + 1}
               </CTableDataCell>
@@ -149,7 +149,7 @@ const PhysioManagement = () => {
               <CTableDataCell>{p.yearsOfExperience}</CTableDataCell>
 
               <CTableDataCell>
-                <div className="d-flex gap-2 align-items-center">
+                <div className="d-flex justify-content-center gap-2">
                   {/* VIEW */}
                   {can('Therapist', 'read') && (
                     <div

@@ -401,26 +401,26 @@ const CustomerManagement = () => {
     if (!validateForm()) return
     setSaveLoading(true)
     try {
-     const updatedFormData = {
-  ...formData,
+      const updatedFormData = {
+        ...formData,
 
-  // ✅ SAFE FULL NAME
-  fullName: [
-    formData.title,
-    formData.firstName,
-    formData.lastName
-  ].filter(Boolean).join(" "),
+        // ✅ SAFE FULL NAME
+        fullName: [
+          formData.title,
+          formData.firstName,
+          formData.lastName
+        ].filter(Boolean).join(" "),
 
-  // ✅ DO NOT OVERWRITE EXISTING VALUES
-  hospitalId:
-    localStorage.getItem('HospitalId') || formData.hospitalId,
+        // ✅ DO NOT OVERWRITE EXISTING VALUES
+        hospitalId:
+          localStorage.getItem('HospitalId') || formData.hospitalId,
 
-  hospitalName:
-    localStorage.getItem('HospitalName') || formData.hospitalName,
+        hospitalName:
+          localStorage.getItem('HospitalName') || formData.hospitalName,
 
-  branchId:
-    localStorage.getItem('branchId') || formData.branchId,
-};
+        branchId:
+          localStorage.getItem('branchId') || formData.branchId,
+      };
 
       // Format DOB to DD-MM-YYYY
       if (updatedFormData.dateOfBirth) {
@@ -787,32 +787,32 @@ const CustomerManagement = () => {
             <>
               <CTable hover striped responsive>
                 <CTableHead className="pink-table  w-auto">
-                  <CTableRow>
-                    <CTableHeaderCell>S.No</CTableHeaderCell>
-                    <CTableHeaderCell>Customer Id</CTableHeaderCell>
-                    <CTableHeaderCell>Full Name</CTableHeaderCell>
-                    <CTableHeaderCell>Mobile Number</CTableHeaderCell>
-                    <CTableHeaderCell>Gender</CTableHeaderCell>
-                    <CTableHeaderCell>City</CTableHeaderCell>
-                    <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
+                  <CTableRow className="text-center">
+                    <CTableHeaderCell >S.No</CTableHeaderCell>
+                    <CTableHeaderCell >Customer Id</CTableHeaderCell>
+                    <CTableHeaderCell >Full Name</CTableHeaderCell>
+                    <CTableHeaderCell >Mobile Number</CTableHeaderCell>
+                    <CTableHeaderCell >Gender</CTableHeaderCell>
+                    <CTableHeaderCell >City</CTableHeaderCell>
+                    <CTableHeaderCell >Actions</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody className="pink-table">
                   {displayData.length > 0 ? (
                     displayData.map((customer, index) => (
-                      <CTableRow key={customer.mobileNumber || index}>
-                        <CTableDataCell>
+                      <CTableRow key={customer.mobileNumber || index} className="text-center">
+                        <CTableDataCell >
                           {' '}
                           {(currentPage - 1) * rowsPerPage + index + 1}
                         </CTableDataCell>
-                        <CTableDataCell>{customer?.customerId || '-'}</CTableDataCell>
-                        <CTableDataCell>{customer?.fullName || '-'}</CTableDataCell>
-                        <CTableDataCell>{customer?.mobileNumber || '-'}</CTableDataCell>
-                        <CTableDataCell>{customer?.gender || '-'}</CTableDataCell>
-                        <CTableDataCell>{customer?.address?.city || '-'}</CTableDataCell>
+                        <CTableDataCell >{customer?.customerId || '-'}</CTableDataCell>
+                        <CTableDataCell >{customer?.fullName || '-'}</CTableDataCell>
+                        <CTableDataCell >{customer?.mobileNumber || '-'}</CTableDataCell>
+                        <CTableDataCell >{customer?.gender || '-'}</CTableDataCell>
+                        <CTableDataCell >{customer?.address?.city || '-'}</CTableDataCell>
 
-                        <CTableDataCell className="text-end">
-                          <div className="d-flex justify-content-end gap-2  ">
+                        <CTableDataCell className="text-center">
+                          <div className="d-flex justify-content-center gap-2  ">
                             {can('Customer Management', 'read') && (
                               <button
                                 className="actionBtn"
@@ -1321,7 +1321,7 @@ const CustomerManagement = () => {
               <CButton
                 type="submit"
                 color="success"
-                style={{ backgroundColor: 'var(--color-black)', color: 'white', border: 'none' }}
+                style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white', border: 'none' }}
                 disabled={saveloading}
               >
                 {saveloading && (

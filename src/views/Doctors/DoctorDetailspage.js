@@ -1238,9 +1238,9 @@ const DoctorDetailsPage = () => {
               <CTabPane visible={activeKey === 2} className="pt-3">
                 <CCard className="mb-4 shadow-sm">
                   <CCardBody>
-                    <h5 className="mb-3" style={{ color: 'var(--color-black)' }}>
-                      👨‍⚕️ Doctor Information
-                    </h5>
+                   <h5 className="mb-3" style={{ color: '#1B4F8A' }}>
+  👨‍⚕️ Doctor Information
+</h5>
                     {isEditing && (
                       <>
                         <CRow className="mb-3">
@@ -2038,7 +2038,8 @@ const DoctorDetailsPage = () => {
 
                           {/* Update Button with loading spinner */}
                           <CButton
-                            style={{ backgroundColor: 'var(--color-black)' }}
+                             style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white', border: 'none' }}
+                              color="success"
                             className="text-white"
                             onClick={handleUpdateWithValidation}
                             disabled={saveloading || !isSubServiceComplete}

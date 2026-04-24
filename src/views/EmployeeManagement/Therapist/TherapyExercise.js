@@ -266,25 +266,22 @@ export default function ExerciseTable() {
                 </div>
               )}
 
-              <CTable bordered className="pink-table">
+              <CTable className="pink-table">
                 <CTableHead>
-                  <CTableRow>
+                  <CTableRow className="text-center">
                     <CTableHeaderCell>S.No</CTableHeaderCell>
                     <CTableHeaderCell>Name</CTableHeaderCell>
                     <CTableHeaderCell>Discount (%)</CTableHeaderCell>
                     <CTableHeaderCell>Discount Amount</CTableHeaderCell>
-
-
                     <CTableHeaderCell>Price</CTableHeaderCell>
-
                     <CTableHeaderCell>Action</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
 
-                <CTableBody>
+                <CTableBody className="text-center">
                   {filteredExercises.length > 0 ? (
                     filteredExercises.map((ex, i) => (
-                      <CTableRow key={i}>
+                      <CTableRow key={i} className="text-center">
                         <CTableDataCell>{i + 1}</CTableDataCell>
 
                         <CTableDataCell>{ex.name}</CTableDataCell>

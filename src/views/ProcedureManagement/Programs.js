@@ -321,12 +321,12 @@ export default function Programs() {
       {/* TABLE */}
       <CTable className="pink-table">
         <CTableHead>
-          <CTableRow>
+          <CTableRow className="text-center">
             <CTableHeaderCell>S.No</CTableHeaderCell>
             <CTableHeaderCell>Program Name</CTableHeaderCell>
             <CTableHeaderCell>No.Of Therapy</CTableHeaderCell>
             {/* <CTableHeaderCell>Consent</CTableHeaderCell> */}
-            <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
+            <CTableHeaderCell >Actions</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
         <CTableBody>
@@ -334,13 +334,13 @@ export default function Programs() {
           {
             filteredList.length > 0 ? (
               filteredList.map((item, index) => (
-                <CTableRow key={item.id}>
+                <CTableRow key={item.id} className="text-center">
                   <CTableDataCell>{index + 1}</CTableDataCell>
                   <CTableDataCell>{item.programName}</CTableDataCell>
                   <CTableDataCell>{item.theraphyCount}</CTableDataCell>
                   {/* <CTableDataCell>{item.consentType}</CTableDataCell> */}
-                  <CTableDataCell className="text-end">
-                    <div className="d-flex justify-content-end gap-2  ">
+                  <CTableDataCell >
+                    <div className="d-flex justify-content-center gap-2  ">
                       {can('Program Management', 'read') && (
                         <button
                           className="actionBtn"
@@ -370,6 +370,7 @@ export default function Programs() {
                           <Trash2 size={18} />
                         </button>
                       )}
+
 
                     </div>
                   </CTableDataCell>

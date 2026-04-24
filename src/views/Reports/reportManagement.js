@@ -240,9 +240,9 @@ const ReportsManagement = () => {
         ) : error ? (
           <div>{error}</div>
         ) : (
-          <CTable striped hover responsive>
-            <CTableHead className="pink-table">
-              <CTableRow>
+          <CTable className="pink-table">
+            <CTableHead >
+              <CTableRow className="text-center">
                 <CTableHeaderCell>S.No</CTableHeaderCell>
                 <CTableHeaderCell>Name</CTableHeaderCell>
                 {/* <CTableHeaderCell>Service</CTableHeaderCell> */}
@@ -254,12 +254,12 @@ const ReportsManagement = () => {
               </CTableRow>
             </CTableHead>
 
-            <CTableBody>
+            <CTableBody className="text-center">
               {filteredData.length > 0 ? (
                 filteredData
                   .slice((currentPage - 1) * pageSize, currentPage * pageSize)
                   .map((item, index) => (
-                    <CTableRow key={`${item.bookingId}-${index}`} className="pink-table">
+                    <CTableRow key={`${item.bookingId}-${index}`} className="text-center">
                       <CTableDataCell>{index + 1}</CTableDataCell>
                       <CTableDataCell>{item.name}</CTableDataCell>
                       <CTableDataCell>{item.consultationType}</CTableDataCell>
@@ -269,7 +269,7 @@ const ReportsManagement = () => {
                         {normalize(item.status) === 'in-progress' ? 'Active' : item.status}
                       </CTableDataCell>
                       <CTableDataCell>
-                        {can('Appointments', 'read') && (
+                        <div className="d-flex justify-content-center gap-2">  {can('Appointments', 'read') && (
                           <CButton
 
                             className="text-white actionBtn"
@@ -294,7 +294,8 @@ const ReportsManagement = () => {
                           >
                             View
                           </CButton>
-                        )}
+                        )}</div>
+                      
                       </CTableDataCell>
                     </CTableRow>
                   ))
@@ -304,7 +305,7 @@ const ReportsManagement = () => {
                   <CTableDataCell
                     colSpan="8"
                     className="text-center "
-                    style={{ color: 'var(--color-black)' }}
+                    style={{ color: 'var(--color-blue)' }}
                   >
                     No appointments found.
                   </CTableDataCell>

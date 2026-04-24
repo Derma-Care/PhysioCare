@@ -280,7 +280,7 @@ export default function PackagesManagement() {
       {/* TABLE */}
       <CTable className="pink-table">
         <CTableHead>
-          <CTableRow>
+          <CTableRow className="text-center">
             <CTableHeaderCell>S.No</CTableHeaderCell>
             <CTableHeaderCell>Package Name</CTableHeaderCell>
             <CTableHeaderCell>Program Names</CTableHeaderCell>
@@ -290,15 +290,15 @@ export default function PackagesManagement() {
 
         <CTableBody>
           {filteredList.map((item, index) => (
-            <CTableRow key={item.id}>
+            <CTableRow key={item.id} className="text-center">
               <CTableDataCell>{index + 1}</CTableDataCell>
               <CTableDataCell>{item.packageName}</CTableDataCell>
               <CTableDataCell>
                 {item.programs?.map(p => p.programName).join(", ")}
               </CTableDataCell>
 
-              <CTableDataCell className="d-flex gap-2">
-                {/* VIEW */}
+              <CTableDataCell >
+                <div className="d-flex justify-content-center gap-2">  {/* VIEW */}
                 {can("Package Management", "read") && (
                   <CButton
                     size="sm"
@@ -341,7 +341,8 @@ export default function PackagesManagement() {
                     }}
                   >
                     <Trash2 size={18} />
-                  </CButton>)}
+                  </CButton>)}</div>
+              
               </CTableDataCell>
             </CTableRow>
           ))}

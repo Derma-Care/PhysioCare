@@ -200,16 +200,16 @@ const FrontDeskForm = ({
     })
 
   useEffect(() => {
-  if (initialData) {
-    setFormData((prev) => ({
-      ...prev,          // keep createdBy
-      ...initialData,   // overwrite rest
-      createdBy: initialData.createdBy || prev.createdBy,
-    }))
-  } else {
-    setFormData(emptyForm)
-  }
-}, [initialData])
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,          // keep createdBy
+        ...initialData,   // overwrite rest
+        createdBy: initialData.createdBy || prev.createdBy,
+      }))
+    } else {
+      setFormData(emptyForm)
+    }
+  }, [initialData])
 
 
   // 🔹 Handle text inputs (top-level fields)
@@ -327,7 +327,7 @@ const FrontDeskForm = ({
       showCustomToast('Please assign at least one user permission before saving.', 'error')
       return
     }
-if (loading) return 
+    if (loading) return
     try {
       setLoading(true)
       const res = await onSave(formData)
@@ -389,15 +389,21 @@ if (loading) return
 
   const Row = ({ label, value }) => (
     <div>
-      <p className="text-sm font-medium text-gray-600 fw-bold">{label}</p>
-      <p className="text-base text-gray-900 text-break">{value || 'N/A'}</p>
+      <small style={{ color: '#1B4F8A', fontWeight: '600', display: 'block', marginBottom: '2px' }}>
+        {label}
+      </small>
+      <p style={{ color: '#212529', marginBottom: 0, fontWeight: '500' }}>{value || '—'}</p>
     </div>
   )
 
   const RowFull = ({ label, value }) => (
     <div className="col-span-3">
-      {label && <p className="text-sm font-medium text-gray-600 fw-bold">{label}</p>}
-      <p className="text-base text-gray-900 text-break">{value || 'N/A'}</p>
+      {label && (
+        <small style={{ color: '#1B4F8A', fontWeight: '600', display: 'block', marginBottom: '2px' }}>
+          {label}
+        </small>
+      )}
+      <p style={{ color: '#212529', marginBottom: 0, fontWeight: '500' }}>{value || '—'}</p>
     </div>
   )
 
@@ -494,8 +500,16 @@ if (loading) return
               </div>
 
               {/* Personal Information */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Personal Information</h5>
+              <div
+                className="card p-3 mb-4 shadow-sm"
+                style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}
+              >
+                <h5
+                  className="mb-3 border-bottom pb-2 fw-bold"
+                  style={{ color: '#212529', borderColor: '#a5c4d4ff' }}
+                >
+                  Personal Information
+                </h5>
                 <div className="row g-3">
                   <div className="col-md-4">
                     <Row label="Full Name" value={formData.fullName} />
@@ -516,8 +530,10 @@ if (loading) return
               </div>
 
               {/* Work Information */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Work Information</h5>
+              <div className="card p-3 mb-4 shadow-sm" style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}>
+                <h5 className="mb-3 border-bottom pb-2 fw-bold" style={{ color: '#212529', borderColor: '#a5c4d4ff' }}>
+                  Work Information
+                </h5>
                 <div className="row g-3">
                   <div className="col-md-4">
                     <Row label="Date of Joining" value={formData.dateOfJoining} />
@@ -539,16 +555,20 @@ if (loading) return
               </div>
 
               {/* Address */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Address</h5>
+              <div className="card p-3 mb-4 shadow-sm" style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}>
+                <h5 className="mb-3 border-bottom pb-2 fw-bold" style={{ color: '#212529', borderColor: '#a5c4d4ff' }}>
+                  Address
+                </h5>
                 <RowFull
                   value={`${formData.address.houseNo}, ${formData.address.street}, ${formData.address.city}, ${formData.address.state} - ${formData.address.postalCode}, ${formData.address.country}`}
                 />
               </div>
 
               {/* Bank Details */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Bank Details</h5>
+              <div className="card p-3 mb-4 shadow-sm" style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}>
+                <h5 className="mb-3 border-bottom pb-2 fw-bold" style={{ color: '#212529', borderColor: '#a5c4d4ff' }}>
+                  Bank Details
+                </h5>
                 <div className="row g-3">
                   <div className="col-md-4">
                     <Row label="Account Number" value={formData.bankAccountDetails.accountNumber} />
@@ -575,8 +595,10 @@ if (loading) return
               </div>
 
               {/* Documents */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Documents</h5>
+              <div className="card p-3 mb-4 shadow-sm" style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}>
+                <h5 className="mb-3 border-bottom pb-2 fw-bold" style={{ color: '#212529', borderColor: '#a5c4d4ff' }}>
+                  Documents
+                </h5>
                 <div className="row g-3">
                   {formData.graduationCertificate ? (
                     <div className="col-md-6">
@@ -604,8 +626,10 @@ if (loading) return
               </div>
 
               {/* Other Information */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Other Information</h5>
+              <div className="card p-3 mb-4 shadow-sm" style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}>
+                <h5 className="mb-3 border-bottom pb-2 fw-bold" style={{ color: '#212529', borderColor: '#a5c4d4ff' }}>
+                  Other Information
+                </h5>
                 <div className="row g-3">
                   <div className="col-md-6">
                     <Row label="Vaccination Status" value={formData.vaccinationStatus} />
@@ -661,7 +685,7 @@ if (loading) return
                       const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
                       handleChange('fullName', value)
                     }}
-                    // onBlur={() => handleBlur('fullName', formData.fullName)}
+                  // onBlur={() => handleBlur('fullName', formData.fullName)}
                   />
                   {errors.fullName && <div className="text-danger mt-1">{errors.fullName}</div>}
                 </div>
@@ -934,9 +958,9 @@ if (loading) return
                     {rowFields.map((field) => (
                       <div className="col-md-4" key={field}>
                         <CFormLabel className="text-capitalize">
-                         {field}
-                            {field !== 'landmark' && <span style={{ color: 'red' }}>*</span>}
-                       </CFormLabel>
+                          {field}
+                          {field !== 'landmark' && <span style={{ color: 'red' }}>*</span>}
+                        </CFormLabel>
                         <CFormInput
                           type="text"
                           maxLength={field === 'postalCode' ? 6 : undefined}
@@ -1240,7 +1264,7 @@ if (loading) return
                 Cancel
               </CButton>
               <CButton
-                style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+                style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white', border: 'none' }}
                 onClick={handleSubmit}
                 disabled={loading}
               >

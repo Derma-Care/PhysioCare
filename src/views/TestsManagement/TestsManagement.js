@@ -572,28 +572,28 @@ const TestsManagement = () => {
           {error}
         </div>
       ) : (
-        <CTable striped hover responsive>
-          <CTableHead className="pink-table">
-            <CTableRow>
-              <CTableHeaderCell style={{ paddingLeft: '40px' }}>S.No</CTableHeaderCell>
+        <CTable className="pink-table">
+          <CTableHead >
+            <CTableRow className="text-center">
+              <CTableHeaderCell >S.No</CTableHeaderCell>
               <CTableHeaderCell>Test Name</CTableHeaderCell>
               <CTableHeaderCell>Description</CTableHeaderCell>
               <CTableHeaderCell>Purpose</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
+              <CTableHeaderCell >Actions</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
-          <CTableBody className="pink-table">
+          <CTableBody className="text-center">
             {displayData.length > 0 ? (
               displayData.map((test, index) => (
-                <CTableRow key={test.id}>
-                  <CTableDataCell style={{ paddingLeft: '40px' }}>
+                <CTableRow key={test.id} className="text-center">
+                  <CTableDataCell >
                     {(currentPage - 1) * rowsPerPage + index + 1}
                   </CTableDataCell>
                   <CTableDataCell>{test.testName}</CTableDataCell>
                   <CTableDataCell>{test.description || 'NA'}</CTableDataCell>
                   <CTableDataCell>{test.purpose || 'NA'}</CTableDataCell>
-                  <CTableDataCell className="text-end">
-                    <div className="d-flex justify-content-end gap-2  ">
+                  <CTableDataCell >
+                    <div className="d-flex justify-content-center gap-2  ">
                       {can('Tests', 'read') && (
                         <button
                           className="actionBtn"

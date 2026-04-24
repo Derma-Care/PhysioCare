@@ -248,9 +248,9 @@ const FrontDeskManagement = () => {
           {error}
         </div>
       ) : (
-        <CTable className="mt-3" striped hover responsive>
+        <CTable className="pink-table">
           <CTableHead>
-            <CTableRow className="pink-table  w-auto">
+            <CTableRow className="text-center">
               <CTableHeaderCell>#</CTableHeaderCell>
               <CTableHeaderCell>Photo</CTableHeaderCell> {/* 👈 New Column */}
               <CTableHeaderCell>Name</CTableHeaderCell>
@@ -258,13 +258,13 @@ const FrontDeskManagement = () => {
               <CTableHeaderCell>Sex</CTableHeaderCell>
               <CTableHeaderCell>Qualification</CTableHeaderCell>
               <CTableHeaderCell>Date Of Joining</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
+              <CTableHeaderCell >Actions</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
-          <CTableBody className="pink-table">
+          <CTableBody className="text-center">
             {displayData.length > 0 ? (
               displayData.map((tech, index) => (
-                <CTableRow key={tech.id}>
+                <CTableRow key={tech.id} className="text-center">
                   <CTableDataCell>{(currentPage - 1) * rowsPerPage + index + 1}</CTableDataCell>
                   <CTableDataCell>
                     {tech.profilePicture ? (
@@ -301,8 +301,8 @@ const FrontDeskManagement = () => {
 
                   <CTableDataCell>{tech.dateOfJoining}</CTableDataCell>
 
-                  <CTableDataCell className="text-end">
-                    <div className="d-flex justify-content-end gap-2  ">
+                  <CTableDataCell >
+                    <div className="d-flex justify-content-center gap-2  ">
                       {can('FrontDesk', 'read') && (
                         <button
                           className="actionBtn"

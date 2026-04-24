@@ -214,14 +214,7 @@ console.log(selected)
     </CCardBody>
   </CCard>
 </CCol>
-
- 
-
 </CRow>
-
- 
-        
-
           {/* Sessions */}
           <CCard className="mt-4" style={{cursor:"pointer"}}>
             <CCardBody>
@@ -339,9 +332,6 @@ console.log(selected)
       </CButton>
 </div>
     </div>
-
-   
- 
 
   </CCardBody>
 </CCard>

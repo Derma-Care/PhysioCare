@@ -661,7 +661,7 @@ const WidgetsDropdown = (props) => {
             {loadingAppointments ? (
 
               <CTableDataCell
-                colSpan="9"
+                colSpan="10"
                 className="text-center"
                 style={{ color: 'var(--color-black)' }}
               >
@@ -671,7 +671,7 @@ const WidgetsDropdown = (props) => {
             ) : appointmentError ? (
               <CTableRow>
                 <CTableDataCell
-                  colSpan="9"
+                  colSpan="10"
                   className="text-center "
                   style={{ color: 'var(--color-black)' }}
                 >
@@ -717,9 +717,9 @@ const WidgetsDropdown = (props) => {
                   return (
                     <CTableRow>
                       <CTableDataCell
-                        colSpan="9"
+                        colSpan="10"
                         className="text-center"
-                        style={{ color: 'var(--color-black)' }}
+                        style={{ color: 'var(--color-blue)' }}
                       >
                         {searchQuery || filterTypes.length > 0
                           ? 'No appointments match your search and filters.'
