@@ -834,7 +834,7 @@ export default function FollowupDashboard() {
               <CTableHeaderCell>Booking Id</CTableHeaderCell>
               <CTableHeaderCell>Date</CTableHeaderCell>
               <CTableHeaderCell>Time</CTableHeaderCell>
-              <CTableHeaderCell>Patient</CTableHeaderCell>
+              <CTableHeaderCell>Patient Name</CTableHeaderCell>
               <CTableHeaderCell>Mobile</CTableHeaderCell>
               <CTableHeaderCell>Doctor</CTableHeaderCell>
               <CTableHeaderCell>Payment Type</CTableHeaderCell>
@@ -1053,7 +1053,7 @@ export default function FollowupDashboard() {
 
           {/* Save */}
           <CButton
-            style={{ backgroundColor: "var(--color-black)", color: "white" }}
+            style={{ backgroundColor: "var(--color-bgcolor)", color: "white" }}
             onClick={() => {
               if (!reason.trim()) {
                 alert("Reason is required");

@@ -982,7 +982,7 @@ export default function ProgramPayment() {
           </CCol>
 
           <CCol md={3} className="d-flex align-items-end">
-            <CButton onClick={handleGenerate} style={{ backgroundColor: "var(--color-black)", color: "#fff" }}>
+            <CButton onClick={handleGenerate} style={{ backgroundColor: "var(--color-bgcolor)", color: "#fff" }}>
               Generate Table
             </CButton>
           </CCol>
@@ -1243,7 +1243,7 @@ export default function ProgramPayment() {
               <CButton
                 onClick={handleSubmit}
                 // disabled={isFollowUpPayment && paymentStatus !== "UNPAID"}
-                style={{ backgroundColor: "var(--color-black)", color: "#fff" }}
+                style={{ backgroundColor: "var(--color-bgcolor)", color: "#fff" }}
               >
                 {isFollowUpPayment ? "Update Payment" : "Submit Payment"}
               </CButton>

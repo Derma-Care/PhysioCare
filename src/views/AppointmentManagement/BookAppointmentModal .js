@@ -149,7 +149,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     allergies: "",
     occupation: "",
     activityLevels: [],
-    reasonForVisit: "",
+    reasonforVisit: "",
     insuranceProvider: "",
     policyNumber: "",
 
@@ -217,7 +217,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const handleReasonChange = (value) => {
     setBookingDetails((prev) => ({
       ...prev,
-      reasonForVisit: value,
+      reasonforVisit: value,
     }));
 
     // reset other input if not "Others"
@@ -1945,9 +1945,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                     <div key={item} className="d-flex align-items-center">
                       <input
                         type="radio"
-                        name="reasonForVisit"
+                        name="reasonforVisit"
                         value={item}
-                        checked={bookingDetails.reasonForVisit === item}
+                        checked={bookingDetails.reasonforVisit === item}
                         onChange={() => handleReasonChange(item)}
                       />
                       <label className="ms-1" style={{ color: "var(--color-bgcolor)" }}>{item}</label>
@@ -1955,7 +1955,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                   ))}
                 </div>
               </CCol>
-              {bookingDetails.reasonForVisit === "Others" && (
+              {bookingDetails.reasonforVisit === "Others" && (
                 <CCol md={6} className="mt-3">
                   <CFormLabel>
                     Enter Reason <span className="text-danger">*</span>

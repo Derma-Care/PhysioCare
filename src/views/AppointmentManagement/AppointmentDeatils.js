@@ -869,7 +869,7 @@ const AppointmentDetails = () => {
               </div>
               <div className="ms-auto  px-2">
                 <CButton
-                  style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+                  style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white' }}
                   size="sm"
                   className="px-3 text-white text-center"
                   onClick={() =>

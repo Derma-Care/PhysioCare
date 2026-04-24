@@ -138,25 +138,25 @@ const PatientManagement = () => {
   };
 
   //API call for reports and history
-  const fetchVisitHistory = async (patientId) => {
-    try {
-      setLoading(true)
+ const fetchVisitHistory = async () => {
+  const patientId = selectedAppointment?.patientId;
+  const bookingId = selectedAppointment?.bookingId;
 
-      const response = await http.get(`${BASE_URL}/visitHistory/${patientId}`)
-      console.log('Visit History Response:', response.data)
-      // setResponseMessage(response.data?.message || '')
-      const data = response.data?.data.visitHistory
-      if (Array.isArray(data)) setHistory(data)
-      else if (data && typeof data === 'object') setHistory([data])
-      else setHistory([])
-    } catch (error) {
-      console.error('Error fetching visit history:', error)
-      // setResponseMessage('Error fetching visit history')
-      setHistory([])
-    } finally {
-      setLoading(false)
-    }
+  if (!patientId || !bookingId) {
+    console.warn("Skip API → missing patientId/bookingId", { patientId, bookingId });
+    return;
   }
+
+  try {
+    const res = await axios.get(
+      `${wifiUrl}/api/physiotherapy-doctor/visitHistoryByUsingPatientIdAndBooking/${patientId}/${bookingId}`
+    );
+
+    console.log("Visit history:", res.data);
+  } catch (err) {
+    console.error("Error fetching visit history:", err);
+  }
+};
   const fetchReportByBookingId = async (bookingId) => {
     try {
       setReportLoading(true);
@@ -192,16 +192,29 @@ const PatientManagement = () => {
       fetchAppointments(selectedPatient.patientId)
     }
   }, [activeKey, selectedPatient])
+  
   useEffect(() => {
-    if (activeKey === 4 && selectedPatient?.patientId) {
-      fetchVisitHistory(selectedPatient.patientId)
+  if (activeKey === 3) {
+    const bookingId = selectedAppointment?.bookingId;
+
+    console.log("Reports Trigger:", bookingId);
+
+    if (bookingId) {
+      fetchReportByBookingId(bookingId);
+    } else {
+      console.warn("❌ No bookingId for reports");
     }
-  }, [activeKey, selectedPatient])
+  }
+}, [activeKey, selectedAppointment]);
   useEffect(() => {
-    if (activeKey === 3 && selectedAppointment?.bookingId) {
-      fetchReportByBookingId(selectedAppointment.bookingId);
-    }
-  }, [activeKey, selectedAppointment]);
+  if (
+    activeKey === 4 &&
+    selectedAppointment?.bookingId &&
+    selectedAppointment?.patientId
+  ) {
+    fetchVisitHistory();
+  }
+}, [activeKey, selectedAppointment]);
 
 
 
@@ -386,14 +399,17 @@ const PatientManagement = () => {
                                   size="sm"
                                   className="actionBtn"
                                   style={{ color: 'var(--color-black)' }}
-                                  onClick={() => {
-                                    setSelectedAppointment(a);
-                                    setAppointmentInfo(a); // <-- Add this
-                                    setShowModal(true);
-                                    fetchReportByBookingId(a.bookingId);
-                                    setActiveKey(3);
-                                  }}
+                                 onClick={() => {
+  setSelectedAppointment(a);
 
+  if (a?.bookingId) {
+    fetchReportByBookingId(a.bookingId); // ✅ direct call
+  } else {
+    console.log("❌ bookingId missing");
+  }
+
+  setActiveKey(3);
+}}
                                 >
                                   <Eye size={18} />
                                 </CButton>
@@ -445,60 +461,53 @@ const PatientManagement = () => {
                     </CTableHead>
 
                     <CTableBody className="pink-table">
-                   {Array.isArray(history) && history.length > 0 &&
-  history.map((h, index) => (
-    <CTableRow key={h.id || index}>
-      <CTableDataCell>{index + 1}</CTableDataCell>
+                      {history.map((h, index) => (
+                        <CTableRow key={h.id || index}>
+                          <CTableDataCell>{index + 1}</CTableDataCell>
 
-      <CTableDataCell>
-        {h.visitDateTime
-          ? new Date(h.visitDateTime).toLocaleDateString()
-          : '-'}
-      </CTableDataCell>
+                          <CTableDataCell>
+                            {h.visitDateTime
+                              ? new Date(h.visitDateTime).toLocaleDateString()
+                              : '-'}
+                          </CTableDataCell>
+                          <CTableDataCell>{h.doctorName || '-'}</CTableDataCell>
+                          <CTableDataCell>{h.visitType || '-'}</CTableDataCell>
+                          <CTableDataCell>{h.symptoms?.diagnosis || '-'}</CTableDataCell>
+                          <CTableDataCell>
+                            {h.treatments?.generatedData
+                              ? Object.keys(h.treatments.generatedData).join(', ')
+                              : '-'}
+                          </CTableDataCell>
+                          <CTableDataCell>
+                            {h.followUp?.nextFollowUpDate || '-'}
+                          </CTableDataCell>
 
-      <CTableDataCell>{h.doctorName || '-'}</CTableDataCell>
-      <CTableDataCell>{h.visitType || '-'}</CTableDataCell>
-      <CTableDataCell>{h.symptoms?.diagnosis || '-'}</CTableDataCell>
-
-      <CTableDataCell>
-        {h.treatments?.generatedData
-          ? Object.keys(h.treatments.generatedData).join(', ')
-          : '-'}
-      </CTableDataCell>
-
-      <CTableDataCell>
-        {h.followUp?.nextFollowUpDate || '-'}
-      </CTableDataCell>
-
-      <CTableDataCell className="text-center">
-        <CButton
-          size="sm"
-          style={{
-            backgroundColor: 'var(--color-bgcolor)',
-            color: 'var(--color-white)',
-            border: 'none',
-          }}
-          onClick={() => {
-            setSelectedHistory(h)
-            setViewModal(true)
-          }}
-        >
-          <Eye size={18} />
-        </CButton>
-      </CTableDataCell>
-    </CTableRow>
-  ))}
+                          {/* View Button */}
+                          <CTableDataCell className="text-center">
+                            <CButton
+                              color="info"
+                              size="sm"
+                              className="actionBtn"
+                              style={{ color: 'var(--color-black)' }}
+                              onClick={() => {
+                                setSelectedHistory(h)
+                                setViewModal(true)
+                              }}
+                            >
+                              <Eye size={18} />
+                            </CButton>
+                          </CTableDataCell>
+                        </CTableRow>
+                      ))}
                     </CTableBody>
                   </CTable>
                 </>
-              ) 
-              : 
-              (
+              ) : (
                 <p className="text-center py-3">
-                  {/* {responseMessage} */}
+                  {responseMessage ||
+                    `No visit history found for ${selectedPatient?.fullName}`}
                 </p>
-              )
-              }
+              )}
             </CTabPane>
           </CTabContent>
         </CCardBody>
