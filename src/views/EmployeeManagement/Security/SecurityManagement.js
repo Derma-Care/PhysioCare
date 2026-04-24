@@ -33,7 +33,7 @@ const SecurityManagement = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const { searchQuery, setSearchQuery } = useGlobalSearch()
   const [loading, setLoading] = useState(false)
-    const [delloading, setDelLoading] = useState(false)
+  const [delloading, setDelLoading] = useState(false)
   const [error, setError] = useState(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
@@ -124,7 +124,7 @@ const SecurityManagement = () => {
   const handleDelete = async (id) => {
     console.log(id)
     try {
-       setDelLoading(true)
+      setDelLoading(true)
       await deleteSecurity(id) // ✅ call backend
       setTechnicians((prev) => prev.filter((t) => t.securityStaffId !== id))
       showCustomToast('Security deleted successfully!', 'success')
@@ -133,7 +133,7 @@ const SecurityManagement = () => {
       console.error('Delete error:', err)
     } finally {
       setIsModalVisible(false) // close modal after action
-       setDelLoading(false)
+      setDelLoading(false)
     }
   }
   //permission
@@ -214,7 +214,7 @@ const SecurityManagement = () => {
         isVisible={isModalVisible}
         title="Delete Security"
         message="Are you sure you want to delete this Security? This action cannot be undone."
-           isLoading={delloading}
+        isLoading={delloading}
         confirmText="Yes, Delete"
         cancelText="Cancel"
         confirmColor="danger"
@@ -241,9 +241,9 @@ const SecurityManagement = () => {
           {error}
         </div>
       ) : (
-        <CTable className="mt-3" striped hover responsive>
+        <CTable className="pink-table">
           <CTableHead>
-            <CTableRow className="pink-table  w-auto">
+            <CTableRow className="text-center">
               <CTableHeaderCell>#</CTableHeaderCell>
               <CTableHeaderCell>Photo</CTableHeaderCell> {/* 👈 New Column */}
               <CTableHeaderCell>Name</CTableHeaderCell>
@@ -251,13 +251,13 @@ const SecurityManagement = () => {
               <CTableHeaderCell>Sex</CTableHeaderCell>
               {/* <CTableHeaderCell>Specialization</CTableHeaderCell> */}
               <CTableHeaderCell>Date Of Joining</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
+              <CTableHeaderCell >Actions</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
-          <CTableBody className="pink-table">
+          <CTableBody className="text-center">
             {displayData.length > 0 ? (
               displayData.map((tech, index) => (
-                <CTableRow key={tech.id}>
+                <CTableRow key={tech.id} className="text-center">
                   <CTableDataCell>{(currentPage - 1) * rowsPerPage + index + 1}</CTableDataCell>
                   <CTableDataCell>
                     {tech.profilePicture ? (
@@ -294,8 +294,8 @@ const SecurityManagement = () => {
 
                   <CTableDataCell>{tech.dateOfJoining}</CTableDataCell>
 
-                  <CTableDataCell className="text-end">
-                    <div className="d-flex justify-content-end gap-2  ">
+                  <CTableDataCell >
+                    <div className="d-flex justify-content-center gap-2  ">
                       {can('Security', 'read') && (
                         <button
                           className="actionBtn"

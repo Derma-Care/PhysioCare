@@ -1106,10 +1106,10 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
                 Cancel
               </CButton>
               <CButton
-                style={{
-                  backgroundColor: 'var(--color-black)',
-                  color: 'white',
-                }}
+               style={{
+                backgroundColor: 'var(--color-bgcolor)',
+                color: 'var(--color-black)',
+              }}
                 onClick={handleSubmit}
                 disabled={loading}
               >

@@ -239,9 +239,9 @@ const handleSave = async (formData) => {
           {error}
         </div>
       ) : (
-        <CTable className="mt-3" striped hover responsive>
+        <CTable className="pink-table">
           <CTableHead>
-            <CTableRow className="pink-table  w-auto">
+            <CTableRow className="text-center">
               <CTableHeaderCell>#</CTableHeaderCell>
               <CTableHeaderCell>Photo</CTableHeaderCell> {/* 👈 New Column */}
               <CTableHeaderCell>Name</CTableHeaderCell>
@@ -249,13 +249,13 @@ const handleSave = async (formData) => {
               <CTableHeaderCell>Sex</CTableHeaderCell>
               <CTableHeaderCell>Email Id</CTableHeaderCell>
               <CTableHeaderCell>Date Of Joining</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
+              <CTableHeaderCell >Actions</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
-          <CTableBody className="pink-table">
+          <CTableBody className="text-center">
             {displayData.length > 0 ? (
               displayData.map((admin, index) => (
-                <CTableRow key={admin.id}>
+                <CTableRow key={admin.id} className="text-center">
                   <CTableDataCell>{(currentPage - 1) * rowsPerPage + index + 1}</CTableDataCell>
                   <CTableDataCell>
                     {admin.profilePicture ? (
@@ -292,8 +292,8 @@ const handleSave = async (formData) => {
 
                   <CTableDataCell>{admin.dateOfJoining}</CTableDataCell>
 
-                  <CTableDataCell className="text-end">
-                    <div className="d-flex justify-content-end gap-2  ">
+                  <CTableDataCell >
+                    <div className="d-flex justify-content-center gap-2  ">
                       {can('Administrator', 'read') && (
                         <button
                           className="actionBtn"

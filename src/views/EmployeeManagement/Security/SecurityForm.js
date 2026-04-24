@@ -1316,7 +1316,10 @@ if (value && !emailPattern.test(value)) {
                 Cancel
               </CButton>
               <CButton
-                style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+                style={{
+                backgroundColor: 'var(--color-bgcolor)',
+                color: 'var(--color-black)',
+              }}
                 onClick={handleSubmit}
                 disabled={loading}
               >
