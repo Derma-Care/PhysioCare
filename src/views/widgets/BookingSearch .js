@@ -154,7 +154,7 @@ const BookingSearch = ({
           />
         </CCol>
         <CCol md={2}>
-          <CButton style={{ color: "white", backgroundColor: "var(--color-black)" }} onClick={handleSearch} disabled={loading}>
+          <CButton style={{ color: "white", backgroundColor: "var(--color-bgcolor)" }} onClick={handleSearch} disabled={loading}>
             {loading ? 'Searching...' : 'Search'}
           </CButton>
         </CCol>

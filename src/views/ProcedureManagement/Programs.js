@@ -541,7 +541,7 @@ export default function Programs() {
             <>
               {/* PROGRAM TITLE */}
               <div className="mb-4">
-                <h4 style={{ fontWeight: '700', color: 'var(--color-black)' }}>{viewData.programName}</h4>
+                <h4 style={{ fontWeight: '700', color: 'var(--color-bgcolor)' }}>{viewData.programName}</h4>
                 <hr />
               </div>
 
@@ -562,7 +562,7 @@ export default function Programs() {
                     style={{
                       padding: '12px 15px',
                       cursor: 'pointer',
-                      backgroundColor: "var(--color-bgcolor)",
+                      backgroundColor: "var(--color-white)",
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
@@ -573,7 +573,7 @@ export default function Programs() {
                       {index + 1}. {therapy.therapyName}
                     </span>
 
-                    <span style={{ fontSize: '12px', color: 'var(--color-black)' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--color-bgcolor)' }}>
                       Click to expand
                     </span>
                   </div>

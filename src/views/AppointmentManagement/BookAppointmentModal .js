@@ -1733,7 +1733,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               <CCard className="mb-4">
                 <CCardBody className="w-100">
                   {slotsToShow.length === 0 ? (
-                    <p className="text-center" style={{ color: 'var(--color-black)' }}>
+                    <p className="text-center" style={{ color: 'var(--color-bgcolor)' }}>
                       No available slots for this date
                     </p>
                   ) : (

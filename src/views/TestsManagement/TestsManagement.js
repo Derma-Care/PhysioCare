@@ -463,7 +463,7 @@ const TestsManagement = () => {
             Cancel
           </CButton>
           <CButton
-            style={{ backgroundColor: 'var(--color-black)' }}
+            style={{ backgroundColor: 'var(--color-bgcolor)' }}
             className="text-white"
             onClick={handleAddTest}
             disabled={saveloading}
@@ -526,7 +526,7 @@ const TestsManagement = () => {
             Cancel
           </CButton>
           <CButton
-            style={{ backgroundColor: 'var(--color-black)' }}
+            style={{ backgroundColor: 'var(--color-bgcolor)' }}
             className="text-white"
             onClick={handleUpdateTest}
             disabled={saveloading} // Disable while loading

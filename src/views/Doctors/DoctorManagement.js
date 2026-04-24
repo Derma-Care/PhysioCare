@@ -912,9 +912,9 @@ const DoctorManagement = () => {
         <CModalHeader>
           <FontAwesomeIcon
             icon={faUserDoctor}
-            style={{ color: 'var(--color-black)', paddingRight: '10px' }}
+            style={{ color: 'var(--color-bgcolor)', paddingRight: '10px' }}
           />
-          <strong style={{ color: 'var(--color-black)' }}> Add Doctor</strong>
+          <strong style={{ color: 'var(--color-bgcolor)' }}> Add Doctor</strong>
         </CModalHeader>
         <CModalBody>
           <CRow className="g-4 mb-4">
@@ -941,9 +941,9 @@ const DoctorManagement = () => {
                 options={categoryOptions}
                 placeholder="Select Category"
               />
-              {formErrors.categoryId && (
+              {/* {formErrors.categoryId && (
                 <div className="text-danger mt-1">{formErrors.categoryId}</div>
-              )}
+              )} */}
             </CCol>
 
             <CCol md={6}>
@@ -971,9 +971,9 @@ const DoctorManagement = () => {
                 options={serviceOptionsFormatted}
                 placeholder="Select Services"
               />
-              {formErrors.serviceId && (
+              {/* {formErrors.serviceId && (
                 <div className="text-danger mt-1">{formErrors.serviceId}</div>
-              )}
+              )} */}
             </CCol>
 
             <CCol md={12}>
@@ -1013,7 +1013,7 @@ const DoctorManagement = () => {
                   // }
                 }}
               />
-              {!isSubServiceComplete && (
+              {/* {!isSubServiceComplete && (
                 <div className="text-danger mt-2">
                   Some selected Procedures are missing details like price or final cost.
                   <br />
@@ -1021,7 +1021,7 @@ const DoctorManagement = () => {
                     Please add Procedure details
                   </a>
                 </div>
-              )}
+              )} */}
 
               {formErrors.subServiceName && (
                 <div className="text-danger mt-1">{formErrors.subServiceName}</div>

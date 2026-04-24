@@ -521,8 +521,8 @@ export default function ExerciseTable() {
         </CModalBody>
 
         <CModalFooter>
-          <CButton onClick={() => setVisible(false)} style={{ backgroundColor: "var(--color-bgcolor", color: "var(--color-black)" }}>Cancel</CButton>
-          <CButton onClick={handleSave} style={{ backgroundColor: "var(--color-black", color: "white" }}>
+          <CButton onClick={() => setVisible(false)} style={{ backgroundColor: "var(--color-bgcolor)", color: "var(--color-black)" }}>Cancel</CButton>
+          <CButton onClick={handleSave} style={{ backgroundColor: "var(--color-bgcolor)", color: "white" }}>
             {loading ? "Saving..." : "Save"}
           </CButton>
         </CModalFooter>
