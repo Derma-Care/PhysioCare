@@ -136,6 +136,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     clinicName: localStorage.getItem('HospitalName') || '',
     clinicAddress: selectedHospital.data.address,
     title: '',
+    customerId: selectedBooking?.customerId || '',
+    patientId: selectedBooking?.patientId || '',
     categoryName: '',
     categoryId: '',
     servicename: '',

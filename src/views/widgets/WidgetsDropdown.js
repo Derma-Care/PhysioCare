@@ -736,10 +736,14 @@ const WidgetsDropdown = (props) => {
                     <CTableRow key={`${item.id}-${index}`} className="pink-table">
                       <CTableDataCell>{(currentPage - 1) * pageSize + index + 1}</CTableDataCell>
                       <CTableDataCell>
-                        {item.bookingId ? item.bookingId.slice(-4) : "-"}
+                        {/* {item.bookingId ? item.bookingId.slice(-4) : "-"}
+                         */}
+                        {item.bookingId || "-"}
                       </CTableDataCell>
                       <CTableDataCell>
-                        {item.patientId ? item.patientId.slice(-6) : "-"}
+                        {/* {item.patientId ? item.patientId.slice(-6) : "-"}
+                         */}
+                        {item.patientId || "-"}
                       </CTableDataCell>
                       <CTableDataCell>{item.name}</CTableDataCell>
                       <CTableDataCell>{item.doctorName}</CTableDataCell>
@@ -935,7 +939,7 @@ const WidgetsDropdown = (props) => {
 
 
               <CCard
-                onClick={() => navigate("/patient-management")}
+                onClick={() => navigate("/customer-management")}
                 style={{
                   cursor: "pointer",
                   border: "1px solid #var(--color-black)",
