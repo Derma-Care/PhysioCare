@@ -1,9 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
   CFormCheck,
   CRow,
   CCol,
@@ -11,7 +7,6 @@ import {
   CFormSelect,
   CFormInput,
   CFormTextarea,
-  CFormText,
   COffcanvas,
   COffcanvasHeader,
   COffcanvasTitle,
@@ -19,2499 +14,1121 @@ import {
   CButton,
   CCard,
   CCardBody,
-  CListGroup,
-  CListGroupItem,
 } from '@coreui/react'
 
-import { GetClinicBranches, getDoctorByClinicIdData } from '../Doctors/DoctorAPI'
+import { GetClinicBranches } from '../Doctors/DoctorAPI'
 import { useNavigate } from 'react-router-dom'
 import { getAllReferDoctors } from '../EmployeeManagement/ReferDoctor/ReferDoctorAPI'
 import Select from 'react-select'
-
-// 🔍 Filter doctors based on search input
-
-// import fetchHospital from '../Usecontext/HospitalContext'
-
-import {
-  CategoryData,
-  serviceData,
-  subServiceData,
-  getSubServiceById,
-} from '../ProcedureManagement/ProcedureManagementAPI'
-import { BASE_URL, subservice, wifiUrl } from '../../baseUrl'
+import { CategoryData } from '../ProcedureManagement/ProcedureManagementAPI'
+import { BASE_URL } from '../../baseUrl'
 import axios from 'axios'
 import { useHospital } from '../Usecontext/HospitalContext'
-// import { getInProgressBookings, getInProgressfollowupBookings } from '../../APIs/GetFollowUpApi'
-import { toast } from 'react-toastify'
 import BookingSearch from '../widgets/BookingSearch '
-import LoadingIndicator from '../../Utils/loader'
 import { followUPBooking, postBooking } from '../../APIs/BookServiceAPi'
-
-
 import { addCustomer } from '../customerManagement/CustomerManagementAPI'
 import { showCustomToast } from '../../Utils/Toaster'
 import imageCompression from 'browser-image-compression'
-import { GetdoctorsByClinicIdData } from './appointmentAPI'
-
 import BodyAssessment from './BodyAssessment'
-// eslint-disable-next-line react/prop-types
+
+// ─── Tab config ────────────────────────────────────────────────────────────────
+const TABS = [
+  { id: 'visit', label: 'Visit Type' },
+  { id: 'contact', label: 'Contact Info' },
+  { id: 'booking', label: 'Booking Details' },
+  { id: 'slots', label: 'Available Slots' },
+  { id: 'medical', label: 'Medical History' },
+  { id: 'payment', label: 'Payment' },
+  { id: 'assessment', label: 'Pain Assessment' },
+]
+
+// ─── Single font-size token — change here to update everywhere ─────────────────
+const FS = '13px'
+
+// ─── Reusable style factories ─────────────────────────────────────────────────
+const inputStyle = (hasErr) => ({
+  fontSize: FS,
+  height: '34px',
+  padding: '4px 10px',
+  borderColor: hasErr ? '#dc3545' : undefined,
+})
+const selectStyle = (hasErr) => ({
+  fontSize: FS,
+  height: '34px',
+  padding: '4px 8px',
+  borderColor: hasErr ? '#dc3545' : undefined,
+})
+const textareaStyle = (hasErr) => ({
+  fontSize: FS,
+  padding: '6px 10px',
+  minHeight: '80px',
+  borderColor: hasErr ? '#dc3545' : undefined,
+})
+const labelStyle = {
+  color: 'var(--color-bgcolor)',
+  fontSize: '12px',
+  fontWeight: '500',
+  marginBottom: '3px',
+  display: 'block',
+}
+const sectionHeadStyle = {
+  fontSize: FS,
+  fontWeight: '600',
+  borderBottom: '1px solid var(--color-bgcolor)',
+  paddingBottom: '6px',
+  marginBottom: '14px',
+  color: 'var(--color-bgcolor)',
+}
+const errStyle = { fontSize: '11px', color: '#dc3545', marginTop: '3px', marginBottom: 0 }
+
+// react-select consistent sizing
+const rsStyles = {
+  control: (b) => ({ ...b, minHeight: '34px', height: '34px', fontSize: FS }),
+  valueContainer: (b) => ({ ...b, padding: '0 8px' }),
+  indicatorsContainer: (b) => ({ ...b, height: '34px' }),
+  option: (b) => ({ ...b, fontSize: FS }),
+  placeholder: (b) => ({ ...b, fontSize: FS }),
+  singleValue: (b) => ({ ...b, fontSize: FS }),
+  input: (b) => ({ ...b, fontSize: FS }),
+}
+
+const activityOptions = ['Sedentary', 'Moderate', 'Active', 'Athlete']
+const reasonOptions = ['Chronic Pain', 'Sports Rehab', 'Neuro Rehab', 'Others']
+
+// Small helper so error messages are one-liners
+const ErrMsg = ({ msg }) => msg ? <p style={errStyle}>{msg}</p> : null
+
+// ─────────────────────────────────────────────────────────────────────────────
 const BookAppointmentModal = ({ visible, onClose }) => {
+  const navigate = useNavigate()
+  const { selectedHospital, doctorData } = useHospital()
+
+  const [currentTab, setCurrentTab] = useState(0)
+
   const [visitType, setVisitType] = useState('first')
-  const [appointmentType, setAppointmentType] = useState('services') // services / inclinic / online
-  const [patientSearch, setPatientSearch] = useState('')
-  const [selectedPatient, setSelectedPatient] = useState(null)
+  const [appointmentType] = useState('services')
+  const [selectedBooking, setSelectedBooking] = useState(null)
 
   const [slotsForSelectedDate, setSlotsForSelectedDate] = useState([])
   const [selectedSlots, setSelectedSlots] = useState([])
   const [selectedDate, setSelectedDate] = useState('')
-  const [sloading, setSLoading] = useState(false)
-  const [bookingData, setBookingData] = useState(null)
-  const [loadingFee, setLoadingFee] = useState(false)
-  const navigate = useNavigate()
-  const [slots, setSlots] = useState([])
-  const [referDoctor, setReferDoctor] = useState([])
-  // const [onboardToCustomer, setOnboardToCustomer] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  const [selectedBooking, setSelectedBooking] = useState(null)
-  const [mvisible, setMVisible] = useState(false)
-  const [part, setPart] = useState([])
-  const [theraphyQuestions, setTheraphyQuestions] = useState({});
-  const [markedImage, setMarkedImage] = useState('')
-
   const [showAllSlots, setShowAllSlots] = useState(false)
-  const [subServiceInfo, setSubServiceInfo] = useState(null)
-  const [selectedSubServiceInfo, setSelectedSubServiceInfo] = useState(null)
+  const [loadingFee, setLoadingFee] = useState(false)
 
-  const { fetchHospital, selectedHospital, fetchDoctors, doctorData } = useHospital()
-  const [postOffices, setPostOffices] = useState([])
-  const [selectedPO, setSelectedPO] = useState(null)
-  const pincodeTimer = useRef(null)
-  const [activityLevel, setActivityLevel] = useState("");
-
-  const activityOptions = [
-    "Sedentary",
-    "Moderate",
-    "Active",
-    "Athlete"
-  ];
-  const reasonforVisitOption = [
-    "Chronic Pain",
-    "Sports Rehab",
-    "Neuro Rehab",
-    "Others"
-  ];
-  // dropdown lists
-  const [categories, setCategories] = useState([])
-  const [selectedProcedure, setSelectedProcedure] = useState('')
-  const [procedures, setProcedures] = useState([]) // for sub-services
-  const [saveloading, setSaveLoading] = useState(false)
-
-  const [services, setServices] = useState([])
-  const [subServices, setSubServices] = useState([])
   const [branches, setBranches] = useState([])
   const [doctors, setDoctors] = useState([])
-  const [allSlots, setAllSlots] = useState([]) // initialize as empty array
-  const [loadingDoctors, setLoadingDoctors] = useState(false)
-  // selected values
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [selectedService, setSelectedService] = useState('')
-  const [selectedSubService, setSelectedSubService] = useState('')
-  const [loadingSlots, setLoadingSlots] = useState(false)
-  const [consuationFee, setConsuationFee] = useState(0)
-  const [servicesConsultation, setServicesConsultation] = useState(0)
-  const [onboardToCustomer, setOnboardToCustomer] = useState(false)
+  const [referDoctor, setReferDoctor] = useState([])
+  const [postOffices, setPostOffices] = useState([])
+  const [selectedPO, setSelectedPO] = useState(null)
 
-  const type = appointmentType.trim().toLowerCase()
-  const [otherReason, setOtherReason] = useState("");
   const [originalConsultationFee, setOriginalConsultationFee] = useState('')
+  const [activityLevels, setActivityLevels] = useState([])
+  const [otherReason, setOtherReason] = useState('')
 
+  const [part, setPart] = useState([])
+  const [theraphyQuestions, setTheraphyQuestions] = useState({})
+  const [markedImage, setMarkedImage] = useState('')
+
+  const [onboardToCustomer, setOnboardToCustomer] = useState(false)
+  const [saveloading, setSaveLoading] = useState(false)
   const [errors, setErrors] = useState({})
-  const [activityLevels, setActivityLevels] = useState([]);
-  const [reasonForVisit, setReasonForVisit] = useState([]);
-  const initialBookingDetails = {
+
+  // ── Initial state factory ─────────────────────────────────────────────────
+  const getInitialBookingDetails = () => ({
     branchId: localStorage.getItem('branchId') || '',
     branchname: localStorage.getItem('branchName') || '',
     clinicId: localStorage.getItem('HospitalId') || '',
     clinicName: localStorage.getItem('HospitalName') || '',
-    clinicAddress: selectedHospital.data.address,
-    title: '',
-    customerId: selectedBooking?.customerId || '',
-    patientId: selectedBooking?.patientId || '',
-    categoryName: '',
-    categoryId: '',
-    servicename: '',
-    serviceId: '',
-    subServiceName: '',
-    subServiceId: '',
-    previousInjuries: "",
-    currentMedications: "",
-    allergies: "",
-    occupation: "",
-    activityLevels: [],
-    reasonforVisit: "",
-    insuranceProvider: "",
-    policyNumber: "",
-
-    doctorId: '',
-    doctorName: '',
-    doctorDeviceId: '',
-    doctorRefCode: '',
-
+    clinicAddress: selectedHospital?.data?.address || '',
+    title: '', customerId: '', patientId: '',
+    categoryName: '', categoryId: '',
+    servicename: '', serviceId: '',
+    subServiceName: '', subServiceId: '',
+    previousInjuries: '', currentMedications: '', allergies: '',
+    occupation: '', activityLevels: [], reasonforVisit: '',
+    insuranceProvider: '', policyNumber: '',
+    doctorId: '', doctorName: '', doctorDeviceId: '', doctorRefCode: '',
     consultationType: 'Services & Treatments',
     consultationFee: [],
-    consultationExpiration: selectedHospital.data.consultationExpiration,
-    paymentType: '',
-    partAmount: '',
-    visitType: 'first',
-    servicecost: '',
+    consultationExpiration: selectedHospital?.data?.consultationExpiration || '',
+    paymentType: '', partAmount: '', visitType: 'first', servicecost: '',
+    bookingFor: 'Self', name: '', patientAddress: '',
+    patientMobileNumber: '', mobileNumber: '',
+    age: '', gender: '', dob: '',
+    symptomsDuration: '', unit: '', problem: '',
+    foc: 'Paid', focReason: '', attachments: [],
+    freeFollowUps: selectedHospital?.data?.freeFollowUps || '',
+    consentFormPdf: '', customerDeviceId: '',
+    serviceDate: '', servicetime: '',
+    referredByType: '', referredByName: '',
+    address: { houseNo: '', street: '', landmark: '', city: '', state: '', postalCode: '', country: 'India' },
+  })
 
-    bookingFor: 'Self',
-    name: '',
-    patientAddress: '',
-    patientMobileNumber: '',
-    mobileNumber: '',
-    age: '',
-    gender: '',
-    symptomsDuration: '',
-    problem: '',
-    foc: 'Paid',
-    // parts:part,
-    focReason: "",
-    attachments: [],
-    freeFollowUps: selectedHospital.data.freeFollowUps,
-    consentFormPdf: '',
-    customerId: '',
-    customerDeviceId: '',
+  const [bookingDetails, setBookingDetails] = useState(getInitialBookingDetails)
 
-    serviceDate: '',
-    servicetime: '',
-    referredByType: '',
-    referredByName: '',
-    address: {
-      houseNo: '',
-      street: '',
-      landmark: '',
-      city: '',
-      state: '',
-      postalCode: '',
-
-      country: 'India',
-    },
-  }
-  const [bookingDetails, setBookingDetails] = useState(initialBookingDetails)
-
-  console.log('bookingDetails', selectedBooking)
-  const handleChange = (level) => {
-    if (activityLevels.includes(level)) {
-      // remove if already selected
-      setActivityLevels(activityLevels.filter(item => item !== level));
-
-
-    } else {
-      // add if not selected
-      setActivityLevels([...activityLevels, level]);
-
-    }
-  };
-  const handleReasonChange = (value) => {
-    setBookingDetails((prev) => ({
-      ...prev,
-      reasonforVisit: value,
-    }));
-
-    // reset other input if not "Others"
-    if (value !== "Others") {
-      setOtherReason("");
-    }
-  };
-
-  const formatDate = (date) => {
-    if (!date) return null
-    const d = new Date(date)
-    if (isNaN(d)) return null
-    return d.toISOString().split('T')[0] // 'yyyy-mm-dd'
-  }
-  useEffect(() => {
-    if (!selectedBooking || !selectedBooking.customerId) {
-      // New booking / no customer
-      setOnboardToCustomer(true)
-    } else {
-      // Existing customer
-      setOnboardToCustomer(false)
-    }
-  }, [selectedBooking])
-
-  // ✅ Fetch Categories
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await CategoryData()
-        console.log('Categories API response:', res.data)
-
-        const categoriesList = Array.isArray(res.data) ? res.data : []
-        setCategories(categoriesList)
-      } catch (err) {
-        console.error('Error fetching categories:', err)
-        setCategories([])
-      }
-    }
-
-    fetchCategories()
-  }, []) // fetch once on mount
-
-
-  useEffect(() => {
-    if (!selectedCategory) {
-      setServices([])
-      setSelectedService('')
-      setSubServices([])
-      setSelectedSubService('')
-      return
-    }
-
-    const fetchServices = async () => {
-      try {
-        const res = await serviceData(selectedCategory)
-        console.log('Services API response for category:', selectedCategory, res.data)
-
-        const servicesList = Array.isArray(res.data) ? res.data : []
-        setServices(servicesList)
-
-        // Reset downstream selections
-        setSelectedService('')
-        setSubServices([])
-        setSelectedSubService('')
-      } catch (err) {
-        console.error('Error fetching services:', err)
-        setServices([])
-        setSubServices([])
-        setSelectedService('')
-        setSelectedSubService('')
-      }
-    }
-
-    fetchServices()
-  }, [selectedCategory])
-  // ✅ Fetch SubServices when Service changes
-
-  useEffect(() => {
-    console.log('useEffect triggered with service ID:', selectedService)
-
-    if (!selectedService) {
-      setSubServices([])
-      setSelectedSubService('')
-      return
-    }
-
-    const fetchSubServices = async () => {
-      try {
-        const res = await subServiceData(selectedService)
-        console.log('API response for service ID:', selectedService, res.data)
-
-        const blocks = Array.isArray(res.data) ? res.data : []
-        const allSubServices = blocks.flatMap((block) => block.subServices || [])
-
-        setSubServices(allSubServices)
-        setSelectedSubService('')
-      } catch (err) {
-        console.error('Error fetching sub-services:', err)
-        setSubServices([])
-        setSelectedSubService('')
-      }
-    }
-
-    fetchSubServices()
-  }, [selectedService])
-
-  useEffect(() => {
-    if (!selectedSubService) {
-      setSubServices([])
-      setBookingDetails((prev) => ({
-        ...prev,
-        // consultationFee: 0,
-        discountAmount: 0,
-        discountPercentage: 0,
-        totalFee: 0,
-      }))
-      return
-    }
-
-    const fetchSubServiceInfo = async () => {
-      try {
-        const clinicId = localStorage.getItem('HospitalId')
-
-        const url = `${BASE_URL}/getSubService/${clinicId}/${selectedSubService}`
-        console.log('Fetching sub-service info from URL:', url)
-
-        const res = await axios.get(url)
-        console.log('Sub-service API response:', res.data)
-
-        // ✅ Extract first object from array
-        const subServiceInfo = res.data?.data || {}
-        // setSubServices(subServiceInfo)
-        setServicesConsultation(subServiceInfo.price)
-        // ✅ Update booking details from API fields
-        if (bookingDetails.consultationType.toLowerCase().includes('service')) {
-          setBookingDetails((prev) => ({
-            ...prev,
-            subServiceId: subServiceInfo.subServiceId,
-            subServiceName: subServiceInfo.subServiceName,
-            consultationFee: prev.foc === 'FOC' ? 0 : subServiceInfo.consultationFee || 0,
-
-            servicecost: subServiceInfo.price,
-            discountAmount: subServiceInfo.discountedCost || 0,
-            discountPercentage: subServiceInfo.discountPercentage || 0,
-            totalFee: subServiceInfo.finalCost,
-          }))
-          setOriginalConsultationFee(subServiceInfo.consultationFee || 0)
-        }
-
-      } catch (err) {
-        console.error('Error fetching sub-service info:', err)
-        setSubServices([])
-        setBookingDetails((prev) => ({
-          ...prev,
-          consultationFee: '',
-          servicecost: '',
-          discountAmount: '',
-          discountPercentage: '',
-          totalFee: '',
-        }))
-      }
-    }
-
-    fetchSubServiceInfo()
-  }, [selectedSubService])
-
-  const now = new Date() // current time
-
-  // Filter slots for selected date and remove past slots for today
+  // ── Slot filtering / sorting ──────────────────────────────────────────────
+  const now = new Date()
   const slotsToShow = (slotsForSelectedDate || [])
-    .filter(
-      (s) => new Date(s.day || s.date).toDateString() === new Date(selectedDate).toDateString(),
-    )
-    .flatMap((s) => s.availableSlots || []) // default to [] if undefined
-
+    .filter((s) => new Date(s.day || s.date).toDateString() === new Date(selectedDate).toDateString())
+    .flatMap((s) => s.availableSlots || [])
     .filter((slotObj) => {
       const slotDate = new Date(selectedDate)
-      const [time, meridian] = slotObj.slot.split(' ') // "09:30 AM"
+      const [time, meridian] = slotObj.slot.split(' ')
       let [hours, minutes] = time.split(':').map(Number)
       if (meridian === 'PM' && hours !== 12) hours += 12
       if (meridian === 'AM' && hours === 12) hours = 0
       slotDate.setHours(hours, minutes, 0, 0)
-
-      // Only remove past slots for today
-      const isToday = new Date(selectedDate).toDateString() === now.toDateString()
-      if (isToday) return slotDate > now
-      return true
+      return new Date(selectedDate).toDateString() === now.toDateString() ? slotDate > now : true
     })
 
-  // Sort slots by time
-  const sortedSlots = slotsToShow.sort((a, b) => {
-    const parseTime = (slot) => {
-      const [time, meridian] = slot.slot.split(' ')
-      let [hours, minutes] = time.split(':').map(Number)
-      if (meridian === 'PM' && hours !== 12) hours += 12
-      if (meridian === 'AM' && hours === 12) hours = 0
-      return hours * 60 + minutes
+  const sortedSlots = [...slotsToShow].sort((a, b) => {
+    const parse = (s) => {
+      const [time, m] = s.slot.split(' ')
+      let [h, min] = time.split(':').map(Number)
+      if (m === 'PM' && h !== 12) h += 12
+      if (m === 'AM' && h === 12) h = 0
+      return h * 60 + min
     }
-    return parseTime(a) - parseTime(b)
+    return parse(a) - parse(b)
   })
-
-  // Only show first 12 slots unless "show all" is clicked
   const visibleSlots = showAllSlots ? sortedSlots : sortedSlots.slice(0, 12)
 
-  // ✅ Fetch Branches (when modal opens)
+  const visibleTabs = TABS.filter((t) => {
+    if (visitType === 'followup' && ['contact', 'medical', 'payment'].includes(t.id)) return false
+    return true
+  })
+  const progressPct = Math.round(((currentTab + 1) / visibleTabs.length) * 100)
+
+  // ── Effects ───────────────────────────────────────────────────────────────
+  useEffect(() => { setOnboardToCustomer(!selectedBooking?.customerId) }, [selectedBooking])
+
   useEffect(() => {
     if (!visible) return
-
-    const fetchBranches = async () => {
-      try {
-        const clinicId = localStorage.getItem('HospitalId')
-        const response = await GetClinicBranches(clinicId)
-        const branchList = Array.isArray(response.data) ? response.data : []
-        const formattedBranches = branchList.map((b) => ({
-          branchId: b.branchId || b.id,
-          branchName: b.branchName || b.name,
-        }))
-        setBranches(formattedBranches)
-      } catch {
-        setBranches([])
-      }
-    }
-
-    fetchBranches()
+    GetClinicBranches(localStorage.getItem('HospitalId'))
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : []
+        setBranches(list.map((b) => ({ branchId: b.branchId || b.id, branchName: b.branchName || b.name })))
+      }).catch(() => setBranches([]))
+    getAllReferDoctors(localStorage.getItem('HospitalId'))
+      .then((res) => setReferDoctor(res.data?.data || [])).catch(() => setReferDoctor([]))
+    CategoryData().then().catch()
   }, [visible])
 
-  // ✅ Example: Fetch Doctors when Branch & SubService are chosen
-  // ✅ Fetch Doctors when Branch & SubService are chosen
+  useEffect(() => {
+    if (!bookingDetails.branchId || !doctorData?.data) { setDoctors([]); return }
+    setDoctors(doctorData.data.filter((d) => d.branchId === bookingDetails.branchId))
+  }, [bookingDetails.branchId, doctorData])
 
-  const isFirstVisit =
-    visitType === "first" &&
-    selectedBooking?.isFollowupStatus === false;
+  useEffect(() => {
+    setBookingDetails((p) => ({ ...p, activityLevels }))
+  }, [activityLevels])
 
-  const isFollowupVisit =
-    visitType === "followup" &&
-    selectedBooking?.isFollowupStatus === true;
+  useEffect(() => {
+    if (!selectedBooking) return
+    const parts = (selectedBooking.patientAddress || '').split(',')
+    setBookingDetails((p) => ({
+      ...p,
+      name: selectedBooking.name || '',
+      patientId: selectedBooking.patientId || '',
+      dob: selectedBooking.dob || '',
+      age: selectedBooking.age || '',
+      gender: selectedBooking.gender || '',
+      patientMobileNumber: selectedBooking.mobileNumber || '',
+      address: {
+        houseNo: parts[0]?.trim() || '', street: parts[1]?.trim() || '',
+        landmark: parts[2]?.trim() || '', city: parts[3]?.trim() || '',
+        state: parts[4]?.trim() || '', postalCode: parts[5]?.trim() || '',
+        country: parts[6]?.trim() || 'India',
+      },
+    }))
+  }, [selectedBooking])
 
-  // const fetchDoctors = async () => {
-  //   setLoadingDoctors(true)
+  // ── Error helpers ─────────────────────────────────────────────────────────
+  const clearErr = (key) => setErrors((p) => { const e = { ...p }; delete e[key]; return e })
+  const setErr = (key, msg) => setErrors((p) => ({ ...p, [key]: msg }))
 
-  //   try {
-  //     let doctorsList = []
+  // ── Field handlers ────────────────────────────────────────────────────────
+  const handleBookingChange = (e) => {
+    const { name, value } = e.target
+    setBookingDetails((prev) => {
+      const u = { ...prev }
+      if (name === 'patientMobileNumber') {
+        let v = value.replace(/\D/g, '')
+        if (v.startsWith('0')) v = v.slice(1)
+        u[name] = v; u.mobileNumber = v
+      } else if (name === 'name') {
+        u[name] = value.replace(/\d/g, '')
+      } else {
+        u[name] = value
+      }
+      if (name === 'dob' && value) {
+        const today = new Date(), dob = new Date(value)
+        let age = today.getFullYear() - dob.getFullYear()
 
-  //     if (appointmentType !== 'services') {
-  //       const clinicId = localStorage.getItem('HospitalId')
-  //       const branchId = localStorage.getItem('branchId')
+        if (
+          today.getMonth() - dob.getMonth() < 0 ||
+          (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+        ) age--
 
-  //       if (!clinicId || !branchId) {
-  //         console.warn('Missing clinicId or branchId')
-  //         setDoctors([])
-  //         return
-  //       }
+        u.age = age >= 1 ? age : 0
 
-  //       const response = await getDoctorByClinicIdData(clinicId, branchId)
+        if (age > 120) {
+          setErr('dob', 'Age cannot be more than 120 years')
+        } else if (age < 0) {
+          setErr('dob', 'Invalid DOB')
+        } else {
+          clearErr('dob')
+        }
+      }
+      if (name === 'age' && value) {
+        const d = new Date(); d.setFullYear(new Date().getFullYear() - parseInt(value))
+        u.dob = d.toISOString().split('T')[0]
+      }
+      return u
+    })
 
-  //       doctorsList = Array.isArray(response?.data) ? response.data : []
-  //     } else if (appointmentType === 'services' && bookingDetails.branchId && selectedSubService) {
-  //       const clinicId = localStorage.getItem('HospitalId')
-  //       const branchId = bookingDetails.branchId
-  //       const subServiceId = selectedSubService
+    // clear errors as user types valid values
+    setErrors((prev) => {
+      const e = { ...prev }
+      if (name === 'name') { value?.trim() ? delete e.name : (e.name = 'Name is required') }
+      if (name === 'patientMobileNumber') {
+        const v = value.replace(/\D/g, '').replace(/^0/, '')
+        if (!v) e.patientMobileNumber = 'Mobile required'
+        else if (!/^[6-9]\d{9}$/.test(v)) e.patientMobileNumber = 'Invalid mobile number'
+        else delete e.patientMobileNumber
+      }
+      if (name === 'gender') { value ? delete e.gender : (e.gender = 'Select gender') }
+      if (name === 'dob') { value ? delete e.dob : (e.dob = 'DOB required') }
+      if (name === 'problem') { value?.trim() ? delete e.problem : (e.problem = 'Problem required') }
+      if (name === 'symptomsDuration') { value ? delete e.symptomsDuration : (e.symptomsDuration = 'Duration required') }
+      if (name === 'unit') { value ? delete e.unit : (e.unit = 'Select unit') }
+      return e
+    })
+  }
 
-  //       const url = `${BASE_URL}/doctors/${clinicId}/${branchId}/${subServiceId}`
-  //       const response = await axios.get(url)
+  const handleNestedChange = async (section, field, value) => {
+    setBookingDetails((p) => ({ ...p, [section]: { ...p[section], [field]: value } }))
+    if (section === 'address' && field === 'postalCode') {
+      if (value) setErrors((p) => { const e = { ...p }; if (e.address) delete e.address.postalCode; return e })
+      if (/^\d{6}$/.test(value)) {
+        try {
+          const data = await (await fetch(`https://api.postalpincode.in/pincode/${value}`)).json()
+          if (data[0].Status === 'Success') {
+            const po = data[0].PostOffice[0]
+            setBookingDetails((p) => ({ ...p, address: { ...p.address, city: po.District, state: po.State, postalCode: value } }))
+            setPostOffices(data[0].PostOffice)
+          }
+        } catch { }
+      }
+    }
+  }
 
-  //       doctorsList = Array.isArray(response?.data?.data) ? response.data.data : []
-  //     } else {
-  //       doctorsList = []
-  //     }
-
-  //     setDoctors(doctorsList)
-  //   } catch (err) {
-  //     console.error('Error fetching doctors:', err)
-  //     setDoctors([])
-  //   } finally {
-  //     setLoadingDoctors(false)
-  //   }
-  // }
+  const handleFeeTypeChange = (e) => {
+    const v = e.target.value
+    setBookingDetails((p) => ({
+      ...p, foc: v,
+      consultationFee: v === 'FOC' ? 0 : originalConsultationFee || 0,
+      focReason: v === 'FOC' ? p.focReason : '',
+    }))
+    if (v !== 'FOC') clearErr('focReason')
+  }
 
   const fetchSlots = async (doctorId) => {
     try {
-      const hospitalId = localStorage.getItem('HospitalId')
-      // const branchId = localStorage.getItem('branchId')
-      // const branchId = bookingDetails.branchId
-
-      const response = await axios.get(
-        `${BASE_URL}/getDoctorSlots/${hospitalId}/${bookingDetails.branchId}/${doctorId}`,
+      const res = await axios.get(
+        `${BASE_URL}/getDoctorSlots/${localStorage.getItem('HospitalId')}/${bookingDetails.branchId}/${doctorId}`
       )
-
-      if (response.data.success) {
-        console.log('Fetched Slots Data:', response.data.data) // ✅ Check console
-        setSlotsForSelectedDate(response.data.data)
-      } else {
-        setSlotsForSelectedDate([])
-      }
-    } catch (error) {
-      console.error('Error fetching slots:', error)
-      setSlotsForSelectedDate([])
-    } finally {
-      setLoadingSlots(false)
-    }
-  }
-  //refer doctors
-  const fetchRefferrDoctor = async () => {
-    setLoading(true)
-    try {
-      const clinicID = localStorage.getItem('HospitalId')
-      if (clinicID) {
-        const res = await getAllReferDoctors(clinicID) // wait for API
-        console.log('API Response:', res)
-        setLoading(false)
-        // ✅ update state with actual data, not Promise
-        setReferDoctor(res.data?.data || [])
-      }
-    } catch (err) {
-      console.error('❌ Error fetching lab technicians:', err)
-      setTechnicians([])
-      setLoading(false)
-    } finally {
-      setLoading(false)
-    }
-  }
-  useEffect(() => {
-    fetchRefferrDoctor()
-  }, [])
-  const handleFeeTypeChange = (e) => {
-    const selectedType = e.target.value;
-
-    setBookingDetails((prev) => ({
-      ...prev,
-      foc: selectedType,
-
-      // ✅ Consultation fee logic
-      consultationFee:
-        selectedType === 'FOC'
-          ? 0
-          : originalConsultationFee || 0,
-
-      // ✅ Add this (important)
-      focReason: selectedType === 'FOC' ? prev.focReason : '',
-    }));
-  };
-  useEffect(() => {
-    if (
-      bookingDetails.subServiceId &&
-      bookingDetails.subServiceName &&
-      bookingDetails.consultationType &&
-      !bookingDetails.foc // ✅ only when not selected
-    ) {
-      handleFeeTypeChange('Paid')
-    }
-  }, [bookingDetails.subServiceId, bookingDetails.subServiceName, bookingDetails.consultationType])
-  // Watch for appointmentType changes and reset related fields
-
-  // Fetch available slots for a doctor
-
-  const handleBookingChange = (e) => {
-    const { name, value } = e.target
-
-    setBookingDetails((prev) => {
-      let updatedDetails = { ...prev }
-
-      // ✅ Remove alphabets from mobile number
-      if (name === 'patientMobileNumber') {
-        let sanitizedValue = value.replace(/\D/g, '') // remove all non-digits
-
-        // Ignore leading 0
-        if (sanitizedValue.startsWith('0')) sanitizedValue = sanitizedValue.slice(1)
-
-        updatedDetails[name] = sanitizedValue
-
-        // Sync mobileNumber if you have a separate field
-        updatedDetails.mobileNumber = sanitizedValue
-      } else if (name === 'name') {
-        // Remove digits from name
-        updatedDetails[name] = value.replace(/\d/g, '')
-      } else {
-        updatedDetails[name] = value
-      }
-
-      // ✅ DOB → Age
-      if (name === 'dob' && value) {
-        const today = new Date()
-        const dob = new Date(value)
-        let age = today.getFullYear() - dob.getFullYear()
-        const m = today.getMonth() - dob.getMonth()
-        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--
-        updatedDetails.age = age >= 1 ? age : 0
-      }
-
-      // ✅ Age → DOB
-      if (name === 'age' && value) {
-        const today = new Date()
-        const dob = new Date()
-        dob.setFullYear(today.getFullYear() - parseInt(value))
-        updatedDetails.dob = dob.toISOString().split('T')[0] // YYYY-MM-DD
-      }
-
-      // ✅ Combine symptoms duration and unit
-      if (name === 'symptomsDuration' || name === 'unit') {
-        updatedDetails[name] = value
-      }
-
-      return updatedDetails
-    })
-
-    // ✅ Real-time validation
-    setErrors((prev) => {
-      const updatedErrors = { ...prev }
-
-      switch (name) {
-        case 'name':
-          if (!value || value.trim() === '') updatedErrors[name] = 'Name is required'
-          else delete updatedErrors[name]
-          break
-
-        case 'patientMobileNumber':
-          if (!value) updatedErrors[name] = 'Mobile number is required'
-          else if (!/^[6-9]\d{9}$/.test(value))
-            updatedErrors[name] = 'Enter a valid 10-digit mobile number starting with 6-9'
-          else delete updatedErrors[name]
-          break
-
-        case 'gender':
-          if (!value) updatedErrors.gender = 'Please select gender'
-          else delete updatedErrors.gender
-          break
-
-        case 'appointmentType':
-          if (!value || value.trim() === '') updatedErrors[name] = 'Please select appointment type'
-          else delete updatedErrors[name]
-          break
-
-        case 'dob':
-        case 'age':
-          delete updatedErrors.dob
-          delete updatedErrors.age
-          break
-
-        default:
-          break
-      }
-
-      return updatedErrors
-    })
-  }
-  useEffect(() => {
-    setBookingDetails((prev) => ({
-      ...prev,
-      slot: '', // reset only slot
-      // consultationFee stays as is
-    }))
-  }, [bookingDetails.doctorId])
-
-  const handleNestedChange = async (section, field, value) => {
-    // Update bookingDetails
-    setBookingDetails((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
-    }))
-
-    // Real-time validation
-    setErrors((prev) => {
-      const updatedErrors = { ...prev }
-
-      if (section === 'address') {
-        if (!updatedErrors.address) updatedErrors.address = {}
-
-        if (field === 'postalCode') {
-          if (!value || !/^\d{6}$/.test(value)) {
-            updatedErrors.address[field] = 'Postal code must be 6 digits'
-          } else {
-            delete updatedErrors.address[field]
-          }
-        } else {
-          // REMOVE validation for other fields
-          delete updatedErrors.address[field]
-        }
-
-        if (Object.keys(updatedErrors.address).length === 0) {
-          delete updatedErrors.address
-        }
-      }
-
-      return updatedErrors
-    })
-
-    // Fetch city/state/PO from postal code API
-    if (section === 'address' && field === 'postalCode' && /^\d{6}$/.test(value)) {
-      try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${value}`)
-        const data = await res.json()
-
-        if (data[0].Status === 'Success' && data[0].PostOffice.length > 0) {
-          const postOffice = data[0].PostOffice[0]
-          const city = postOffice.District
-          const state = postOffice.State
-          const po = postOffice.Name // Post Office name
-
-          setBookingDetails((prev) => ({
-            ...prev,
-            [section]: {
-              ...prev[section],
-              city,
-              state,
-              po,
-              postalCode: value,
-            },
-          }))
-        } else {
-          setBookingDetails((prev) => ({
-            ...prev,
-            [section]: {
-              ...prev[section],
-              city: '',
-              state: '',
-              po: '',
-              postalCode: value,
-            },
-          }))
-        }
-      } catch (err) {
-        console.error('Error fetching postal info:', err)
-        setBookingDetails((prev) => ({
-          ...prev,
-          [section]: {
-            ...prev[section],
-            city: '',
-            state: '',
-            po: '',
-            postalCode: value,
-          },
-        }))
-      }
-    } else if (field === 'postalCode') {
-      // Clear city/state/PO if postal code invalid
-      setBookingDetails((prev) => ({
-        ...prev,
-        [section]: {
-          ...prev[section],
-          city: '',
-          state: '',
-          po: '',
-        },
-      }))
-    }
-  }
-  const handlePostalCodeChange = (value) => {
-    handleNestedChange('address', 'postalCode', value)
-
-    if (value.length === 6) {
-      fetch(`https://api.postalpincode.in/pincode/${value}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data[0].Status === 'Success' && data[0].PostOffice) {
-            setPostOffices(data[0].PostOffice)
-            setSelectedPO(null) // reset previous selection
-          } else {
-            setPostOffices([])
-          }
-        })
-        .catch((err) => {
-          console.error('Postal API error:', err)
-          setPostOffices([])
-        })
-    } else {
-      setPostOffices([])
-    }
+      setSlotsForSelectedDate(res.data.success ? res.data.data : [])
+    } catch { setSlotsForSelectedDate([]) }
   }
 
-  const validate = () => {
-    const newErrors = {};
-
-    if (!bookingDetails.name?.trim()) newErrors.name = 'Name is required';
-    // ✅ DOB only required for NEW patients
-    if (!selectedBooking) {
-      if (!bookingDetails.dob) {
-        newErrors.dob = 'DOB required';
-      }
-    }
-    // if (!bookingDetails.dob) newErrors.dob = 'DOB required';
-    if (!bookingDetails.gender) newErrors.gender = 'Select gender';
-
-    if (!bookingDetails.patientMobileNumber) {
-      newErrors.patientMobileNumber = 'Mobile required';
-    } else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber)) {
-      newErrors.patientMobileNumber = 'Invalid mobile';
-    }
-
-    // if (!bookingDetails.problem?.trim()) newErrors.problem = 'Problem required';
-    if (appointmentType?.toLowerCase().trim() !== 'services') {
-      if (!bookingDetails.problem?.trim()) {
-        newErrors.problem = 'Problem required';
-      }
-    }
-    // if (!bookingDetails.symptomsDuration) newErrors.symptomsDuration = 'Duration required';
-    if (appointmentType?.toLowerCase().trim() !== 'services') {
-      if (!bookingDetails.symptomsDuration) {
-        newErrors.symptomsDuration = 'Duration required';
-      }
-
-      if (!bookingDetails.unit) {
-        newErrors.unit = 'Select unit';
-      }
-    }
-
-    if (bookingDetails.foc === 'FOC' && !bookingDetails.focReason?.trim()) {
-      newErrors.focReason = 'Please enter reason for FOC';
-      return;
-    }
-    // if (!bookingDetails.unit) newErrors.unit = 'Select unit';
-
-    if (!bookingDetails.branchId) newErrors.branchname = 'Select branch';
-    if (!bookingDetails.doctorId) newErrors.doctorName = 'Select doctor';
-    if (!bookingDetails.servicetime) newErrors.slot = 'Select slot';
-    if (!bookingDetails.paymentType) newErrors.paymentType = 'Select payment';
-
-    if (!part || part.length === 0) newErrors.part = 'Select body part';
-    if (!markedImage) newErrors.markedImage = 'Mark image';
-
-    // ✅ POSTAL CODE VALIDATION
-    if (!bookingDetails.address?.postalCode) {
-      if (!newErrors.address) newErrors.address = {};
-      newErrors.address.postalCode = "Postal Code is required";
-    } else if (!/^\d{6}$/.test(bookingDetails.address.postalCode)) {
-      if (!newErrors.address) newErrors.address = {};
-      newErrors.address.postalCode = "Postal Code must be 6 digits";
-    }
-    // if (!theraphyQuestions || Object.keys(theraphyQuestions).length === 0) {
-    //   newErrors.therapy = "Answer therapy questions";
-    // }
-
-    console.log("🚨 VALIDATION ERRORS:", newErrors); // ✅ THIS IS KEY
-
-    setErrors(newErrors);
-
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleAppointmentTypeChange = (type) => {
-    setBookingDetails((prev) => ({
-      ...prev,
-      consultationType: type,
-      consultationFee: type.toLowerCase().includes('service')
-        ? subServiceInfo.consultationFee || 0
-        : consuationFee || 0, // doctor fee for other types
-    }))
-  }
-  console.log(onboardToCustomer)
-
-  // const handleSubmit = async () => {
-  //   console.log(selectedBooking)
-  //   const combinedSymptomsDuration = `${bookingDetails.symptomsDuration} ${bookingDetails.unit}`
-  //   const combinedName = `${bookingDetails.title}${bookingDetails.name}`
-  //   console.log('Payload without slot:', combinedSymptomsDuration)
-  //   console.log('Payload without combinedName:', combinedName)
-  //   console.log('Validating bookingDetails...', bookingDetails)
-  //   console.log('Validating bookingDetails...', part)
-
-  //   if (!validate()) { //TODO: Fix validation to show all errors and prevent submission
-  //     showCustomToast('Please fix the errors before submitting.', 'error')
-  //     return
-  //   }
-  //   try {
-  //     setSaveLoading(true)
-  //     // Build payload explicitly, excluding 'slot'
-  //     const { unit, address, slot, ...rest } = bookingDetails
-  //     const finalReason =
-  //       bookingDetails.reasonForVisit === "Others"
-  //         ? otherReason
-  //         : bookingDetails.reasonForVisit;
-
-
-  //     const payloadToSend = {
-  //       ...rest,
-  //       name: combinedName,
-  //       symptomsDuration: combinedSymptomsDuration,
-  //       patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
-  //       attachments: bookingDetails.attachments?.map((f) => f.base64.split(',')[1]) || [],
-  //       partImage: markedImage,
-  //       theraphyAnswers: theraphyQuestions,
-  //       parts: part,
-  //       previousInjuries: bookingDetails.previousInjuries,
-  //       currentMedications: bookingDetails.currentMedications,
-  //       allergies: bookingDetails.allergies,
-  //       occupation: bookingDetails.occupation,
-  //       activityLevels: bookingDetails.activityLevels,
-  //       reasonForVisit: finalReason,
-  //       insuranceProvider: bookingDetails.insuranceProvider,
-  //       policyNumber: bookingDetails.policyNumber,
-  //       listOfConsultationFee: [  //TODO:listOfConsultationFee
-  //         {
-  //           consulationFee: Number(bookingDetails.consultationFee || 0),
-  //         },
-  //       ],
-  //     }
-
-  //     console.log('Payload without slot:', payloadToSend)
-
-  //     const res = await postBooking(payloadToSend)
-
-  //     // If onboarding is enabled, register the patient as a customer
-  //     if (selectedBooking == null && onboardToCustomer) {
-  //       const updatedFormData = {
-  //         fullName: combinedName,
-  //         mobileNumber: bookingDetails.mobileNumber,
-  //         gender: bookingDetails.gender,
-  //         dateOfBirth: bookingDetails.dob,
-
-  //         address: {
-  //           houseNo: address.houseNo,
-  //           street: address.street,
-  //           landmark: address.landmark,
-  //           city: address.city,
-  //           state: address.state,
-  //           country: address.country,
-  //           postalCode: address.postalCode,
-  //         },
-  //         age: bookingDetails.age,
-  //         hospitalId: localStorage.getItem('HospitalId') || '',
-  //         hospitalName: localStorage.getItem('HospitalName') || '',
-  //         branchId: localStorage.getItem('branchId') || '',
-  //       }
-
-  //       // Format DOB to DD-MM-YYYY
-  //       if (updatedFormData.dateOfBirth) {
-  //         const dateObj = new Date(updatedFormData.dateOfBirth)
-  //         if (!isNaN(dateObj)) {
-  //           const day = String(dateObj.getDate()).padStart(2, '0')
-  //           const month = String(dateObj.getMonth() + 1).padStart(2, '0')
-  //           const year = dateObj.getFullYear()
-  //           updatedFormData.dateOfBirth = `${day}-${month}-${year}`
-  //         }
-  //       }
-
-  //       await addCustomer(updatedFormData)
-  //       showCustomToast('Booking & Patient registered successfully!')
-  //     } else {
-  //       showCustomToast('Booking submitted successfully!')
-  //     }
-
-  //     console.log('Booking submitted successfully:', res.data)
-
-  //     // Reset form
-  //     setBookingDetails(initialBookingDetails)
-
-  //     setTimeout(() => {
-  //       navigate('/dashboard')
-  //     }, 1000)
-  //   } catch (err) {
-  //     console.error('Error submitting booking:', err)
-  //     if (err.response?.data?.message) showCustomToast(err.response.data.message, 'error')
-  //     else if (err.message?.includes('timeout'))
-  //       showCustomToast('Request timed out. Please try again.', 'error')
-  //     else showCustomToast('Failed to submit booking. Please try again.', 'error')
-  //   } finally {
-  //     setSaveLoading(false)
-  //   }
-  // }
-  const handleSubmit = async () => {
-  if (!validate()) {
-    showCustomToast('Please fix the errors before submitting.', 'error')
-    return
-  }
-
-  try {
-    setSaveLoading(true)
-
-    const { unit, address, slot, ...rest } = bookingDetails
-
-    const combinedSymptomsDuration = `${bookingDetails.symptomsDuration} ${bookingDetails.unit}`
-    const combinedName = `${bookingDetails.title}${bookingDetails.name}`
-
-    let customerData = null
-
-    // ================= STEP 1: CALL CUSTOMER ONBOARD FIRST =================
-    if (selectedBooking == null && onboardToCustomer) {
-      const updatedFormData = {
-        fullName: combinedName,
-        mobileNumber: bookingDetails.mobileNumber,
-        gender: bookingDetails.gender,
-        dateOfBirth: bookingDetails.dob,
-        age: bookingDetails.age,
-
-        hospitalId: localStorage.getItem('HospitalId') || '',
-        hospitalName: localStorage.getItem('HospitalName') || '',
-        branchId: localStorage.getItem('branchId') || '',
-
-        address: {
-          houseNo: address.houseNo,
-          street: address.street,
-          landmark: address.landmark,
-          city: address.city,
-          state: address.state,
-          country: address.country,
-          postalCode: address.postalCode,
-        },
-      }
-
-      // Format DOB
-      if (updatedFormData.dateOfBirth) {
-        const d = new Date(updatedFormData.dateOfBirth)
-        updatedFormData.dateOfBirth = `${String(d.getDate()).padStart(2, '0')}-${String(
-          d.getMonth() + 1
-        ).padStart(2, '0')}-${d.getFullYear()}`
-      }
-
-      console.log("CUSTOMER PAYLOAD:", updatedFormData)
-
-      const customerRes = await addCustomer(updatedFormData)
-
-      console.log("CUSTOMER RESPONSE:", customerRes)
-
-      // 🔥 IMPORTANT: GET IDs
-      customerData = customerRes?.data?.data
-    }
-
-    // ================= STEP 2: CREATE BOOKING PAYLOAD =================
-    const payloadToSend = {
-      ...rest,
-      name: combinedName,
-      symptomsDuration: combinedSymptomsDuration,
-      patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
-
-      // 🔥 CRITICAL FIX
-      customerId:
-        selectedBooking?.customerId || customerData?.customerId || '',
-
-      patientId:
-        selectedBooking?.patientId || customerData?.patientId || '',
-
-      attachments: bookingDetails.attachments?.map((f) => f.base64.split(',')[1]) || [],
-      partImage: markedImage,
-      theraphyAnswers: theraphyQuestions,
-      parts: part,
-
-      previousInjuries: bookingDetails.previousInjuries,
-      currentMedications: bookingDetails.currentMedications,
-      allergies: bookingDetails.allergies,
-      occupation: bookingDetails.occupation,
-      activityLevels: bookingDetails.activityLevels,
-
-      reasonForVisit:
-        bookingDetails.reasonForVisit === "Others"
-          ? otherReason
-          : bookingDetails.reasonForVisit,
-
-      insuranceProvider: bookingDetails.insuranceProvider,
-      policyNumber: bookingDetails.policyNumber,
-
-      listOfConsultationFee: [
-        {
-          consulationFee: Number(bookingDetails.consultationFee || 0),
-        },
-      ],
-    }
-
-    console.log("FINAL BOOKING PAYLOAD:", payloadToSend)
-
-    // ================= STEP 3: CALL BOOKING =================
-    const res = await postBooking(payloadToSend)
-
-    console.log("BOOKING RESPONSE:", res)
-
-    showCustomToast('Booking submitted successfully!')
-
-    setBookingDetails(initialBookingDetails)
-
-    setTimeout(() => {
-      navigate('/dashboard')
-    }, 1000)
-
-  } catch (err) {
-    console.error('Error submitting booking:', err)
-    showCustomToast('Failed to submit booking.', 'error')
-  } finally {
-    setSaveLoading(false)
-  }
-}
-
-  const handleServicesSubmit = () => {
-    if (validate()) {
-      console.log('Submitting Services Appointment:', bookingDetails)
-      // Call your API for services appointment
-    }
-  }
-
-
-  useEffect(() => {
-    if (!bookingDetails.branchId) return
-
-    // ✅ Reset doctor + fee + slots
-    setBookingDetails((prev) => ({
-      ...prev,
-      doctorId: '',
-      doctorName: '',
-      doctorDeviceId: '',
-      consultationFee: 0,
-      servicetime: '',
-      serviceDate: '',
-    }))
-
-    // ✅ Reset slots UI
-    setSlotsForSelectedDate([])
-    setSelectedSlots([])
-    setSelectedDate('')
-
-    // ✅ Optional: clear errors
-    setErrors((prev) => ({
-      ...prev,
-      doctorName: '',
-      slot: '',
-    }))
-
-    console.log("Branch changed → Reset doctor, fee, slots")
-
-  }, [bookingDetails.branchId])
-
-  const handleInClinicSubmit = () => {
-    if (validate()) {
-      console.log('Submitting In-Clinic Appointment:', bookingDetails)
-      // Call your API for in-clinic appointment
-    }
-  }
-
-  const handleFollowUpSubmit = async (followupData) => {
-    if (!followupData) {
-      showCustomToast('Please select a booking before submitting!', 'error')
-      return
-    }
-
-    const payload = {
-      bookingId: followupData.bookingId,
-      doctorId: followupData.doctorId,
-      visitType: 'follow-up',
-      mobileNumber: followupData.mobileNumber,
-      serviceDate: selectedDate,
-      servicetime: bookingDetails.servicetime,
-      patientId: followupData.patientId,
-      bookingFor: followupData.bookingFor,
-      partImage: markedImage,
-      theraphyAnswers: theraphyQuestions,
-      parts: part,
-      listOfConsultationFee: [  //TODO:listOfConsultationFee
-        {
-          consulationFee: Number(bookingDetails.consultationFee || 0),
-        },
-      ],
-
-    }
-
-    console.log('📦 Follow-up Payload:', payload)
-
-    try {
-      const res = await followUPBooking(payload)
-      console.log('✅ Follow-up Response:', res)
-      showCustomToast('Follow-up booking submitted successfully!', 'success')
-      setTimeout(() => {
-        navigate('/dashboard')
-      }, 1000)
-    } catch (err) {
-      console.error('❌ Follow-up Error:', err)
-      // showCustomToast('Failed to submit follow-up booking', 'error')
-    }
-  }
-
-  useEffect(() => {
-    if (!bookingDetails.branchId || !doctorData?.data) {
-      setDoctors([])
-      return
-    }
-
-    const filteredDoctors = doctorData.data.filter(
-      (doc) => doc.branchId === bookingDetails.branchId
-    )
-
-    console.log("Filtered Doctors:", filteredDoctors)
-
-    setDoctors(filteredDoctors)
-  }, [bookingDetails.branchId, doctorData])
-  const parseAddress = (addressStr = "") => {
-    const parts = addressStr.split(",");
-
-    return {
-      houseNo: parts[0]?.trim() || "",
-      street: parts[1]?.trim() || "",
-      landmark: parts[2]?.trim() || "",
-      city: parts[3]?.trim() || "",
-      state: parts[4]?.trim() || "",
-      postalCode: parts[5]?.trim() || "",
-      country: parts[6]?.trim() || "India",
-    };
-  };
-  useEffect(() => {
-    if (selectedBooking) {
-      setBookingDetails((prev) => ({
-        ...prev,
-        name: selectedBooking.name || '',
-        patientId: selectedBooking.patientId || '',
-        dob: selectedBooking.dob || '',
-        age: selectedBooking.age || '',
-        gender: selectedBooking.gender || '',
-        patientMobileNumber: selectedBooking.mobileNumber || '',
-        // followupsLeft: selectedBooking.followupsLeft || '',
-        // freeFollowupsLeft: selectedBooking.freeFollowupsLeft || '',
-        address: parseAddress(selectedBooking.patientAddress),
-      }))
-    }
-  }, [selectedBooking, setBookingDetails])
-
-  console.log(`appointmenttype ${appointmentType}`)
-  useEffect(() => {
-    setBookingDetails(prev => ({
-      ...prev,
-      activityLevels: activityLevels,
-
-    }))
-  }, [activityLevels, reasonForVisit])
-  // const [part, setPart] = useState("");
   const convertToBase64 = async (image) => {
+    const toB64 = (blob) => new Promise((res, rej) => {
+      const r = new FileReader(); r.readAsDataURL(blob)
+      r.onloadend = () => res(r.result.split(',')[1]); r.onerror = rej
+    })
     try {
-      // ✅ already base64
-      if (typeof image === "string" && image.startsWith("data:image")) {
-        return image.split(",")[1]
-      }
-
-      // ✅ File / Blob
-      if (image instanceof File || image instanceof Blob) {
-        return await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.readAsDataURL(image)
-          reader.onloadend = () => resolve(reader.result.split(",")[1])
-          reader.onerror = reject
-        })
-      }
-
-      // ✅ URL / blob URL
-      if (typeof image === "string") {
-        const res = await fetch(image)
-        const blob = await res.blob()
-
-        return await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.readAsDataURL(blob)
-          reader.onloadend = () => resolve(reader.result.split(",")[1])
-          reader.onerror = reject
-        })
-      }
-
-      return ""
-    } catch (err) {
-      console.error("Base64 error:", err)
-      return ""
-    }
+      if (typeof image === 'string' && image.startsWith('data:image')) return image.split(',')[1]
+      if (image instanceof File || image instanceof Blob) return await toB64(image)
+      if (typeof image === 'string') return await toB64(await (await fetch(image)).blob())
+      return ''
+    } catch { return '' }
   }
 
   const handlePartClick = async (data) => {
-    console.log("RAW DATA:", data)
-
     let actualData = data
-
-    // 🔥 unwrap if array
-    if (Array.isArray(data.answerData)) {
-      actualData = data.answerData[0]
-    }
-
-    console.log("FIXED DATA:", actualData)
-
-    // ✅ Convert image to base64
-    let base64Image = ""
-    if (data.image) {
-      base64Image = await convertToBase64(data.image)
-    }
-
+    if (Array.isArray(data.answerData)) actualData = data.answerData[0]
+    const base64Image = data.image ? await convertToBase64(data.image) : ''
     setPart(actualData.parts || [])
-    setMarkedImage(base64Image) // ✅ now always base64
+    setMarkedImage(base64Image)
     setTheraphyQuestions(actualData.answerData || {})
-    setErrors((prev) => ({
-      ...prev,
-      part: '',
-      markedImage: '',
-    }));
+    setErrors((p) => { const e = { ...p }; delete e.part; delete e.markedImage; return e })
   }
 
+  // ── Per-tab reset — stays on current tab ──────────────────────────────────
+  const handleTabReset = () => {
+    const tabId = visibleTabs[currentTab]?.id
+    setErrors({})   // clear only this tab's errors
 
-  // const handlePartClick = (data) => {
-  //   console.log("RAW DATA:", data);
+    if (tabId === 'visit') {
+      setVisitType('first')
+      setSelectedBooking(null)
+      setBookingDetails((p) => ({ ...p, visitType: 'first' }))
+    }
+    if (tabId === 'contact') {
+      setPostOffices([]); setSelectedPO(null)
+      setBookingDetails((p) => ({
+        ...p,
+        title: '', name: '', dob: '', age: '', gender: '',
+        patientMobileNumber: '', mobileNumber: '',
+        address: { houseNo: '', street: '', landmark: '', city: '', state: '', postalCode: '', country: 'India' },
+      }))
+    }
+    if (tabId === 'booking') {
+      setOriginalConsultationFee('')
+      setSlotsForSelectedDate([]); setSelectedDate(''); setSelectedSlots([])
+      setBookingDetails((p) => ({
+        ...p,
+        branchId: '', branchname: '',
+        doctorId: '', doctorName: '', doctorDeviceId: '',
+        consultationFee: 0, foc: 'Paid', focReason: '',
+        serviceDate: '', servicetime: '',
+      }))
+    }
+    if (tabId === 'slots') {
+      setSelectedDate(''); setSelectedSlots([]); setShowAllSlots(false)
+      setBookingDetails((p) => ({ ...p, serviceDate: '', servicetime: '' }))
+    }
+    if (tabId === 'medical') {
+      setActivityLevels([]); setOtherReason('')
+      setBookingDetails((p) => ({
+        ...p,
+        problem: '', symptomsDuration: '', unit: '',
+        previousInjuries: '', currentMedications: '', allergies: '',
+        occupation: '', reasonforVisit: '', activityLevels: [],
+        insuranceProvider: '', policyNumber: '', attachments: [],
+      }))
+    }
+    if (tabId === 'payment') {
+      setBookingDetails((p) => ({
+        ...p, paymentType: '', doctorRefCode: '', referredByType: '', referredByName: '',
+      }))
+    }
+    if (tabId === 'assessment') {
+      setPart([]); setMarkedImage(''); setTheraphyQuestions({})
+      setOnboardToCustomer(false)
+    }
+  }
 
-  //   let actualData = data;
+  // ── Full reset used on cancel / after submit ───────────────────────────────
+  const handleFullReset = () => {
+    setBookingDetails(getInitialBookingDetails())
+    setVisitType('first'); setSelectedBooking(null)
+    setSlotsForSelectedDate([]); setSelectedSlots([]); setSelectedDate('')
+    setShowAllSlots(false); setActivityLevels([]); setOtherReason('')
+    setPart([]); setTheraphyQuestions({}); setMarkedImage('')
+    setErrors({}); setCurrentTab(0)
+    setPostOffices([]); setSelectedPO(null); setOriginalConsultationFee('')
+  }
 
-  //   // 🔥 FIX: unwrap if array
-  //   if (Array.isArray(data.answerData)) {
-  //     actualData = data.answerData[0];
-  //   }
+  // ── Validation ────────────────────────────────────────────────────────────
+  const validate = () => {
+    const e = {}
+    if (!bookingDetails.name?.trim()) e.name = 'Name is required'
+    if (!selectedBooking && !bookingDetails.dob) e.dob = 'DOB required'
+    if (!bookingDetails.gender) e.gender = 'Select gender'
+    if (!bookingDetails.patientMobileNumber) e.patientMobileNumber = 'Mobile required'
+    else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber))
+      e.patientMobileNumber = 'Invalid mobile number'
+    if (appointmentType?.toLowerCase().trim() !== 'services') {
+      if (!bookingDetails.problem?.trim()) e.problem = 'Problem required'
+      if (!bookingDetails.symptomsDuration) e.symptomsDuration = 'Duration required'
+      if (!bookingDetails.unit) e.unit = 'Select unit'
+    }
+    if (bookingDetails.foc === 'FOC' && !bookingDetails.focReason?.trim()) e.focReason = 'Enter FOC reason'
+    if (!bookingDetails.branchId) e.branchname = 'Select branch'
+    if (!bookingDetails.doctorId) e.doctorName = 'Select doctor'
+    if (!bookingDetails.servicetime) e.slot = 'Select slot'
+    if (!bookingDetails.paymentType) e.paymentType = 'Select payment type'
+    if (!part || part.length === 0) e.part = 'Select body part'
+    if (!markedImage) e.markedImage = 'Mark image required'
+    if (!bookingDetails.address?.postalCode) e.address = { postalCode: 'Postal code required' }
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
 
-  //   console.log("FIXED DATA:", actualData);
+  const handleSubmit = async () => {
+    if (!validate()) { showCustomToast('Please fix the errors before submitting.', 'error'); return }
+    try {
+      setSaveLoading(true)
+      const { unit, address, ...rest } = bookingDetails
+      const combinedName = `${bookingDetails.title}${bookingDetails.name}`
+      const combinedDuration = `${bookingDetails.symptomsDuration} ${unit}`
+      let customerData = null
+      if (!selectedBooking && onboardToCustomer) {
+        const d = new Date(bookingDetails.dob)
+        const r = await addCustomer({
+          fullName: combinedName, mobileNumber: bookingDetails.mobileNumber, gender: bookingDetails.gender,
+          dateOfBirth: `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`,
+          age: bookingDetails.age,
+          hospitalId: localStorage.getItem('HospitalId') || '', hospitalName: localStorage.getItem('HospitalName') || '',
+          branchId: localStorage.getItem('branchId') || '', address,
+        })
+        customerData = r?.data?.data
+      }
+      await postBooking({
+        ...rest, name: combinedName, symptomsDuration: combinedDuration,
+        patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
+        customerId: selectedBooking?.customerId || customerData?.customerId || '',
+        patientId: selectedBooking?.patientId || customerData?.patientId || '',
+        attachments: bookingDetails.attachments?.map((f) => f.base64.split(',')[1]) || [],
+        partImage: markedImage, theraphyAnswers: theraphyQuestions, parts: part,
+        reasonForVisit: bookingDetails.reasonforVisit === 'Others' ? otherReason : bookingDetails.reasonforVisit,
+        listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
+      })
+      showCustomToast('Booking submitted successfully!')
+      handleFullReset()
+      setTimeout(() => navigate('/dashboard'), 1000)
+    } catch (err) {
+      console.error(err); showCustomToast('Failed to submit booking.', 'error')
+    } finally { setSaveLoading(false) }
+  }
 
-  //   setPart(actualData.parts || []);
-  //   setMarkedImage(data.image);
-  //   setTheraphyQuestions(actualData.answerData || {});
-  // };
-  console.log(`part ${selectedBooking}`)
-  return (
-    <COffcanvas
-      placement="end"
-      visible={visible}
-      onHide={onClose}
-      className="w-50"
-      backdrop="static"
-    >
-      <COffcanvasHeader>
-        <COffcanvasTitle>📅 Book Appointment</COffcanvasTitle>
-        <button className="btn-close" onClick={onClose}></button>
-      </COffcanvasHeader>
+  const handleFollowUpSubmit = async () => {
+    if (!selectedBooking) { showCustomToast('Please select a booking!', 'error'); return }
+    try {
+      setSaveLoading(true)
+      await followUPBooking({
+        bookingId: selectedBooking.bookingId, doctorId: selectedBooking.doctorId,
+        visitType: 'follow-up', mobileNumber: selectedBooking.mobileNumber,
+        serviceDate: selectedDate, servicetime: bookingDetails.servicetime,
+        patientId: selectedBooking.patientId, bookingFor: selectedBooking.bookingFor,
+        partImage: markedImage, theraphyAnswers: theraphyQuestions, parts: part,
+        listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
+      })
+      showCustomToast('Follow-up booking submitted successfully!', 'success')
+      handleFullReset()
+      setTimeout(() => navigate('/dashboard'), 1000)
+    } catch (err) {
+      console.error(err); showCustomToast('Failed to submit follow-up booking', 'error')
+    } finally { setSaveLoading(false) }
+  }
 
-      <COffcanvasBody>
-        {/* SECTION: Visit Type */}
-        <h6 className="mb-3 border-bottom pb-2">Visit Type</h6>
-        <CRow className="mb-4">
+  const goNext = () => setCurrentTab((t) => Math.min(t + 1, visibleTabs.length - 1))
+  const goPrev = () => setCurrentTab((t) => Math.max(t - 1, 0))
+
+  const { minDate, maxDate } = React.useMemo(() => {
+    const today = new Date()
+    const maxDate = today.toISOString().split('T')[0]
+
+    const min = new Date()
+    min.setFullYear(today.getFullYear() - 120)
+
+    return {
+      minDate: min.toISOString().split('T')[0],
+      maxDate,
+    }
+  }, [])
+  // ─────────────────────────────────────────────────────────────────────────
+  // TAB CONTENT
+  // ─────────────────────────────────────────────────────────────────────────
+  const renderTab = () => {
+    const tabId = visibleTabs[currentTab]?.id
+
+    // ── 1. VISIT TYPE ─────────────────────────────────────────────────────
+    if (tabId === 'visit') return (
+      <div>
+        <p style={sectionHeadStyle}>Visit Type</p>
+        <CRow className="mb-3">
           <CCol md={6}>
-            <CFormCheck
-              type="radio"
-              label="First Visit"
-              name="visitTypeRadio"
-              value="first"
+            <CFormCheck type="radio" label="First Visit" name="visitTypeRadio" value="first"
               checked={visitType === 'first'}
+              style={{ fontSize: FS }}
               onChange={() => {
                 setVisitType('first')
-                setBookingDetails((prev) => ({ ...prev, visitType: 'first' }))
-                setSlotsForSelectedDate([]) // reset date slots
-
-                setSelectedDate('') // reset selected date
-                setSelectedSlots([])
-              }}
-            />
+                setBookingDetails((p) => ({ ...p, visitType: 'first' }))
+                setSlotsForSelectedDate([]); setSelectedDate(''); setSelectedSlots([])
+              }} />
           </CCol>
           <CCol md={6}>
-            <CFormCheck
-              type="radio"
-              label="Follow-Up"
-              name="visitTypeRadio"
-              value="followup"
+            <CFormCheck type="radio" label="Follow-Up" name="visitTypeRadio" value="followup"
               checked={visitType === 'followup'}
+              style={{ fontSize: FS }}
               onChange={() => {
                 setVisitType('followup')
-                setBookingDetails((prev) => ({ ...prev, visitType: 'followup' }))
-                setSlotsForSelectedDate([]) // reset date slots
-
-                setSelectedDate('') // reset selected date
-                setSelectedSlots([])
-              }}
-            />
+                setBookingDetails((p) => ({ ...p, visitType: 'followup' }))
+                setSlotsForSelectedDate([]); setSelectedDate(''); setSelectedSlots([])
+              }} />
           </CCol>
         </CRow>
-
-
-
-
-        <BookingSearch
-          visitType={visitType}
-          fetchSlots={fetchSlots}
-          onSelectBooking={(booking) => setSelectedBooking(booking)}
-        />
-
-        <div>
-          {/* 🔹 Editable form only if no patient selected */}
-          {!selectedBooking && visitType !== 'followup' && (
-            <div>
-              <h6 className="mb-3 border-bottom pb-2">Contact Information</h6>
-              <CRow className="mb-4">
-                {/* Name */}
-
-                <CCol md={2}>
-                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                    Title <span className="text-danger">*</span>
-                  </CFormLabel>
-                  <CFormSelect
-                    name="title"
-                    value={bookingDetails.title}
-                    onChange={handleBookingChange}
-                    invalid={!!errors.title}
-                  >
-                    <option value="">Select Title</option>
-                    {/* Common Personal Titles */}
-                    <option value="Mr.">Mr.</option>
-                    <option value="Mrs.">Mrs.</option>
-                    <option value="Miss">Miss.</option>
-                    <option value="Ms.">Ms.</option>
-                    <option value="Mx.">Mx.</option>
-
-                    {/* Professional Titles */}
-                    <option value="Dr.">Dr.</option>
-                    <option value="Prof.">Prof.</option>
-                    <option value="Rev.">Rev.</option>
-                    <option value="Sir">Sir.</option>
-                    <option value="Dame">Dame.</option>
-                    <option value="Lord">Lord</option>
-                    <option value="Lady">Lady</option>
-
-                    {/* Other Titles */}
-                    <option value="Capt.">Capt.</option>
-                    <option value="Col.">Col.</option>
-                    <option value="Gen.">Gen.</option>
-                    <option value="Hon.">Hon.</option>
-                  </CFormSelect>
-                  {errors.title && <div className="text-danger small">{errors.title}</div>}
-                </CCol>
-                <CCol md={6} className="mb-3">
-                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                    Name <span className="text-danger">*</span>
-                  </CFormLabel>
-
-                  <CFormInput
-                    name="name"
-                    value={bookingDetails.name || ''}
-                    onChange={handleBookingChange}
-                    minLength={3}
-                    maxLength={50}
-                  />
-                  {errors.name && <p className="text-danger">{errors.name}</p>}
-                </CCol>
-
-                {/* DOB */}
-                <CCol md={4} className="mb-3">
-                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                    Date of Birth <span className="text-danger">*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="date"
-                    name="dob"
-                    value={bookingDetails.dob || ''}
-                    onChange={handleBookingChange}
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                  {errors.dob && <p className="text-danger">{errors.dob}</p>}
-                </CCol>
-
-                {/* Age */}
-                <CCol md={2} className="mb-3">
-                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>Age</CFormLabel>
-                  <CFormInput
-                    type="number"
-                    name="age"
-                    value={bookingDetails.age || 0}
-                    disabled
-                    onChange={handleBookingChange}
-                    min={0}
-                    max={99}
-                    readOnly
-                  />
-                  {errors.age && <p className="text-danger">{errors.age}</p>}
-                </CCol>
-
-                {/* Gender */}
-                <CCol md={4} className="mb-3">
-                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                    Gender <span className="text-danger">*</span>
-                  </CFormLabel>
-                  <CFormSelect
-                    name="gender"
-                    value={bookingDetails.gender || ''}
-                    onChange={handleBookingChange}
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </CFormSelect>
-                  {errors.gender && <p className="text-danger">{errors.gender}</p>}
-                </CCol>
-
-                {/* Mobile Number */}
-                <CCol md={6} className="mb-3">
-                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                    Mobile Number <span className="text-danger">*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="tel"
-                    name="patientMobileNumber"
-                    value={bookingDetails.patientMobileNumber || ''}
-                    onChange={handleBookingChange}
-                    maxLength={10}
-                  />
-                  {errors.patientMobileNumber && (
-                    <p className="text-danger">{errors.patientMobileNumber}</p>
-                  )}
-                </CCol>
-
-                {/* Address */}
-                <CCol md={12}>
-                  <h6 className="mb-3 border-bottom pb-2">Address</h6>
-                  {(() => {
-                    const address = bookingDetails.address || {}
-
-                    const firstFields = ['houseNo', 'street', 'landmark'].filter(
-                      (f) => f in address,
-                    )
-                    const secondFields = ['postalCode', 'po', 'city', 'state'].filter(
-                      (f) => f in address,
-                    )
-                    const allFields = [...firstFields, ...secondFields]
-
-                    const rows = []
-                    allFields.forEach((field, index) => {
-                      if (index % 3 === 0) rows.push([])
-                      rows[rows.length - 1].push(field)
-                    })
-
-                    return rows.map((rowFields, rowIndex) => (
-                      <CRow className="mb-3" key={rowIndex}>
-                        {rowFields.map((field) => (
-                          <CCol md={4} key={field}>
-                            <CFormLabel
-                              style={{ color: 'var(--color-bgcolor)' }}
-                              className="text-capitalize"
-                            >
-                              {field === 'po' ? 'PO Address' : field}{' '}
-                              {/* {field !== 'postalCode' && <span className="text-danger">*</span>} */}
-                            </CFormLabel>
-
-                            {field === 'po' ? (
-                              <CFormSelect
-                                value={selectedPO?.Name || ''}
-                                onChange={(e) => {
-                                  const po = postOffices.find((po) => po.Name === e.target.value)
-                                  setSelectedPO(po)
-                                  if (po) {
-                                    handleNestedChange('address', 'city', po.Block || '')
-                                    handleNestedChange('address', 'state', po.State || '')
-                                  }
-                                }}
-                                required
-                              >
-                                <option value="">-- Select Post Office --</option>
-                                {postOffices.map((po) => (
-                                  <option key={po.Name} value={po.Name}>
-                                    {po.Name.toUpperCase()}
-                                  </option>
-                                ))}
-                              </CFormSelect>
-                            ) : field === 'postalCode' ? (
-                              <CFormInput
-                                type="text"
-                                value={address[field] || ''}
-                                maxLength={6}
-                                onChange={(e) => handlePostalCodeChange(e.target.value)}
-                                required
-                              />
-                            ) : (
-                              <CFormInput
-                                type="text"
-                                value={address[field] || ''}
-                                readOnly={field === 'city' || field === 'state'}
-                                onChange={(e) =>
-                                  handleNestedChange('address', field, e.target.value)
-                                }
-                                required={field !== 'postalCode'}
-                              />
-                            )}
-
-                            {errors.address?.[field] && (
-                              <div className="text-danger mt-1">{errors.address[field]}</div>
-                            )}
-                          </CCol>
-                        ))}
-                      </CRow>
-                    ))
-                  })()}
-                </CCol>
-              </CRow>
-            </div>
-          )}
-
-
-
-        </div>
-
-
-        {/* SECTION: Patient & Booking Details */}
-        {visitType !== 'followup' && (
-          <div>
-            <h6 className="mb-3 border-bottom pb-2">Patient & Booking Details</h6>
-            <CRow className="mb-4">
-              <CCol md={6}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Branch <span className="text-danger">*</span>
-                </CFormLabel>
-                <CFormSelect
-                  name="branchId"
-                  value={bookingDetails.branchId || ''}
-                  onChange={(e) => {
-                    const selectedBranch = branches.find(
-                      (branch) => branch.branchId === e.target.value
-                    )
-
-                    setBookingDetails((prev) => ({
-                      ...prev,
-                      branchId: selectedBranch?.branchId || '',
-                      branchname: selectedBranch?.branchName || '',
-                    }))
-                  }}
-                >
-                  <option value="">Select Branch</option>
-                  {branches.map((branch) => (
-                    <option key={branch.branchId} value={branch.branchId}>
-                      {branch.branchName}
-                    </option>
-                  ))}
-                </CFormSelect>
-
-                {errors.branchname && (
-                  <CFormText className="text-danger">{errors.branchname}</CFormText>
-                )}
-
-                {errors.branchname && <div className="text-danger">{errors.branchname}</div>}
-              </CCol>
-
-              <CCol md={6}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Doctor Name <span className="text-danger">*</span>
-                </CFormLabel>
-
-                {loadingDoctors ? (
-                  <div className="text-center py-2" style={{ color: 'var(--color-bgcolor)' }}>
-                    Loading doctors...
-                  </div>
-                ) : (
-                  <CFormSelect
-                    name="doctorName"
-                    value={bookingDetails.doctorId || ''}
-                    onChange={async (e) => {
-                      const selectedDoctorId = e.target.value
-                      const selectedDoctor = doctors.find((d) => d.doctorId === selectedDoctorId)
-
-                      // ✅ Real-time validation clearing / setting
-                      setErrors((prev) => ({
-                        ...prev,
-                        doctorName: selectedDoctorId ? '' : 'Please select a doctor name',
-                      }))
-
-                      if (!selectedDoctor) {
-                        // Clear doctor-related details if user resets to "Select Doctor"
-                        setBookingDetails((prev) => ({
-                          ...prev,
-                          doctorId: '',
-                          doctorName: '',
-                          doctorDeviceId: '',
-                          consultationFee: 0,
-                        }))
-                        return
-                      }
-
-                      // ✅ Update booking details
-                      setBookingDetails((prev) => ({
-                        ...prev,
-                        doctorId: selectedDoctor.doctorId,
-                        doctorName: selectedDoctor.doctorName,
-                        doctorDeviceId: selectedDoctor.doctorDeviceId,
-
-                        // ✅ FIX HERE
-                        consultationFee:
-                          prev.foc === 'FOC'
-                            ? 0
-                            : selectedDoctor.doctorFees.inClinicFee || 0,
-                      }))
-                      setOriginalConsultationFee(
-                        selectedDoctor.doctorFees.inClinicFee || 0
-                      )
-
-                      // ✅ Clear previous slots if needed
-                      setSlots([])
-
-                      // ✅ Fetch available slots for selected doctor
-                      setLoadingFee(true)
-                      try {
-                        await fetchSlots(selectedDoctorId)
-                      } catch (err) {
-                        console.error('Error fetching slots:', err)
-                      } finally {
-                        setLoadingFee(false)
-                      }
-                    }}
-                    disabled={loadingDoctors || loadingFee}
-                    required
-                  >
-                    <option value="">Select Doctor</option>
-                    {doctors.map((doc) => {
-                      // Determine which fee to show
-                      let fee
-                      if (
-                        bookingDetails.consultationType?.toLowerCase().includes('service') &&
-                        bookingDetails.subServiceId
-                      ) {
-                        const fee =
-                          bookingDetails.consultationFee[0]?.consulationFee ||
-                          bookingDetails.consultationFee ||
-                          0;
-                      } else {
-                        fee =
-                          appointmentType?.toLowerCase() === 'inclinic'
-                            ? doc.doctorFees.inClinicFee
-                            : doc.doctorFees.vedioConsultationFee
-                      }
-
-                      return (
-                        <option
-                          key={doc.doctorId}
-                          value={doc.doctorId}
-                          disabled={!doc.doctorAvailabilityStatus}
-                          style={{ color: doc.doctorAvailabilityStatus ? 'inherit' : '#aaa' }}
-                        >
-                          {/* {doc.doctorName} - ₹{fee} */}
-                          {doc.doctorName}
-                          {!doc.doctorAvailabilityStatus ? ' (Not Available)' : ''}
-                        </option>
-                      )
-                    })}
-                  </CFormSelect>
-                )}
-
-                {errors.doctorName && <div className="text-danger mt-1">{errors.doctorName}</div>}
-              </CCol>
-            </CRow>
-            <CRow className='mb-4'>
-              <CCol md={6}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Consultation Fee <span className="text-danger">*</span>
-                </CFormLabel>
-                <CFormInput type="number" value={bookingDetails.consultationFee || 0} disabled />
-              </CCol>
-              <CCol md={6}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Consultation Fee Type <span className="text-danger">*</span>
-                </CFormLabel>
-                <CFormSelect
-                  value={bookingDetails.foc}
-                  onChange={handleFeeTypeChange}
-                >
-                  <option value="FOC">FOC (Free of Consultation)</option>
-                  <option value="Paid">Paid</option>
-                  {/* <option value="Unpaid">Unpaid</option> */}
-
-                </CFormSelect>
-              </CCol>
-              {bookingDetails.foc === 'FOC' && (
-                <CCol md={6} className='mt-3'>
-                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                    Reason for FOC <span className="text-danger">*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    value={bookingDetails.focReason || ''}
-                    placeholder="Enter reason"
-                    onChange={(e) =>
-                      setBookingDetails((prev) => ({
-                        ...prev,
-                        focReason: e.target.value,
-                      }))
-                    }
-                  />
-                  {errors.focReason && <div className="text-danger mt-1">{errors.focReason}</div>}
-                </CCol>
-              )}
-            </CRow>
-          </div>
-        )}
-
-
-
-        {/* ==================== Available Slots ==================== */}
-        <h6 className="mb-3 border-bottom pb-2">Available Slots</h6>
-        <CCol md={12}>
-          <div>
-            {/* Date Buttons */}
-            <div className="d-flex gap-2 flex-wrap mb-3">
-              {(slotsForSelectedDate || [])
-                .map((s) => s.day || s.date)
-                .filter((d) => {
-                  const today = new Date()
-                  today.setHours(0, 0, 0, 0)
-                  const dateObj = new Date(d)
-                  dateObj.setHours(0, 0, 0, 0)
-                  return dateObj >= today // remove past dates
-                })
-                .sort((a, b) => new Date(a) - new Date(b))
-                .map((dateValue, idx) => {
-                  const dateObj = new Date(dateValue)
-                  const isSelected =
-                    new Date(selectedDate).toDateString() === dateObj.toDateString()
-                  const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short' })
-                  const dateLabel = dateObj.toLocaleDateString('en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                  })
-
-                  return (
-                    <CButton
-                      key={idx}
-                      onClick={() => {
-                        const formattedDate = dateObj.toISOString().split('T')[0]
-
-                        setSelectedDate(formattedDate)
-                        setSelectedSlots([]) // clear old slot
-                        setBookingDetails((prev) => ({
-                          ...prev,
-                          serviceDate: formattedDate,
-                          servicetime: '',
-                        }))
-
-                        // ✅ Clear slot error if user selected a valid date
-                        setErrors((prev) => ({
-                          ...prev,
-                          slot: '', // clear slot-related error on date select
-                        }))
-                      }}
-                      style={{
-                        backgroundColor: isSelected ? '#ffff00':"white",
-                        color: isSelected ? 'yellow' : 'var(--color-black)',
-                        border: '1px solid var(--color-black)',
-                        minWidth: '80px',
-                      }}
-                    >
-                      <div style={{ fontSize: '14px' }}>{dayLabel}</div>
-                      <div style={{ fontSize: '12px' }}>{dateLabel}</div>
-                    </CButton>
-                  )
-                })}
-            </div>
-
-            {/* Time Slots */}
-            <div className="slot-grid mt-3">
-              <CCard className="mb-4">
-                <CCardBody className="w-100">
-                  {slotsToShow.length === 0 ? (
-                    <p className="text-center" style={{ color: 'var(--color-bgcolor)' }}>
-                      No available slots for this date
-                    </p>
-                  ) : (
-                    <>
-                      <div
-                        className="slots-container"
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(6, 1fr)',
-                          gap: '5px',
-                        }}
-                      >
-                        {visibleSlots.map((slotObj, i) => {
-                          const slotLabel = slotObj.slot
-                          const isBooked = slotObj.slotbooked
-                          const isSelectedSlot = selectedSlots.includes(slotLabel)
-
-                          return (
-                            <div
-                              key={i}
-                              style={{ cursor: 'pointer', color: 'var(--color-bgcolor)' }}
-                              className={`slot-item text-center border rounded px-2 py-1 transition-all duration-200
-                        ${isBooked ? 'bg-danger text-white cursor-not-allowed opacity-60' : ''}
-                        ${isSelectedSlot && !isBooked ? 'bg-primary text-white' : ''}
-                        ${!isSelectedSlot && !isBooked ? 'bg-light   hover:bg-gray-200 cursor-pointer' : ''}`}
-                              onClick={() => {
-                                if (isBooked) return
-
-                                // Single selection
-                                setSelectedSlots([slotLabel])
-
-                                // Update booking details
-                                setBookingDetails((prev) => ({
-                                  ...prev,
-                                  servicetime: slotLabel,
-                                }))
-
-                                // ✅ Real-time error clearing on slot select
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  slot: '', // clear slot validation instantly
-                                }))
-                              }}
-                            >
-                              {slotLabel}
-                            </div>
-                          )
-                        })}
-                      </div>
-
-                      {/* Show More / Less */}
-                      {slotsToShow.length > 12 && (
-                        <div className="text-center mt-2">
-                          <CButton
-                            color="secondary"
-                            size="sm"
-                            onClick={() => setShowAllSlots(!showAllSlots)}
-                          >
-                            {showAllSlots ? 'Show Less' : 'Show More'}
-                          </CButton>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </CCardBody>
-              </CCard>
-            </div>
-          </div>
-
-          {/* ✅ Error message */}
-          {errors.slot && <div className="text-danger mt-2">{errors.slot}</div>}
-        </CCol>
-
-        {/* SECTION: Symptoms */}
-        {/* ==================== Symptoms & Attachment Sections ==================== */}
-        {visitType !== 'followup' && (
-          <>
-            {/* SECTION: Symptoms */}
-            <h6 className="mb-3 border-bottom pb-2"> Medical & Lifestyle History</h6>
-
-            <CRow className="mb-4">
-              <CCol md={5}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Patient Complaints
-                  {appointmentType?.toLowerCase().trim() !== 'services' && (
-                    <span className="text-danger">*</span>
-                  )}
-                </CFormLabel>
-
-                <CFormTextarea
-                  name="problem"
-                  value={bookingDetails.problem}
-                  onChange={handleBookingChange}
-                  minLength={5}
-                  maxLength={300}
-                  required={appointmentType?.toLowerCase().trim() !== 'services'}
-                />
-                {errors.problem && <p className="text-danger small">{errors.problem}</p>}
-              </CCol>
-
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Symptoms Duration
-                  {appointmentType?.toLowerCase().trim() !== 'services' && (
-                    <span className="text-danger">*</span>
-                  )}
-                </CFormLabel>
-
-                <CFormInput
-                  type="text" // change from number to text to fully control input
-                  name="symptomsDuration"
-                  value={bookingDetails.symptomsDuration}
-                  onChange={(e) => {
-                    // Allow only digits
-                    const value = e.target.value.replace(/\D/g, '')
-                    setBookingDetails((prev) => ({ ...prev, symptomsDuration: value }))
-                  }}
-                  min={1}
-                  max={365}
-                  required={appointmentType?.toLowerCase().trim() !== 'services'}
-                />
-
-                {errors.symptomsDuration && (
-                  <p className="text-danger small">{errors.symptomsDuration}</p>
-                )}
-              </CCol>
-
-              <CCol md={3}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Unit
-                  {appointmentType?.toLowerCase().trim() !== 'services' && (
-                    <span className="text-danger">*</span>
-                  )}
-                </CFormLabel>
-
-                <CFormSelect
-                  name="unit"
-                  value={bookingDetails.unit || ''}
-                  onChange={handleBookingChange}
-                  required={appointmentType?.toLowerCase().trim() !== 'services'}
-                >
-                  <option value="">Select Unit</option>
-                  <option value="Day">Day</option>
-                  <option value="Week">Week</option>
-                  <option value="Month">Month</option>
-                  <option value="Year">Year</option>
-                </CFormSelect>
-                {errors.unit && <p className="text-danger small">{errors.unit}</p>}
-              </CCol>
-            </CRow>
-            <CRow>
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Previous Injuries
-
-                </CFormLabel>
-                <CFormInput
-                  name="previousInjuries"
-                  value={bookingDetails.previousInjuries}
-                  onChange={handleBookingChange}
-                />
-              </CCol>
-
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Current Medications
-
-                </CFormLabel>
-                <CFormInput
-                  name="currentMedications"
-                  value={bookingDetails.currentMedications}
-                  onChange={handleBookingChange}
-                />
-              </CCol>
-
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Allergies
-
-                </CFormLabel>
-                <CFormInput
-                  name="allergies"
-                  value={bookingDetails.allergies}
-                  onChange={handleBookingChange}
-                />
-              </CCol>
-
-            </CRow>
-            <CRow className='mt-3'>
-
-
-              <CCol md={4}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Occupation
-
-                </CFormLabel>
-                <CFormInput
-                  name="occupation"
-                  value={bookingDetails.occupation}
-                  onChange={handleBookingChange}
-                />
-              </CCol>
-
-              <CCol md={6}>
-                <h6 >Reason for Visit</h6>
-
-                <div className="d-flex gap-3 mt-1" >
-                  {reasonforVisitOption.map((item) => (
-                    <div key={item} className="d-flex align-items-center">
-                      <input
-                        type="radio"
-                        name="reasonforVisit"
-                        value={item}
-                        checked={bookingDetails.reasonforVisit === item}
-                        onChange={() => handleReasonChange(item)}
-                      />
-                      <label className="ms-1" style={{ color: "var(--color-bgcolor)" }}>{item}</label>
-                    </div>
-                  ))}
-                </div>
-              </CCol>
-              {bookingDetails.reasonforVisit === "Others" && (
-                <CCol md={6} className="mt-3">
-                  <CFormLabel>
-                    Enter Reason <span className="text-danger">*</span>
-                  </CFormLabel>
-
-                  <CFormInput
-                    placeholder="Enter custom reason"
-                    value={otherReason}
-                    onChange={(e) => setOtherReason(e.target.value)}
-                  />
-                </CCol>
-              )}
-            </CRow>
-            <div className='mt-3'>
-              <h6 className="mb-3 border-bottom pb-2" >Activity Level</h6>
-
-              <div className="d-flex gap-3 align-items-center mt-1" style={{ color: 'var(--color-bgcolor)' }}>
-                {activityOptions.map((level) => (
-                  <div key={level} className="d-flex align-items-center">
-                    <input
-                      type="checkbox"
-                      value={level}
-                      checked={activityLevels.includes(level)}
-                      onChange={() => handleChange(level)}
-                    />
-                    <label className="ms-1">{level}</label>
-                  </div>
-                ))}
-              </div>
-
-              {/* <p>Selected: {activityLevels.join(", ")}</p> */}
-            </div>
-
-
-
-
-            <CRow className="mt-3">
-              <h6 className="mb-3 border-bottom pb-2" >Insurance Info</h6>
-              <CCol md={6} style={{ color: "var(--color-bgcolor)" }}>
-                <CFormLabel>Insurance Provider</CFormLabel>
-                <CFormInput
-                  name="insuranceProvider"
-                  value={bookingDetails.insuranceProvider}
-                  onChange={handleBookingChange}
-                />
-              </CCol>
-
-              <CCol md={6} style={{ color: "var(--color-bgcolor)" }}>
-                <CFormLabel>Policy Number</CFormLabel>
-                <CFormInput
-                  name="policyNumber"
-                  value={bookingDetails.policyNumber}
-                  onChange={handleBookingChange}
-                />
-              </CCol>
-            </CRow>
-
-            {/* SECTION: Attachment */}
-
-            <CCol md={6} className='mt-3'>
-              <h6 className='mb-3 border-bottom pb-2'>Attachments</h6>
-
-              <CFormInput
-                type="file"
-                name="attachments"
-                multiple
-                accept=".jpg,.jpeg,.png,.pdf"
-                onChange={async (e) => {
-                  const newFiles = Array.from(e.target.files)
-
-                  // Limit to 6 files total
-                  if (newFiles.length + (bookingDetails.attachments?.length || 0) > 6) {
-                    showCustomToast('You can upload a maximum of 6 files.', 'error')
-                    e.target.value = ''
-                    return
-                  }
-
-                  try {
-                    const processedFiles = await Promise.all(
-                      newFiles.map(async (file) => {
-                        let processedFile = file
-
-                        // ✅ Compress only image files larger than 250 KB
-                        if (file.size > 250 * 1024 && file.type.startsWith('image/')) {
-                          try {
-                            const options = {
-                              maxSizeMB: 0.25, // Target size ~250 KB
-                              maxWidthOrHeight: 1920,
-                              useWebWorker: true,
-                            }
-                            processedFile = await imageCompression(file, options)
-                            console.log(
-                              `Compressed ${file.name}: from ${(file.size / 1024).toFixed(
-                                2,
-                              )} KB → ${(processedFile.size / 1024).toFixed(2)} KB`,
-                            )
-                          } catch (compressErr) {
-                            console.warn('Compression failed, using original file:', file.name)
-                          }
-                        }
-
-                        // ✅ Convert to Base64
-                        const toBase64 = (f) =>
-                          new Promise((resolve, reject) => {
-                            const reader = new FileReader()
-                            reader.readAsDataURL(f)
-                            reader.onload = () => resolve(reader.result)
-                            reader.onerror = (err) => reject(err)
-                          })
-
-                        const base64 = await toBase64(processedFile)
-
-                        return { name: file.name, base64 }
-                      }),
-                    )
-
-                    // ✅ Update booking details
-                    setBookingDetails((prev) => ({
-                      ...prev,
-                      attachments: [...(prev.attachments || []), ...processedFiles],
-                    }))
-                  } catch (error) {
-                    console.error('Failed to process attachments:', error)
-                    showCustomToast('Failed to process attachments.', 'error')
-                  }
-                }}
-              />
-
-              {/* ✅ Display uploaded file names */}
-              {bookingDetails.attachments && bookingDetails.attachments.length > 0 && (
-                <div className="mt-2">
-                  {bookingDetails.attachments.map((file, index) => (
-                    <div key={index} className="d-flex align-items-center mb-1">
-                      <span>{file.name}</span>
-                      <button
-                        type="button"
-                        style={{
-                          marginLeft: '10px',
-                          color: 'red',
-                          border: 'none',
-                          background: 'transparent',
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => {
-                          setBookingDetails((prev) => ({
-                            ...prev,
-                            attachments: prev.attachments.filter((_, i) => i !== index),
-                          }))
-                        }}
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+        <BookingSearch visitType={visitType} fetchSlots={fetchSlots} onSelectBooking={(b) => setSelectedBooking(b)} />
+      </div>
+    )
+
+    // ── 2. CONTACT INFO ───────────────────────────────────────────────────
+    if (tabId === 'contact') return (
+      <div>
+        <p style={sectionHeadStyle}>Contact Information</p>
+        {!selectedBooking ? (
+          <CRow className="g-3">
+            <CCol md={2}>
+              <CFormLabel style={labelStyle}>Title <span className="text-danger">*</span></CFormLabel>
+              <CFormSelect name="title" value={bookingDetails.title} onChange={handleBookingChange} style={selectStyle(false)}>
+                <option value="">Title</option>
+                {['Mr.', 'Mrs.', 'Miss.', 'Ms.', 'Dr.', 'Prof.'].map((t) => <option key={t}>{t}</option>)}
+              </CFormSelect>
             </CCol>
-          </>
-        )}
-        {visitType !== 'followup' && !isFollowupVisit && (
-          <>
-            <h6 className="mb-3 border-bottom pb-2 mt-4">Payment Details</h6>
+            <CCol md={6}>
+              <CFormLabel style={labelStyle}>Name <span className="text-danger">*</span></CFormLabel>
+              <CFormInput name="name" value={bookingDetails.name || ''} onChange={handleBookingChange}
+                minLength={3} maxLength={50} style={inputStyle(errors.name)} />
+              <ErrMsg msg={errors.name} />
+            </CCol>
+            <CCol md={4}>
+              <CFormLabel style={labelStyle}>Date of Birth <span className="text-danger">*</span></CFormLabel>
+              <CFormInput
+                type="date"
+                name="dob"
+                value={bookingDetails.dob || ''}
+                onChange={handleBookingChange}
+                min={minDate}
+                max={maxDate}
+                onInvalid={(e) => e.target.setCustomValidity('Enter valid DOB (max age 120)')}
+                onInput={(e) => e.target.setCustomValidity('')}
+                style={inputStyle(errors.dob)}
+              />
+              <ErrMsg msg={errors.dob} />
+            </CCol>
+            <CCol md={2}>
+              <CFormLabel style={labelStyle}>Age</CFormLabel>
+              <CFormInput type="number" value={bookingDetails.age || 0} disabled readOnly style={inputStyle(false)} />
+            </CCol>
+            <CCol md={4}>
+              <CFormLabel style={labelStyle}>Gender <span className="text-danger">*</span></CFormLabel>
+              <CFormSelect name="gender" value={bookingDetails.gender || ''} onChange={handleBookingChange} style={selectStyle(errors.gender)}>
+                <option value="">Select Gender</option>
+                <option>Male</option><option>Female</option><option>Other</option>
+              </CFormSelect>
+              <ErrMsg msg={errors.gender} />
+            </CCol>
+            <CCol md={6}>
+              <CFormLabel style={labelStyle}>Mobile Number <span className="text-danger">*</span></CFormLabel>
+              <CFormInput type="tel" name="patientMobileNumber" value={bookingDetails.patientMobileNumber || ''}
+                onChange={handleBookingChange} maxLength={10} style={inputStyle(errors.patientMobileNumber)} />
+              <ErrMsg msg={errors.patientMobileNumber} />
+            </CCol>
 
-            <CRow className="mb-4 g-3">
-              {' '}
-              {/* g-3 adds horizontal & vertical gap */}
-              {/* Payment Type */}
-              <CCol md={5}>
-                <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                  Payment Type <span className="text-danger">*</span>
-                </CFormLabel>
-
-                <CFormSelect
-                  name="paymentType"
-                  value={bookingDetails.paymentType}
-                  className="custom-select-placeholder"
-                  onChange={(e) => {
-                    const value = e.target.value
-
-                    // ✅ Update form value
-                    setBookingDetails((prev) => ({
-                      ...prev,
-                      paymentType: value,
-                    }))
-
-                    // ✅ Real-time validation clearing
-                    setErrors((prev) => ({
-                      ...prev,
-                      paymentType: value ? '' : 'Please select a payment type',
-                    }))
-                  }}
-                >
-                  <option value="">Select Payment Type</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Card">Card</option>
-                  <option value="UPI">UPI</option>
-                  <option value="Not Paid">Not Paid</option>
-
-                </CFormSelect>
-
-                {/* ✅ Error message below */}
-                {errors.paymentType && <div className="text-danger mt-1">{errors.paymentType}</div>}
-              </CCol>
-              {/* <CCol md={5}>
-                <CFormLabel style={{ color: 'var(--color-black)' }}>
-                  Payment Mode <span className="text-danger">*</span>
-                </CFormLabel>
-
-                <CFormSelect
-                  name="paymentMode"
-                  value={bookingDetails.paymentMode}
-                  className="custom-select-placeholder"
-                  onChange={(e) => {
-                    const value = e.target.value
-
-                    setBookingDetails((prev) => ({
-                      ...prev,
-                      paymentMode: value,
-                      partAmount: value === 'Partial' ? prev.partAmount : '', // reset if full
-                    }))
-
-                    setErrors((prev) => ({
-                      ...prev,
-                      paymentMode: value ? '' : 'Please select a payment mode',
-                    }))
-                  }}
-                >
-                  <option value="">Select Payment Mode</option>
-                  <option value="Full">Full Payment</option>
-                  <option value="Partial">Part Payment</option>
-                </CFormSelect>
-
-                {errors.paymentMode && <div className="text-danger mt-1">{errors.paymentMode}</div>}
-              </CCol> */}
-              {/* ✅ Show only when Partial selected */}
-              {bookingDetails.paymentMode === 'Partial' && (
-                <CCol md={5}>
-                  <CFormLabel style={{ color: 'var(--color-bgcolor)' }}>
-                    Part Amount <span className="text-danger">*</span>
-                  </CFormLabel>
-
-                  <CFormInput
-                    type="number"
-                    placeholder="Enter Part Amount"
-                    value={bookingDetails.partAmount || ''}
+            <CCol md={12}>
+              <p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Address</p>
+              <CRow className="g-3">
+                {['houseNo', 'street', 'landmark'].map((field) => (
+                  <CCol md={4} key={field}>
+                    <CFormLabel style={labelStyle} className="text-capitalize">{field}</CFormLabel>
+                    <CFormInput value={bookingDetails.address?.[field] || ''} style={inputStyle(false)}
+                      onChange={(e) => handleNestedChange('address', field, e.target.value)} />
+                  </CCol>
+                ))}
+                <CCol md={4}>
+                  <CFormLabel style={labelStyle}>Postal Code</CFormLabel>
+                  <CFormInput type="text" maxLength={6} value={bookingDetails.address?.postalCode || ''}
+                    style={inputStyle(errors.address?.postalCode)}
                     onChange={(e) => {
-                      const value = e.target.value
-
-                      setBookingDetails((prev) => ({
-                        ...prev,
-                        partAmount: value,
-                      }))
-
-                      setErrors((prev) => ({
-                        ...prev,
-                        partAmount: value ? '' : 'Enter part amount',
-                      }))
-                    }}
-                  />
-
-                  {errors.partAmount && <div className="text-danger mt-1">{errors.partAmount}</div>}
+                      handleNestedChange('address', 'postalCode', e.target.value)
+                      if (e.target.value.length === 6)
+                        fetch(`https://api.postalpincode.in/pincode/${e.target.value}`)
+                          .then((r) => r.json()).then((d) => { if (d[0].Status === 'Success') setPostOffices(d[0].PostOffice) })
+                      else setPostOffices([])
+                    }} />
+                  <ErrMsg msg={errors.address?.postalCode} />
                 </CCol>
-              )}
-              {/* Doctor Referral Code */}
-              <CCol md={6}>
-                <CFormLabel style={{ color: "var(--color-bgcolor)" }}>Referred By</CFormLabel>
-
-                <Select
-                  name="doctorRefCode"
-                  value={
-                    referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) ||
-                    (bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)
-                  }
-                  getOptionLabel={(option) =>
-                    option.referralId === 'OTHER'
-                      ? 'Others'
-                      : `${option.fullName}-(${option.address.street},${option.address.city})`
-                  }
-                  getOptionValue={(option) => option.referralId}
-                  onChange={(selected) => {
-                    const value = selected ? selected.referralId : ''
-
-                    setBookingDetails((prev) => ({
-                      ...prev,
-                      doctorRefCode: value,
-                      referredByType: value === 'OTHER' ? '' : prev.referredByType,
-                      referredByName: value === 'OTHER' ? '' : prev.referredByName,
-                    }))
-                  }}
-                  options={[
-                    ...referDoctor,
-                    { referralId: 'OTHER', fullName: 'Others' }, // ✅ add this
-                  ]}
-                  placeholder={
-                    bookingDetails.doctorRefCode === 'OTHER'
-                      ? 'Select referral type'
-                      : 'Select or search doctor...'
-                  }
-                  isSearchable
-                />
-              </CCol>
-              {bookingDetails.doctorRefCode === 'OTHER' && (
-                <CRow className="mt-3">
-
-                  {/* Referral Type */}
-                  <CCol md={6}>
-                    <CFormLabel style={{ color: "var(--color-bgcolor)" }}>Referred By</CFormLabel>
-                    <CFormSelect
-                      value={bookingDetails.referredByType || ''}
-                      onChange={(e) =>
-                        setBookingDetails((prev) => ({
-                          ...prev,
-                          referredByType: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">Select Type</option>
-                      <option value="Friend">Friend</option>
-                      <option value="Family">Family</option>
-                      <option value="Facebook">Facebook</option>
-                      <option value="Instagram">Instagram</option>
-                      <option value="Google">Google</option>
-                      <option value="Advertisement">Advertisement</option>
-                      <option value="Other">Other</option>
+                {postOffices.length > 0 && (
+                  <CCol md={4}>
+                    <CFormLabel style={labelStyle}>PO Address</CFormLabel>
+                    <CFormSelect value={selectedPO?.Name || ''} style={selectStyle(false)}
+                      onChange={(e) => {
+                        const po = postOffices.find((p) => p.Name === e.target.value)
+                        setSelectedPO(po)
+                        if (po) { handleNestedChange('address', 'city', po.Block || ''); handleNestedChange('address', 'state', po.State || '') }
+                      }}>
+                      <option value="">-- Select Post Office --</option>
+                      {postOffices.map((po) => <option key={po.Name} value={po.Name}>{po.Name.toUpperCase()}</option>)}
                     </CFormSelect>
                   </CCol>
-
-                  {/* Name Input */}
-                  <CCol md={6}>
-                    <CFormLabel style={{ color: "var(--color-bgcolor)" }}>Referred Person Name</CFormLabel>
-                    <CFormInput
-                      type="text"
-                      placeholder="Enter name"
-                      value={bookingDetails.referredByName || ''}
-                      onChange={(e) =>
-                        setBookingDetails((prev) => ({
-                          ...prev,
-                          referredByName: e.target.value,
-                        }))
-                      }
-                    />
-                  </CCol>
-
-                </CRow>
-              )}
-            </CRow>
-          </>
+                )}
+                <CCol md={4}>
+                  <CFormLabel style={labelStyle}>City</CFormLabel>
+                  <CFormInput value={bookingDetails.address?.city || ''} readOnly style={inputStyle(false)} />
+                </CCol>
+                <CCol md={4}>
+                  <CFormLabel style={labelStyle}>State</CFormLabel>
+                  <CFormInput value={bookingDetails.address?.state || ''} readOnly style={inputStyle(false)} />
+                </CCol>
+              </CRow>
+            </CCol>
+          </CRow>
+        ) : (
+          <div className="p-3" style={{ background: '#f9f9f9', borderRadius: '8px', border: '1px solid #eee' }}>
+            <p style={{ margin: 0, fontWeight: '600', fontSize: FS, color: 'var(--color-bgcolor)' }}>{selectedBooking.name}</p>
+            <p style={{ margin: 0, fontSize: FS, color: '#555' }}>{selectedBooking.mobileNumber} · {selectedBooking.gender} · Age {selectedBooking.age}</p>
+            <p style={{ margin: 0, fontSize: '12px', color: '#888' }}>{selectedBooking.patientAddress}</p>
+          </div>
         )}
-        <div className="mb-4">
-          <h6 className='mb-3 border-bottom pb-2'>Pain Assessment</h6>
+      </div>
+    )
 
-          <BodyAssessment onPartClick={handlePartClick} />
+    // ── 3. BOOKING DETAILS ────────────────────────────────────────────────
+    if (tabId === 'booking') return (
+      <div>
+        <p style={sectionHeadStyle}>Patient & Booking Details</p>
+        <CRow className="g-3">
+          <CCol md={6}>
+            <CFormLabel style={labelStyle}>Branch <span className="text-danger">*</span></CFormLabel>
+            <CFormSelect name="branchId" value={bookingDetails.branchId || ''} style={selectStyle(errors.branchname)}
+              onChange={(e) => {
+                const b = branches.find((br) => br.branchId === e.target.value)
+                setBookingDetails((p) => ({ ...p, branchId: b?.branchId || '', branchname: b?.branchName || '', doctorId: '', doctorName: '', consultationFee: 0, servicetime: '', serviceDate: '' }))
+                setSlotsForSelectedDate([]); setSelectedDate(''); setSelectedSlots([])
+                if (e.target.value) clearErr('branchname')
+              }}>
+              <option value="">Select Branch</option>
+              {branches.map((b) => <option key={b.branchId} value={b.branchId}>{b.branchName}</option>)}
+            </CFormSelect>
+            <ErrMsg msg={errors.branchname} />
+          </CCol>
 
-          {/* ✅ Error for part selection */}
-          {errors.part && (
-            <p className="text-danger small">{errors.part}</p>
+          <CCol md={6}>
+            <CFormLabel style={labelStyle}>Doctor <span className="text-danger">*</span></CFormLabel>
+            <CFormSelect name="doctorName" value={bookingDetails.doctorId || ''} disabled={loadingFee}
+              style={selectStyle(errors.doctorName)}
+              onChange={async (e) => {
+                const id = e.target.value
+                const doc = doctors.find((d) => d.doctorId === id)
+                if (!doc) { setBookingDetails((p) => ({ ...p, doctorId: '', doctorName: '', doctorDeviceId: '', consultationFee: 0 })); return }
+                setBookingDetails((p) => ({
+                  ...p, doctorId: doc.doctorId, doctorName: doc.doctorName, doctorDeviceId: doc.doctorDeviceId,
+                  consultationFee: p.foc === 'FOC' ? 0 : doc.doctorFees.inClinicFee || 0,
+                }))
+                setOriginalConsultationFee(doc.doctorFees.inClinicFee || 0)
+                if (id) clearErr('doctorName')
+                setLoadingFee(true)
+                try { await fetchSlots(id) } catch { } finally { setLoadingFee(false) }
+              }}>
+              <option value="">Select Doctor</option>
+              {doctors.map((d) => (
+                <option key={d.doctorId} value={d.doctorId} disabled={!d.doctorAvailabilityStatus}
+                  style={{ color: d.doctorAvailabilityStatus ? 'inherit' : '#aaa', fontSize: FS }}>
+                  {d.doctorName}{!d.doctorAvailabilityStatus ? ' (Not Available)' : ''}
+                </option>
+              ))}
+            </CFormSelect>
+            <ErrMsg msg={errors.doctorName} />
+          </CCol>
+
+          <CCol md={6}>
+            <CFormLabel style={labelStyle}>Consultation Fee</CFormLabel>
+            <CFormInput type="number" value={bookingDetails.consultationFee || 0} disabled style={inputStyle(false)} />
+          </CCol>
+          <CCol md={6}>
+            <CFormLabel style={labelStyle}>Fee Type <span className="text-danger">*</span></CFormLabel>
+            <CFormSelect value={bookingDetails.foc} onChange={handleFeeTypeChange} style={selectStyle(false)}>
+              <option value="Paid">Paid</option>
+              <option value="FOC">FOC (Free of Consultation)</option>
+            </CFormSelect>
+          </CCol>
+          {bookingDetails.foc === 'FOC' && (
+            <CCol md={12}>
+              <CFormLabel style={labelStyle}>Reason for FOC <span className="text-danger">*</span></CFormLabel>
+              <CFormInput value={bookingDetails.focReason || ''} placeholder="Enter reason"
+                style={inputStyle(errors.focReason)}
+                onChange={(e) => {
+                  setBookingDetails((p) => ({ ...p, focReason: e.target.value }))
+                  e.target.value?.trim() ? clearErr('focReason') : setErr('focReason', 'Enter FOC reason')
+                }} />
+              <ErrMsg msg={errors.focReason} />
+            </CCol>
           )}
+        </CRow>
+      </div>
+    )
 
-          {/* Image Preview */}
-          {markedImage && (
-            <img
-              src={`data:image/png;base64,${markedImage}`}
-              width={200}
-              alt="preview"
-            />
-          )}
-
-          {/* ✅ Error for image */}
-          {errors.markedImage && (
-            <p className="text-danger small">{errors.markedImage}</p>
-          )}
+    // ── 4. SLOTS ──────────────────────────────────────────────────────────
+    if (tabId === 'slots') return (
+      <div>
+        <p style={sectionHeadStyle}>Available Slots</p>
+        <div className="d-flex gap-2 flex-wrap mb-3">
+          {(slotsForSelectedDate || [])
+            .map((s) => s.day || s.date)
+            .filter((d) => { const t = new Date(); t.setHours(0, 0, 0, 0); const dt = new Date(d); dt.setHours(0, 0, 0, 0); return dt >= t })
+            .sort((a, b) => new Date(a) - new Date(b))
+            .map((dateValue, idx) => {
+              const dateObj = new Date(dateValue)
+              const isSelected = new Date(selectedDate).toDateString() === dateObj.toDateString()
+              return (
+                <CButton key={idx}
+                  onClick={() => {
+                    const fd = dateObj.toISOString().split('T')[0]
+                    setSelectedDate(fd); setSelectedSlots([])
+                    setBookingDetails((p) => ({ ...p, serviceDate: fd, servicetime: '' }))
+                    clearErr('slot')
+                  }}
+                  style={{ backgroundColor: isSelected ? 'var(--color-bgcolor)' : 'white', color: isSelected ? '#fff' : 'var(--color-black)', border: '1px solid var(--color-bgcolor)', minWidth: '80px', fontSize: FS }}>
+                  <div style={{ fontSize: FS, fontWeight: '600' }}>{dateObj.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                  <div style={{ fontSize: '11px' }}>{dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</div>
+                </CButton>
+              )
+            })}
         </div>
-        {(!selectedBooking || !selectedBooking.customerId) && visitType !== 'followup' && (
+
+        <CCard className="mb-3">
+          <CCardBody>
+            {slotsToShow.length === 0
+              ? <p className="text-center" style={{ color: 'var(--color-bgcolor)', fontSize: FS, margin: 0 }}>No available slots for this date</p>
+              : <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: '6px' }}>
+                  {visibleSlots.map((slotObj, i) => {
+                    const isBooked = slotObj.slotbooked
+                    const isSel = selectedSlots.includes(slotObj.slot)
+                    return (
+                      <div key={i}
+                        onClick={() => {
+                          if (isBooked) return
+                          setSelectedSlots([slotObj.slot])
+                          setBookingDetails((p) => ({ ...p, servicetime: slotObj.slot }))
+                          clearErr('slot')
+                        }}
+                        style={{
+                          padding: '6px 4px', textAlign: 'center', fontSize: '12px',
+                          border: `1px solid ${isBooked ? '#f8d7da' : isSel ? 'var(--color-bgcolor)' : '#ddd'}`,
+                          borderRadius: '5px', cursor: isBooked ? 'not-allowed' : 'pointer',
+                          backgroundColor: isBooked ? '#f8d7da' : isSel ? 'var(--color-bgcolor)' : '#fff',
+                          color: isBooked ? '#842029' : isSel ? '#fff' : 'var(--color-bgcolor)',
+                          fontWeight: isSel ? '600' : '400',
+                        }}>
+                        {slotObj.slot}
+                      </div>
+                    )
+                  })}
+                </div>
+                {sortedSlots.length > 12 && (
+                  <div className="text-center mt-2">
+                    <CButton color="secondary" size="sm" style={{ fontSize: FS }} onClick={() => setShowAllSlots(!showAllSlots)}>
+                      {showAllSlots ? 'Show Less' : 'Show More'}
+                    </CButton>
+                  </div>
+                )}
+              </>
+            }
+          </CCardBody>
+        </CCard>
+        <ErrMsg msg={errors.slot} />
+      </div>
+    )
+
+    // ── 5. MEDICAL HISTORY ────────────────────────────────────────────────
+    if (tabId === 'medical') return (
+      <div>
+        <p style={sectionHeadStyle}>Medical & Lifestyle History</p>
+        <CRow className="g-3">
+          <CCol md={5}>
+            <CFormLabel style={labelStyle}>
+              Patient Complaints {appointmentType?.toLowerCase() !== 'services' && <span className="text-danger">*</span>}
+            </CFormLabel>
+            <CFormTextarea name="problem" value={bookingDetails.problem} onChange={handleBookingChange}
+              minLength={5} maxLength={300} style={textareaStyle(errors.problem)} />
+            <ErrMsg msg={errors.problem} />
+          </CCol>
+          <CCol md={4}>
+            <CFormLabel style={labelStyle}>
+              Symptoms Duration {appointmentType?.toLowerCase() !== 'services' && <span className="text-danger">*</span>}
+            </CFormLabel>
+            <CFormInput type="text" name="symptomsDuration" value={bookingDetails.symptomsDuration}
+              style={inputStyle(errors.symptomsDuration)}
+              onChange={(e) => {
+                setBookingDetails((p) => ({ ...p, symptomsDuration: e.target.value.replace(/\D/g, '') }))
+                e.target.value ? clearErr('symptomsDuration') : setErr('symptomsDuration', 'Duration required')
+              }} />
+            <ErrMsg msg={errors.symptomsDuration} />
+          </CCol>
+          <CCol md={3}>
+            <CFormLabel style={labelStyle}>
+              Unit {appointmentType?.toLowerCase() !== 'services' && <span className="text-danger">*</span>}
+            </CFormLabel>
+            <CFormSelect name="unit" value={bookingDetails.unit || ''} onChange={handleBookingChange} style={selectStyle(errors.unit)}>
+              <option value="">Select Unit</option>
+              {['Day', 'Week', 'Month', 'Year'].map((u) => <option key={u}>{u}</option>)}
+            </CFormSelect>
+            <ErrMsg msg={errors.unit} />
+          </CCol>
+
+          {['previousInjuries', 'currentMedications', 'allergies', 'occupation'].map((field) => (
+            <CCol md={4} key={field}>
+              <CFormLabel style={labelStyle} className="text-capitalize">{field.replace(/([A-Z])/g, ' $1')}</CFormLabel>
+              <CFormInput name={field} value={bookingDetails[field] || ''} onChange={handleBookingChange} style={inputStyle(false)} />
+            </CCol>
+          ))}
+
+          <CCol md={12}>
+            <CFormLabel style={labelStyle}>Reason for Visit</CFormLabel>
+            <div className="d-flex gap-3 flex-wrap mt-1">
+              {reasonOptions.map((item) => (
+                <div key={item} className="d-flex align-items-center gap-1">
+                  <input type="radio" name="reasonforVisit" value={item}
+                    checked={bookingDetails.reasonforVisit === item}
+                    onChange={() => setBookingDetails((p) => ({ ...p, reasonforVisit: item }))} />
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>{item}</label>
+                </div>
+              ))}
+            </div>
+          </CCol>
+          {bookingDetails.reasonforVisit === 'Others' && (
+            <CCol md={6}>
+              <CFormLabel style={labelStyle}>Enter Reason <span className="text-danger">*</span></CFormLabel>
+              <CFormInput placeholder="Enter custom reason" value={otherReason}
+                style={inputStyle(false)} onChange={(e) => setOtherReason(e.target.value)} />
+            </CCol>
+          )}
+
+          <CCol md={12}>
+            <CFormLabel style={labelStyle}>Activity Level</CFormLabel>
+            <div className="d-flex gap-3 flex-wrap mt-1">
+              {activityOptions.map((level) => (
+                <div key={level} className="d-flex align-items-center gap-1">
+                  <input type="checkbox" value={level} checked={activityLevels.includes(level)}
+                    onChange={() => setActivityLevels((p) => p.includes(level) ? p.filter((l) => l !== level) : [...p, level])} />
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>{level}</label>
+                </div>
+              ))}
+            </div>
+          </CCol>
+
+          <CCol md={12}><p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Insurance Info</p></CCol>
+          <CCol md={6}>
+            <CFormLabel style={labelStyle}>Insurance Provider</CFormLabel>
+            <CFormInput name="insuranceProvider" value={bookingDetails.insuranceProvider || ''} onChange={handleBookingChange} style={inputStyle(false)} />
+          </CCol>
+          <CCol md={6}>
+            <CFormLabel style={labelStyle}>Policy Number</CFormLabel>
+            <CFormInput name="policyNumber" value={bookingDetails.policyNumber || ''} onChange={handleBookingChange} style={inputStyle(false)} />
+          </CCol>
+
+          <CCol md={6}>
+            <p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Attachments</p>
+            <CFormInput type="file" multiple accept=".jpg,.jpeg,.png,.pdf" style={{ fontSize: FS }}
+              onChange={async (e) => {
+                const newFiles = Array.from(e.target.files)
+                if (newFiles.length + (bookingDetails.attachments?.length || 0) > 6) {
+                  showCustomToast('Maximum 6 files allowed.', 'error'); e.target.value = ''; return
+                }
+                const processed = await Promise.all(newFiles.map(async (file) => {
+                  let f = file
+                  if (file.size > 250 * 1024 && file.type.startsWith('image/'))
+                    try { f = await imageCompression(file, { maxSizeMB: 0.25, maxWidthOrHeight: 1920, useWebWorker: true }) } catch { }
+                  const base64 = await new Promise((res, rej) => { const r = new FileReader(); r.readAsDataURL(f); r.onload = () => res(r.result); r.onerror = rej })
+                  return { name: file.name, base64 }
+                }))
+                setBookingDetails((p) => ({ ...p, attachments: [...(p.attachments || []), ...processed] }))
+              }} />
+            {bookingDetails.attachments?.map((file, i) => (
+              <div key={i} className="d-flex align-items-center mt-1 gap-2" style={{ fontSize: FS }}>
+                <span>{file.name}</span>
+                <button type="button" style={{ color: 'red', border: 'none', background: 'transparent', cursor: 'pointer', lineHeight: 1 }}
+                  onClick={() => setBookingDetails((p) => ({ ...p, attachments: p.attachments.filter((_, idx) => idx !== i) }))}>×</button>
+              </div>
+            ))}
+          </CCol>
+        </CRow>
+      </div>
+    )
+
+    // ── 6. PAYMENT ────────────────────────────────────────────────────────
+    if (tabId === 'payment') return (
+      <div>
+        <p style={sectionHeadStyle}>Payment Details</p>
+        <CRow className="g-3">
+          <CCol md={6}>
+            <CFormLabel style={labelStyle}>Payment Type <span className="text-danger">*</span></CFormLabel>
+            <CFormSelect name="paymentType" value={bookingDetails.paymentType} style={selectStyle(errors.paymentType)}
+              onChange={(e) => {
+                setBookingDetails((p) => ({ ...p, paymentType: e.target.value }))
+                e.target.value ? clearErr('paymentType') : setErr('paymentType', 'Select payment type')
+              }}>
+              <option value="">Select Payment Type</option>
+              {['Cash', 'Card', 'UPI', 'Not Paid'].map((t) => <option key={t}>{t}</option>)}
+            </CFormSelect>
+            <ErrMsg msg={errors.paymentType} />
+          </CCol>
+          <CCol md={6}>
+            <CFormLabel style={labelStyle}>Referred By</CFormLabel>
+            <Select styles={rsStyles}
+              value={referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) || (bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)}
+              getOptionLabel={(o) => o.referralId === 'OTHER' ? 'Others' : `${o.fullName} - (${o.address?.street || ''}, ${o.address?.city || ''})`}
+              getOptionValue={(o) => o.referralId}
+              onChange={(sel) => {
+                const v = sel ? sel.referralId : ''
+                setBookingDetails((p) => ({ ...p, doctorRefCode: v, referredByType: v === 'OTHER' ? '' : p.referredByType, referredByName: v === 'OTHER' ? '' : p.referredByName }))
+              }}
+              options={[...referDoctor, { referralId: 'OTHER', fullName: 'Others' }]}
+              placeholder="Select or search..." isSearchable />
+          </CCol>
+          {bookingDetails.doctorRefCode === 'OTHER' && (
+            <>
+              <CCol md={6}>
+                <CFormLabel style={labelStyle}>Referred By Type</CFormLabel>
+                <CFormSelect value={bookingDetails.referredByType || ''} style={selectStyle(false)}
+                  onChange={(e) => setBookingDetails((p) => ({ ...p, referredByType: e.target.value }))}>
+                  <option value="">Select Type</option>
+                  {['Friend', 'Family', 'Facebook', 'Instagram', 'Google', 'Advertisement', 'Other'].map((t) => <option key={t}>{t}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={6}>
+                <CFormLabel style={labelStyle}>Referred Person Name</CFormLabel>
+                <CFormInput value={bookingDetails.referredByName || ''} style={inputStyle(false)}
+                  onChange={(e) => setBookingDetails((p) => ({ ...p, referredByName: e.target.value }))} />
+              </CCol>
+            </>
+          )}
+        </CRow>
+      </div>
+    )
+
+    // ── 7. PAIN ASSESSMENT ────────────────────────────────────────────────
+    if (tabId === 'assessment') return (
+      <div>
+        <p style={sectionHeadStyle}>Pain Assessment</p>
+        <BodyAssessment onPartClick={handlePartClick} />
+        <ErrMsg msg={errors.part} />
+        {markedImage && (
+          <div className="mt-2">
+            <CFormLabel style={labelStyle}>Marked Area Preview</CFormLabel>
+            <img src={`data:image/png;base64,${markedImage}`} width={180} alt="preview"
+              style={{ display: 'block', borderRadius: '6px', border: '1px solid #ddd' }} />
+          </div>
+        )}
+        <ErrMsg msg={errors.markedImage} />
+        {(!selectedBooking || !selectedBooking.customerId) && (
           <div className="form-check mt-3">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="onboardCheckbox"
-              checked={onboardToCustomer}
-              onChange={(e) => setOnboardToCustomer(e.target.checked)}
-            />
-            <label
-              className="form-check-label"
-              htmlFor="onboardCheckbox"
-              style={{ color: 'var(--color-bgcolor)', cursor: 'pointer' }}
-            >
+            <input className="form-check-input" type="checkbox" id="onboardCheckbox"
+              checked={onboardToCustomer} onChange={(e) => setOnboardToCustomer(e.target.checked)} />
+            <label className="form-check-label" htmlFor="onboardCheckbox"
+              style={{ ...labelStyle, marginBottom: 0 }}>
               Customer Registration
             </label>
           </div>
         )}
+      </div>
+    )
 
-        {/* Buttons */}
-        <div className="mt-4 text-end d-flex justify-content-end gap-2">
-          <CButton
-            color="secondary"
-            onClick={() => {
-              setBookingDetails(initialBookingDetails) // reset form data
-              // close the modal
-            }}
-          >
-            Reset
-          </CButton>
-          <CButton
-            color="secondary"
-            onClick={() => {
-              setBookingDetails(initialBookingDetails) // reset form data
-              onClose() // close the modal
-            }}
-          >
-            Cancel
-          </CButton>
+    return null
+  }
 
-          {visitType === 'followup' ? (
-            <CButton
-              onClick={() => handleFollowUpSubmit(selectedBooking)} // ✅ call follow-up function
-              style={{ backgroundColor: 'var(--color-bgcolor)', color: 'var(--color-black)' }}
-            >
-              Submit
-            </CButton>
-          ) : (
-            <CButton
-              onClick={handleSubmit} // ✅ call normal booking function
-              style={{ backgroundColor: 'var(--color-bgcolor)', color: 'var(--color-black)' }}
-              disabled={saveloading}
-            >
-              {saveloading ? "Submiting ..." : "Submit"}
-            </CButton>
-          )}
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────
+  return (
+    <COffcanvas placement="end" visible={visible} onHide={onClose} className="w-50" backdrop="static">
+      <COffcanvasHeader style={{ borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+        <COffcanvasTitle style={{ fontSize: '14px', fontWeight: '600', color: 'var(--color-bgcolor)' }}>
+          📅 Book Appointment
+        </COffcanvasTitle>
+        <button className="btn-close" onClick={onClose} />
+      </COffcanvasHeader>
+
+      <COffcanvasBody style={{ display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
+
+        {/* Tab bar */}
+        <div style={{ borderBottom: '1px solid #eee', backgroundColor: '#fafafa', padding: '0 16px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', overflowX: 'auto' }}>
+            {visibleTabs.map((tab, idx) => {
+              const isActive = idx === currentTab
+              const isComplete = idx < currentTab
+              return (
+                <button key={tab.id} onClick={() => setCurrentTab(idx)}
+                  style={{
+                    padding: '9px 12px',
+                    fontSize: FS,           /* ← same 13px token */
+                    fontWeight: isActive ? '600' : '400',
+                    border: 'none',
+                    borderBottom: isActive ? '2px solid var(--color-bgcolor)' : '2px solid transparent',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    color: isActive ? 'var(--color-bgcolor)' : isComplete ? '#555' : '#aaa',
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                  }}>
+                  {isComplete
+                    ? <span style={{ fontSize: '10px', color: '#4caf50', fontWeight: '700' }}>✓</span>
+                    : <span style={{ fontSize: '11px', color: isActive ? 'var(--color-bgcolor)' : '#bbb' }}>{idx + 1}.</span>
+                  }
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+          {/* Progress bar */}
+          <div style={{ height: '3px', background: '#eee', marginTop: '-2px' }}>
+            <div style={{ height: '100%', width: `${progressPct}%`, background: 'var(--color-bgcolor)', transition: 'width 0.3s ease' }} />
+          </div>
         </div>
 
-        {/* SECTION: Submit */}
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+          {renderTab()}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          borderTop: '1px solid #eee', padding: '10px 16px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          backgroundColor: '#fafafa', flexShrink: 0,
+        }}>
+          <span style={{ fontSize: '12px', color: '#888' }}>
+            Step {currentTab + 1} of {visibleTabs.length}
+          </span>
+
+          <div className="d-flex gap-2 align-items-center">
+            {/* Cancel */}
+            <CButton color="secondary" size="sm"
+              style={{ fontSize: FS, padding: '4px 14px' }}
+              onClick={() => { handleFullReset(); onClose() }}>
+              Cancel
+            </CButton>
+
+            {/* Reset — ONLY clears current tab, does NOT change tab */}
+            <CButton size="sm"
+              title={`Reset "${visibleTabs[currentTab]?.label}" fields only`}
+              style={{ fontSize: FS, padding: '4px 14px', backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}
+              onClick={handleTabReset}>
+              🔄 Reset
+            </CButton>
+
+            {/* Back */}
+            {currentTab > 0 && (
+              <CButton size="sm"
+                style={{ fontSize: FS, padding: '4px 14px', backgroundColor: '#f0f0f0', color: '#555', border: '1px solid #ccc' }}
+                onClick={goPrev}>
+                ← Back
+              </CButton>
+            )}
+
+            {/* Next / Submit */}
+            {currentTab < visibleTabs.length - 1 ? (
+              <CButton size="sm"
+                style={{ fontSize: FS, padding: '4px 14px', backgroundColor: 'var(--color-bgcolor)', color: '#fff', border: 'none' }}
+                onClick={goNext}>
+                Next →
+              </CButton>
+            ) : (
+              <CButton size="sm" disabled={saveloading}
+                style={{ fontSize: FS, padding: '4px 14px', backgroundColor: 'var(--color-bgcolor)', color: '#fff', border: 'none' }}
+                onClick={visitType === 'followup' ? handleFollowUpSubmit : handleSubmit}>
+                {saveloading ? 'Submitting…' : '✓ Submit'}
+              </CButton>
+            )}
+          </div>
+        </div>
       </COffcanvasBody>
     </COffcanvas>
   )
-
-
 }
 
 export default BookAppointmentModal

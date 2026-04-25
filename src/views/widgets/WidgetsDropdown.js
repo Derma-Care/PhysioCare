@@ -87,6 +87,15 @@ const WidgetsDropdown = (props) => {
     Confirmed: 'Confirmed',
   }
 
+  // Status badge color map aligned with pm-* design language
+  const statusColorMap = {
+    'In-Progress': { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
+    Completed:    { bg: '#eaf3de', color: '#3b6d11', border: '#c0dd97' },
+    Pending:      { bg: '#fff8e1', color: '#92680a', border: '#f0d080' },
+    Rejected:     { bg: '#fcebeb', color: '#a32d2d', border: '#f4b5b5' },
+    Confirmed:    { bg: '#eaf3de', color: '#3b6d11', border: '#c0dd97' },
+  }
+
   const role = localStorage.getItem('role')
 
   const PrintContent = ({ data }) => {
@@ -337,32 +346,34 @@ const WidgetsDropdown = (props) => {
     setPrintData(item)
   }
 
-  // ─── Shared button style (matches Confirmed / Pending tabs) ───────────────
+  // ── Filter button styles (matching pm-* aesthetic) ────────────────────────
   const filterBtnBase = {
     fontSize: '12px',
     fontWeight: '500',
-    padding: '4px 12px',
+    padding: '5px 13px',
     borderRadius: '6px',
-    border: '1px solid #ccc',
     cursor: 'pointer',
     lineHeight: '1.5',
     display: 'inline-flex',
     alignItems: 'center',
     gap: '5px',
     whiteSpace: 'nowrap',
+    transition: 'background 0.15s, color 0.15s',
+    border: '0.5px solid #d0dce9',
   }
 
   const filterBtnActive = {
     ...filterBtnBase,
-    backgroundColor: 'var(--color-bgcolor)',
+    backgroundColor: '#185fa5',
     color: '#fff',
-    border: '1px solid var(--color-bgcolor)',
+    border: '0.5px solid #185fa5',
+    boxShadow: '0 2px 8px rgba(24,95,165,0.18)',
   }
 
   const filterBtnInactive = {
     ...filterBtnBase,
-    backgroundColor: '#f0f0f0',
-    color: '#555',
+    backgroundColor: '#f0f5fb',
+    color: '#374151',
   }
 
   return (
@@ -370,240 +381,212 @@ const WidgetsDropdown = (props) => {
       {/* ── TODAY'S APPOINTMENTS SECTION ─────────────────────────────────── */}
       <div className="container mt-3">
 
-        {/* ── ROW: Title + Filter tabs + Search Patients / Search Doctors ── */}
-        <div
-          className="d-flex align-items-center mb-3"
-          style={{ gap: '8px', flexWrap: 'wrap' }}
-        >
-          {/* Title */}
-          <h5
-            style={{
-              color: 'var(--color-bgcolor)',
-              fontSize: '14px',      // ← reduced to match doctor app
-              fontWeight: '600',
-              margin: 0,
-              marginRight: '4px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Today's Appointments
-          </h5>
+        {/* ── Page Header (matches pm-page-header) ─────────────────────── */}
+        <div className="wd-page-header">
+          <div className="wd-page-title-group">
+            <div className="wd-page-icon">
+              {/* Calendar SVG icon */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </div>
+            <div>
+              <h4 className="wd-page-title">Today's Appointments</h4>
+              <p className="wd-page-sub">{todayBookings.length} appointment{todayBookings.length !== 1 ? 's' : ''} found</p>
+            </div>
+          </div>
 
-          {/* ── Status filter buttons ─────────────────────────────────────── */}
-          <button
-            style={statusFilter === '' ? filterBtnActive : filterBtnInactive}
-            onClick={() => setStatusFilter('')}
-          >
-            All
-          </button>
+          {/* ── Right side: filter buttons + nav buttons ───────────────── */}
+          <div className="wd-header-right">
+            {/* Status filter buttons */}
+            <button style={statusFilter === '' ? filterBtnActive : filterBtnInactive} onClick={() => setStatusFilter('')}>All</button>
+            <button style={statusFilter === 'confirmed' ? filterBtnActive : filterBtnInactive} onClick={() => setStatusFilter('confirmed')}>Confirmed</button>
+            <button style={statusFilter === 'pending' ? filterBtnActive : filterBtnInactive} onClick={() => setStatusFilter('pending')}>Pending</button>
 
-          <button
-            style={statusFilter === 'confirmed' ? filterBtnActive : filterBtnInactive}
-            onClick={() => setStatusFilter('confirmed')}
-          >
-            Confirmed
-          </button>
+            {/* Divider */}
+            <div className="wd-divider" />
 
-          <button
-            style={statusFilter === 'pending' ? filterBtnActive : filterBtnInactive}
-            onClick={() => setStatusFilter('pending')}
-          >
-            Pending
-          </button>
+            {/* Search Patients */}
+            <button className="wd-nav-btn" onClick={() => navigate('/customer-management')}>
+              <span className="wd-count-badge">{totalPatientsCount}</span>
+              Search Patients
+              <CIcon icon={cilArrowRight} style={{ width: '13px', height: '13px' }} />
+            </button>
 
-          {/* Spacer pushes the next items to the right */}
-          <div style={{ flex: 1 }} />
-
-          {/* ── Search Patients button ────────────────────────────────────── */}
-          <button
-            style={filterBtnInactive}
-            onClick={() => navigate('/customer-management')}
-          >
-            <span
-              style={{
-                width: '20px',
-                height: '20px',
-                borderRadius: '50%',
-                backgroundColor: '#e7f1ff',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: '700',
-                color: 'var(--color-bgcolor)',
-                fontSize: '11px',
-                flexShrink: 0,
-              }}
-            >
-              {totalPatientsCount}
-            </span>
-            Search Patients
-            <CIcon icon={cilArrowRight} style={{ width: '13px', height: '13px' }} />
-          </button>
-
-          {/* ── Search Doctors button ─────────────────────────────────────── */}
-          <button
-            style={filterBtnInactive}
-            onClick={() => navigate('/employee-management/doctor')}
-          >
-            <span
-              style={{
-                width: '20px',
-                height: '20px',
-                borderRadius: '50%',
-                backgroundColor: '#e7f1ff',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: '700',
-                color: 'var(--color-bgcolor)',
-                fontSize: '11px',
-                flexShrink: 0,
-              }}
-            >
-              {totalDoctorsCount}
-            </span>
-            Search Doctors
-            <CIcon icon={cilArrowRight} style={{ width: '13px', height: '13px' }} />
-          </button>
+            {/* Search Doctors */}
+            <button className="wd-nav-btn" onClick={() => navigate('/employee-management/doctor')}>
+              <span className="wd-count-badge">{totalDoctorsCount}</span>
+              Search Doctors
+              <CIcon icon={cilArrowRight} style={{ width: '13px', height: '13px' }} />
+            </button>
+          </div>
         </div>
 
-        {/* ── TABLE ─────────────────────────────────────────────────────────── */}
-        <CTable striped hover responsive style={{ fontSize: '13px' }}>
-          <CTableHead className="pink-table">
-            <CTableRow>
-              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>S.No</CTableHeaderCell>
-              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Booking Id</CTableHeaderCell>
-              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Patient File ID</CTableHeaderCell>
-              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Name</CTableHeaderCell>
-              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Doctor Name</CTableHeaderCell>
-              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Date</CTableHeaderCell>
-              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Time</CTableHeaderCell>
-              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Status</CTableHeaderCell>
-              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Action</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-
-          <CTableBody>
-            {loadingAppointments ? (
+        {/* ── TABLE (matches pm-table-wrapper / pm-table) ───────────────── */}
+        <div className="wd-table-wrapper">
+          <CTable className="wd-table">
+            <CTableHead>
               <CTableRow>
-                <CTableDataCell colSpan="9" className="text-center" style={{ color: 'var(--color-black)' }}>
-                  <LoadingIndicator message="Loading appointments..." />
-                </CTableDataCell>
+                <CTableHeaderCell className="wd-th" style={{ width: 52 }}>S.No</CTableHeaderCell>
+                <CTableHeaderCell className="wd-th">Booking Id</CTableHeaderCell>
+                <CTableHeaderCell className="wd-th">Patient File ID</CTableHeaderCell>
+                <CTableHeaderCell className="wd-th">Name</CTableHeaderCell>
+                <CTableHeaderCell className="wd-th">Doctor Name</CTableHeaderCell>
+                <CTableHeaderCell className="wd-th">Date</CTableHeaderCell>
+                <CTableHeaderCell className="wd-th">Time</CTableHeaderCell>
+                <CTableHeaderCell className="wd-th">Status</CTableHeaderCell>
+                <CTableHeaderCell className="wd-th" style={{ width: 100 }}>Action</CTableHeaderCell>
               </CTableRow>
-            ) : appointmentError ? (
-              <CTableRow>
-                <CTableDataCell colSpan="9" className="text-center" style={{ color: 'var(--color-black)' }}>
-                  {appointmentError}
-                </CTableDataCell>
-              </CTableRow>
-            ) : (
-              (() => {
-                // 1. Filter by status
-                const filteredByStatus = todayBookings.filter((item) => {
-                  if (!statusFilter) return true
-                  return item.status?.toLowerCase() === statusFilter
-                })
+            </CTableHead>
 
-                // 2. Filter by consultation type
-                const filteredByTypes = filteredByStatus.filter((item) => {
-                  if (filterTypes.length === 0) return true
-                  const itemType = item.consultationType?.toLowerCase().trim()
-                  return filterTypes.some((type) => {
-                    const mappedValues = consultationTypeMap[type]
-                    if (Array.isArray(mappedValues)) {
-                      return mappedValues.some((val) => itemType === val.toLowerCase().trim())
-                    } else {
-                      return itemType === mappedValues.toLowerCase().trim()
-                    }
+            <CTableBody>
+              {loadingAppointments ? (
+                <CTableRow>
+                  <CTableDataCell colSpan="9" className="text-center wd-td" style={{ padding: '32px 0' }}>
+                    <LoadingIndicator message="Loading appointments..." />
+                  </CTableDataCell>
+                </CTableRow>
+              ) : appointmentError ? (
+                <CTableRow>
+                  <CTableDataCell colSpan="9" className="wd-td">
+                    <div className="wd-empty">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="wd-empty-icon">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <p>{appointmentError}</p>
+                    </div>
+                  </CTableDataCell>
+                </CTableRow>
+              ) : (
+                (() => {
+                  // 1. Filter by status
+                  const filteredByStatus = todayBookings.filter((item) => {
+                    if (!statusFilter) return true
+                    return item.status?.toLowerCase() === statusFilter
                   })
-                })
 
-                // 3. Global search filter
-                const finalFilteredData = filteredByTypes.filter((item) => {
-                  if (searchQuery.trim().length < 2) return true
-                  return Object.values(item).some((val) =>
-                    normalize(val).includes(normalize(searchQuery)),
-                  )
-                })
+                  // 2. Filter by consultation type
+                  const filteredByTypes = filteredByStatus.filter((item) => {
+                    if (filterTypes.length === 0) return true
+                    const itemType = item.consultationType?.toLowerCase().trim()
+                    return filterTypes.some((type) => {
+                      const mappedValues = consultationTypeMap[type]
+                      if (Array.isArray(mappedValues)) {
+                        return mappedValues.some((val) => itemType === val.toLowerCase().trim())
+                      } else {
+                        return itemType === mappedValues.toLowerCase().trim()
+                      }
+                    })
+                  })
 
-                // 4. No results
-                if (finalFilteredData.length === 0) {
-                  return (
-                    <CTableRow>
-                      <CTableDataCell colSpan="9" className="text-center" style={{ color: 'var(--color-blue)', fontSize: '13px' }}>
-                        {searchQuery || filterTypes.length > 0
-                          ? 'No appointments match your search and filters.'
-                          : 'No appointments for today.'}
-                      </CTableDataCell>
-                    </CTableRow>
-                  )
-                }
+                  // 3. Global search filter
+                  const finalFilteredData = filteredByTypes.filter((item) => {
+                    if (searchQuery.trim().length < 2) return true
+                    return Object.values(item).some((val) =>
+                      normalize(val).includes(normalize(searchQuery)),
+                    )
+                  })
 
-                // 5. Render rows
-                return finalFilteredData
-                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
-                  .map((item, index) => (
-                    <CTableRow key={`${item.id}-${index}`} className="pink-table">
-                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
-                        {(currentPage - 1) * pageSize + index + 1}
-                      </CTableDataCell>
-                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
-                        {item.bookingId || '-'}
-                      </CTableDataCell>
-                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
-                        {item.patientId || '-'}
-                      </CTableDataCell>
-                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
-                        {item.name}
-                      </CTableDataCell>
-                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
-                        {item.doctorName}
-                      </CTableDataCell>
-                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
-                        {item.serviceDate}
-                      </CTableDataCell>
-                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
-                        {item.slot || item.servicetime}
-                      </CTableDataCell>
-                      <CTableDataCell style={{ verticalAlign: 'middle' }}>
-                        <CBadge
-                          style={{
-                            backgroundColor: 'var(--color-bgcolor)',
-                            color: COLORS.white,
-                            fontSize: '11px',
-                          }}
-                        >
-                          {statusLabelMap[item.status] || item.status}
-                        </CBadge>
-                      </CTableDataCell>
-                      <CTableDataCell style={{ verticalAlign: 'middle' }}>
-                        <div className="d-flex align-items-center gap-2">
-                          <CButton
-                            className="text-white d-flex align-items-center justify-content-center actionBtn"
-                            size="sm"
-                            onClick={() =>
-                              navigate(`/appointment-details/${item.bookingId}`, {
-                                state: { appointment: item },
-                              })
-                            }
-                          >
-                            <Eye size={15} />
-                          </CButton>
-                          <CButton
-                            className="text-white d-flex align-items-center justify-content-center actionBtn"
-                            size="sm"
-                            onClick={() => handlePrint(item)}
-                          >
-                            <Printer size={15} />
-                          </CButton>
-                        </div>
-                      </CTableDataCell>
-                    </CTableRow>
-                  ))
-              })()
-            )}
-          </CTableBody>
-        </CTable>
+                  // 4. No results
+                  if (finalFilteredData.length === 0) {
+                    return (
+                      <CTableRow>
+                        <CTableDataCell colSpan="9" className="wd-td">
+                          <div className="wd-empty">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="wd-empty-icon">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                              <line x1="16" y1="2" x2="16" y2="6" />
+                              <line x1="8" y1="2" x2="8" y2="6" />
+                              <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            <p>
+                              {searchQuery || filterTypes.length > 0
+                                ? 'No appointments match your search and filters.'
+                                : 'No appointments for today.'}
+                            </p>
+                          </div>
+                        </CTableDataCell>
+                      </CTableRow>
+                    )
+                  }
+
+                  // 5. Render rows
+                  return finalFilteredData
+                    .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                    .map((item, index) => {
+                      const statusKey = statusLabelMap[item.status] || item.status
+                      const statusStyle = statusColorMap[item.status] || { bg: '#f0f5fb', color: '#374151', border: '#d0dce9' }
+                      return (
+                        <CTableRow key={`${item.id}-${index}`} className="wd-tr">
+                          <CTableDataCell className="wd-td wd-td-num">
+                            {(currentPage - 1) * pageSize + index + 1}
+                          </CTableDataCell>
+                          <CTableDataCell className="wd-td">
+                            <span className="wd-booking-id">{item.bookingId || '-'}</span>
+                          </CTableDataCell>
+                          <CTableDataCell className="wd-td">
+                            {item.patientId || '-'}
+                          </CTableDataCell>
+                          <CTableDataCell className="wd-td">
+                            <span className="wd-name">{item.name}</span>
+                          </CTableDataCell>
+                          <CTableDataCell className="wd-td">
+                            {item.doctorName}
+                          </CTableDataCell>
+                          <CTableDataCell className="wd-td">
+                            {item.serviceDate}
+                          </CTableDataCell>
+                          <CTableDataCell className="wd-td">
+                            {item.slot || item.servicetime}
+                          </CTableDataCell>
+                          <CTableDataCell className="wd-td">
+                            <span
+                              className="wd-status-badge"
+                              style={{
+                                background: statusStyle.bg,
+                                color: statusStyle.color,
+                                border: `0.5px solid ${statusStyle.border}`,
+                              }}
+                            >
+                              {statusKey}
+                            </span>
+                          </CTableDataCell>
+                          <CTableDataCell className="wd-td">
+                            <div className="wd-actions">
+                              <button
+                                className="wd-action-btn view"
+                                title="View"
+                                onClick={() =>
+                                  navigate(`/appointment-details/${item.bookingId}`, {
+                                    state: { appointment: item },
+                                  })
+                                }
+                              >
+                                <Eye size={14} />
+                              </button>
+                              <button
+                                className="wd-action-btn print"
+                                title="Print"
+                                onClick={() => handlePrint(item)}
+                              >
+                                <Printer size={14} />
+                              </button>
+                            </div>
+                          </CTableDataCell>
+                        </CTableRow>
+                      )
+                    })
+                })()
+              )}
+            </CTableBody>
+          </CTable>
+        </div>
       </div>
 
       {/* ── ADMIN CARDS ───────────────────────────────────────────────────── */}
@@ -637,6 +620,192 @@ const WidgetsDropdown = (props) => {
       >
         {printData && <PrintContent data={printData} />}
       </div>
+
+      {/* ── STYLES ───────────────────────────────────────────────────────── */}
+      <style>{`
+        /* ── Page Header ─────────────────────────── */
+        .wd-page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-bottom: 18px;
+          padding-bottom: 14px;
+          border-bottom: 0.5px solid #d0dce9;
+        }
+        .wd-page-title-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .wd-page-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background: #e6f1fb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #185fa5;
+          flex-shrink: 0;
+        }
+        .wd-page-title {
+          font-size: 17px;
+          font-weight: 600;
+          color: #0c447c;
+          margin: 0;
+        }
+        .wd-page-sub {
+          font-size: 12px;
+          color: #6b7280;
+          margin: 0;
+        }
+
+        /* ── Header right cluster ────────────────── */
+        .wd-header-right {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .wd-divider {
+          width: 1px;
+          height: 22px;
+          background: #d0dce9;
+          margin: 0 4px;
+        }
+
+        /* ── Nav buttons (Search Patients / Doctors) ─ */
+        .wd-nav-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #f0f5fb;
+          color: #374151;
+          border: 0.5px solid #d0dce9;
+          border-radius: 6px;
+          padding: 5px 13px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: background 0.15s;
+        }
+        .wd-nav-btn:hover { background: #e6f1fb; color: #185fa5; }
+
+        .wd-count-badge {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #e6f1fb;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          color: #185fa5;
+          font-size: 11px;
+          flex-shrink: 0;
+        }
+
+        /* ── Table wrapper ───────────────────────── */
+        .wd-table-wrapper {
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          overflow: hidden;
+          margin-bottom: 12px;
+        }
+        .wd-table { margin-bottom: 0 !important; font-size: 13px; }
+
+        /* ── Table header ────────────────────────── */
+        .wd-th {
+          background: #185fa5 !important;
+          color: #fff !important;
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          padding: 11px 14px !important;
+          white-space: nowrap;
+          border: none !important;
+          vertical-align: middle !important;
+        }
+
+        /* ── Table rows ──────────────────────────── */
+        .wd-tr { transition: background 0.12s; }
+        .wd-tr:hover { background: #f0f5fb !important; }
+        .wd-td {
+          padding: 11px 14px !important;
+          vertical-align: middle !important;
+          font-size: 13px;
+          color: #374151;
+          border-bottom: 0.5px solid #eef2f7 !important;
+          border-top: none !important;
+        }
+        .wd-td-num { color: #9ca3af; font-size: 12px; }
+
+        /* ── Booking ID chip ─────────────────────── */
+        .wd-booking-id {
+          background: #e6f1fb;
+          color: #185fa5;
+          border: 0.5px solid #b5d4f4;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 9px;
+          white-space: nowrap;
+        }
+
+        /* ── Patient name ────────────────────────── */
+        .wd-name {
+          font-weight: 600;
+          color: #0c447c;
+          font-size: 13px;
+        }
+
+        /* ── Status badge ────────────────────────── */
+        .wd-status-badge {
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 3px 10px;
+          white-space: nowrap;
+          display: inline-block;
+        }
+
+        /* ── Action buttons ──────────────────────── */
+        .wd-actions {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
+        .wd-action-btn {
+          width: 30px;
+          height: 30px;
+          border-radius: 7px;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: filter 0.12s, transform 0.1s;
+          flex-shrink: 0;
+        }
+        .wd-action-btn.view  { background: #e6f1fb; color: #185fa5; }
+        .wd-action-btn.print { background: #eaf3de; color: #3b6d11; }
+        .wd-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
+        .wd-action-btn:active { transform: scale(0.94); }
+
+        /* ── Empty state ─────────────────────────── */
+        .wd-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          padding: 40px 0;
+          color: #9ca3af;
+          font-size: 14px;
+        }
+        .wd-empty-icon { color: #d0dce9; }
+      `}</style>
     </>
   )
 }

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import {
-  CButton,
   CForm,
   CFormInput,
   CFormLabel,
@@ -20,6 +19,7 @@ import { validateField } from '../../../Utils/Validators'
 import { emailPattern } from '../../../Constant/Constants'
 import FilePreview from '../../../Utils/FilePreview'
 import { showCustomToast } from '../../../Utils/Toaster'
+import { User, Briefcase, MapPin, CreditCard, FileText, ShieldCheck, Eye, Save, X, RotateCcw } from 'lucide-react'
 
 const FrontDeskForm = ({
   visible,
@@ -31,7 +31,7 @@ const FrontDeskForm = ({
   technicians,
   fetchTechs,
 }) => {
-  const emptyPermissions = {} // ✅ no feature is selected by default
+  const emptyPermissions = {}
 
   const emptyForm = {
     clinicId: localStorage.getItem('HospitalId'),
@@ -53,12 +53,9 @@ const FrontDeskForm = ({
     computerSkillsProof: '',
     previousEmploymentHistory: '',
     role: 'receptionist',
-
     gender: '',
     yearOfExperience: '',
-    // specialization: '',
     vaccinationStatus: '',
-
     address: {
       houseNo: '',
       street: '',
@@ -76,14 +73,11 @@ const FrontDeskForm = ({
       branchName: '',
       panCardNumber: '',
     },
-
     permissions: emptyPermissions,
   }
 
-  // 🔹 State
   const [formData, setFormData] = useState(emptyForm)
-  const [clinicId, setClinicID] = useState(localStorage.getItem('HospitalId'))
-
+  const [clinicId] = useState(localStorage.getItem('HospitalId'))
   const [showModal, setShowModal] = useState(false)
   const [showPModal, setShowPModal] = useState(false)
   const [previewFileUrl, setPreviewFileUrl] = useState(null)
@@ -91,102 +85,54 @@ const FrontDeskForm = ({
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [ifscLoading, setIfscLoading] = useState(false)
-  // Mandatory fields
-  const mandatoryFields = [
-    'fullName',
-    // 'gender',
-    'dateOfBirth',
-    'contactNumber',
-    'emailId',
-    'governmentId',
-    'dateOfJoining',
-    'department',
-    'qualification',
-    // 'yearOfExperience',
-    'clinicId',
-    // 'vaccinationStatus',
-    'profilePicture',
-    'role',
-    // address fields
-    'address.houseNo',
-    'address.street',
-    'address.city',
-    'address.state',
-    'address.postalCode',
-    'address.country',
 
-    // bank details fields
-    'bankAccountDetails.accountNumber',
-    'bankAccountDetails.accountHolderName',
-    'bankAccountDetails.bankName',
-    'bankAccountDetails.branchName',
-    'bankAccountDetails.ifscCode',
-    'bankAccountDetails.panCardNumber',
+  const mandatoryFields = [
+    'fullName', 'dateOfBirth', 'contactNumber', 'emailId', 'governmentId',
+    'dateOfJoining', 'department', 'qualification', 'clinicId', 'profilePicture', 'role',
+    'address.houseNo', 'address.street', 'address.city', 'address.state',
+    'address.postalCode', 'address.country',
+    'bankAccountDetails.accountNumber', 'bankAccountDetails.accountHolderName',
+    'bankAccountDetails.bankName', 'bankAccountDetails.branchName',
+    'bankAccountDetails.ifscCode', 'bankAccountDetails.panCardNumber',
   ]
 
   function validateMandatoryFields(formData, mandatoryFields) {
     const missingFields = []
-
     for (const field of mandatoryFields) {
       const keys = field.split('.')
       let value = formData
-
-      for (const key of keys) {
-        value = value?.[key]
-      }
-
-      if (!value || String(value).trim() === '') {
-        missingFields.push(field)
-      }
+      for (const key of keys) { value = value?.[key] }
+      if (!value || String(value).trim() === '') missingFields.push(field)
     }
-
     return missingFields
   }
 
-  // Toggle feature
   const toggleFeature = (feature) => {
     setFormData((prev) => {
       const updated = { ...prev.permissions }
-
-      if (updated[feature]) {
-        delete updated[feature] // remove completely when unchecked
-      } else {
-        updated[feature] = [] // add with no actions when checked
-      }
-
+      if (updated[feature]) delete updated[feature]
+      else updated[feature] = []
       return { ...prev, permissions: updated }
     })
   }
 
-  // Toggle one action
   const togglePermission = (feature, action) => {
     setFormData((prev) => {
       const updated = { ...prev.permissions }
       if (!updated[feature]) updated[feature] = []
-
-      if (updated[feature].includes(action)) {
+      if (updated[feature].includes(action))
         updated[feature] = updated[feature].filter((a) => a !== action)
-      } else {
-        updated[feature] = [...updated[feature], action]
-      }
-
+      else updated[feature] = [...updated[feature], action]
       return { ...prev, permissions: updated }
     })
   }
 
-  // Select All actions
   const toggleAllActions = (feature) => {
     setFormData((prev) => {
       const updated = { ...prev.permissions }
-
-      if (!updated[feature]) {
-        updated[feature] = [...actions] // select all
-      } else if (updated[feature].length === actions.length) {
-        updated[feature] = [] // unselect all
-      } else {
-        updated[feature] = [...actions] // select all
-      }
-
+      if (!updated[feature]) updated[feature] = [...actions]
+      else if (updated[feature].length === actions.length) updated[feature] = []
+      else updated[feature] = [...actions]
       return { ...prev, permissions: updated }
     })
   }
@@ -194,7 +140,7 @@ const FrontDeskForm = ({
   const toBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader()
-      reader.readAsDataURL(file) // ✅ Converts file to base64 with data:image/... prefix
+      reader.readAsDataURL(file)
       reader.onload = () => resolve(reader.result)
       reader.onerror = (error) => reject(error)
     })
@@ -202,8 +148,8 @@ const FrontDeskForm = ({
   useEffect(() => {
     if (initialData) {
       setFormData((prev) => ({
-        ...prev,          // keep createdBy
-        ...initialData,   // overwrite rest
+        ...prev,
+        ...initialData,
         createdBy: initialData.createdBy || prev.createdBy,
       }))
     } else {
@@ -211,16 +157,12 @@ const FrontDeskForm = ({
     }
   }, [initialData])
 
-
-  // 🔹 Handle text inputs (top-level fields)
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-
-    // Run validation on each change
     const error = validateField(field, value, { ...formData, [field]: value }, technicians)
-
     setErrors((prev) => ({ ...prev, [field]: error }))
   }
+
   const handleNestedChange = (parent, field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -228,32 +170,20 @@ const FrontDeskForm = ({
     }))
   }
 
-  // 🔹 File upload → Base64
   const handleFileUpload = (e, field) => {
     const file = e.target.files[0]
     if (!file) return
-
-    // ✅ Enforce 250 KB max
     if (file.size > 250 * 1024) {
-      showCustomToast('File size must be less than 250KB.', 'error', {
-        position: 'top-right',
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      })
+      showCustomToast('File size must be less than 250KB.', 'error')
       return
     }
-
     const reader = new FileReader()
     reader.onloadend = () => {
       setFormData((prev) => ({
         ...prev,
-        [field]: reader.result, // Base64 data
-        [`${field}Name`]: file.name, // Original file name
-        [`${field}Type`]: file.type, // MIME type
+        [field]: reader.result,
+        [`${field}Name`]: file.name,
+        [`${field}Type`]: file.type,
       }))
     }
     reader.readAsDataURL(file)
@@ -261,12 +191,10 @@ const FrontDeskForm = ({
 
   const validateForm = () => {
     const missing = validateMandatoryFields(formData, mandatoryFields)
-
     if (missing.length > 0) {
       showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error')
       return
     }
-
     if (formData.dateOfBirth) {
       const dob = new Date(formData.dateOfBirth)
       const today = new Date()
@@ -274,54 +202,35 @@ const FrontDeskForm = ({
       const isBeforeBirthday =
         today.getMonth() < dob.getMonth() ||
         (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-
-      const actualAge = isBeforeBirthday ? age - 1 : age
-
-      if (actualAge < 18) {
+      if ((isBeforeBirthday ? age - 1 : age) < 18) {
         showCustomToast('Technician must be at least 18 years old.', 'error')
         return
       }
     }
-
-    // ✅ Mobile validation (10 digits, starting with 6-9)
     const mobileRegex = /^[6-9]\d{9}$/
     if (!mobileRegex.test(formData.contactNumber)) {
       showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error')
       return
     }
-    // ✅ Emergency contact and Nurse contact must not be same
     if (formData.contactNumber === formData.emergencyContact) {
       showCustomToast('Contact Number and Emergency Contact cannot be the same.', 'error')
       return
     }
-    // ✅ Email validation
-
     if (!emailPattern.test(formData.emailId)) {
       showCustomToast('Please enter a valid email address.', 'error')
       return
     }
-
-    // ✅ Check duplicate contact number
     const duplicateContact = receptionist?.some(
       (t) => t.contactNumber === formData.contactNumber && t.id !== formData.id,
     )
-    if (duplicateContact) {
-      showCustomToast('Contact number already exists!', 'error')
-      return
-    }
-
-    // ✅ Check duplicate email
+    if (duplicateContact) { showCustomToast('Contact number already exists!', 'error'); return }
     const duplicateEmail = receptionist?.some(
       (t) => t.emailId === formData.emailId && t.id !== formData.id,
     )
-    if (duplicateEmail) {
-      showCustomToast('Email already exists!', 'error')
-      return
-    }
+    if (duplicateEmail) { showCustomToast('Email already exists!', 'error'); return }
     return true
   }
 
-  // 🔹 Save handler
   const handleSubmit = async () => {
     if (Object.keys(formData.permissions).length === 0) {
       showCustomToast('Please assign at least one user permission before saving.', 'error')
@@ -331,9 +240,7 @@ const FrontDeskForm = ({
     try {
       setLoading(true)
       const res = await onSave(formData)
-      console.log(res.data.statusCode) // Now this will log actual API response
       if (res?.data?.data != null) {
-        console.log('✅ iam calling')
         onClose()
         setFormData(emptyForm)
       }
@@ -342,21 +249,14 @@ const FrontDeskForm = ({
     } finally {
       setLoading(false)
     }
-
-    // console.log(formData)
-    // onSave(formData)
-    // setFormData(emptyForm)
-    // onClose()
   }
 
   const handleUserPermission = () => {
     const isValid = validateForm()
     if (!isValid) return
-    console.log(formData)
     setShowPModal(true)
   }
 
-  // 🔹 Close Preview Modal
   const handleCloseModal = () => {
     setShowModal(false)
     setPreviewFileUrl(null)
@@ -369,859 +269,509 @@ const FrontDeskForm = ({
     setShowModal(true)
   }
 
-  //decode image
-  const decodeImage = (data) => {
-    try {
-      // decode base64 string into normal string
-      return atob(data)
-    } catch {
-      return null
-    }
-  }
-
-  // 🔹 Small reusable info component
-  const Section = ({ title, children }) => (
-    <div>
-      <h5 className="text-lg font-semibold border-b pb-2 mb-4">{title}</h5>
-      <div className="grid grid-cols-3 gap-4">{children}</div>
+  // ── View Mode helpers ──
+  const InfoCard = ({ icon: Icon, title, children }) => (
+    <div className="fdf-card">
+      <div className="fdf-card-header">
+        <Icon size={15} className="fdf-card-icon" />
+        <span>{title}</span>
+      </div>
+      <div className="fdf-card-body">{children}</div>
     </div>
   )
 
-  const Row = ({ label, value }) => (
-    <div>
-      <small style={{ color: '#1B4F8A', fontWeight: '600', display: 'block', marginBottom: '2px' }}>
+  const InfoRow = ({ label, value }) => (
+    <div className="fdf-info-row">
+      <span className="fdf-info-label">{label}</span>
+      <span className="fdf-info-value">{value || '—'}</span>
+    </div>
+  )
+
+  // ── Edit Mode helpers ──
+  const FormSection = ({ icon: Icon, title, children }) => (
+    <div className="fdf-section">
+      <div className="fdf-section-title">
+        <Icon size={14} className="fdf-section-icon" />
+        {title}
+      </div>
+      {children}
+    </div>
+  )
+
+  const Field = ({ label, required, error, children }) => (
+    <div className="fdf-field">
+      <label className="fdf-label">
         {label}
-      </small>
-      <p style={{ color: '#212529', marginBottom: 0, fontWeight: '500' }}>{value || '—'}</p>
+        {required && <span className="fdf-required">*</span>}
+      </label>
+      {children}
+      {error && <span className="fdf-error">{error}</span>}
     </div>
   )
-
-  const RowFull = ({ label, value }) => (
-    <div className="col-span-3">
-      {label && (
-        <small style={{ color: '#1B4F8A', fontWeight: '600', display: 'block', marginBottom: '2px' }}>
-          {label}
-        </small>
-      )}
-      <p style={{ color: '#212529', marginBottom: 0, fontWeight: '500' }}>{value || '—'}</p>
-    </div>
-  )
-
-  // 🔹 File Preview with modal trigger
-  // const FilePreview = ({ label, type, data }) => {
-  //   if (!data) return <p>{label} </p>
-
-  //   const isImage = type?.startsWith('image/')
-  //   const fileUrl = data.startsWith('data:') ? data : `data:${type};base64,${data}`
-
-  //   return (
-  //     <div className="bg-white p-3 rounded-md shadow-sm">
-  //       <strong>{label}:</strong>
-  //       <div className="mt-2">
-  //         {isImage ? (
-  //           <img
-  //             src={fileUrl}
-  //             alt={label}
-  //             className="w-32 h-32 object-cover rounded-md border cursor-pointer"
-  //             onClick={() => handlePreview(fileUrl, type)}
-  //           />
-  //         ) : (
-  //           <button
-  //             type="button "
-  //             className=" btn text-blue-600 hover:underline block mx-2"
-  //             onClick={() => handlePreview(fileUrl, type)}
-  //             style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
-  //           >
-  //             Preview
-  //           </button>
-  //         )}
-  //         <a
-  //           href={fileUrl}
-  //           download={label.replace(/\s+/g, '_')}
-  //           className="text-green-600 hover:underline text-sm block  btn"
-  //           style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
-  //         >
-  //           Download
-  //         </a>
-  //       </div>
-  //     </div>
-  //   )
-  // }
 
   return (
     <>
       <ToastContainer />
-      <CModal
-        visible={visible}
-        onClose={onClose}
-        size="lg"
-        className="custom-modal"
-        backdrop="static"
-      >
-        <CModalHeader>
-          <CModalTitle>{viewMode ? 'Personal Information' : 'Add / Edit Receptionist'}</CModalTitle>
+
+      {/* ── Main Modal ── */}
+      <CModal visible={visible} onClose={onClose} size="lg" backdrop="static">
+        <CModalHeader style={{ borderBottom: '0.5px solid #d0dce9', padding: '16px 20px' }}>
+          <CModalTitle style={{ fontSize: 15, fontWeight: 600, color: '#0c447c' }}>
+            {viewMode ? 'Receptionist Profile' : initialData ? 'Edit Receptionist' : 'Add Receptionist'}
+          </CModalTitle>
         </CModalHeader>
-        <CModalBody>
+
+        <CModalBody style={{ padding: '20px', maxHeight: '75vh', overflowY: 'auto' }}>
           {viewMode ? (
-            // ✅ VIEW MODE
-
-            <div className="container my-4">
+            /* ═══════════════ VIEW MODE ═══════════════ */
+            <div>
               {/* Profile Header */}
-              <div className="card p-4 mb-4 shadow-sm border-light">
-                <div className="d-flex flex-column flex-md-row align-items-center">
-                  {/* Profile Image */}
-                  <div className="text-center me-md-4 mb-3 mb-md-0">
-                    <img
-                      src={formData.profilePicture || '/assets/images/default-avatar.png'}
-                      alt={formData.fullName}
-                      width="100"
-                      height="100"
-                      className="rounded-circle border"
-                      style={{ objectFit: 'cover', borderColor: '#ccc' }}
-                    />
-                  </div>
-
-                  {/* Basic Info */}
-                  <div className="flex-grow-1 text-center text-md-start">
-                    <h4 className="fw-bold mb-1" style={{ color: '#7e3a93' }}>
-                      {formData.fullName}
-                    </h4>
-                    <p className="text-muted mb-1">
-                      <strong>Email:</strong> {formData.emailId}
-                    </p>
-                    <p className="text-muted mb-1">
-                      <strong>Contact:</strong> {formData.contactNumber}
-                    </p>
-                    <div>
-                      <span className="badge bg-secondary mt-2">ID: {formData.id}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Personal Information */}
-              <div
-                className="card p-3 mb-4 shadow-sm"
-                style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}
-              >
-                <h5
-                  className="mb-3 border-bottom pb-2 fw-bold"
-                  style={{ color: '#212529', borderColor: '#a5c4d4ff' }}
-                >
-                  Personal Information
-                </h5>
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Row label="Full Name" value={formData.fullName} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Email" value={formData.emailId} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Contact" value={formData.contactNumber} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Date of Birth" value={formData.dateOfBirth} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Government ID" value={formData.governmentId} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Work Information */}
-              <div className="card p-3 mb-4 shadow-sm" style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}>
-                <h5 className="mb-3 border-bottom pb-2 fw-bold" style={{ color: '#212529', borderColor: '#a5c4d4ff' }}>
-                  Work Information
-                </h5>
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Row label="Date of Joining" value={formData.dateOfJoining} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Department / Lab" value={formData.department} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Qualification" value={formData.qualification} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Emergency Contact" value={formData.emergencyContact} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Experience" value={formData.yearOfExperience} />
-                  </div>
-                  {/* <div className="col-md-4"><Row label="Specialization" value={formData.specialization} /></div> */}
-                </div>
-              </div>
-
-              {/* Address */}
-              <div className="card p-3 mb-4 shadow-sm" style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}>
-                <h5 className="mb-3 border-bottom pb-2 fw-bold" style={{ color: '#212529', borderColor: '#a5c4d4ff' }}>
-                  Address
-                </h5>
-                <RowFull
-                  value={`${formData.address.houseNo}, ${formData.address.street}, ${formData.address.city}, ${formData.address.state} - ${formData.address.postalCode}, ${formData.address.country}`}
+              <div className="fdf-profile-header">
+                <img
+                  src={formData.profilePicture || '/assets/images/default-avatar.png'}
+                  alt={formData.fullName}
+                  className="fdf-profile-avatar"
                 />
-              </div>
-
-              {/* Bank Details */}
-              <div className="card p-3 mb-4 shadow-sm" style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}>
-                <h5 className="mb-3 border-bottom pb-2 fw-bold" style={{ color: '#212529', borderColor: '#a5c4d4ff' }}>
-                  Bank Details
-                </h5>
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Row label="Account Number" value={formData.bankAccountDetails.accountNumber} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row
-                      label="Account Holder Name"
-                      value={formData.bankAccountDetails.accountHolderName}
-                    />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="IFSC Code" value={formData.bankAccountDetails.ifscCode} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Bank Name" value={formData.bankAccountDetails.bankName} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Branch Name" value={formData.bankAccountDetails.branchName} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="PAN Card" value={formData.bankAccountDetails.panCardNumber} />
-                  </div>
+                <div className="fdf-profile-info">
+                  <h4 className="fdf-profile-name">{formData.fullName}</h4>
+                  <p className="fdf-profile-meta">{formData.emailId}</p>
+                  <p className="fdf-profile-meta">{formData.contactNumber}</p>
+                  <span className="fdf-badge">ID: {formData.id}</span>
                 </div>
               </div>
 
-              {/* Documents */}
-              <div className="card p-3 mb-4 shadow-sm" style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}>
-                <h5 className="mb-3 border-bottom pb-2 fw-bold" style={{ color: '#212529', borderColor: '#a5c4d4ff' }}>
-                  Documents
-                </h5>
-                <div className="row g-3">
+              <InfoCard icon={User} title="Personal Information">
+                <div className="fdf-grid-3">
+                  <InfoRow label="Full Name" value={formData.fullName} />
+                  <InfoRow label="Email" value={formData.emailId} />
+                  <InfoRow label="Contact" value={formData.contactNumber} />
+                  <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
+                  <InfoRow label="Government ID" value={formData.governmentId} />
+                  <InfoRow label="Gender" value={capitalizeWords(formData.gender)} />
+                </div>
+              </InfoCard>
+
+              <InfoCard icon={Briefcase} title="Work Information">
+                <div className="fdf-grid-3">
+                  <InfoRow label="Date of Joining" value={formData.dateOfJoining} />
+                  <InfoRow label="Department" value={formData.department} />
+                  <InfoRow label="Qualification" value={formData.qualification} />
+                  <InfoRow label="Emergency Contact" value={formData.emergencyContact} />
+                  <InfoRow label="Experience" value={formData.yearOfExperience} />
+                  <InfoRow label="Vaccination" value={formData.vaccinationStatus} />
+                </div>
+              </InfoCard>
+
+              <InfoCard icon={MapPin} title="Address">
+                <p className="fdf-info-value" style={{ margin: 0 }}>
+                  {[
+                    formData.address?.houseNo,
+                    formData.address?.street,
+                    formData.address?.landmark,
+                    formData.address?.city,
+                    formData.address?.state,
+                    formData.address?.postalCode,
+                    formData.address?.country,
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+              </InfoCard>
+
+              <InfoCard icon={CreditCard} title="Bank Details">
+                <div className="fdf-grid-3">
+                  <InfoRow label="Account Number" value={formData.bankAccountDetails?.accountNumber} />
+                  <InfoRow label="Account Holder" value={formData.bankAccountDetails?.accountHolderName} />
+                  <InfoRow label="IFSC Code" value={formData.bankAccountDetails?.ifscCode} />
+                  <InfoRow label="Bank Name" value={formData.bankAccountDetails?.bankName} />
+                  <InfoRow label="Branch Name" value={formData.bankAccountDetails?.branchName} />
+                  <InfoRow label="PAN Card" value={formData.bankAccountDetails?.panCardNumber} />
+                </div>
+              </InfoCard>
+
+              <InfoCard icon={FileText} title="Documents">
+                <div className="fdf-grid-2">
                   {formData.graduationCertificate ? (
-                    <div className="col-md-6">
-                      <FilePreview
-                        label="Qualification / Certifications"
-                        type={formData.graduationCertificateType}
-                        data={formData.graduationCertificate}
-                      />
-                    </div>
+                    <FilePreview
+                      label="Graduation Certificate"
+                      type={formData.graduationCertificateType}
+                      data={formData.graduationCertificate}
+                    />
                   ) : (
-                    <p className="col-md-6 text-muted">Not Provided Graduation Certificate</p>
+                    <p className="fdf-muted">Not Provided — Graduation Certificate</p>
                   )}
                   {formData.computerSkillsProof ? (
-                    <div className="col-md-6">
-                      <FilePreview
-                        label="Computer Skills Proof"
-                        type={formData.computerSkillsProofType || 'application/pdf'}
-                        data={formData.computerSkillsProof}
-                      />
-                    </div>
+                    <FilePreview
+                      label="Computer Skills Proof"
+                      type={formData.computerSkillsProofType || 'application/pdf'}
+                      data={formData.computerSkillsProof}
+                    />
                   ) : (
-                    <p className="col-md-6 text-muted">Not Provided Computer Skills Proof</p>
+                    <p className="fdf-muted">Not Provided — Computer Skills Proof</p>
                   )}
                 </div>
-              </div>
-
-              {/* Other Information */}
-              <div className="card p-3 mb-4 shadow-sm" style={{ border: '1px solid #a5c4d4ff', borderRadius: '12px' }}>
-                <h5 className="mb-3 border-bottom pb-2 fw-bold" style={{ color: '#212529', borderColor: '#a5c4d4ff' }}>
-                  Other Information
-                </h5>
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <Row label="Vaccination Status" value={formData.vaccinationStatus} />
+                {formData.previousEmploymentHistory && (
+                  <div style={{ marginTop: 12 }}>
+                    <InfoRow label="Previous Employment" value={formData.previousEmploymentHistory} />
                   </div>
-                  <div className="col-md-6">
-                    <RowFull
-                      label="Previous Employment"
-                      value={formData.previousEmploymentHistory}
-                    />
-                  </div>
-                </div>
-              </div>
+                )}
+              </InfoCard>
             </div>
           ) : (
-            // ✅ EDIT MODE
+            /* ═══════════════ EDIT MODE ═══════════════ */
             <CForm>
-              {/* 🔹 Basic Info */}
-              <h5>Basic Information</h5>
-
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <div className="row">
-                    <div className="col-md-5">
-                      <CFormLabel>
-                        ClinicID <span style={{ color: 'red' }}>*</span>
-                      </CFormLabel>
-                      <CFormInput
-                        value={clinicId}
-                        disabled
-                        onChange={(e) => handleChange('clinicId', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-md-7">
-                      <CFormLabel>
-                        Role <span style={{ color: 'red' }}>*</span>
-                      </CFormLabel>
-                      <CFormInput
-                        value={formData.role}
-                        disabled
-                        onChange={(e) => handleChange('role', e.target.value)}
-                      />
-                    </div>
+              {/* Basic Info */}
+              <FormSection icon={User} title="Basic Information">
+                <div className="fdf-row">
+                  <div className="fdf-col-half">
+                    <Field label="Clinic ID" required>
+                      <input className="fdf-input fdf-input-disabled" value={clinicId} disabled />
+                    </Field>
+                  </div>
+                  <div className="fdf-col-half">
+                    <Field label="Role" required>
+                      <input className="fdf-input fdf-input-disabled" value={formData.role} disabled />
+                    </Field>
                   </div>
                 </div>
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Full Name <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    value={formData.fullName}
-                    onChange={(e) => {
-                      // Remove numbers and special characters immediately
-                      const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
-                      handleChange('fullName', value)
-                    }}
-                  // onBlur={() => handleBlur('fullName', formData.fullName)}
-                  />
-                  {errors.fullName && <div className="text-danger mt-1">{errors.fullName}</div>}
-                </div>
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Gender <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormSelect
-                    value={formData.gender}
-                    onChange={(e) => handleChange('gender', e.target.value)}
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </CFormSelect>
-                </div>
-              </div>
 
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Date of Birth <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="date"
-                    value={formData.dateOfBirth}
-                    max={
-                      new Date(new Date().setFullYear(new Date().getFullYear() - 18))
-                        .toISOString()
-                        .split('T')[0]
-                    } // ✅ only allow DOB ≤ today-18yrs
-                    onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-                  />
+                <div className="fdf-row">
+                  <div className="fdf-col-third">
+                    <Field label="Full Name" required error={errors.fullName}>
+                      <input
+                        className="fdf-input"
+                        value={formData.fullName}
+                        onChange={(e) => handleChange('fullName', e.target.value.replace(/[^A-Za-z\s]/g, ''))}
+                      />
+                    </Field>
+                  </div>
+                  <div className="fdf-col-third">
+                    <Field label="Gender" required>
+                      <select
+                        className="fdf-input"
+                        value={formData.gender}
+                        onChange={(e) => handleChange('gender', e.target.value)}
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </Field>
+                  </div>
+                  <div className="fdf-col-third">
+                    <Field label="Date of Birth" required>
+                      <input
+                        className="fdf-input"
+                        type="date"
+                        value={formData.dateOfBirth}
+                        max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                        onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+                      />
+                    </Field>
+                  </div>
                 </div>
 
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Contact Number <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="text"
-                    maxLength={10} // Restrict to 10 digits
-                    value={formData.contactNumber}
-                    onChange={(e) => {
-                      const value = e.target.value
-
-                      // Allow only digits
-                      if (/^\d*$/.test(value)) {
-                        handleChange('contactNumber', value)
-
-                        // Run live validation
-                        const err = validateField('contactNumber', value, formData, receptionist)
-                        setErrors((prev) => ({ ...prev, contactNumber: err }))
-                      }
-                    }}
-                  />
-                  {errors.contactNumber && (
-                    <div className="text-danger mt-1">{errors.contactNumber}</div>
-                  )}
+                <div className="fdf-row">
+                  <div className="fdf-col-third">
+                    <Field label="Contact Number" required error={errors.contactNumber}>
+                      <input
+                        className="fdf-input"
+                        type="text"
+                        maxLength={10}
+                        value={formData.contactNumber}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          if (/^\d*$/.test(v)) {
+                            handleChange('contactNumber', v)
+                            const err = validateField('contactNumber', v, formData, receptionist)
+                            setErrors((p) => ({ ...p, contactNumber: err }))
+                          }
+                        }}
+                      />
+                    </Field>
+                  </div>
+                  <div className="fdf-col-third">
+                    <Field label="Email" required error={errors.emailId}>
+                      <input
+                        className="fdf-input"
+                        type="email"
+                        value={formData.emailId}
+                        onChange={(e) => {
+                          handleChange('emailId', e.target.value)
+                          setErrors((p) => ({ ...p, emailId: validateField('emailId', e.target.value, formData) }))
+                        }}
+                      />
+                    </Field>
+                  </div>
+                  <div className="fdf-col-third">
+                    <Field label="Government ID (Aadhaar)" required error={errors.governmentId}>
+                      <input
+                        className="fdf-input"
+                        maxLength={12}
+                        value={formData.governmentId}
+                        onChange={(e) => {
+                          if (/^\d*$/.test(e.target.value)) {
+                            handleChange('governmentId', e.target.value)
+                            setErrors((p) => ({ ...p, governmentId: validateField('governmentId', e.target.value, formData) }))
+                          }
+                        }}
+                      />
+                    </Field>
+                  </div>
                 </div>
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Email <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="email"
-                    value={formData.emailId}
-                    onChange={(e) => {
-                      const value = e.target.value
+              </FormSection>
 
-                      // Update value
-                      handleChange('emailId', value)
-
-                      // Run live validation
-                      const err = validateField('emailId', value, formData)
-                      setErrors((prev) => ({ ...prev, emailId: err }))
-                    }}
-                  />
-                  {errors.emailId && <div className="text-danger mt-1">{errors.emailId}</div>}
-                </div>
-              </div>
-
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <CFormLabel>
-                    GovernmentID(AadharCard No) <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    maxLength={12}
-                    value={formData.governmentId}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      // ✅ Only digits allowed, max 12
-                      if (/^\d*$/.test(value)) {
-                        handleChange('governmentId', value)
-
-                        // Run live validation
-                        const err = validateField('governmentId', value, formData)
-                        setErrors((prev) => ({ ...prev, governmentId: err }))
-                      }
-                    }}
-                  />
-                  {errors.governmentId && (
-                    <div className="text-danger mt-1">{errors.governmentId}</div>
-                  )}
-                </div>
-
-                {/* <div className="col-md-4">
-                  <CFormLabel>Computer Skills Proof</CFormLabel>
-                  <CFormInput
-                    value={capitalizeWords(formData.computerSkillsProof)}
-                    onChange={(e) => handleChange('computerSkillsProof', e.target.value)}
-                  />
-                </div> */}
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Date of Joining <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="date"
-                    value={formData.dateOfJoining}
-                    max={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => {
-                      handleChange('dateOfJoining', e.target.value)
-
-                      // Live validation
-                      const err = validateField('dateOfJoining', e.target.value, formData)
-                      setErrors((prev) => ({ ...prev, dateOfJoining: err }))
-                    }}
-                  />
-                  {errors.dateOfJoining && (
-                    <div className="text-danger mt-1">{errors.dateOfJoining}</div>
-                  )}
+              {/* Work Info */}
+              <FormSection icon={Briefcase} title="Work Information">
+                <div className="fdf-row">
+                  <div className="fdf-col-third">
+                    <Field label="Date of Joining" required error={errors.dateOfJoining}>
+                      <input
+                        className="fdf-input"
+                        type="date"
+                        value={formData.dateOfJoining}
+                        max={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => {
+                          handleChange('dateOfJoining', e.target.value)
+                          setErrors((p) => ({ ...p, dateOfJoining: validateField('dateOfJoining', e.target.value, formData) }))
+                        }}
+                      />
+                    </Field>
+                  </div>
+                  <div className="fdf-col-third">
+                    <Field label="Department" required error={errors.department}>
+                      <input
+                        className="fdf-input"
+                        value={formData.department}
+                        onChange={(e) => {
+                          handleChange('department', e.target.value)
+                          setErrors((p) => ({ ...p, department: validateField('department', e.target.value) }))
+                        }}
+                      />
+                    </Field>
+                  </div>
+                  <div className="fdf-col-third">
+                    <Field label="Vaccination Status" required error={errors.vaccinationStatus}>
+                      <select
+                        className="fdf-input"
+                        value={formData.vaccinationStatus}
+                        onChange={(e) => {
+                          handleChange('vaccinationStatus', e.target.value)
+                          setErrors((p) => ({ ...p, vaccinationStatus: e.target.value ? '' : 'Required.' }))
+                        }}
+                      >
+                        <option value="">Select Status</option>
+                        <option value="Not Vaccinated">Not Vaccinated</option>
+                        <option value="Partially Vaccinated">Partially Vaccinated</option>
+                        <option value="Fully Vaccinated">Fully Vaccinated</option>
+                      </select>
+                    </Field>
+                  </div>
                 </div>
 
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Vaccination Status <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormSelect
-                    value={formData.vaccinationStatus}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      handleChange('vaccinationStatus', value)
-
-                      // ✅ Live validation
-                      const error = value ? '' : 'Vaccination Status is required.'
-                      setErrors((prev) => ({ ...prev, vaccinationStatus: error }))
-                    }}
-                  >
-                    <option value="">Select Status</option>
-                    <option value="Not Vaccinated">Not Vaccinated</option>
-                    <option value="Partially Vaccinated">Partially Vaccinated</option>
-                    <option value="Fully Vaccinated">Fully Vaccinated</option>
-                  </CFormSelect>
-                  {errors.vaccinationStatus && (
-                    <div className="text-danger mt-1">{errors.vaccinationStatus}</div>
-                  )}
+                <div className="fdf-row">
+                  <div className="fdf-col-third">
+                    <Field label="Qualification" required>
+                      <input
+                        className="fdf-input"
+                        value={formData.qualification}
+                        onChange={(e) => handleChange('qualification', e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <div className="fdf-col-third">
+                    <Field label="Years of Experience" required error={errors.yearOfExperience}>
+                      <input
+                        className="fdf-input"
+                        type="number"
+                        value={formData.yearOfExperience}
+                        onChange={(e) => {
+                          handleChange('yearOfExperience', e.target.value)
+                          setErrors((p) => ({ ...p, yearOfExperience: validateField('yearOfExperience', e.target.value) }))
+                        }}
+                      />
+                    </Field>
+                  </div>
+                  <div className="fdf-col-third">
+                    <Field label="Emergency Contact">
+                      <input
+                        className="fdf-input"
+                        type="text"
+                        maxLength={10}
+                        value={formData.emergencyContact}
+                        onChange={(e) => {
+                          if (/^\d*$/.test(e.target.value)) handleChange('emergencyContact', e.target.value)
+                        }}
+                      />
+                    </Field>
+                  </div>
                 </div>
-              </div>
+              </FormSection>
 
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  {' '}
-                  <CFormLabel>
-                    Department<span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    value={formData.department}
-                    onChange={(e) => {
-                      const value = e.target.value
-
-                      // Update value
-                      handleChange('department', value)
-
-                      // Run live validation
-                      const err = validateField('department', value) // assuming 'department' validation exists in validators.js
-                      setErrors((prev) => ({ ...prev, department: err }))
-                    }}
-                  />
-                  {errors.department && <div className="text-danger mt-1">{errors.department}</div>}
-                </div>
-                <div className="col-md-4">
-                  {' '}
-                  <CFormLabel>
-                    Years of Experience <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="number"
-                    value={formData.yearOfExperience}
-                    onChange={(e) => {
-                      const value = e.target.value
-
-                      // Update value
-                      handleChange('yearOfExperience', value)
-
-                      // Live validation
-                      const err = validateField('yearOfExperience', value) // ensure this exists in your validators.js
-                      setErrors((prev) => ({ ...prev, yearOfExperience: err }))
-                    }}
-                  />
-                  {errors.yearOfExperience && (
-                    <div className="text-danger mt-1">{errors.yearOfExperience}</div>
-                  )}
-                </div>
-
-                {/* <div className="col-md-4">
-                  <CFormLabel>Qualification</CFormLabel>
-
-                  <CFormInput
-                    type="text"
-                    value={formData.qualification}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      // ✅ Allow only digits
-                      if (/^\d*$/.test(value)) {
-                        handleChange('qualification', e.target.value)
-                      }
-                    }}
-                  />
-                </div> */}
-                <div className="col-md-4">
-                  {' '}
-                  <CFormLabel>
-                    Qualification<span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    value={formData.qualification}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      handleChange('qualification', value)
-                      const err = validateField('qualification', value) // ensure this exists in your validators.js
-                      setErrors((prev) => ({ ...prev, qualification: err }))
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <CFormLabel>Emergency Contact</CFormLabel>
-
-                  <CFormInput
-                    type="text"
-                    maxLength={10} // ✅ Restrict to 10 digits
-                    value={formData.emergencyContact}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      // ✅ Allow only digits
-                      if (/^\d*$/.test(value)) {
-                        handleChange('emergencyContact', e.target.value)
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* 🔹 Address */}
-              <h5 className="mt-3">Address</h5>
-
-              {Object.keys(formData.address)
-                .reduce((rows, field, index) => {
-                  if (index % 3 === 0) rows.push([])
-                  rows[rows.length - 1].push(field)
-                  return rows
-                }, [])
-                .map((rowFields, rowIndex) => (
-                  <div className="row mb-3" key={rowIndex}>
-                    {rowFields.map((field) => (
-                      <div className="col-md-4" key={field}>
-                        <CFormLabel className="text-capitalize">
-                          {field}
-                          {field !== 'landmark' && <span style={{ color: 'red' }}>*</span>}
-                        </CFormLabel>
-                        <CFormInput
+              {/* Address */}
+              <FormSection icon={MapPin} title="Address">
+                <div className="fdf-row">
+                  {Object.keys(formData.address).map((field) => (
+                    <div className="fdf-col-third" key={field}>
+                      <Field
+                        label={field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
+                        required={field !== 'landmark'}
+                        error={errors.address?.[field]}
+                      >
+                        <input
+                          className="fdf-input"
                           type="text"
                           maxLength={field === 'postalCode' ? 6 : undefined}
                           value={formData.address[field]}
                           onChange={(e) => {
                             let value = e.target.value
-
-                            // Postal Code → digits only
                             if (field === 'postalCode') {
                               if (/^\d*$/.test(value)) handleNestedChange('address', field, value)
-                            }
-                            // City, State, Country → letters and spaces only
-                            else if (['city', 'state', 'country'].includes(field)) {
+                            } else if (['city', 'state', 'country'].includes(field)) {
                               value = value.replace(/[^A-Za-z\s]/g, '')
                               handleNestedChange('address', field, value)
-                            }
-                            // Other fields → allow all
-                            else {
+                            } else {
                               handleNestedChange('address', field, value)
                             }
-
-                            // Live validation
-                            const error = validateField(field, value, formData)
-                            setErrors((prev) => ({
-                              ...prev,
-                              address: {
-                                ...prev.address,
-                                [field]: error,
-                              },
-                            }))
-                          }}
-                          onBlur={() => {
-                            const error = validateField(field, formData.address[field], formData)
-                            setErrors((prev) => ({
-                              ...prev,
-                              address: {
-                                ...prev.address,
-                                [field]: error,
-                              },
-                            }))
+                            setErrors((p) => ({ ...p, address: { ...p.address, [field]: validateField(field, value, formData) } }))
                           }}
                         />
-                        {errors.address?.[field] && (
-                          <div className="text-danger mt-1">{errors.address[field]}</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                      </Field>
+                    </div>
+                  ))}
+                </div>
+              </FormSection>
 
-              {/* 🔹 Bank Details */}
-              <h5 className="mt-3">Bank Account Details</h5>
-              {Object.keys(formData.bankAccountDetails)
-                .reduce((rows, field, index) => {
-                  if (index % 3 === 0) rows.push([])
-                  rows[rows.length - 1].push(field)
-                  return rows
-                }, [])
-                .map((rowFields, rowIndex) => (
-                  <div className="row mb-3" key={rowIndex}>
-                    {rowFields.map((field) => (
-                      <div className="col-md-4" key={field}>
-                        <CFormLabel className="text-capitalize">
-                          {field} <span style={{ color: 'red' }}>*</span>
-                        </CFormLabel>
-
-                        <CFormInput
+              {/* Bank Details */}
+              <FormSection icon={CreditCard} title="Bank Account Details">
+                <div className="fdf-row">
+                  {Object.keys(formData.bankAccountDetails).map((field) => (
+                    <div className="fdf-col-third" key={field}>
+                      <Field
+                        label={field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
+                        required
+                        error={errors.bankAccountDetails?.[field]}
+                      >
+                        <input
+                          className="fdf-input"
                           value={formData.bankAccountDetails[field]}
                           disabled={ifscLoading && (field === 'bankName' || field === 'branchName')}
-                          placeholder={
-                            ifscLoading && (field === 'bankName' || field === 'branchName')
-                              ? 'Fetching...'
-                              : ''
-                          }
+                          placeholder={ifscLoading && (field === 'bankName' || field === 'branchName') ? 'Fetching...' : ''}
                           maxLength={
-                            field === 'accountNumber'
-                              ? 20
-                              : field === 'panCardNumber'
-                                ? 10
-                                : field === 'ifscCode'
-                                  ? 11
-                                  : field === 'accountHolderName'
-                                    ? 50
+                            field === 'accountNumber' ? 20
+                              : field === 'panCardNumber' ? 10
+                                : field === 'ifscCode' ? 11
+                                  : field === 'accountHolderName' ? 50
                                     : undefined
                           }
                           onChange={async (e) => {
                             let value = e.target.value
                             let err = ''
-
-                            // Account Holder Name → letters and spaces only
                             if (field === 'accountHolderName') {
-                              if (/^[A-Za-z\s]*$/.test(value)) {
-                                handleNestedChange('bankAccountDetails', field, value)
-                              }
-                              if (!value.trim()) {
-                                err = 'Account Holder Name is required.'
-                              } else if (!/^[A-Za-z\s]+$/.test(value)) {
-                                err = 'Account Holder Name can contain only letters and spaces.'
-                              } else if (value.length < 3 || value.length > 50) {
-                                err = 'Account Holder Name must be between 3 and 50 characters.'
-                              } else {
-                                err = ''
-                              }
+                              if (/^[A-Za-z\s]*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
+                              err = !value.trim() ? 'Required.' : !/^[A-Za-z\s]+$/.test(value) ? 'Letters only.' : ''
                             }
-
-                            // Account Number → digits only
                             if (field === 'accountNumber') {
-                              if (/^\d*$/.test(value))
-                                handleNestedChange('bankAccountDetails', field, value)
-                              err = value ? '' : 'Account Number is required.'
+                              if (/^\d*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
+                              err = value ? '' : 'Required.'
                             }
-
-                            // PAN → uppercase, correct format
                             if (field === 'panCardNumber') {
                               value = value.toUpperCase()
-                              if (/^[A-Z]{0,5}[0-9]{0,4}[A-Z]{0,1}$/.test(value)) {
-                                handleNestedChange('bankAccountDetails', field, value)
-                              }
-                              if (value.length === 10) {
-                                const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]$/
-                                err = panRegex.test(value) ? '' : 'Invalid PAN format (ABCDE1234F)'
-                              } else {
-                                err = 'PAN must be 10 characters.'
-                              }
+                              if (/^[A-Z]{0,5}[0-9]{0,4}[A-Z]{0,1}$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
+                              err = value.length === 10 ? (/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? '' : 'Invalid PAN (ABCDE1234F)') : 'PAN must be 10 characters.'
                             }
-
-                            // IFSC → uppercase, correct format
                             if (field === 'ifscCode') {
                               value = value.toUpperCase()
-                              if (/^[A-Z0-9]*$/.test(value))
-                                handleNestedChange('bankAccountDetails', field, value)
+                              if (/^[A-Z0-9]*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
                               if (value.length === 11) {
-                                const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
-                                err = ifscRegex.test(value)
-                                  ? ''
-                                  : 'Invalid IFSC format (HDFC0001234)'
+                                err = /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value) ? '' : 'Invalid IFSC (HDFC0001234)'
                                 if (!err) {
                                   try {
                                     const res = await fetch(`https://ifsc.razorpay.com/${value}`)
                                     if (res.ok) {
                                       const data = await res.json()
-                                      handleNestedChange(
-                                        'bankAccountDetails',
-                                        'bankName',
-                                        data.BANK || '',
-                                      )
-                                      handleNestedChange(
-                                        'bankAccountDetails',
-                                        'branchName',
-                                        data.BRANCH || '',
-                                      )
+                                      handleNestedChange('bankAccountDetails', 'bankName', data.BANK || '')
+                                      handleNestedChange('bankAccountDetails', 'branchName', data.BRANCH || '')
                                     }
                                   } catch {
                                     handleNestedChange('bankAccountDetails', 'bankName', '')
                                     handleNestedChange('bankAccountDetails', 'branchName', '')
                                   }
-                                } else {
-                                  handleNestedChange('bankAccountDetails', 'bankName', '')
-                                  handleNestedChange('bankAccountDetails', 'branchName', '')
                                 }
                               } else {
-                                handleNestedChange('bankAccountDetails', 'bankName', '')
-                                handleNestedChange('bankAccountDetails', 'branchName', '')
                                 err = 'IFSC must be 11 characters.'
                               }
                             }
-
-                            // Other fields → required
-                            if (
-                              ![
-                                'accountNumber',
-                                'panCardNumber',
-                                'ifscCode',
-                                'accountHolderName',
-                              ].includes(field)
-                            ) {
+                            if (!['accountNumber', 'panCardNumber', 'ifscCode', 'accountHolderName'].includes(field)) {
                               handleNestedChange('bankAccountDetails', field, value)
-                              err = value ? '' : `${field} is required.`
+                              err = value ? '' : 'Required.'
                             }
-
-                            setErrors((prev) => ({
-                              ...prev,
-                              bankAccountDetails: {
-                                ...prev.bankAccountDetails,
-                                [field]: err,
-                              },
-                            }))
+                            setErrors((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, [field]: err } }))
                           }}
                         />
+                      </Field>
+                    </div>
+                  ))}
+                </div>
+              </FormSection>
 
-                        {errors.bankAccountDetails && errors.bankAccountDetails[field] && (
-                          <div className="text-danger mt-1">{errors.bankAccountDetails[field]}</div>
-                        )}
-                      </div>
-                    ))}
+              {/* Documents */}
+              <FormSection icon={FileText} title="Documents">
+                <div className="fdf-row">
+                  <div className="fdf-col-third">
+                    <Field label="Profile Image" required>
+                      <input
+                        className="fdf-input"
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            const base64 = await toBase64(file)
+                            handleChange('profilePicture', base64)
+                          }
+                        }}
+                      />
+                    </Field>
                   </div>
-                ))}
-
-              {/* 🔹 Documents */}
-              <h5 className="mt-3">Documents</h5>
-
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Profile Image <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files[0]
-                      if (file) {
-                        const base64 = await toBase64(file)
-                        handleChange('profilePicture', base64) // store in formData
-                      }
-                    }}
-                  />
-                </div>
-                <div className="col-md-4">
-                  <CFormLabel>Graduation Certificate</CFormLabel>
-                  <CFormInput
-                    type="file"
-                    onChange={(e) => handleFileUpload(e, 'graduationCertificate')}
-                  />
+                  <div className="fdf-col-third">
+                    <Field label="Graduation Certificate">
+                      <input
+                        className="fdf-input"
+                        type="file"
+                        onChange={(e) => handleFileUpload(e, 'graduationCertificate')}
+                      />
+                    </Field>
+                  </div>
+                  <div className="fdf-col-third">
+                    <Field label="Computer Skills Proof">
+                      <input
+                        className="fdf-input"
+                        type="file"
+                        onChange={(e) => handleFileUpload(e, 'computerSkillsProof')}
+                      />
+                    </Field>
+                  </div>
                 </div>
 
-                <div className="col-md-4">
-                  <CFormLabel>Computer Skills Proof</CFormLabel>
-                  <CFormInput
-                    type="file"
-                    onChange={(e) => handleFileUpload(e, 'computerSkillsProof')}
+                <Field label="Previous Employment History">
+                  <textarea
+                    className="fdf-input fdf-textarea"
+                    rows={3}
+                    value={formData.previousEmploymentHistory}
+                    onChange={(e) => handleChange('previousEmploymentHistory', e.target.value)}
+                    placeholder="Enter previous employment history..."
                   />
-                </div>
-              </div>
+                </Field>
+              </FormSection>
 
-              <CFormLabel>Previous Employment History</CFormLabel>
-              <CFormTextarea
-                rows={3} // you can adjust height
-                value={formData.previousEmploymentHistory}
-                onChange={(e) => handleChange('previousEmploymentHistory', e.target.value)}
-                placeholder="Enter previous employment history"
-              />
-
-              <div
-                className="mb-3 w-100 mt-4"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'end',
-                  alignContent: 'end',
-                  alignItems: 'end',
-                }}
-              >
-                <CButton
-                  style={{
-                    color: 'var(--color-black)',
-                    backgroundColor: 'var(--color-bgcolor)',
-                  }}
-                  onClick={handleUserPermission}
-                >
+              {/* Permissions Button */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                <button type="button" className="fdf-perm-btn" onClick={handleUserPermission}>
+                  <ShieldCheck size={14} />
                   User Permissions
-                </CButton>
+                </button>
               </div>
 
               <UserPermissionModal
@@ -1233,81 +783,303 @@ const FrontDeskForm = ({
                 toggleFeature={toggleFeature}
                 toggleAllActions={toggleAllActions}
                 togglePermission={togglePermission}
-                onSave={() => {
-                  console.log('Saved Permissions', formData.permissions)
-                  setShowPModal(false)
-                }}
+                onSave={() => { setShowPModal(false) }}
               />
             </CForm>
           )}
         </CModalBody>
-        <CModalFooter>
+
+        <CModalFooter style={{ borderTop: '0.5px solid #d0dce9', padding: '12px 20px', gap: 8 }}>
           {viewMode ? (
-            <CButton color="secondary" onClick={onClose}>
-              Close
-            </CButton>
+            <button className="fdf-btn-cancel" onClick={onClose}>
+              <X size={14} /> Close
+            </button>
           ) : (
             <>
-              <CButton
-                style={{ backgroundColor: 'var(--color-bgcolor)', color: 'var(--color-black)' }}
+              <button
+                type="button"
+                className="fdf-btn-cancel"
                 onClick={() => setFormData(emptyForm)}
               >
-                Clear
-              </CButton>
-              <CButton
-                color="secondary"
-                onClick={() => {
-                  setFormData(emptyForm)
-                  onClose()
-                }}
+                <RotateCcw size={13} /> Clear
+              </button>
+              <button
+                type="button"
+                className="fdf-btn-cancel"
+                onClick={() => { setFormData(emptyForm); onClose() }}
               >
-                Cancel
-              </CButton>
-              <CButton
-                style={{ backgroundColor: 'var(--color-bgcolor)', color: 'white', border: 'none' }}
+                <X size={13} /> Cancel
+              </button>
+              <button
+                type="button"
+                className="fdf-btn-save"
                 onClick={handleSubmit}
                 disabled={loading}
               >
                 {loading ? (
                   <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2 text-white"
-                      role="status"
-                    />
+                    <span className="spinner-border spinner-border-sm me-1" role="status" />
                     Saving...
                   </>
                 ) : (
-                  'Save'
+                  <><Save size={13} /> Save</>
                 )}
-              </CButton>
+              </button>
             </>
           )}
         </CModalFooter>
       </CModal>
 
-      {/* 🔹 Preview Modal */}
+      {/* ── File Preview Modal ── */}
       <CModal visible={showModal} onClose={handleCloseModal} size="xl">
-        <CModalHeader onClose={handleCloseModal}>
-          <strong>{isPreviewPdf ? 'PDF Preview' : 'Image Preview'}</strong>
+        <CModalHeader onClose={handleCloseModal} style={{ borderBottom: '0.5px solid #d0dce9', padding: '16px 20px' }}>
+          <CModalTitle style={{ fontSize: 14, fontWeight: 600, color: '#0c447c' }}>
+            {isPreviewPdf ? 'PDF Preview' : 'Image Preview'}
+          </CModalTitle>
         </CModalHeader>
         <CModalBody className="text-center">
           {isPreviewPdf ? (
-            <iframe
-              src={previewFileUrl}
-              title="PDF Preview"
-              style={{ width: '100%', height: '80vh', border: 'none' }}
-            />
+            <iframe src={previewFileUrl} title="PDF Preview" style={{ width: '100%', height: '80vh', border: 'none' }} />
           ) : (
-            <img
-              src={previewFileUrl}
-              alt="Preview"
-              style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '8px' }}
-            />
+            <img src={previewFileUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8 }} />
           )}
         </CModalBody>
       </CModal>
 
-      {/* 🔹 Permissions */}
+      {/* ── STYLES ── */}
+      <style>{`
+        /* ── View Mode ── */
+        .fdf-profile-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 16px;
+          background: #f0f5fb;
+          border-radius: 10px;
+          margin-bottom: 14px;
+        }
+        .fdf-profile-avatar {
+          width: 72px; height: 72px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid #b5d4f4;
+          flex-shrink: 0;
+        }
+        .fdf-profile-name {
+          font-size: 16px;
+          font-weight: 700;
+          color: #0c447c;
+          margin: 0 0 4px;
+        }
+        .fdf-profile-meta {
+          font-size: 12px;
+          color: #6b7280;
+          margin: 0 0 2px;
+        }
+        .fdf-badge {
+          display: inline-block;
+          background: #185fa5;
+          color: #fff;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 10px;
+          border-radius: 20px;
+          margin-top: 4px;
+        }
+
+        .fdf-card {
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          overflow: hidden;
+          margin-bottom: 12px;
+        }
+     .fdf-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #185fa5;
+  color: #fff;   /* 👈 THIS controls the text color */
+  font-size: 12px;
+  font-weight: 600;
+  padding: 9px 14px;
+}
+  .fdf-card-header,
+.fdf-card-header span,
+.fdf-card-header svg {
+  color: #ffffff !important;
+}
+        .fdf-card-icon { color: #b5d4f4; }
+        .fdf-card-body {
+          padding: 14px;
+          background: #fff;
+        }
+
+        .fdf-grid-3 {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+        }
+        .fdf-grid-2 {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+        .fdf-info-row {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .fdf-info-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: #185fa5;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+        .fdf-info-value {
+          font-size: 13px;
+          color: #374151;
+          font-weight: 500;
+        }
+        .fdf-muted {
+          font-size: 12px;
+          color: #9ca3af;
+          font-style: italic;
+          margin: 0;
+        }
+
+        /* ── Edit Mode ── */
+        .fdf-section {
+          margin-bottom: 18px;
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+        .fdf-section-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #185fa5;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 9px 14px;
+        }
+        .fdf-section-icon { color: #b5d4f4; }
+        .fdf-section > *:not(.fdf-section-title) { padding: 14px; }
+        .fdf-section > .fdf-row { padding: 14px; }
+
+        .fdf-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 0;
+        }
+        .fdf-col-third { flex: 1 1 calc(33.333% - 12px); min-width: 160px; }
+        .fdf-col-half  { flex: 1 1 calc(50% - 12px); min-width: 140px; }
+
+        .fdf-field {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          margin-bottom: 10px;
+        }
+        .fdf-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: #374151;
+          display: flex;
+          align-items: center;
+          gap: 3px;
+        }
+        .fdf-required { color: #e24b4a; font-size: 11px; }
+        .fdf-error { font-size: 11px; color: #e24b4a; margin-top: 2px; }
+
+        .fdf-input {
+          width: 100%;
+          padding: 7px 10px;
+          font-size: 12.5px;
+          color: #374151;
+          background: #fff;
+          border: 0.5px solid #d0dce9;
+          border-radius: 7px;
+          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
+          appearance: none;
+          -webkit-appearance: none;
+        }
+        .fdf-input:focus {
+          border-color: #185fa5;
+          box-shadow: 0 0 0 2.5px rgba(24,95,165,0.12);
+        }
+        .fdf-input-disabled {
+          background: #f0f5fb !important;
+          color: #9ca3af !important;
+          cursor: not-allowed;
+        }
+        .fdf-textarea { resize: vertical; min-height: 70px; }
+
+        /* Permissions button */
+        .fdf-perm-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #e6f1fb;
+          color: #185fa5;
+          border: 0.5px solid #b5d4f4;
+          border-radius: 8px;
+          padding: 7px 16px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.15s, filter 0.15s;
+        }
+        .fdf-perm-btn:hover { background: #d0e6f7; }
+
+        /* Footer buttons */
+        .fdf-btn-cancel {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: #fff;
+          color: #374151;
+          border: 0.5px solid #d0dce9;
+          border-radius: 8px;
+          padding: 7px 16px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .fdf-btn-cancel:hover { background: #f3f4f6; }
+
+        .fdf-btn-save {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: #185fa5;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 7px 18px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: filter 0.15s;
+        }
+        .fdf-btn-save:hover  { filter: brightness(0.9); }
+        .fdf-btn-save:disabled { opacity: 0.65; cursor: not-allowed; }
+
+        /* Scrollbar */
+        .modal-body::-webkit-scrollbar { width: 5px; }
+        .modal-body::-webkit-scrollbar-track { background: #f0f5fb; }
+        .modal-body::-webkit-scrollbar-thumb { background: #b5d4f4; border-radius: 10px; }
+
+        @media (max-width: 600px) {
+          .fdf-col-third, .fdf-col-half { flex: 1 1 100%; }
+          .fdf-grid-3, .fdf-grid-2 { grid-template-columns: 1fr; }
+        }
+      `}</style>
     </>
   )
 }

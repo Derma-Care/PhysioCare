@@ -1,15 +1,8 @@
 import React, { useEffect, useState } from "react"
 import {
-  CButton,
   CForm,
   CFormInput,
-  CFormSelect,
-  CModal,
-  CModalBody,
-  CModalHeader,
-  CModalTitle,
-  CRow,
-  CCol,
+  CFormLabel,
   CFormText,
   CTable,
   CTableHead,
@@ -17,28 +10,30 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CFormLabel,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CRow,
+  CCol,
 } from "@coreui/react"
 import Select from "react-select"
-
-
+import { Edit2, Eye, Trash2, Stethoscope, PlusCircle } from "lucide-react"
+import { ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
 import {
-  serviceData,
-  CategoryData,
-  postServiceData,
-  updateServiceData,
-  deleteServiceData,
-  subServiceData,
-  GetSubServices_ByClinicId,
-} from './ProcedureManagementAPI'
-
-import ConfirmationModal from '../../components/ConfirmationModal'
-import { useHospital } from "../Usecontext/HospitalContext"
-import { Edit2, Eye, Loader, Trash2 } from "lucide-react"
-import { addTherapy, deleteTherapy, getExercises, getTherapiesService, getTherapiesServicebytherapyId, updateTherapy } from "./TherapyServiceApi"
+  addTherapy,
+  deleteTherapy,
+  getExercises,
+  getTherapiesService,
+  getTherapiesServicebytherapyId,
+  updateTherapy,
+} from "./TherapyServiceApi"
+import ConfirmationModal from "../../components/ConfirmationModal"
 import LoadingIndicator from "../../Utils/loader"
 import { showCustomToast } from "../../Utils/Toaster"
+import { useHospital } from "../Usecontext/HospitalContext"
 import { useGlobalSearch } from "../Usecontext/GlobalSearchContext"
 
 export default function TherapyManagement() {
@@ -48,24 +43,28 @@ export default function TherapyManagement() {
   const [editId, setEditId] = useState(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [delloading, setDelLoading] = useState(false)
-  const [viewService, setViewService] = useState(null)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [serviceIdToDelete, setServiceIdToDelete] = useState(null)
   const [viewModal, setViewModal] = useState(false)
   const [viewLoading, setViewLoading] = useState(false)
-  const [viewData, setViewData] = useState([])
+  const [viewTherapy, setViewTherapy] = useState(null)
+  const [loading, setLoading] = useState(false)
   const [saveLoading, setSaveLoading] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+
+  const { searchQuery } = useGlobalSearch()
+  const { user } = useHospital()
+  const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
+
+  const clinicId = localStorage.getItem("HospitalId")
+  const branchId = localStorage.getItem("branchId")
+
   const [form, setForm] = useState({
     therapyName: "",
     exercisesIds: [],
     exercises: [],
-    // consentType: "",
   })
-  const { searchQuery } = useGlobalSearch()
   const [errors, setErrors] = useState({})
-  const clinicId = localStorage.getItem("HospitalId")
-  const branchId = localStorage.getItem("branchId")
+
   // ---------------- FETCH ----------------
   useEffect(() => {
     fetchData()
@@ -75,46 +74,35 @@ export default function TherapyManagement() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const res = await getTherapiesService(localStorage.getItem("HospitalId"), localStorage.getItem("branchId"))
-      console.log("Therapies", res.data)
+      const res = await getTherapiesService(clinicId, branchId)
       setList(res?.data?.data || [])
-
     } catch (error) {
       console.log("fetchData error", error)
-
     } finally {
       setLoading(false)
     }
-
   }
 
-  // const fetchexecersiceData = async (id) => {
-  //   try {
-  //     setLoading(true)
-  //     const res = await getTherapiesServicebytherapyId(id, clinicId, branchId)
-  //     console.log("getTherapiesServicebytherapyId", res.data)
-  //     setList(res?.data?.data || [])
-
-  //   } catch (error) {
-  //     console.log("fetchData error", error)
-
-  //   } finally {
-  //     setLoading(false)
-  //   }
-
-  // }
-  const [viewTherapy, setViewTherapy] = useState(null)
+  const fetchExercises = async () => {
+    try {
+      const res = await getExercises(clinicId, branchId)
+      const data = res?.data?.data || []
+      const options = data.map((item) => ({
+        value: item.therapyExercisesId,
+        label: item.name,
+      }))
+      setExerciseOptions(options)
+    } catch (err) {
+      console.log("fetchExercises error", err)
+    }
+  }
 
   const handleView = async (id) => {
     try {
       setViewModal(true)
       setViewLoading(true)
-
       const res = await getTherapiesServicebytherapyId(id, clinicId, branchId)
-
-      const data = res?.data?.data
-      setViewTherapy(data)
-
+      setViewTherapy(res?.data?.data)
     } catch (err) {
       console.log("view error", err)
     } finally {
@@ -122,39 +110,11 @@ export default function TherapyManagement() {
     }
   }
 
-  const handleCancelDelete = () => {
-    setIsModalVisible(false)
-
-  }
-  if (loading) {
-    return (
-      <LoadingIndicator />
-    )
-  }
-
-  const fetchExercises = async () => {
-
-    const res = await getExercises(clinicId, branchId)
-    console.log("Exercises", res.data.data)
-    // convert to react-select format
-    const data = res.data.data || []
-    const options = data.map((item) => ({
-      value: item.therapyExercisesId,
-      label: item.name,
-    }))
-
-    setExerciseOptions(options)
-  }
-
   // ---------------- VALIDATION ----------------
   const validate = () => {
     let err = {}
-
-    if (!form.therapyName) err.therapyName = "Required"
-    if (form.exercisesIds.length === 0)
-      err.exercisesIds = "Select at least one"
-    // if (!form.consentType) err.consentType = "Required"
-
+    if (!form.therapyName.trim()) err.therapyName = "Therapy name is required"
+    if (form.exercisesIds.length === 0) err.exercisesIds = "Select at least one exercise"
     setErrors(err)
     return Object.keys(err).length === 0
   }
@@ -162,18 +122,14 @@ export default function TherapyManagement() {
   // ---------------- SAVE ----------------
   const handleSave = async () => {
     if (!validate()) return
-
     try {
       setSaveLoading(true)
-
       const payload = {
-        clinicId: localStorage.getItem("HospitalId"),
-        branchId: localStorage.getItem("branchId"),
+        clinicId,
+        branchId,
         therapyName: form.therapyName,
         exerciseIds: form.exercisesIds,
-        // consentType: form.consentType,
       }
-
       if (editId) {
         await updateTherapy(editId, payload)
         showCustomToast("Therapy updated successfully!", { position: "top-right" }, "success")
@@ -181,199 +137,425 @@ export default function TherapyManagement() {
         await addTherapy(payload)
         showCustomToast("Therapy added successfully!", { position: "top-right" }, "success")
       }
-
       resetForm()
       fetchData()
-
     } catch (error) {
       console.error(error)
-
       showCustomToast("Something went wrong!", { position: "top-right" }, "error")
-
     } finally {
       setSaveLoading(false)
     }
   }
 
-  // ---------------- DELETE ----------------
-  const handleConfirmDelete = async () => {
-    console.log(serviceIdToDelete)
-    const hospitalId = localStorage.getItem('HospitalId')
-    try {
-      setDelLoading(true)
-      const result = await deleteTherapy(serviceIdToDelete, hospitalId)
-      console.log('Service deleted:', result)
-      showCustomToast('Therapy deleted successfully!', { position: 'top-right' }, 'success')
-
-      fetchData()
-    } catch (error) {
-      console.error('Error deleting Procedure:', error)
-    } finally {
-      setDelLoading(false)
-    }
-    setIsModalVisible(false)
-  }
-
   // ---------------- EDIT ----------------
   const handleEdit = (item) => {
     setEditId(item.id)
-
-    // ✅ FIX: map exerciseId correctly
     const selectedExercises = exerciseOptions.filter((opt) =>
-      (item.exercises || []).map(e => e.exerciseId).includes(opt.value)
+      (item.exercises || []).map((e) => e.exerciseId).includes(opt.value)
     )
-
     setForm({
       therapyName: item.therapyName,
       exercises: selectedExercises,
-      exercisesIds: selectedExercises.map(e => String(e.value)),
-      // consentType: String(item.consentType),
+      exercisesIds: selectedExercises.map((e) => String(e.value)),
     })
-
     setModal(true)
+  }
+
+  // ---------------- DELETE ----------------
+  const handleConfirmDelete = async () => {
+    try {
+      setDelLoading(true)
+      await deleteTherapy(serviceIdToDelete, clinicId)
+      showCustomToast("Therapy deleted successfully!", { position: "top-right" }, "success")
+      fetchData()
+    } catch (error) {
+      console.error("Error deleting therapy:", error)
+    } finally {
+      setDelLoading(false)
+      setIsModalVisible(false)
+    }
   }
 
   // ---------------- RESET ----------------
   const resetForm = () => {
-    setForm({
-      therapyName: "",
-      exercises: [],
-      // consentType: "",
-    })
+    setForm({ therapyName: "", exercises: [], exercisesIds: [] })
     setEditId(null)
     setModal(false)
     setErrors({})
   }
-  const { user } = useHospital()
-  const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
-  const handleServiceDelete = (id) => {
-    setServiceIdToDelete(id)
-    setIsModalVisible(true)
-  }
+
   const filteredList = list.filter((item) => {
     const search = searchQuery.toLowerCase()
-
     if (!search) return true
-
     return (
       (item.id || "").toString().toLowerCase().includes(search) ||
       (item.therapyName || "").toLowerCase().includes(search) ||
       (item.noExerciseIdCount || "").toString().includes(search)
     )
   })
+
+  // ─── Custom react-select styles ────────────────
+  const selectStyles = {
+    control: (base, state) => ({
+      ...base,
+      minHeight: "36px",
+      fontSize: "13px",
+      borderColor: state.isFocused ? "#185fa5" : errors.exercisesIds ? "#e24b4a" : "#ced4da",
+      borderWidth: "0.5px",
+      borderRadius: "7px",
+      boxShadow: state.isFocused ? "0 0 0 2px rgba(24,95,165,0.15)" : "none",
+      "&:hover": { borderColor: "#185fa5" },
+    }),
+    multiValue: (base) => ({
+      ...base,
+      background: "#e6f1fb",
+      borderRadius: "20px",
+      border: "0.5px solid #b5d4f4",
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      color: "#0c447c",
+      fontSize: "11px",
+      fontWeight: "500",
+      padding: "1px 6px",
+    }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: "#185fa5",
+      borderRadius: "0 20px 20px 0",
+      "&:hover": { background: "#b5d4f4", color: "#042c53" },
+    }),
+    option: (base, state) => ({
+      ...base,
+      fontSize: "13px",
+      backgroundColor: state.isSelected
+        ? "#185fa5"
+        : state.isFocused
+        ? "#e6f1fb"
+        : "transparent",
+      color: state.isSelected ? "#fff" : "#374151",
+    }),
+    placeholder: (base) => ({ ...base, fontSize: "13px", color: "#9ca3af" }),
+    menu: (base) => ({
+      ...base,
+      borderRadius: "7px",
+      border: "0.5px solid #d0dce9",
+      boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+      zIndex: 9999,
+    }),
+    menuList: (base) => ({ ...base, maxHeight: 200, overflowY: "auto" }),
+  }
+
+  // ─── Loading state ──────────────────────────────
+  if (loading) return <LoadingIndicator />
+
   return (
     <>
+      <ToastContainer />
 
+      {/* ── Page Header ─────────────────────────────── */}
+      <div className="tm-page-header">
+        <div className="tm-page-title-group">
+          <div className="tm-page-icon">
+            <Stethoscope size={20} />
+          </div>
+          <div>
+            <h4 className="tm-page-title">Therapy Management</h4>
+            <p className="tm-page-sub">
+              {filteredList.length} therapy{filteredList.length !== 1 ? "s" : ""} found
+            </p>
+          </div>
+        </div>
+        {can("Therapy Management", "create") && (
+          <button className="tm-add-btn" onClick={() => setModal(true)}>
+            <PlusCircle size={15} />
+            Add Therapy
+          </button>
+        )}
+      </div>
 
+      {/* ── TABLE ────────────────────────────────────── */}
+      <div className="tm-table-wrapper">
+        <CTable className="tm-table">
+          <CTableHead>
+            <CTableRow>
+              <CTableHeaderCell className="tm-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
+              <CTableHeaderCell className="tm-th">Therapy Name</CTableHeaderCell>
+              <CTableHeaderCell className="tm-th">No. of Exercises</CTableHeaderCell>
+              <CTableHeaderCell className="tm-th" style={{ width: 120 }}>Actions</CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
 
-      <div>
-        <CForm className="d-flex justify-content-end mb-3">
-          {can('Therapy Management', 'create') && (
-            <div
-              className=" w-100"
-              style={{
-                display: 'flex',
-                justifyContent: 'end',
-                alignContent: 'end',
-                alignItems: 'end',
-              }}
-            >
-              <CButton
-                style={{
-                  color: 'var(--color-black)',
-                  backgroundColor: 'var(--color-bgcolor)',
-                }}
-                onClick={() => setModal(true)}
-              >
-                Add Therapy
-              </CButton>
+          <CTableBody>
+            {filteredList.length === 0 ? (
+              <CTableRow>
+                <CTableDataCell colSpan={4}>
+                  <div className="tm-empty">
+                    <Stethoscope size={40} className="tm-empty-icon" />
+                    <p>No therapies found</p>
+                  </div>
+                </CTableDataCell>
+              </CTableRow>
+            ) : (
+              filteredList.map((item, index) => (
+                <CTableRow key={item.id} className="tm-tr">
+                  <CTableDataCell className="tm-td tm-td-num">{index + 1}</CTableDataCell>
+
+                  <CTableDataCell className="tm-td">
+                    <span className="tm-therapy-name">{item.therapyName}</span>
+                  </CTableDataCell>
+
+                  <CTableDataCell className="tm-td">
+                    <span className="tm-count-badge">{item.noExerciseIdCount} exercises</span>
+                  </CTableDataCell>
+
+                  <CTableDataCell className="tm-td">
+                    <div className="tm-actions">
+                      {can("Therapy Management", "read") && (
+                        <button
+                          className="tm-action-btn view"
+                          title="View"
+                          onClick={() => handleView(item.id)}
+                        >
+                          <Eye size={14} />
+                        </button>
+                      )}
+                      {can("Therapy Management", "update") && (
+                        <button
+                          className="tm-action-btn edit"
+                          title="Edit"
+                          onClick={() => handleEdit(item)}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      )}
+                      {can("Therapy Management", "delete") && (
+                        <button
+                          className="tm-action-btn del"
+                          title="Delete"
+                          onClick={() => {
+                            setServiceIdToDelete(item.id)
+                            setIsModalVisible(true)
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </CTableDataCell>
+                </CTableRow>
+              ))
+            )}
+          </CTableBody>
+        </CTable>
+      </div>
+
+      {/* ── ADD / EDIT MODAL ─────────────────────────── */}
+      <CModal
+        visible={modal}
+        onClose={resetForm}
+        backdrop="static"
+        alignment="center"
+        className="tm-custom-modal"
+      >
+        <CModalHeader className="tm-modal-header">
+          <CModalTitle className="tm-modal-title">
+            {editId ? "Edit" : "Add"} Therapy
+          </CModalTitle>
+        </CModalHeader>
+
+        <CModalBody className="tm-modal-body">
+          <CForm>
+            <CRow>
+              <CCol md={12}>
+                <div className="tm-field">
+                  <CFormLabel className="tm-label">
+                    Therapy Name <span className="tm-req">*</span>
+                  </CFormLabel>
+                  <CFormInput
+                    className={`tm-input${errors.therapyName ? " is-invalid" : ""}`}
+                    placeholder="e.g. Lumbar Spine Therapy"
+                    value={form.therapyName}
+                    onChange={(e) => setForm({ ...form, therapyName: e.target.value })}
+                  />
+                  <CFormText className="tm-err-msg">{errors.therapyName}</CFormText>
+                </div>
+              </CCol>
+
+              <CCol md={12}>
+                <div className="tm-field">
+                  <CFormLabel className="tm-label">
+                    Select Exercises <span className="tm-req">*</span>
+                  </CFormLabel>
+                  <Select
+                    options={exerciseOptions}
+                    isMulti
+                    isSearchable
+                    styles={selectStyles}
+                    placeholder="Search and select exercises..."
+                    value={form.exercises}
+                    onFocus={() => setDropdownOpen(true)}
+                    onBlur={() => setDropdownOpen(false)}
+                    onChange={(val) =>
+                      setForm({
+                        ...form,
+                        exercises: val,
+                        exercisesIds: val ? val.map((v) => String(v.value)) : [],
+                      })
+                    }
+                  />
+                  <CFormText className="tm-err-msg">{errors.exercisesIds}</CFormText>
+                </div>
+              </CCol>
+            </CRow>
+
+            <div className="tm-modal-footer">
+              <button type="button" className="tm-btn-secondary" onClick={resetForm}>
+                Cancel
+              </button>
+              <button type="button" className="tm-btn-primary" onClick={handleSave} disabled={saveLoading}>
+                {saveLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    {editId ? "Updating..." : "Saving..."}
+                  </>
+                ) : editId ? (
+                  "Update Therapy"
+                ) : (
+                  "Save Therapy"
+                )}
+              </button>
+            </div>
+          </CForm>
+        </CModalBody>
+      </CModal>
+
+      {/* ── VIEW MODAL ───────────────────────────────── */}
+      <CModal
+        visible={viewModal}
+        onClose={() => setViewModal(false)}
+        size="xl"
+        backdrop="static"
+        alignment="center"
+        className="tm-custom-modal"
+      >
+        <CModalHeader className="tm-modal-header">
+          <CModalTitle className="tm-modal-title">Therapy Details</CModalTitle>
+        </CModalHeader>
+
+        <CModalBody className="tm-modal-body tm-view-body">
+          {viewLoading ? (
+            <LoadingIndicator message="Loading therapy details..." />
+          ) : viewTherapy ? (
+            <>
+              {/* Summary cards */}
+              <div className="tm-summary-grid">
+                <div className="tm-summary-card">
+                  <span className="tm-summary-label">Therapy Name</span>
+                  <span className="tm-summary-value">{viewTherapy.therapyName}</span>
+                </div>
+                <div className="tm-summary-card">
+                  <span className="tm-summary-label">Therapy ID</span>
+                  <span className="tm-summary-value tm-id-pill">{viewTherapy.id}</span>
+                </div>
+                <div className="tm-summary-card">
+                  <span className="tm-summary-label">No. of Exercises</span>
+                  <span className="tm-summary-value">{viewTherapy.noExerciseIdCount}</span>
+                </div>
+              </div>
+
+              {/* Exercise table */}
+              <div className="tm-section-label">Exercises</div>
+              <div className="tm-ex-table-wrap">
+                <CTable bordered responsive className="tm-ex-table">
+                  <CTableHead>
+                    <CTableRow>
+                      <CTableHeaderCell className="tm-ex-th">#</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">Name</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">Image</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">Video</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">Session</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">Frequency</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">Sets</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">Reps</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">Price</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">GST</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">Other Tax</CTableHeaderCell>
+                      <CTableHeaderCell className="tm-ex-th">Total</CTableHeaderCell>
+                    </CTableRow>
+                  </CTableHead>
+                  <CTableBody>
+                    {(viewTherapy.exercises || []).map((ex, i) => (
+                      <CTableRow key={ex.id} className="tm-ex-tr">
+                        <CTableDataCell className="tm-ex-td tm-td-num">{i + 1}</CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">
+                          <span className="tm-ex-name">{ex.name}</span>
+                        </CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">
+                          {ex.image ? (
+                            <img
+                              src={atob(ex.image)}
+                              width={44}
+                              height={44}
+                              style={{ objectFit: "cover", borderRadius: "6px", border: "0.5px solid #d0dce9" }}
+                              alt={ex.name}
+                            />
+                          ) : (
+                            <span className="tm-no-media">—</span>
+                          )}
+                        </CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">
+                          {ex.video ? (
+                            <a
+                              href={atob(ex.video)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="tm-video-link"
+                            >
+                              ▶ View
+                            </a>
+                          ) : (
+                            <span className="tm-no-media">—</span>
+                          )}
+                        </CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">{ex.session || "—"}</CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">{ex.frequency || "—"}</CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">{ex.sets || "—"}</CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">{ex.repetitions || "—"}</CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">
+                          <span className="tm-price">₹{ex.pricePerSession}</span>
+                        </CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">{ex.gst}%</CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">{ex.otherTax}%</CTableDataCell>
+                        <CTableDataCell className="tm-ex-td">
+                          <span className="tm-total-price">₹{ex.totalPrice}</span>
+                        </CTableDataCell>
+                      </CTableRow>
+                    ))}
+                  </CTableBody>
+                </CTable>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+                <button className="tm-btn-secondary" onClick={() => setViewModal(false)}>
+                  Close
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="tm-empty">
+              <Stethoscope size={40} className="tm-empty-icon" />
+              <p>No data available</p>
             </div>
           )}
-        </CForm>
-      </div>
-      {/* TABLE */}
-      <CTable className="pink-table">
-        <CTableHead>
-          <CTableRow className="text-center">
-            <CTableHeaderCell>S.No</CTableHeaderCell>
-            <CTableHeaderCell>Therapy Name</CTableHeaderCell>
-            <CTableHeaderCell>No.Of Exercises</CTableHeaderCell>
-            {/* <CTableHeaderCell>Consent</CTableHeaderCell> */}
-            <CTableHeaderCell >Actions</CTableHeaderCell>
-          </CTableRow>
-        </CTableHead>
-        <CTableBody>
-          {filteredList.length > 0 ? (
-            filteredList.map((item, index) => (
-              <CTableRow key={item.id} className="text-center">
-                {/* <CTableDataCell>{item.id}</CTableDataCell> */}
-                <CTableDataCell>{index + 1}</CTableDataCell>
-                <CTableDataCell>{item.therapyName}</CTableDataCell>
-                <CTableDataCell>{item.noExerciseIdCount}</CTableDataCell>
-                {/* <CTableDataCell>{item.consentType}</CTableDataCell> */}
-                <CTableDataCell>
-                 <div  className="d-flex justify-content-center gap-2  ">  
-                  {can('Therapy Management', 'read') && (
-                      <button
-                        className="actionBtn"
-                        onClick={() => handleView(item.id)}
-                        title="View"
-                      >
-                        <Eye size={18} />
-                      </button>
-                    )}
-                    {can('Therapy Management', 'update') && (
-                      <button
-                        className="actionBtn"
-                        onClick={() => handleEdit(item)}
-                        title="Edit"
+        </CModalBody>
+      </CModal>
 
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                    )}
-
-                    {can('Therapy Management', 'delete') && (
-                      <button
-                        className="actionBtn"
-
-                        onClick={() => handleServiceDelete(item.id)}
-                        title="Delete"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    )}</div>
-                  
-
-                </CTableDataCell>
-                {/* <CTableDataCell>
-                <CButton size="sm" onClick={() => handleEdit(item)}>
-                  Edit
-                </CButton>
-                <CButton
-                  size="sm"
-                  color="danger"
-                  onClick={() => handleDelete(item.id)}
-                >
-                  Delete
-                </CButton>
-              </CTableDataCell> */}
-              </CTableRow>
-            ))) : (
-            <CTableRow>
-              <CTableDataCell colSpan={4} className="text-center">
-                No therapies Found
-              </CTableDataCell>
-            </CTableRow>
-          )
-
-          }
-        </CTableBody>
-      </CTable>
+      {/* ── DELETE CONFIRMATION ──────────────────────── */}
       <ConfirmationModal
         isVisible={isModalVisible}
         title="Delete Therapy"
-        message="Are you sure you want to delete this therapy?"
+        message="Are you sure you want to delete this therapy? This action cannot be undone."
         confirmText={
           delloading ? (
             <>
@@ -381,229 +563,351 @@ export default function TherapyManagement() {
               Deleting...
             </>
           ) : (
-            'Yes, Delete'
+            "Yes, Delete"
           )
         }
         cancelText="Cancel"
         confirmColor="danger"
         cancelColor="secondary"
         onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
+        onCancel={() => setIsModalVisible(false)}
       />
 
-      {/* MODAL */}
-      <CModal visible={modal} onClose={resetForm} className={`custom-modal ${dropdownOpen ? "expand-modal" : ""}`} backdrop="static">
-        <CModalHeader>
-          <CModalTitle>{editId ? "Edit" : "Add"} Therapy</CModalTitle>
-        </CModalHeader>
+      {/* ── STYLES ───────────────────────────────────── */}
+      <style>{`
+        /* ── Page Header ─────────────────────── */
+        .tm-page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 18px;
+          padding-bottom: 14px;
+          border-bottom: 0.5px solid #d0dce9;
+        }
+        .tm-page-title-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .tm-page-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background: #e6f1fb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #185fa5;
+          flex-shrink: 0;
+        }
+        .tm-page-title {
+          font-size: 17px;
+          font-weight: 600;
+          color: #0c447c;
+          margin: 0;
+        }
+        .tm-page-sub {
+          font-size: 12px;
+          color: #6b7280;
+          margin: 0;
+        }
+        .tm-add-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: #185fa5;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 9px 18px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(24, 95, 165, 0.2);
+          transition: background 0.15s, transform 0.1s;
+        }
+        .tm-add-btn:hover  { background: #0c447c; }
+        .tm-add-btn:active { transform: scale(0.97); }
 
-        <CModalBody>
-          <CForm>
-            <CRow>
+        /* ── Table ──────────────────────────── */
+        .tm-table-wrapper {
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          overflow: hidden;
+          margin-bottom: 12px;
+        }
+        .tm-table { margin-bottom: 0 !important; font-size: 13px; }
+        .tm-th {
+          background: #185fa5 !important;
+          color: #fff !important;
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          padding: 11px 14px !important;
+          white-space: nowrap;
+          border: none !important;
+        }
+        .tm-tr { transition: background 0.12s; }
+        .tm-tr:hover { background: #f0f5fb !important; }
+        .tm-td {
+          padding: 11px 14px !important;
+          vertical-align: middle !important;
+          font-size: 13px;
+          color: #374151;
+          border-bottom: 0.5px solid #eef2f7 !important;
+          border-top: none !important;
+        }
+        .tm-td-num { color: #9ca3af; font-size: 12px; }
 
-              {/* Therapy Name */}
-              <CCol md={12}>
-                <CFormLabel className="fw-bold">Therapy Name</CFormLabel>
-                <CFormInput
-                  placeholder="Therapy Name"
-                  value={form.therapyName}
-                  onChange={(e) =>
-                    setForm({ ...form, therapyName: e.target.value })
-                  }
-                />
-                {errors.therapyName && (
-                  <CFormText className="text-danger">
-                    {errors.therapyName}
-                  </CFormText>
-                )}
-              </CCol>
+        /* ── Therapy name ────────────────── */
+        .tm-therapy-name {
+          font-weight: 600;
+          font-size: 13px;
+          color: #0c447c;
+        }
 
-              {/* Exercise */}
-              <CCol md={12} className="mt-3">
-                <CFormLabel className="fw-bold">Select Exercises</CFormLabel>
-                <Select
-                  options={exerciseOptions}
-                  isMulti
-                  isSearchable
+        /* ── Count badge ─────────────────── */
+        .tm-count-badge {
+          background: #eaf3de;
+          color: #3b6d11;
+          border: 0.5px solid #c0dd97;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 10px;
+        }
 
-                  value={form.exercises}
-                  onFocus={() => setDropdownOpen(true)}
-                  onBlur={() => setDropdownOpen(false)}
-                  styles={{
-                    menuList: (base) => ({
-                      ...base,
-                      maxHeight: 200,   // 5 items
-                      overflowY: "auto"
-                    })
-                  }}
-                  onChange={(val) => {
-                    setForm({
-                      ...form,
-                      exercises: val, // UI
-                      exercisesIds: val ? val.map((v) => String(v.value)) : [], // API
-                    })
-                  }}
-                />
-                {errors.exercisesIds && (
-                  <CFormText className="text-danger">
-                    {errors.exercisesIds}
-                  </CFormText>
-                )}
-              </CCol>
+        /* ── Action buttons ─────────────── */
+        .tm-actions {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
+        .tm-action-btn {
+          width: 30px;
+          height: 30px;
+          border-radius: 7px;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: filter 0.12s, transform 0.1s;
+          flex-shrink: 0;
+        }
+        .tm-action-btn.view { background: #e6f1fb; color: #185fa5; }
+        .tm-action-btn.edit { background: #eaf3de; color: #3b6d11; }
+        .tm-action-btn.del  { background: #fcebeb; color: #a32d2d; }
+        .tm-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
+        .tm-action-btn:active { transform: scale(0.94); }
 
-              {/* Consent */}
-              {/* <CCol md={12} className="mt-3">
-                <CFormLabel className="fw-bold">Consent Type</CFormLabel>
-                <CFormSelect
-                  value={form.consentType}
-                  onChange={(e) =>
-                    setForm({ ...form, consentType: e.target.value })
-                  }
-                >
-                  <option value="">Select Consent</option>
-                  <option value="1">Generic</option>
-                  <option value="2">Therapy</option>
-                </CFormSelect>
-                {errors.consentType && (
-                  <CFormText className="text-danger">
-                    {errors.consentType}
-                  </CFormText>
-                )}
-              </CCol> */}
+        /* ── Empty state ─────────────────── */
+        .tm-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          padding: 40px 0;
+          color: #9ca3af;
+          font-size: 14px;
+        }
+        .tm-empty-icon { color: #d0dce9; }
 
-            </CRow>
+        /* ── Modal shared ─────────────────── */
+        .tm-custom-modal .modal-content {
+          border: 0.5px solid #d0dce9 !important;
+          border-radius: 12px !important;
+          overflow: hidden;
+        }
+        .tm-modal-header {
+          background: #185fa5 !important;
+          border-bottom: none !important;
+          padding: 16px 20px !important;
+        }
+        .tm-modal-title {
+          font-size: 15px !important;
+          font-weight: 700 !important;
+          color: #fff !important;
+        }
+        .tm-custom-modal .btn-close {
+          filter: brightness(0) invert(1);
+          opacity: 0.8;
+        }
+        .tm-modal-body {
+          background: #f7fafd !important;
+          padding: 20px !important;
+        }
+        .tm-view-body {
+          max-height: 78vh;
+          overflow-y: auto;
+        }
 
-            <div className="d-flex gap-2 justify-content-end">
-              {/* <CButton onClick={() => setIsModalVisible(false)} color="secondary">
-                Cancel
-              </CButton> */}
-              <CButton className="mt-3 ms-2" color="secondary" onClick={resetForm}>
-                Cancel
-              </CButton>
+        /* ── Form fields ──────────────────── */
+        .tm-field {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          margin-bottom: 14px;
+        }
+        .tm-label {
+          font-size: 12px;
+          font-weight: 500;
+          color: #374151;
+          margin-bottom: 2px;
+        }
+        .tm-req { color: #e24b4a; }
+        .tm-err-msg {
+          font-size: 11px;
+          color: #a32d2d !important;
+          margin-top: 2px;
+        }
+        .tm-input {
+          height: 36px;
+          font-size: 13px !important;
+          border: 0.5px solid #ced4da !important;
+          border-radius: 7px !important;
+          transition: border-color 0.15s, box-shadow 0.15s !important;
+        }
+        .tm-input:focus {
+          border-color: #185fa5 !important;
+          box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.15) !important;
+        }
+        .tm-input.is-invalid { border-color: #e24b4a !important; }
 
-              <CButton
-                onClick={handleSave}
-                style={{
-                  backgroundColor: 'var(--color-bgcolor)',
-                  color: 'var(--color-black)',
-                }}
-                className="mt-3 ms-2"
-              >
-                {saveLoading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" />
-                    {editId ? "Updating..." : "Saving..."}
-                  </>
-                ) : (
-                  editId ? "Update" : "Save"
-                )}
-              </CButton>
-            </div>
+        /* ── Modal footer ─────────────────── */
+        .tm-modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          margin-top: 18px;
+          padding-top: 14px;
+          border-top: 0.5px solid #d0dce9;
+        }
+        .tm-btn-primary {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #185fa5;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 9px 22px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.15s, transform 0.1s;
+          box-shadow: 0 2px 8px rgba(24, 95, 165, 0.2);
+        }
+        .tm-btn-primary:hover:not(:disabled)  { background: #0c447c; }
+        .tm-btn-primary:active:not(:disabled) { transform: scale(0.97); }
+        .tm-btn-primary:disabled              { opacity: 0.65; cursor: not-allowed; }
+        .tm-btn-secondary {
+          background: #fff;
+          color: #374151;
+          border: 0.5px solid #d0dce9;
+          border-radius: 8px;
+          padding: 9px 18px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .tm-btn-secondary:hover { background: #f0f5fb; }
 
-            {/* <CButton className="mt-3" onClick={handleSave}>
-              {editId ? "Update" : "Save"}
-            </CButton> */}
+        /* ── View modal — summary cards ────── */
+        .tm-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-bottom: 18px;
+        }
+        @media (max-width: 600px) {
+          .tm-summary-grid { grid-template-columns: 1fr; }
+        }
+        .tm-summary-card {
+          background: #fff;
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          padding: 12px 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .tm-summary-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .tm-summary-value {
+          font-size: 14px;
+          font-weight: 700;
+          color: #0c447c;
+        }
+        .tm-id-pill {
+          background: #e6f1fb;
+          color: #185fa5;
+          border: 0.5px solid #b5d4f4;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 10px;
+          display: inline-block;
+        }
 
+        /* ── View modal — section label ────── */
+        .tm-section-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 8px;
+        }
 
-          </CForm>
-        </CModalBody>
-      </CModal>
-      <CModal visible={viewModal} onClose={() => setViewModal(false)} size="xl" backdrop="static" className="custom-modal">
-        <CModalHeader>
-          <CModalTitle>Therapy Details</CModalTitle>
-        </CModalHeader>
-
-        <CModalBody>
-          {viewLoading ? (
-            <LoadingIndicator message="Loading..." />
-          ) : viewTherapy ? (
-            <>
-              {/* 🔹 Therapy Info */}
-              <div className="mb-3">
-                <h5>Therapy Name: {viewTherapy.therapyName}</h5>
-                <div><strong>Therapy ID: </strong>{viewTherapy.id}</div>
-                <div><strong>No. of Exercises: </strong>{viewTherapy.noExerciseIdCount}</div>
-                {/* <div><strong>Consent Type: </strong>{viewTherapy.consentType}</div> */}
-              </div>
-
-              {/* 🔹 Exercise Table */}
-              <CTable bordered responsive hover className="pink-table">
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell>#</CTableHeaderCell>
-                    <CTableHeaderCell>Name</CTableHeaderCell>
-                    <CTableHeaderCell>Image</CTableHeaderCell>
-                    <CTableHeaderCell>Video</CTableHeaderCell>
-                    <CTableHeaderCell>Session</CTableHeaderCell>
-                    {/* <CTableHeaderCell>Duration</CTableHeaderCell> */}
-                    <CTableHeaderCell>Frequency</CTableHeaderCell>
-                    <CTableHeaderCell>Sets</CTableHeaderCell>
-                    <CTableHeaderCell>Reps</CTableHeaderCell>
-                    <CTableHeaderCell>Price</CTableHeaderCell>
-                    <CTableHeaderCell>GST</CTableHeaderCell>
-                    <CTableHeaderCell>Other Tax</CTableHeaderCell>
-                    <CTableHeaderCell>Total</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-
-                <CTableBody>
-                  {viewTherapy.exercises?.map((ex, i) => (
-                    <CTableRow key={ex.id}>
-                      <CTableDataCell>{i + 1}</CTableDataCell>
-
-                      <CTableDataCell>{ex.name}</CTableDataCell>
-
-                      {/* Image */}
-                      <CTableDataCell>
-                        {ex.image ? (
-                          <img
-                            src={atob(ex.image)}
-                            width="50"
-                            height="50"
-                            style={{ objectFit: "cover", borderRadius: "6px" }}
-                          />
-                        ) : (
-                          "-"
-                        )}
-                      </CTableDataCell>
-
-                      {/* Video */}
-                      <CTableDataCell>
-                        {ex.video ? (
-                          <a
-                            href={atob(ex.video)}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ color: "blue" }}
-                          >
-                            ▶ View
-                          </a>
-                        ) : (
-                          "-"
-                        )}
-                      </CTableDataCell>
-
-                      <CTableDataCell>{ex.session}</CTableDataCell>
-                      {/* <CTableDataCell>{ex.duration || "-"}</CTableDataCell> */}
-                      <CTableDataCell>{ex.frequency}</CTableDataCell>
-                      <CTableDataCell>{ex.sets}</CTableDataCell>
-                      <CTableDataCell>{ex.repetitions}</CTableDataCell>
-
-                      {/* Pricing */}
-                      <CTableDataCell>₹{ex.pricePerSession}</CTableDataCell>
-                      <CTableDataCell>{ex.gst}%</CTableDataCell>
-                      <CTableDataCell>{ex.otherTax}%</CTableDataCell>
-                      <CTableDataCell>₹{ex.totalPrice}</CTableDataCell>
-                    </CTableRow>
-                  ))}
-                </CTableBody>
-              </CTable>
-            </>
-          ) : (
-            <p className="text-center">No Data</p>
-          )}
-        </CModalBody>
-      </CModal>
+        /* ── Exercise table ───────────────── */
+        .tm-ex-table-wrap {
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          overflow: hidden;
+          overflow-x: auto;
+        }
+        .tm-ex-table { margin-bottom: 0 !important; font-size: 12px !important; }
+        .tm-ex-th {
+          background: #185fa5 !important;
+          color: #fff !important;
+          font-size: 11px !important;
+          font-weight: 600 !important;
+          padding: 9px 12px !important;
+          white-space: nowrap;
+          border: none !important;
+        }
+        .tm-ex-tr { transition: background 0.1s; }
+        .tm-ex-tr:hover { background: #f0f5fb !important; }
+        .tm-ex-td {
+          font-size: 12px !important;
+          padding: 9px 12px !important;
+          vertical-align: middle !important;
+          border-color: #eef2f7 !important;
+          color: #374151;
+        }
+        .tm-ex-name { font-weight: 600; color: #0c447c; }
+        .tm-no-media { color: #9ca3af; }
+        .tm-video-link {
+          color: #185fa5;
+          font-weight: 500;
+          text-decoration: none;
+          font-size: 12px;
+        }
+        .tm-video-link:hover { text-decoration: underline; color: #0c447c; }
+        .tm-price { color: #374151; font-weight: 500; }
+        .tm-total-price {
+          color: #3b6d11;
+          font-weight: 700;
+        }
+      `}</style>
     </>
   )
 }

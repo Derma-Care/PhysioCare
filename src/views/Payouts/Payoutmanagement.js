@@ -1,38 +1,26 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
-  CContainer,
-  CRow,
-  CCol,
-  CInputGroup,
-  CFormInput,
-  CInputGroupText,
   CTable,
   CTableHead,
   CTableRow,
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CButton,
   CModal,
   CModalHeader,
   CModalTitle,
   CModalBody,
 } from '@coreui/react'
-import CIcon from '@coreui/icons-react'
-import { cilSearch } from '@coreui/icons'
-import { ToastContainer, toast } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
+import { ToastContainer } from 'react-toastify'
 import { useHospital } from '../Usecontext/HospitalContext'
 import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
-import { Edit2, Eye, Trash2 } from 'lucide-react'
+import { Eye, Wallet } from 'lucide-react'
 import LoadingIndicator from '../../Utils/loader'
 import { showCustomToast } from '../../Utils/Toaster'
 import Pagination from '../../Utils/Pagination'
 
-// ✅ Dummy API methods
-// replace these with your real API methods
+// ── API (replace with real) ───────────────────────────────
 const Get_AllPayoutsData = async () => {
-  // simulate API delay
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
@@ -69,87 +57,31 @@ const Get_AllPayoutsData = async () => {
           },
         ],
       })
-    }, 2000) // 2s delay to simulate loading
-  })
-}
-
-const postPayoutsData = async (data) => {
-  // simulate post
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ data: { ...data, bookingId: 'NEW-BKG' } })
-    }, 500)
+    }, 2000)
   })
 }
 
 const PayoutManagement = () => {
-  // ✅ Sample initial data to show immediately in UI
-  const samplePayouts = [
-    {
-      transactionId: 'TXN-1001',
-      bookingId: 'BKG-001',
-      billingName: 'Local User1',
-      amount: '1200',
-      paymentMethod: 'Cash',
-      userEmail: 'local1@example.com',
-      userMobile: '9876543210',
-      billingAddress: 'Hyderabad, India',
-    },
-    {
-      transactionId: 'TXN-1002',
-      bookingId: 'BKG-002',
-      billingName: 'Local User2',
-      amount: '1800',
-      paymentMethod: 'Card',
-      userEmail: 'local2@example.com',
-      userMobile: '9876543211',
-      billingAddress: 'Mumbai, India',
-    },
-    {
-      transactionId: 'TXN-1003',
-      bookingId: 'BKG-003',
-      billingName: 'Local User3',
-      amount: '2000',
-      paymentMethod: 'UPI',
-      userEmail: 'local3@example.com',
-      userMobile: '9876543212',
-      billingAddress: 'Delhi, India',
-    },
-  ]
-
-  const [payouts, setPayouts] = useState(samplePayouts) // ✅ start with sample data
-  const [search, setSearch] = useState('')
-  const [viewData, setViewData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const { searchQuery, setSearchQuery } = useGlobalSearch()
+  const [payouts, setPayouts]     = useState([])
+  const [viewData, setViewData]   = useState(null)
+  const [loading, setLoading]     = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
-  const [formData, setFormData] = useState({
-    transactionId: '',
-    amount: '',
-    paymentMethod: '',
-    paymentStatus: '',
-    userEmail: '',
-    userMobile: '',
-    billingName: '',
-    billingAddress: '',
-  })
 
-  const { user } = useHospital()
+  const { searchQuery } = useGlobalSearch()
+  const { user }        = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
-  // ✅ Fetch server payouts
+
+  // ── FETCH ──────────────────────────────────
   useEffect(() => {
     const fetchPayouts = async () => {
       try {
         setLoading(true)
         const result = await Get_AllPayoutsData()
-        // Merge or replace sample data with server data:
-        // If you want to replace: use setPayouts(result.data)
-        // If you want to append: use [...payouts, ...result.data]
-        // setPayouts((prev) => [...prev, ...(result?.data ?? [])])
         setPayouts(result?.data ?? [])
-      } catch (error) {
-        console.error('Failed to fetch payouts:', error)
+      } catch (err) {
+        console.error('Failed to fetch payouts:', err)
+        showCustomToast('Failed to load payouts.', 'error')
       } finally {
         setLoading(false)
       }
@@ -157,37 +89,7 @@ const PayoutManagement = () => {
     fetchPayouts()
   }, [])
 
-  const handleAdd = async () => {
-    if (!formData.amount || !formData.paymentMethod || !formData.userEmail) {
-      showCustomToast('Fill all required fields', 'error')
-      return
-    }
-    try {
-      const res = await postPayoutsData(formData)
-      setPayouts([res.data, ...payouts])
-      showCustomToast('Added successfully', 'success')
-      setFormData({
-        transactionId: '',
-        amount: '',
-        paymentMethod: '',
-        paymentStatus: '',
-        userEmail: '',
-        userMobile: '',
-        billingName: '',
-        billingAddress: '',
-      })
-    } catch (err) {
-      // showCustomToast(err?.response?.data?.message || 'Add failed', 'error')
-    }
-  }
-
-  // const filteredData = (payouts || []).filter(
-  //   (item) =>
-  //     item.billingName?.toLowerCase().includes(search.toLowerCase()) ||
-  //     item.userEmail?.toLowerCase().includes(search.toLowerCase()) ||
-  //     item.userMobile?.toLowerCase().includes(search.toLowerCase()),
-  // )
-
+  // ── FILTER + PAGINATE ─────────────────────
   const filteredData = React.useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
     if (!q) return payouts
@@ -196,77 +98,115 @@ const PayoutManagement = () => {
     )
   }, [searchQuery, payouts])
 
-  const displayData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+  const displayData = filteredData.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage,
+  )
+
+  if (loading) return <LoadingIndicator message="Loading payouts..." />
 
   return (
-    <CContainer className="p-4">
+    <>
       <ToastContainer />
 
-      <CRow className="mb-3 align-items-center">
-        <CCol md={6}>
-          {' '}
-          <strong style={{ color: 'var(--color-black)' }}>Transaction List</strong>
-        </CCol>
-        <CCol md={6} className="text-end">
-          <strong style={{ color: 'var(--color-black)' }}>
-            No. of Payouts: {filteredData.length}
-          </strong>
-        </CCol>
-      </CRow>
-      {loading ? (
-        <div className="d-flex justify-content-center align-items-center">
-          <LoadingIndicator message="Loading payouts..." />
+      {/* ── Page Header ───────────────────────── */}
+      <div className="po-page-header">
+        <div className="po-page-title-group">
+          <div className="po-page-icon">
+            <Wallet size={20} />
+          </div>
+          <div>
+            <h4 className="po-page-title">Payout Management</h4>
+            <p className="po-page-sub">
+              {filteredData.length} transaction{filteredData.length !== 1 ? 's' : ''} found
+            </p>
+          </div>
         </div>
-      ) : (
-        <CTable striped hover responsive>
+
+        {/* Total amount summary pill */}
+        <div className="po-summary-pill">
+          <span className="po-summary-label">Total Records</span>
+          <span className="po-summary-count">{filteredData.length}</span>
+        </div>
+      </div>
+
+      {/* ── TABLE ─────────────────────────────── */}
+      <div className="po-table-wrapper">
+        <CTable className="po-table">
           <CTableHead>
-            <CTableRow className="pink-table  w-auto">
-              <CTableHeaderCell>S.No</CTableHeaderCell>
-              <CTableHeaderCell>Booking ID</CTableHeaderCell>
-              <CTableHeaderCell>Billing Name</CTableHeaderCell>
-              <CTableHeaderCell>Amount</CTableHeaderCell>
-              <CTableHeaderCell>Payment Method</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
+            <CTableRow>
+              <CTableHeaderCell className="po-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
+              <CTableHeaderCell className="po-th">Booking ID</CTableHeaderCell>
+              <CTableHeaderCell className="po-th">Billing Name</CTableHeaderCell>
+              <CTableHeaderCell className="po-th">Amount</CTableHeaderCell>
+              <CTableHeaderCell className="po-th">Payment Method</CTableHeaderCell>
+              <CTableHeaderCell className="po-th" style={{ width: 90 }}>Actions</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
 
-          <CTableBody className="pink-table">
-            {displayData.length > 0 ? (
+          <CTableBody>
+            {displayData.length === 0 ? (
+              <CTableRow>
+                <CTableDataCell colSpan={6}>
+                  <div className="po-empty">
+                    <Wallet size={40} className="po-empty-icon" />
+                    <p>
+                      {searchQuery
+                        ? `No payouts found matching "${searchQuery}"`
+                        : 'No payouts found.'}
+                    </p>
+                  </div>
+                </CTableDataCell>
+              </CTableRow>
+            ) : (
               displayData.map((p, index) => (
-                <CTableRow key={`${p.bookingId}-${index}`}>
-                  <CTableDataCell>{(currentPage - 1) * rowsPerPage + index + 1}</CTableDataCell>
-                  <CTableDataCell>{p.bookingId}</CTableDataCell>
-                  <CTableDataCell>{p.billingName}</CTableDataCell>
-                  <CTableDataCell>{p.amount}</CTableDataCell>
-                  <CTableDataCell>{p.paymentMethod}</CTableDataCell>
+                <CTableRow key={`${p.bookingId}-${index}`} className="po-tr">
+                  <CTableDataCell className="po-td po-td-num">
+                    {(currentPage - 1) * rowsPerPage + index + 1}
+                  </CTableDataCell>
 
-                  <CTableDataCell className="text-end">
-                    <div className="d-flex justify-content-end gap-2">
+                  <CTableDataCell className="po-td">
+                    <span className="po-booking-id">{p.bookingId}</span>
+                  </CTableDataCell>
+
+                  <CTableDataCell className="po-td">
+                    <span className="po-name">{p.billingName}</span>
+                  </CTableDataCell>
+
+                  <CTableDataCell className="po-td">
+                    <span className="po-amount">{p.amount}</span>
+                  </CTableDataCell>
+
+                  <CTableDataCell className="po-td po-muted">
+                    {p.paymentMethod || '—'}
+                  </CTableDataCell>
+
+                  <CTableDataCell className="po-td">
+                    <div className="po-actions">
                       {can('Payouts', 'read') && (
-                        <button className="actionBtn" onClick={() => setViewData(p)} title="View">
-                          <Eye size={18} />
+                        <button
+                          className="po-action-btn view"
+                          title="View"
+                          onClick={() => setViewData(p)}
+                        >
+                          <Eye size={14} />
                         </button>
                       )}
                     </div>
                   </CTableDataCell>
                 </CTableRow>
               ))
-            ) : (
-              <CTableRow>
-                <CTableDataCell colSpan={6} className="text-center text-danger">
-                  No payouts found.
-                </CTableDataCell>
-              </CTableRow>
             )}
           </CTableBody>
         </CTable>
-      )}
+      </div>
 
+      {/* Pagination */}
       {filteredData.length > 0 && (
-        <div className="mb-3  mt-3">
+        <div className="mt-3 mb-3">
           <Pagination
             currentPage={currentPage}
-            totalPages={Math.ceil(displayData.length / rowsPerPage)}
+            totalPages={Math.ceil(filteredData.length / rowsPerPage)}
             pageSize={rowsPerPage}
             onPageChange={setCurrentPage}
             onPageSizeChange={setRowsPerPage}
@@ -274,41 +214,304 @@ const PayoutManagement = () => {
         </div>
       )}
 
-      {/* View Modal */}
+      {/* ── VIEW MODAL ────────────────────────── */}
       <CModal
         visible={!!viewData}
         onClose={() => setViewData(null)}
         alignment="center"
         backdrop="static"
+        className="po-custom-modal"
       >
-        <CModalHeader>
-          <CModalTitle>Transaction Details</CModalTitle>
+        <CModalHeader className="po-modal-header">
+          <CModalTitle className="po-modal-title">Transaction Details</CModalTitle>
         </CModalHeader>
-        <CModalBody>
-          <p>
-            <strong>Transaction ID:</strong> {viewData?.transactionId}
-          </p>
-          <p>
-            <strong>User Email:</strong> {viewData?.userEmail}
-          </p>
-          <p>
-            <strong>Mobile:</strong> {viewData?.userMobile}
-          </p>
-          <p>
-            <strong>Amount:</strong> {viewData?.amount}
-          </p>
-          <p>
-            <strong>Payment Method:</strong> {viewData?.paymentMethod}
-          </p>
-          <p>
-            <strong>Billing Name:</strong> {viewData?.billingName}
-          </p>
-          <p>
-            <strong>Billing Address:</strong> {viewData?.billingAddress}
-          </p>
+
+        <CModalBody className="po-modal-body">
+          {viewData && (
+            <>
+              <div className="po-detail-grid">
+                <div className="po-detail-card po-full">
+                  <span className="po-detail-label">Billing Name</span>
+                  <span className="po-detail-value">{viewData.billingName}</span>
+                </div>
+                <div className="po-detail-card">
+                  <span className="po-detail-label">Transaction ID</span>
+                  <span className="po-detail-value po-id-pill">{viewData.transactionId}</span>
+                </div>
+                <div className="po-detail-card">
+                  <span className="po-detail-label">Booking ID</span>
+                  <span className="po-detail-value po-id-pill">{viewData.bookingId}</span>
+                </div>
+                <div className="po-detail-card">
+                  <span className="po-detail-label">Amount</span>
+                  <span className="po-detail-value po-amount-lg">{viewData.amount}</span>
+                </div>
+                <div className="po-detail-card">
+                  <span className="po-detail-label">Payment Method</span>
+                  <span className="po-detail-value">{viewData.paymentMethod}</span>
+                </div>
+                <div className="po-detail-card">
+                  <span className="po-detail-label">Email</span>
+                  <span className="po-detail-value">{viewData.userEmail}</span>
+                </div>
+                <div className="po-detail-card">
+                  <span className="po-detail-label">Mobile</span>
+                  <span className="po-detail-value">{viewData.userMobile}</span>
+                </div>
+                <div className="po-detail-card po-full">
+                  <span className="po-detail-label">Billing Address</span>
+                  <span className="po-detail-value po-address">{viewData.billingAddress}</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+                <button className="po-btn-secondary" onClick={() => setViewData(null)}>
+                  Close
+                </button>
+              </div>
+            </>
+          )}
         </CModalBody>
       </CModal>
-    </CContainer>
+
+      {/* ── STYLES ──────────────────────────────── */}
+      <style>{`
+        /* Page Header */
+        .po-page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 18px;
+          padding-bottom: 14px;
+          border-bottom: 0.5px solid #d0dce9;
+        }
+        .po-page-title-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .po-page-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background: #e6f1fb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #185fa5;
+          flex-shrink: 0;
+        }
+        .po-page-title {
+          font-size: 17px;
+          font-weight: 600;
+          color: #0c447c;
+          margin: 0;
+        }
+        .po-page-sub {
+          font-size: 12px;
+          color: #6b7280;
+          margin: 0;
+        }
+
+        /* Summary pill */
+        .po-summary-pill {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #e6f1fb;
+          border: 0.5px solid #b5d4f4;
+          border-radius: 20px;
+          padding: 6px 16px;
+        }
+        .po-summary-label {
+          font-size: 12px;
+          color: #185fa5;
+          font-weight: 500;
+        }
+        .po-summary-count {
+          font-size: 13px;
+          font-weight: 700;
+          color: #0c447c;
+        }
+
+        /* Table */
+        .po-table-wrapper {
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          overflow: hidden;
+          overflow-x: auto;
+          margin-bottom: 12px;
+        }
+        .po-table { margin-bottom: 0 !important; font-size: 13px; }
+        .po-th {
+          background: #185fa5 !important;
+          color: #fff !important;
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          padding: 11px 14px !important;
+          white-space: nowrap;
+          border: none !important;
+        }
+        .po-tr { transition: background 0.12s; }
+        .po-tr:hover { background: #f0f5fb !important; }
+        .po-td {
+          padding: 11px 14px !important;
+          vertical-align: middle !important;
+          font-size: 13px;
+          color: #374151;
+          border-bottom: 0.5px solid #eef2f7 !important;
+          border-top: none !important;
+        }
+        .po-td-num { color: #9ca3af; font-size: 12px; }
+        .po-muted   { color: #6b7280; }
+
+        /* Cell values */
+        .po-booking-id {
+          font-size: 12px;
+          color: #185fa5;
+          font-weight: 600;
+          background: #e6f1fb;
+          border: 0.5px solid #b5d4f4;
+          border-radius: 20px;
+          padding: 2px 10px;
+        }
+        .po-name {
+          font-weight: 600;
+          color: #0c447c;
+        }
+        .po-amount {
+          font-weight: 700;
+          color: #3b6d11;
+        }
+
+        /* Action buttons */
+        .po-actions {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
+        .po-action-btn {
+          width: 30px;
+          height: 30px;
+          border-radius: 7px;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: filter 0.12s, transform 0.1s;
+          flex-shrink: 0;
+        }
+        .po-action-btn.view { background: #e6f1fb; color: #185fa5; }
+        .po-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
+        .po-action-btn:active { transform: scale(0.94); }
+
+        /* Empty state */
+        .po-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          padding: 40px 0;
+          color: #9ca3af;
+          font-size: 14px;
+        }
+        .po-empty-icon { color: #d0dce9; }
+
+        /* Modal */
+        .po-custom-modal .modal-content {
+          border: 0.5px solid #d0dce9 !important;
+          border-radius: 12px !important;
+          overflow: hidden;
+        }
+        .po-modal-header {
+          background: #185fa5 !important;
+          border-bottom: none !important;
+          padding: 16px 20px !important;
+        }
+        .po-modal-title {
+          font-size: 15px !important;
+          font-weight: 700 !important;
+          color: #fff !important;
+        }
+        .po-custom-modal .btn-close {
+          filter: brightness(0) invert(1);
+          opacity: 0.8;
+        }
+        .po-modal-body {
+          background: #f7fafd !important;
+          padding: 20px !important;
+        }
+
+        /* Detail grid */
+        .po-detail-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+          margin-bottom: 4px;
+        }
+        .po-full { grid-column: 1 / -1; }
+        .po-detail-card {
+          background: #fff;
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          padding: 10px 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .po-detail-label {
+          font-size: 10px;
+          font-weight: 600;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .po-detail-value {
+          font-size: 13px;
+          font-weight: 600;
+          color: #0c447c;
+          word-break: break-word;
+        }
+        .po-id-pill {
+          background: #e6f1fb;
+          color: #185fa5;
+          border: 0.5px solid #b5d4f4;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 10px;
+          display: inline-block;
+        }
+        .po-amount-lg {
+          font-size: 16px;
+          font-weight: 700;
+          color: #3b6d11;
+        }
+        .po-address {
+          font-size: 12px;
+          font-weight: 400;
+          color: #374151;
+          line-height: 1.5;
+        }
+
+        /* Close button */
+        .po-btn-secondary {
+          background: #fff;
+          color: #374151;
+          border: 0.5px solid #d0dce9;
+          border-radius: 8px;
+          padding: 9px 18px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .po-btn-secondary:hover { background: #f0f5fb; }
+      `}</style>
+    </>
   )
 }
 

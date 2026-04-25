@@ -1,10 +1,7 @@
 import React from 'react'
 import { useLocation } from 'react-router-dom'
-
 import routes from '../routes'
-
 import { CBreadcrumb, CBreadcrumbItem } from '@coreui/react'
-import { COLORS } from '../Constant/Themes'
 import BackButton from '../views/widgets/BackButton'
 
 const AppBreadcrumb = () => {
@@ -32,28 +29,55 @@ const AppBreadcrumb = () => {
   }
 
   const breadcrumbs = getBreadcrumbs(currentLocation)
-  const istheraphist = localStorage.getItem('role')
+
+  const linkStyle = (color) => ({
+    color: color,
+    textDecoration: 'none',
+    fontSize: '0.775rem',
+    fontWeight: 400,
+  })
 
   return (
-    <div className="d-flex justify-content-between align-items-center align-content-center  w-100">
-      <CBreadcrumb className="my-0 custom-breadcrumb mb-0">
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        padding: '0 4px',
+      }}
+    >
+      <CBreadcrumb className="my-0 mb-0" style={{ fontSize: '0.775rem', margin: 0 }}>
 
-        <CBreadcrumbItem href="/dashboard" >Home</CBreadcrumbItem>
+        <CBreadcrumbItem>
+          {React.createElement(
+            'a',
+            { href: '/dashboard', style: { ...linkStyle('#ffffff'), fontWeight: 500 } },
+            'Home'
+          )}
+        </CBreadcrumbItem>
 
+        {breadcrumbs.map((breadcrumb, index) =>
+          breadcrumb.active ? (
+            <CBreadcrumbItem key={index} active>
+              <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.775rem', fontWeight: 600 }}>
+                {breadcrumb.name}
+              </span>
+            </CBreadcrumbItem>
+          ) : (
+            <CBreadcrumbItem key={index}>
+              {React.createElement(
+                'a',
+                { href: breadcrumb.pathname, style: linkStyle('rgba(255,255,255,0.65)') },
+                breadcrumb.name
+              )}
+            </CBreadcrumbItem>
+          )
+        )}
 
-        {breadcrumbs.map((breadcrumb, index) => (
-          <CBreadcrumbItem
-            key={index}
-            {...(breadcrumb.active ? { active: true } : { href: breadcrumb.pathname })}
-            style={{ color: 'var(--color-black)' }}
-          >
-            {breadcrumb.name}
-          </CBreadcrumbItem>
-        ))}
       </CBreadcrumb>
 
-      {/* 🟢 Back Button aligned at the right end */}
-      <div className="ms-auto ">
+      <div className="ms-auto">
         <BackButton />
       </div>
     </div>

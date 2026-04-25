@@ -21,7 +21,7 @@ import {
 import Select from "react-select"
 import ConfirmationModal from "../../components/ConfirmationModal"
 import { useHospital } from "../Usecontext/HospitalContext"
-import { Edit2, Eye, Trash2 } from "lucide-react"
+import { Edit2, Eye, Trash2, Package, PackagePlus } from "lucide-react"
 import {
   addTherapy,
   deleteTherapy,
@@ -65,61 +65,40 @@ export default function PackagesManagement() {
     fetchPrograms()
     fetchData()
   }, [])
+
   const handleView = async (item) => {
     try {
       const clinicId = localStorage.getItem("HospitalId")
       const branchId = localStorage.getItem("branchId")
-
-      const packageId = item.packageId // ✅ FIX
-
-      console.log("Package ID:", packageId)
-
-      const res = await getTherapiesServicebytherapyId(
-        packageId,   // ✅ pass correct id
-        clinicId,
-        branchId
-      )
-
+      const packageId = item.packageId
+      const res = await getTherapiesServicebytherapyId(packageId, clinicId, branchId)
       setSelectedPackage(res?.data?.data)
       setViewModal(true)
-
     } catch (err) {
       console.log("VIEW ERROR:", err.response?.data)
     }
   }
 
-
-
   const fetchPrograms = async () => {
     try {
       const hospitalId = localStorage.getItem("HospitalId")
       const branchId = localStorage.getItem("branchId")
-
       const res = await getProgramService(hospitalId, branchId)
-
-      console.log("Programs:", res?.data?.data)
-
       const options = (res?.data?.data || []).map((item) => ({
-        value: item.id,          // ✅ program id
-        label: item.programName, // ✅ program name
+        value: item.id,
+        label: item.programName,
       }))
-
       setExerciseOptions(options)
     } catch (error) {
       console.error("Error fetching programs:", error)
     }
   }
+
   const fetchData = async () => {
     try {
       const clinicId = localStorage.getItem("HospitalId")
       const branchId = localStorage.getItem("branchId")
-
-      console.log("Fetching with:", clinicId, branchId)
-
       const res = await getTherapiesService(clinicId, branchId)
-
-      console.log("API Response:", res.data)
-
       setList(res?.data?.data || [])
     } catch (err) {
       console.log("GET ERROR:", err.response?.data)
@@ -129,23 +108,8 @@ export default function PackagesManagement() {
   // ---------------- VALIDATION ----------------
   const validate = () => {
     let err = {}
-
-    if (!form.packageName.trim()) err.packageName = "Required"
-
-    if (form.programIds.length === 0)
-      err.programIds = "Select at least one"
-
-    // if (!form.offerType) err.offerType = "Required"
-
-    // if (form.discountPercentage === "") {
-    //   err.discountPercentage = "Required"
-    // } else if (Number(form.discountPercentage) < 0) {
-    //   err.discountPercentage = "Cannot be negative"
-    // }
-
-    // if (!form.startOfferDate) err.startOfferDate = "Required"
-    // if (!form.endOfferDate) err.endOfferDate = "Required"
-
+    if (!form.packageName.trim()) err.packageName = "Package name is required"
+    if (form.programIds.length === 0) err.programIds = "Select at least one program"
     if (
       form.startOfferDate &&
       form.endOfferDate &&
@@ -153,15 +117,13 @@ export default function PackagesManagement() {
     ) {
       err.endOfferDate = "End date must be after start date"
     }
-
     setErrors(err)
     return Object.keys(err).length === 0
   }
 
-
   // ---------------- SAVE ----------------
   const handleSave = async () => {
-
+    if (!validate()) return
     const payload = {
       clinicId: localStorage.getItem("HospitalId"),
       branchId: localStorage.getItem("branchId"),
@@ -170,36 +132,27 @@ export default function PackagesManagement() {
       offerType: form.offerType,
       startOfferDate: form.startOfferDate,
       endOfferDate: form.endOfferDate,
-      discountPercentage: Number(form.discountPercentage), // ✅ FIX
+      discountPercentage: Number(form.discountPercentage),
     }
-
     try {
-      console.log("FINAL PAYLOAD:", payload) // ✅ log BEFORE API
-
       if (editId) {
         await updateTherapy(editId, payload)
       } else {
         await addTherapy(payload)
       }
-
-      console.log("SUCCESS ✅")
-
       resetForm()
       fetchData()
-
     } catch (err) {
-      console.log("ERROR RESPONSE ❌:", err.response?.data)
+      console.log("ERROR RESPONSE:", err.response?.data)
     }
   }
 
   // ---------------- EDIT ----------------
   const handleEdit = (item) => {
-    setEditId(item.packageId) // ✅ FIX
-
+    setEditId(item.packageId)
     const selectedPrograms = (item.programIds || [])
       .map((id) => exerciseOptions.find((opt) => opt.value === id))
       .filter(Boolean)
-
     setForm({
       packageName: item.packageName || "",
       programs: selectedPrograms,
@@ -209,16 +162,10 @@ export default function PackagesManagement() {
       endOfferDate: item.endOfferDate || "",
       discountPercentage: item.discountPercentage || "",
     })
-
     setModal(true)
   }
 
   // ---------------- DELETE ----------------
-  const handleServiceDelete = (id) => {
-    setServiceIdToDelete(id)
-    setIsModalVisible(true)
-  }
-
   const handleConfirmDelete = async () => {
     try {
       setDelLoading(true)
@@ -245,11 +192,10 @@ export default function PackagesManagement() {
     setModal(false)
     setErrors({})
   }
+
   const filteredList = list.filter((item) => {
     const search = searchQuery.toLowerCase()
-
     if (!search) return true
-
     return (
       (item.packageName || "").toLowerCase().includes(search) ||
       (item.packageId || "").toLowerCase().includes(search) ||
@@ -260,468 +206,803 @@ export default function PackagesManagement() {
     )
   })
 
+  // ─── Custom styles for react-select ────────────────────
+  const selectStyles = {
+    control: (base, state) => ({
+      ...base,
+      minHeight: "36px",
+      fontSize: "13px",
+      borderColor: state.isFocused ? "#185fa5" : errors.programIds ? "#e24b4a" : "#ced4da",
+      borderWidth: "0.5px",
+      borderRadius: "7px",
+      boxShadow: state.isFocused ? "0 0 0 2px rgba(24,95,165,0.15)" : "none",
+      "&:hover": { borderColor: "#185fa5" },
+    }),
+    multiValue: (base) => ({
+      ...base,
+      background: "#e6f1fb",
+      borderRadius: "20px",
+      border: "0.5px solid #b5d4f4",
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      color: "#0c447c",
+      fontSize: "11px",
+      fontWeight: "500",
+      padding: "1px 6px",
+    }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: "#185fa5",
+      borderRadius: "0 20px 20px 0",
+      "&:hover": { background: "#b5d4f4", color: "#042c53" },
+    }),
+    option: (base, state) => ({
+      ...base,
+      fontSize: "13px",
+      backgroundColor: state.isSelected ? "#185fa5" : state.isFocused ? "#e6f1fb" : "transparent",
+      color: state.isSelected ? "#fff" : "#374151",
+    }),
+    placeholder: (base) => ({ ...base, fontSize: "13px", color: "#9ca3af" }),
+    menu: (base) => ({ ...base, borderRadius: "7px", border: "0.5px solid #d0dce9", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }),
+  }
+
   return (
     <>
-      {/* Add Button */}
-      <div className="d-flex justify-content-end mb-3">
+      {/* ── Page Header ─────────────────────────────── */}
+      <div className="pm-page-header">
+        <div className="pm-page-title-group">
+          <div className="pm-page-icon">
+            <Package size={20} />
+          </div>
+          <div>
+            <h4 className="pm-page-title">Package Management</h4>
+            <p className="pm-page-sub">
+              {filteredList.length} package{filteredList.length !== 1 ? "s" : ""} found
+            </p>
+          </div>
+        </div>
         {can("Package Management", "create") && (
-          <CButton
-            onClick={() => setModal(true)}
-           style={{
-                  color: 'var(--color-black)',
-                  backgroundColor: 'var(--color-bgcolor)',
-                }}
-          >
-            + Add Package
-          </CButton>
+          <button className="pm-add-btn" onClick={() => setModal(true)}>
+            <PackagePlus size={15} />
+            Add Package
+          </button>
         )}
       </div>
 
-      {/* TABLE */}
-      <CTable className="pink-table">
-        <CTableHead>
-          <CTableRow className="text-center">
-            <CTableHeaderCell>S.No</CTableHeaderCell>
-            <CTableHeaderCell>Package Name</CTableHeaderCell>
-            <CTableHeaderCell>Program Names</CTableHeaderCell>
-            <CTableHeaderCell>Actions</CTableHeaderCell>
-          </CTableRow>
-        </CTableHead>
-
-        <CTableBody>
-          {filteredList.map((item, index) => (
-            <CTableRow key={item.id} className="text-center">
-              <CTableDataCell>{index + 1}</CTableDataCell>
-              <CTableDataCell>{item.packageName}</CTableDataCell>
-              <CTableDataCell>
-                {item.programs?.map(p => p.programName).join(", ")}
-              </CTableDataCell>
-
-              <CTableDataCell >
-                <div className="d-flex justify-content-center gap-2">  {/* VIEW */}
-                {can("Package Management", "read") && (
-                  <CButton
-                    size="sm"
-                    className="actionBtn"
-                    style={{
-                      backgroundColor: 'var(--color-bgcolor)',
-                      color: 'var(--color-black)'
-                    }}
-                    onClick={() => handleView(item)}
-                  >
-                    <Eye size={18} />
-                  </CButton>
-                )}
-                {/* EDIT */}
-                {can("Package Management", "update") && (
-                  <CButton
-                    size="sm"
-                    className="actionBtn"
-                    style={{
-                      backgroundColor: 'var(--color-bgcolor)',
-                      color: 'var(--color-black)'
-                    }}
-                    onClick={() => handleEdit(item)}
-                  >
-                    <Edit2 size={18} />
-                  </CButton>
-                )}
-                {/* DELETE */}
-                {can("Package Management", "delete") && (
-                  <CButton
-                    size="sm"
-                    className="actionBtn"
-                    style={{
-                      backgroundColor: 'var(--color-bgcolor)',
-                      color: 'var(--color-black)'
-                    }}
-                    onClick={() => {
-                      setServiceIdToDelete(item.packageId)
-                      setIsModalVisible(true)
-                    }}
-                  >
-                    <Trash2 size={18} />
-                  </CButton>)}</div>
-              
-              </CTableDataCell>
+      {/* ── TABLE ────────────────────────────────────── */}
+      <div className="pm-table-wrapper">
+        <CTable className="pm-table">
+          <CTableHead>
+            <CTableRow>
+              <CTableHeaderCell className="pm-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
+              <CTableHeaderCell className="pm-th">Package Name</CTableHeaderCell>
+              <CTableHeaderCell className="pm-th">Programs</CTableHeaderCell>
+              <CTableHeaderCell className="pm-th" style={{ width: 120 }}>Actions</CTableHeaderCell>
             </CTableRow>
-          ))}
-        </CTableBody>
-        {filteredList.length === 0 && (
-          <CTableRow>
-            <CTableDataCell colSpan={4} className="text-center">
-              No packages found
-            </CTableDataCell>
-          </CTableRow>
-        )}
-      </CTable>
+          </CTableHead>
 
-      {/* MODAL */}
-      <CModal visible={modal} onClose={resetForm} className="custom-modal" backdrop="static" alignment="center">
-        <CModalHeader>
-          <CModalTitle style={{
-            color: 'var(--color-bgcolor)',
-          }}>{editId ? "Edit" : "Add"} Package</CModalTitle>
+          <CTableBody>
+            {filteredList.length === 0 ? (
+              <CTableRow>
+                <CTableDataCell colSpan={4}>
+                  <div className="pm-empty">
+                    <Package size={40} className="pm-empty-icon" />
+                    <p>No packages found</p>
+                  </div>
+                </CTableDataCell>
+              </CTableRow>
+            ) : (
+              filteredList.map((item, index) => (
+                <CTableRow key={item.packageId} className="pm-tr">
+                  <CTableDataCell className="pm-td pm-td-num">{index + 1}</CTableDataCell>
+
+                  <CTableDataCell className="pm-td">
+                    <span className="pm-pkg-name">{item.packageName}</span>
+                    {item.discountPercentage > 0 && (
+                      <span className="pm-discount-badge">{item.discountPercentage}% off</span>
+                    )}
+                  </CTableDataCell>
+
+                  <CTableDataCell className="pm-td">
+                    <div className="pm-prog-tags">
+                      {(item.programs || []).map((p, i) => (
+                        <span key={i} className="pm-prog-tag">{p.programName}</span>
+                      ))}
+                    </div>
+                  </CTableDataCell>
+
+                  <CTableDataCell className="pm-td">
+                    <div className="pm-actions">
+                      {can("Package Management", "read") && (
+                        <button
+                          className="pm-action-btn view"
+                          title="View"
+                          onClick={() => handleView(item)}
+                        >
+                          <Eye size={14} />
+                        </button>
+                      )}
+                      {can("Package Management", "update") && (
+                        <button
+                          className="pm-action-btn edit"
+                          title="Edit"
+                          onClick={() => handleEdit(item)}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      )}
+                      {can("Package Management", "delete") && (
+                        <button
+                          className="pm-action-btn del"
+                          title="Delete"
+                          onClick={() => {
+                            setServiceIdToDelete(item.packageId)
+                            setIsModalVisible(true)
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </CTableDataCell>
+                </CTableRow>
+              ))
+            )}
+          </CTableBody>
+        </CTable>
+      </div>
+
+      {/* ── ADD / EDIT MODAL ─────────────────────────── */}
+      <CModal
+        visible={modal}
+        onClose={resetForm}
+        backdrop="static"
+        alignment="center"
+        className="pm-custom-modal"
+      >
+        <CModalHeader className="pm-modal-header">
+          <CModalTitle className="pm-modal-title">
+            {editId ? "Edit" : "Add"} Package
+          </CModalTitle>
         </CModalHeader>
 
-        <CModalBody>
+        <CModalBody className="pm-modal-body">
           <CForm>
             <CRow>
               <CCol md={12}>
-                <CFormLabel>Package Name <span className="text-danger">*</span></CFormLabel>
-                <CFormInput
-                  value={form.packageName}
-                  onChange={(e) =>
-                    setForm({ ...form, packageName: e.target.value })
-                  }
-                />
-                <CFormText className="text-danger">
-                  {errors.packageName}
-                </CFormText>
+                <div className="pm-field">
+                  <CFormLabel className="pm-label">
+                    Package Name <span className="pm-req">*</span>
+                  </CFormLabel>
+                  <CFormInput
+                    className={`pm-input${errors.packageName ? " is-invalid" : ""}`}
+                    value={form.packageName}
+                    placeholder="e.g. Physiotherapy Starter Pack"
+                    onChange={(e) => setForm({ ...form, packageName: e.target.value })}
+                  />
+                  <CFormText className="pm-err-msg">{errors.packageName}</CFormText>
+                </div>
               </CCol>
 
-              <CCol md={12} className="mt-3">
-                <CFormLabel>Programs <span className="text-danger">*</span></CFormLabel>
-                <Select
-                  options={exerciseOptions}
-                  isMulti
-                  value={form.programs}
-                  onChange={(val) =>
-                    setForm({
-                      ...form,
-                      programs: val,
-                      programIds: val.map((v) => v.value),
-                    })
-                  }
-                />
-                <CFormText className="text-danger">
-                  {errors.programIds}
-                </CFormText>
+              <CCol md={12}>
+                <div className="pm-field">
+                  <CFormLabel className="pm-label">
+                    Programs <span className="pm-req">*</span>
+                  </CFormLabel>
+                  <Select
+                    options={exerciseOptions}
+                    isMulti
+                    styles={selectStyles}
+                    placeholder="Select programs..."
+                    value={form.programs}
+                    onChange={(val) =>
+                      setForm({
+                        ...form,
+                        programs: val,
+                        programIds: val.map((v) => v.value),
+                      })
+                    }
+                  />
+                  <CFormText className="pm-err-msg">{errors.programIds}</CFormText>
+                </div>
               </CCol>
 
-              <CCol md={6} className="mt-3">
-                <CFormLabel>Offer Type </CFormLabel>
-                <CFormInput
-                  value={form.offerType}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      offerType: e.target.value.toUpperCase(), // ✅ force uppercase
-                    })
-                  }
-                />
+              <CCol md={6}>
+                <div className="pm-field">
+                  <CFormLabel className="pm-label">Offer Type</CFormLabel>
+                  <CFormInput
+                    className="pm-input"
+                    placeholder="e.g. SEASONAL"
+                    value={form.offerType}
+                    onChange={(e) =>
+                      setForm({ ...form, offerType: e.target.value.toUpperCase() })
+                    }
+                  />
+                </div>
               </CCol>
 
-              <CCol md={6} className="mt-3">
-                <CFormLabel>Discount  </CFormLabel>
-                <CFormInput
-                  type="number"
-                  value={form.discountPercentage}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      discountPercentage: Math.max(0, e.target.value),
-                    })
-                  }
-                />
+              <CCol md={6}>
+                <div className="pm-field">
+                  <CFormLabel className="pm-label">Discount %</CFormLabel>
+                  <CFormInput
+                    className="pm-input"
+                    type="number"
+                    min={0}
+                    max={100}
+                    placeholder="0"
+                    value={form.discountPercentage}
+                    onChange={(e) =>
+                      setForm({ ...form, discountPercentage: Math.max(0, e.target.value) })
+                    }
+                  />
+                </div>
               </CCol>
 
-              <CCol md={6} className="mt-3">
-                <CFormLabel>Start Date </CFormLabel>
-                <CFormInput
-                  type="date"
-                  value={form.startOfferDate}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      startOfferDate: e.target.value,
-                    })
-                  }
-                />
+              <CCol md={6}>
+                <div className="pm-field">
+                  <CFormLabel className="pm-label">Start Date</CFormLabel>
+                  <CFormInput
+                    className="pm-input"
+                    type="date"
+                    value={form.startOfferDate}
+                    onChange={(e) => setForm({ ...form, startOfferDate: e.target.value })}
+                  />
+                </div>
               </CCol>
 
-              <CCol md={6} className="mt-3">
-                <CFormLabel>End Date </CFormLabel>
-                <CFormInput
-                  type="date"
-                  value={form.endOfferDate}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      endOfferDate: e.target.value,
-                    })
-                  }
-                />
+              <CCol md={6}>
+                <div className="pm-field">
+                  <CFormLabel className="pm-label">End Date</CFormLabel>
+                  <CFormInput
+                    className={`pm-input${errors.endOfferDate ? " is-invalid" : ""}`}
+                    type="date"
+                    value={form.endOfferDate}
+                    onChange={(e) => setForm({ ...form, endOfferDate: e.target.value })}
+                  />
+                  <CFormText className="pm-err-msg">{errors.endOfferDate}</CFormText>
+                </div>
               </CCol>
             </CRow>
 
-            <div className="d-flex justify-content-end gap-2 mt-3">
-
-              {/* Cancel */}
-              <CButton
-                onClick={resetForm}
-                color="secondary"
-              >
+            <div className="pm-modal-footer">
+              <button type="button" className="pm-btn-secondary" onClick={resetForm}>
                 Cancel
-              </CButton>
-
-              {/* Save / Update */}
-              <CButton
-                onClick={handleSave}
-                style={{
-                  backgroundColor: 'var(--color-bgcolor)',
-                  color: 'var(--color-black)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '6px 14px'
-                }}
-              >
-                {editId ? "Update" : "Save"}
-              </CButton>
-
+              </button>
+              <button type="button" className="pm-btn-primary" onClick={handleSave}>
+                {editId ? "Update Package" : "Save Package"}
+              </button>
             </div>
           </CForm>
         </CModalBody>
       </CModal>
-      <CModal visible={viewModal} onClose={() => setViewModal(false)} size="lg">
-        <CModalHeader
-          style={{
-            color: 'var(--color-black)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          <CModalTitle style={{ fontWeight: '600' , color: 'var(--color-bgcolor)',}}>Package Details</CModalTitle>
+
+      {/* ── VIEW MODAL ───────────────────────────────── */}
+      <CModal
+        visible={viewModal}
+        onClose={() => setViewModal(false)}
+        size="lg"
+        alignment="center"
+        className="pm-custom-modal"
+      >
+        <CModalHeader className="pm-modal-header">
+          <CModalTitle className="pm-modal-title">Package Details</CModalTitle>
         </CModalHeader>
 
-        <CModalBody style={{ backgroundColor: 'var(--color-bg-light)' }}>
+        <CModalBody className="pm-modal-body pm-view-body">
           {selectedPackage && (
             <div className="d-flex flex-column gap-3">
 
-              {/* PACKAGE INFO */}
-              <div className="accordion" id="packageAccordion">
-
-                <div
-                  className="accordion-item"
-                  style={{
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '10px',
-                    overflow: 'hidden',
-                  }}
-                >
-
-                  {/* HEADER */}
-                  <h2 className="accordion-header">
-                    <button
-                      className="accordion-button collapsed"
-                      type="button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#packageDetails"
-                      style={{
-                        backgroundColor: 'var(--color-bgcolor)',
-                        color: 'var(--color-black)',
-                        fontWeight: '600',
-                        border: 'none',
-                      }}
-                    >
-                      {selectedPackage.packageName}
-                    </button>
-                  </h2>
-
-                  {/* BODY */}
-                  <div
-                    id="packageDetails"
-                    className="accordion-collapse collapse"
-                    data-bs-parent="#packageAccordion"
-
-                  >
-                    <div
-                      className="accordion-body"
-                      style={{
-                        padding: '12px 16px',
-                        fontSize: '14px',
-                        lineHeight: '1.9',
-                      }}
-                    >
-
-                      <div style={{ minWidth: '130px' }}>
-                        <span style={{ minWidth: '130px' }}>Programs:</span>
-                        <span>{selectedPackage.noOfPrograms}</span>
+              {/* Package summary accordion */}
+              <div className="pm-acc-item">
+                <details>
+                  <summary className="pm-acc-head">
+                    <span>{selectedPackage.packageName}</span>
+                    <span className="pm-acc-arrow">▾</span>
+                  </summary>
+                  <div className="pm-acc-body">
+                    <div className="pm-info-grid">
+                      <div className="pm-info-row">
+                        <span className="pm-info-key">No. of Programs</span>
+                        <span className="pm-info-val">{selectedPackage.noOfPrograms}</span>
                       </div>
-
-                      <div style={{ minWidth: '130px' }}>
-                        <span style={{ minWidth: '130px' }}>
-                          Discount:
-                        </span>
-                        <span >
-                          {selectedPackage.discountPercentage}%
-                        </span>
+                      <div className="pm-info-row">
+                        <span className="pm-info-key">Discount</span>
+                        <span className="pm-info-val">{selectedPackage.discountPercentage}%</span>
                       </div>
-
-                      <div style={{ minWidth: '130px' }}>
-                        <span style={{ minWidth: '130px' }}>
-                          Offer Type:
-                        </span>
-                        <span>
-                          {selectedPackage.offerType}
-                        </span>
+                      <div className="pm-info-row">
+                        <span className="pm-info-key">Offer Type</span>
+                        <span className="pm-info-val">{selectedPackage.offerType || "—"}</span>
                       </div>
-
-                      <div >
-                        <span style={{ minWidth: '130px' }}>Start Date:</span>
-                        <span>{selectedPackage.startOfferDate}</span>
+                      <div className="pm-info-row">
+                        <span className="pm-info-key">Start Date</span>
+                        <span className="pm-info-val">{selectedPackage.startOfferDate || "—"}</span>
                       </div>
-
-                      <div>
-                        <span style={{ minWidth: '130px' }}>End Date:</span>
-                        <span>{selectedPackage.endOfferDate}</span>
+                      <div className="pm-info-row">
+                        <span className="pm-info-key">End Date</span>
+                        <span className="pm-info-val">{selectedPackage.endOfferDate || "—"}</span>
                       </div>
-
                     </div>
                   </div>
-
-                </div>
+                </details>
               </div>
 
-              {/* PROGRAM ACCORDION */}
-              <div className="accordion" id="programAccordion">
+              {/* Program accordions */}
+              <div className="pm-section-label">Programs</div>
+              {Array.isArray(selectedPackage.programs) &&
+                selectedPackage.programs.map((program, pIndex) => (
+                  <div className="pm-acc-item" key={pIndex}>
+                    <details>
+                      <summary className="pm-acc-head">
+                        <span>{pIndex + 1}. {program.programName}</span>
+                        <span className="pm-acc-arrow">▾</span>
+                      </summary>
+                      <div className="pm-acc-body">
 
-                {Array.isArray(selectedPackage.programs) &&
-                  selectedPackage.programs.map((program, pIndex) => (
-                    <div className="accordion-item" key={pIndex}>
-
-                      {/* PROGRAM HEADER */}
-                      <h2 className="accordion-header">
-                        <button
-                          className="accordion-button collapsed"
-                          type="button"
-                          data-bs-toggle="collapse"
-                          data-bs-target={`#program-${pIndex}`}
-                          style={{
-                            backgroundColor: 'var(--color-bgcolor)',
-                            color: 'var(--color-black)',
-                            fontWeight: '600',
-                            border: 'none',
-                          }}
-                        >
-                          {pIndex + 1}. {program.programName}
-                        </button>
-                      </h2>
-
-                      {/* PROGRAM BODY */}
-                      <div
-                        id={`program-${pIndex}`}
-                        className="accordion-collapse collapse"
-                        style={{color:"var(--color--black)"}}
-                        data-bs-parent="#programAccordion"
-                      >
-                        <div className="accordion-body">
-
-                          {/* THERAPY ACCORDION */}
-                          <div className="accordion" id={`therapyAccordion-${pIndex}`}>
-
-                            {Array.isArray(program.therophyData) &&
-                              program.therophyData.map((therapy, tIndex) => (
-                                <div className="accordion-item" key={tIndex}>
-
-                                  {/* THERAPY HEADER */}
-                                  <h2 className="accordion-header">
-                                    <button
-                                      className="accordion-button collapsed"
-                                      type="button"
-                                      data-bs-toggle="collapse"
-                                      data-bs-target={`#therapy-${pIndex}-${tIndex}`}
-                                      style={{
-                                        backgroundColor: 'var(--color-bgcolor)',
-                                        color: 'var(--color-white)',
-                                      }}
-                                    >
-                                      {tIndex + 1}. {therapy.therapyName}
-                                    </button>
-                                  </h2>
-
-                                  {/* THERAPY BODY */}
-                                  <div
-                                    id={`therapy-${pIndex}-${tIndex}`}
-                                    className="accordion-collapse collapse"
-                                    data-bs-parent={`#therapyAccordion-${pIndex}`}
-                                  >
-                                    <div className="accordion-body">
-
-                                      {/* EXERCISES TABLE */}
-                                      {Array.isArray(therapy.exercises) &&
-                                        therapy.exercises.length > 0 ? (
-                                        <CTable bordered responsive size="sm">
-                                          <CTableHead>
-                                            <CTableRow>
-                                              <CTableHeaderCell>#</CTableHeaderCell>
-                                              <CTableHeaderCell>Name</CTableHeaderCell>
-                                              <CTableHeaderCell>Session</CTableHeaderCell>
-                                              <CTableHeaderCell>Frequency</CTableHeaderCell>
-                                              <CTableHeaderCell>Sets</CTableHeaderCell>
-                                              <CTableHeaderCell>Reps</CTableHeaderCell>
-                                              <CTableHeaderCell>Price</CTableHeaderCell>
+                        {/* Therapy accordions */}
+                        {Array.isArray(program.therophyData) && program.therophyData.length > 0 ? (
+                          program.therophyData.map((therapy, tIndex) => (
+                            <div className="pm-therapy-item" key={tIndex}>
+                              <details>
+                                <summary className="pm-therapy-head">
+                                  <span>{tIndex + 1}. {therapy.therapyName}</span>
+                                  <span className="pm-acc-arrow">▾</span>
+                                </summary>
+                                <div className="pm-therapy-body">
+                                  {Array.isArray(therapy.exercises) && therapy.exercises.length > 0 ? (
+                                    <div className="pm-ex-table-wrap">
+                                      <CTable bordered responsive size="sm" className="pm-ex-table">
+                                        <CTableHead>
+                                          <CTableRow>
+                                            <CTableHeaderCell>#</CTableHeaderCell>
+                                            <CTableHeaderCell>Name</CTableHeaderCell>
+                                            <CTableHeaderCell>Session</CTableHeaderCell>
+                                            <CTableHeaderCell>Frequency</CTableHeaderCell>
+                                            <CTableHeaderCell>Sets</CTableHeaderCell>
+                                            <CTableHeaderCell>Reps</CTableHeaderCell>
+                                            <CTableHeaderCell>Price</CTableHeaderCell>
+                                          </CTableRow>
+                                        </CTableHead>
+                                        <CTableBody>
+                                          {therapy.exercises.map((ex, i) => (
+                                            <CTableRow key={i}>
+                                              <CTableDataCell>{i + 1}</CTableDataCell>
+                                              <CTableDataCell>
+                                                <strong>{ex.name}</strong>
+                                                {ex.notes && (
+                                                  <><br /><small className="text-muted">{ex.notes}</small></>
+                                                )}
+                                              </CTableDataCell>
+                                              <CTableDataCell>{ex.session || "—"}</CTableDataCell>
+                                              <CTableDataCell>{ex.frequency || "—"}</CTableDataCell>
+                                              <CTableDataCell>{ex.sets || "—"}</CTableDataCell>
+                                              <CTableDataCell>{ex.repetitions || "—"}</CTableDataCell>
+                                              <CTableDataCell>₹{ex.totalPrice || 0}</CTableDataCell>
                                             </CTableRow>
-                                          </CTableHead>
-
-                                          <CTableBody>
-                                            {therapy.exercises.map((ex, i) => (
-                                              <CTableRow key={i}>
-                                                <CTableDataCell>{i + 1}</CTableDataCell>
-
-                                                <CTableDataCell>
-                                                  <strong>{ex.name}</strong>
-                                                  <br />
-                                                  <small className="text-muted">
-                                                    {ex.notes}
-                                                  </small>
-                                                </CTableDataCell>
-
-                                                <CTableDataCell>{ex.session || '-'}</CTableDataCell>
-                                                <CTableDataCell>{ex.frequency || '-'}</CTableDataCell>
-                                                <CTableDataCell>{ex.sets || '-'}</CTableDataCell>
-                                                <CTableDataCell>{ex.repetitions || '-'}</CTableDataCell>
-
-                                                <CTableDataCell>
-                                                  ₹{ex.totalPrice || 0}
-                                                </CTableDataCell>
-                                              </CTableRow>
-                                            ))}
-                                          </CTableBody>
-                                        </CTable>
-                                      ) : (
-                                        <div className="text-center text-muted">
-                                          No Exercises Available
-                                        </div>
-                                      )}
-
+                                          ))}
+                                        </CTableBody>
+                                      </CTable>
                                     </div>
-                                  </div>
-
+                                  ) : (
+                                    <div className="pm-no-data">No exercises available</div>
+                                  )}
                                 </div>
-                              ))}
+                              </details>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="pm-no-data">No therapies linked to this program</div>
+                        )}
 
-                          </div>
-
-                        </div>
                       </div>
-
-                    </div>
-                  ))}
-
-              </div>
+                    </details>
+                  </div>
+                ))}
 
             </div>
           )}
         </CModalBody>
       </CModal>
 
-      {/* DELETE MODAL */}
+      {/* ── DELETE MODAL ─────────────────────────────── */}
       <ConfirmationModal
         isVisible={isModalVisible}
-        message="Are you sure you want to delete this package?"
+        message="Are you sure you want to delete this package? This action cannot be undone."
         onConfirm={handleConfirmDelete}
         onCancel={() => setIsModalVisible(false)}
+        isLoading={delloading}
       />
+
+      {/* ── STYLES ───────────────────────────────────── */}
+      <style>{`
+        /* ── Page Header ─────────────────────── */
+        .pm-page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 18px;
+          padding-bottom: 14px;
+          border-bottom: 0.5px solid #d0dce9;
+        }
+        .pm-page-title-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .pm-page-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background: #e6f1fb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #185fa5;
+          flex-shrink: 0;
+        }
+        .pm-page-title {
+          font-size: 17px;
+          font-weight: 600;
+          color: #0c447c;
+          margin: 0;
+        }
+        .pm-page-sub {
+          font-size: 12px;
+          color: #6b7280;
+          margin: 0;
+        }
+        .pm-add-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: #185fa5;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 9px 18px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(24, 95, 165, 0.2);
+          transition: background 0.15s, transform 0.1s;
+        }
+        .pm-add-btn:hover  { background: #0c447c; }
+        .pm-add-btn:active { transform: scale(0.97); }
+
+        /* ── Table ──────────────────────────── */
+        .pm-table-wrapper {
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          overflow: hidden;
+          margin-bottom: 12px;
+        }
+        .pm-table { margin-bottom: 0 !important; font-size: 13px; }
+        .pm-th {
+          background: #185fa5 !important;
+          color: #fff !important;
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          padding: 11px 14px !important;
+          white-space: nowrap;
+          border: none !important;
+        }
+        .pm-tr { transition: background 0.12s; }
+        .pm-tr:hover { background: #f0f5fb !important; }
+        .pm-td {
+          padding: 11px 14px !important;
+          vertical-align: middle !important;
+          font-size: 13px;
+          color: #374151;
+          border-bottom: 0.5px solid #eef2f7 !important;
+          border-top: none !important;
+        }
+        .pm-td-num { color: #9ca3af; font-size: 12px; }
+
+        /* ── Package name + discount badge ── */
+        .pm-pkg-name {
+          font-weight: 600;
+          font-size: 13px;
+          color: #0c447c;
+          margin-right: 8px;
+        }
+        .pm-discount-badge {
+          background: #eaf3de;
+          color: #3b6d11;
+          border: 0.5px solid #c0dd97;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 8px;
+        }
+
+        /* ── Program tags ───────────────── */
+        .pm-prog-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+        .pm-prog-tag {
+          background: #e6f1fb;
+          color: #185fa5;
+          border: 0.5px solid #b5d4f4;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 500;
+          padding: 2px 9px;
+          white-space: nowrap;
+        }
+
+        /* ── Action buttons ─────────────── */
+        .pm-actions {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
+        .pm-action-btn {
+          width: 30px;
+          height: 30px;
+          border-radius: 7px;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: filter 0.12s, transform 0.1s;
+          flex-shrink: 0;
+        }
+        .pm-action-btn.view { background: #e6f1fb; color: #185fa5; }
+        .pm-action-btn.edit { background: #eaf3de; color: #3b6d11; }
+        .pm-action-btn.del  { background: #fcebeb; color: #a32d2d; }
+        .pm-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
+        .pm-action-btn:active { transform: scale(0.94); }
+
+        /* ── Empty state ─────────────── */
+        .pm-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          padding: 40px 0;
+          color: #9ca3af;
+          font-size: 14px;
+        }
+        .pm-empty-icon { color: #d0dce9; }
+
+        /* ── Modal shared ─────────────── */
+        .pm-custom-modal .modal-content {
+          border: 0.5px solid #d0dce9 !important;
+          border-radius: 12px !important;
+          overflow: hidden;
+        }
+        .pm-modal-header {
+          background: #185fa5 !important;
+          border-bottom: none !important;
+          padding: 16px 20px !important;
+        }
+        .pm-modal-title {
+          font-size: 15px !important;
+          font-weight: 700 !important;
+          color: #fff !important;
+        }
+        .pm-custom-modal .btn-close {
+          filter: brightness(0) invert(1);
+          opacity: 0.8;
+        }
+        .pm-modal-body {
+          background: #f7fafd !important;
+          padding: 20px !important;
+        }
+        .pm-view-body {
+          max-height: 72vh;
+          overflow-y: auto;
+        }
+
+        /* ── Form fields ─────────────── */
+        .pm-field {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          margin-bottom: 14px;
+        }
+        .pm-label {
+          font-size: 12px;
+          font-weight: 500;
+          color: #374151;
+          margin-bottom: 2px;
+        }
+        .pm-req { color: #e24b4a; }
+        .pm-err-msg {
+          font-size: 11px;
+          color: #a32d2d !important;
+          margin-top: 2px;
+        }
+        .pm-input {
+          height: 36px;
+          font-size: 13px !important;
+          border: 0.5px solid #ced4da !important;
+          border-radius: 7px !important;
+          transition: border-color 0.15s, box-shadow 0.15s !important;
+        }
+        .pm-input:focus {
+          border-color: #185fa5 !important;
+          box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.15) !important;
+        }
+        .pm-input.is-invalid { border-color: #e24b4a !important; }
+
+        /* ── Modal footer ────────────── */
+        .pm-modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          margin-top: 18px;
+          padding-top: 14px;
+          border-top: 0.5px solid #d0dce9;
+        }
+        .pm-btn-primary {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #185fa5;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 9px 22px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.15s, transform 0.1s;
+          box-shadow: 0 2px 8px rgba(24, 95, 165, 0.2);
+        }
+        .pm-btn-primary:hover  { background: #0c447c; }
+        .pm-btn-primary:active { transform: scale(0.97); }
+        .pm-btn-secondary {
+          background: #fff;
+          color: #374151;
+          border: 0.5px solid #d0dce9;
+          border-radius: 8px;
+          padding: 9px 18px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .pm-btn-secondary:hover { background: #f0f5fb; }
+
+        /* ── View Modal — Accordions ─── */
+        .pm-section-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-top: 4px;
+          margin-bottom: 4px;
+        }
+        .pm-acc-item {
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          overflow: hidden;
+          margin-bottom: 8px;
+        }
+        .pm-acc-item details > summary {
+          list-style: none;
+        }
+        .pm-acc-item details > summary::-webkit-details-marker {
+          display: none;
+        }
+        .pm-acc-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 11px 14px;
+          background: #e6f1fb;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 600;
+          color: #0c447c;
+          user-select: none;
+          transition: background 0.15s;
+        }
+        .pm-acc-head:hover { background: #d0e6f8; }
+        .pm-acc-arrow {
+          font-size: 14px;
+          transition: transform 0.2s;
+          color: #185fa5;
+        }
+        details[open] > .pm-acc-head .pm-acc-arrow,
+        details[open] > summary .pm-acc-arrow {
+          transform: rotate(180deg);
+        }
+        .pm-acc-body {
+          padding: 12px 14px;
+          background: #fff;
+          font-size: 13px;
+        }
+        .pm-info-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+        .pm-info-row {
+          display: flex;
+          gap: 10px;
+          padding: 6px 0;
+          border-bottom: 0.5px solid #f0f5fb;
+        }
+        .pm-info-row:last-child { border-bottom: none; }
+        .pm-info-key {
+          color: #6b7280;
+          font-size: 12px;
+          min-width: 130px;
+          flex-shrink: 0;
+        }
+        .pm-info-val {
+          color: #0c447c;
+          font-weight: 600;
+          font-size: 13px;
+        }
+
+        /* ── Therapy sub-accordion ───── */
+        .pm-therapy-item {
+          border: 0.5px solid #d0dce9;
+          border-radius: 8px;
+          overflow: hidden;
+          margin-bottom: 8px;
+        }
+        .pm-therapy-item details > summary {
+          list-style: none;
+        }
+        .pm-therapy-item details > summary::-webkit-details-marker {
+          display: none;
+        }
+        .pm-therapy-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 9px 12px;
+          background: #f0f5fb;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+          color: #185fa5;
+          user-select: none;
+        }
+        .pm-therapy-head:hover { background: #e6f1fb; }
+        .pm-therapy-body {
+          padding: 10px 12px;
+          background: #fff;
+        }
+
+        /* ── Exercise table ──────────── */
+        .pm-ex-table-wrap { overflow-x: auto; }
+        .pm-ex-table {
+          font-size: 12px !important;
+          margin-bottom: 0 !important;
+        }
+        .pm-ex-table thead th {
+          background: #f0f5fb !important;
+          color: #6b7280 !important;
+          font-size: 11px !important;
+          font-weight: 600 !important;
+          border-color: #d0dce9 !important;
+          padding: 7px 10px !important;
+        }
+        .pm-ex-table tbody td {
+          font-size: 12px !important;
+          padding: 7px 10px !important;
+          border-color: #eef2f7 !important;
+          vertical-align: middle !important;
+        }
+
+        .pm-no-data {
+          text-align: center;
+          color: #9ca3af;
+          font-size: 13px;
+          padding: 16px 0;
+        }
+      `}</style>
     </>
   )
 }

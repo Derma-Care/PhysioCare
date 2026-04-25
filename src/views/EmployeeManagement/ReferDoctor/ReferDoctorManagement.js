@@ -1,35 +1,28 @@
 import React, { useEffect, useState } from 'react'
 import {
-  CButton,
   CTable,
   CTableHead,
   CTableRow,
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CModal,
-  CModalHeader,
-  CModalBody,
-  CModalFooter,
 } from '@coreui/react'
 import ReferDoctorForm from './ReferDoctorForm.js'
-
-import { Edit2, Eye, Trash2 } from 'lucide-react'
+import { Edit2, Eye, Trash2, UserRoundPlus, PlusCircle } from 'lucide-react'
 import capitalizeWords from '../../../Utils/capitalizeWords.js'
 import { useGlobalSearch } from '../../Usecontext/GlobalSearchContext.js'
 import ConfirmationModal from '../../../components/ConfirmationModal.js'
 import LoadingIndicator from '../../../Utils/loader.js'
 import {
-  addReferDoctor, // same name
-  deleteReferDoctor, // match exactly
-  getAllReferDoctors, // match exactly
-  updateReferDoctor, // match exactly
+  addReferDoctor,
+  deleteReferDoctor,
+  getAllReferDoctors,
+  updateReferDoctor,
 } from './ReferDoctorAPI.js'
-import { toast, ToastContainer } from 'react-toastify'
+import { ToastContainer } from 'react-toastify'
 import { useHospital } from '../../Usecontext/HospitalContext.js'
 import { showCustomToast } from '../../../Utils/Toaster.js'
 import Pagination from '../../../Utils/Pagination.js'
-import { useNavigate } from 'react-router-dom'
 
 const ReferDoctorManagement = () => {
   const [technicians, setTechnicians] = useState([])
@@ -38,86 +31,69 @@ const ReferDoctorManagement = () => {
   const [viewMode, setViewMode] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
-  const { searchQuery, setSearchQuery } = useGlobalSearch()
+  const { searchQuery } = useGlobalSearch()
   const [loading, setLoading] = useState(false)
   const [delloading, setDelLoading] = useState(false)
   const [error, setError] = useState(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
-  const navigate = useNavigate()
-  // ✅ Load from localStorage on mount
-  const [modalData, setModalData] = useState(null) // store username & password
-  const [modalTVisible, setModalTVisible] = useState(false)
+
+  const { user } = useHospital()
+  const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
+
+  // ── FETCH ────────────────────────────────────
   const fetchTechs = async () => {
     setLoading(true)
     try {
       const clinicID = localStorage.getItem('HospitalId')
       if (clinicID) {
-        const res = await getAllReferDoctors(clinicID) // wait for API
-        console.log('API Response:', res)
-        setLoading(false)
-        // ✅ update state with actual data, not Promise
+        const res = await getAllReferDoctors(clinicID)
         setTechnicians(res.data?.data || [])
       }
     } catch (err) {
-      console.error('❌ Error fetching lab technicians:', err)
+      console.error('Error fetching refer doctors:', err)
       setTechnicians([])
-      setLoading(false)
+      setError('Failed to load refer doctors.')
     } finally {
       setLoading(false)
     }
   }
-  useEffect(() => {
-    fetchTechs()
-  }, [])
-  // ✅ Save (Add / Edit)
 
+  useEffect(() => { fetchTechs() }, [])
+
+  // ── SAVE ─────────────────────────────────────
   const handleSave = async (formData) => {
     try {
       if (selectedTech) {
         await updateReferDoctor(selectedTech.id, formData)
-        fetchTechs()
-
-        // setTechnicians((prev) => [...prev, res.data.data])
-        showCustomToast('ReferDoctor updated successfully!', 'success')
+        showCustomToast('Refer Doctor updated successfully!', 'success')
       } else {
-        const res = await addReferDoctor(formData)
-        await fetchTechs() // refresh from API
-        console.log(res)
-        // setModalData({
-        //   username: res.data.data.userName,
-        //   password: res.data.data.password,
-        // })
-        setModalVisible(false)
-        // setModalTVisible(true)
-        showCustomToast('ReferDoctor added successfully!', 'success')
+        await addReferDoctor(formData)
+        showCustomToast('Refer Doctor added successfully!', 'success')
       }
+      fetchTechs()
+      setModalVisible(false)
     } catch (err) {
-      // showCustomToast('❌ Failed to save ReferDoctor.', 'error')
       console.error('API error:', err)
     }
   }
 
-  // ✅ Delete
+  // ── DELETE ───────────────────────────────────
   const handleDelete = async (id) => {
-    console.log(id)
     try {
       setDelLoading(true)
-      await deleteReferDoctor(id) // ✅ call backend
+      await deleteReferDoctor(id)
       setTechnicians((prev) => prev.filter((t) => t.id !== id))
-      showCustomToast('ReferDoctor deleted successfully!', 'success')
+      showCustomToast('Refer Doctor deleted successfully!', 'success')
     } catch (err) {
-      // showCustomToast('❌ Failed to delete ReferDoctor.', 'error')
       console.error('Delete error:', err)
     } finally {
-      setIsModalVisible(false) // close modal after action
+      setIsModalVisible(false)
       setDelLoading(false)
     }
   }
-  //permission
-  const { user } = useHospital()
-  const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
-  //search
+
+  // ── FILTER + PAGINATE ─────────────────────────
   const filteredData = React.useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
     if (!q) return technicians
@@ -127,219 +103,334 @@ const ReferDoctorManagement = () => {
   }, [searchQuery, technicians])
 
   const displayData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
-  //decode image
-  const decodeImage = (data) => {
-    try {
-      // decode base64 string into normal string
-      return atob(data)
-    } catch {
-      return null
-    }
+
+  // ── ADDRESS FORMATTER ─────────────────────────
+  const formatAddress = (addr) => {
+    if (!addr) return '—'
+    const parts = [
+      addr.houseNo, addr.street, addr.landmark,
+      addr.city, addr.state, addr.country,
+      addr.postalCode ? `- ${addr.postalCode}` : '',
+    ].filter(Boolean)
+    return parts.join(', ') || '—'
   }
 
-  return (
-    <div>
-      <ToastContainer />
-      {can('Refer Doctor', 'create') && (
-        <div
-          className="mb-3 w-100"
-          style={{ display: 'flex', justifyContent: 'end', alignContent: 'end', alignItems: 'end' }}
-        >
-          <CButton
-            style={{
-              color: 'var(--color-black)',
-              backgroundColor: 'var(--color-bgcolor)',
-            }}
-            onClick={() => setModalVisible(true)}
-          >
-            Add Refer Doctor
-          </CButton>
-          {/* <CButton onClick={() => navigate('/therapist')}>
-            Therapist
-          </CButton> */}
-        </div>
-      )}
-      {/* <CModal visible={modalTVisible} backdrop="static" keyboard={false}>
-        <CModalHeader>
-          <h5>Technician Credentials</h5>
-        </CModalHeader>
-        <CModalBody>
-          {modalData ? (
-            <div>
-              <p>
-                <strong>Username:</strong> {modalData.username}
-              </p>
-              <p>
-                <strong>Password:</strong> {modalData.password}
-              </p>
-              <small className="text-danger">
-                ⚠️ Please save these credentials securely. They will not be shown again.
-              </small>
-            </div>
-          ) : (
-            <p>No data available</p>
-          )}
-        </CModalBody>
-        <CModalFooter>
-          <CButton
-            color="primary"
-            onClick={() => {
-              setModalTVisible(false)
-              setModalData(null)
-            }}
-          >
-            Close
-          </CButton>
-        </CModalFooter>
-      </CModal> */}
-      <ConfirmationModal
-        isVisible={isModalVisible}
-        title="Delete ReferDoctor"
-        message="Are you sure you want to delete this ReferDoctor? This action cannot be undone."
-        confirmText="Yes, Delete"
-        isLoading={delloading}
-        cancelText="Cancel"
-        confirmColor="danger"
-        cancelColor="secondary"
-        onConfirm={() => handleDelete(deleteId)} // ✅ pass id here
-        onCancel={() => setIsModalVisible(false)} // ✅ just close modal
-      />
-      {/* <CButton color="primary" onClick={() => setModalVisible(true)}>
-  
-      </CButton> */}
-      {loading ? (
-        <div className="d-flex justify-content-center align-items-center">
-          <LoadingIndicator message="Loading technician..." />
-        </div>
-      ) : error ? (
-        <div
-          className="d-flex justify-content-center align-items-center"
-          style={{
-            height: '50vh', // full screen height
+  if (loading) return <LoadingIndicator message="Loading Refer Doctors..." />
 
-            color: 'var(--color-black)',
-          }}
-        >
-          {error}
+  return (
+    <>
+      <ToastContainer />
+
+      {/* ── Page Header ─────────────────────────── */}
+      <div className="rd-page-header">
+        <div className="rd-page-title-group">
+          <div className="rd-page-icon">
+            <UserRoundPlus size={20} />
+          </div>
+          <div>
+            <h4 className="rd-page-title">Refer Doctor Management</h4>
+            <p className="rd-page-sub">
+              {filteredData.length} refer doctor{filteredData.length !== 1 ? 's' : ''} found
+            </p>
+          </div>
+        </div>
+        {can('Refer Doctor', 'create') && (
+          <button
+            className="rd-add-btn"
+            onClick={() => { setSelectedTech(null); setViewMode(false); setModalVisible(true) }}
+          >
+            <PlusCircle size={15} />
+            Add Refer Doctor
+          </button>
+        )}
+      </div>
+
+      {/* ── TABLE ────────────────────────────────── */}
+      {error ? (
+        <div className="rd-empty">
+          <UserRoundPlus size={40} className="rd-empty-icon" />
+          <p>{error}</p>
         </div>
       ) : (
-        <CTable className="mt-3" striped hover responsive>
-          <CTableHead>
-            <CTableRow className="pink-table  w-auto">
-              <CTableHeaderCell>#</CTableHeaderCell>
-              {/* <CTableHeaderCell>Photo</CTableHeaderCell> */}
-              <CTableHeaderCell>Name</CTableHeaderCell>
-              <CTableHeaderCell>Contact</CTableHeaderCell>
-              <CTableHeaderCell>Adress</CTableHeaderCell>
-              <CTableHeaderCell>ClinicName</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody className="pink-table">
-            {displayData.length > 0 ? (
-              displayData.map((tech, index) => (
-                <CTableRow key={tech.id}>
-                  <CTableDataCell>{(currentPage - 1) * rowsPerPage + index + 1}</CTableDataCell>
+        <div className="rd-table-wrapper">
+          <CTable className="rd-table">
+            <CTableHead>
+              <CTableRow>
+                <CTableHeaderCell className="rd-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
+                <CTableHeaderCell className="rd-th">Name</CTableHeaderCell>
+                <CTableHeaderCell className="rd-th">Contact</CTableHeaderCell>
+                <CTableHeaderCell className="rd-th">Address</CTableHeaderCell>
+                <CTableHeaderCell className="rd-th">Clinic Name</CTableHeaderCell>
+                <CTableHeaderCell className="rd-th" style={{ width: 120 }}>Actions</CTableHeaderCell>
+              </CTableRow>
+            </CTableHead>
 
-                  <CTableDataCell>{capitalizeWords(tech.fullName)}</CTableDataCell>
-                  <CTableDataCell>{capitalizeWords(tech.mobileNumber)}</CTableDataCell>
-                  <CTableDataCell>
-                    {tech.address
-                      ? `${tech.address.houseNo || ''}, ${tech.address.street || ''}, ${tech.address.landmark || ''}, ${tech.address.city || ''}, ${tech.address.state || ''}, ${tech.address.country || ''} - ${tech.address.postalCode || ''}`
-                      : 'NA'}
-                  </CTableDataCell>
-
-                  <CTableDataCell>{tech.currentHospitalName}</CTableDataCell>
-
-                  <CTableDataCell className="text-end">
-                    <div className="d-flex justify-content-end gap-2  ">
-                      {can('Refer Doctor', 'read') && (
-                        <button
-                          className="actionBtn"
-                          onClick={() => {
-                            setSelectedTech(tech)
-                            setViewMode(true)
-                            setModalVisible(true)
-                          }}
-                          title="View"
-                        >
-                          <Eye size={18} />
-                        </button>
-                      )}
-                      {can('Refer Doctor', 'update') && (
-                        <button
-                          className="actionBtn"
-                          onClick={() => {
-                            setSelectedTech(tech)
-                            setViewMode(false)
-                            setModalVisible(true)
-                          }}
-                          title="Edit"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                      )}
-                      {can('Refer Doctor', 'delete') && (
-                        <button
-                          className="actionBtn"
-                          onClick={() => {
-                            console.log(tech.id)
-                            setDeleteId(tech.id) // store id
-                            setIsModalVisible(true) // show confirmation modal
-                          }}
-                          title="Delete"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
+            <CTableBody>
+              {displayData.length === 0 ? (
+                <CTableRow>
+                  <CTableDataCell colSpan={6}>
+                    <div className="rd-empty">
+                      <UserRoundPlus size={40} className="rd-empty-icon" />
+                      <p>
+                        {searchQuery
+                          ? `No refer doctors found matching "${searchQuery}"`
+                          : 'No refer doctors found'}
+                      </p>
                     </div>
                   </CTableDataCell>
                 </CTableRow>
-              ))
-            ) : (
-              <CTableRow>
-                <CTableDataCell
-                  colSpan="9"
-                  className="text-center"
-                  style={{ color: 'var(--color-black)' }}
-                >
-                  No ReferDoctor found.
-                </CTableDataCell>
-              </CTableRow>
-              //   <CTableRow>
-              //     <CTableDataCell colSpan={5} className="text-center text-muted">
-              //       🔍 No technician found matching "<b>{searchQuery}</b>"
-              //     </CTableDataCell>
-              //   </CTableRow>
-            )}
-          </CTableBody>
-        </CTable>
+              ) : (
+                displayData.map((tech, index) => (
+                  <CTableRow key={tech.id} className="rd-tr">
+                    <CTableDataCell className="rd-td rd-td-num">
+                      {(currentPage - 1) * rowsPerPage + index + 1}
+                    </CTableDataCell>
+
+                    <CTableDataCell className="rd-td">
+                      <span className="rd-name">{capitalizeWords(tech.fullName)}</span>
+                    </CTableDataCell>
+
+                    <CTableDataCell className="rd-td rd-muted">
+                      {tech.mobileNumber || '—'}
+                    </CTableDataCell>
+
+                    <CTableDataCell className="rd-td rd-muted rd-address">
+                      {formatAddress(tech.address)}
+                    </CTableDataCell>
+
+                    <CTableDataCell className="rd-td">
+                      {tech.currentHospitalName ? (
+                        <span className="rd-clinic-badge">{tech.currentHospitalName}</span>
+                      ) : '—'}
+                    </CTableDataCell>
+
+                    <CTableDataCell className="rd-td">
+                      <div className="rd-actions">
+                        {can('Refer Doctor', 'read') && (
+                          <button
+                            className="rd-action-btn view"
+                            title="View"
+                            onClick={() => { setSelectedTech(tech); setViewMode(true); setModalVisible(true) }}
+                          >
+                            <Eye size={14} />
+                          </button>
+                        )}
+                        {can('Refer Doctor', 'update') && (
+                          <button
+                            className="rd-action-btn edit"
+                            title="Edit"
+                            onClick={() => { setSelectedTech(tech); setViewMode(false); setModalVisible(true) }}
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                        )}
+                        {can('Refer Doctor', 'delete') && (
+                          <button
+                            className="rd-action-btn del"
+                            title="Delete"
+                            onClick={() => { setDeleteId(tech.id); setIsModalVisible(true) }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </CTableDataCell>
+                  </CTableRow>
+                ))
+              )}
+            </CTableBody>
+          </CTable>
+        </div>
       )}
+
+      {/* Pagination */}
       {filteredData.length > 0 && (
-        <div className="mb-3  mt-3">
+        <div className="mt-3 mb-3">
           <Pagination
             currentPage={currentPage}
-            totalPages={Math.ceil(displayData.length / rowsPerPage)}
+            totalPages={Math.ceil(filteredData.length / rowsPerPage)}
             pageSize={rowsPerPage}
             onPageChange={setCurrentPage}
             onPageSizeChange={setRowsPerPage}
           />
         </div>
       )}
+
+      {/* ── REFER DOCTOR FORM MODAL ──────────────── */}
       <ReferDoctorForm
         visible={modalVisible}
-        onClose={() => {
-          setModalVisible(false)
-          setSelectedTech(null)
-          setViewMode(false)
-        }}
+        onClose={() => { setModalVisible(false); setSelectedTech(null); setViewMode(false) }}
         onSave={handleSave}
         initialData={selectedTech}
         viewMode={viewMode}
         technicians={technicians}
         fetchTechs={fetchTechs}
       />
-    </div>
+
+      {/* ── DELETE CONFIRMATION ──────────────────── */}
+      <ConfirmationModal
+        isVisible={isModalVisible}
+        title="Delete Refer Doctor"
+        message="Are you sure you want to delete this Refer Doctor? This action cannot be undone."
+        isLoading={delloading}
+        confirmText={
+          delloading ? (
+            <><span className="spinner-border spinner-border-sm me-2 text-white" />Deleting...</>
+          ) : 'Yes, Delete'
+        }
+        cancelText="Cancel"
+        confirmColor="danger"
+        cancelColor="secondary"
+        onConfirm={() => handleDelete(deleteId)}
+        onCancel={() => setIsModalVisible(false)}
+      />
+
+      {/* ── STYLES ──────────────────────────────── */}
+      <style>{`
+        /* Page Header */
+        .rd-page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 18px;
+          padding-bottom: 14px;
+          border-bottom: 0.5px solid #d0dce9;
+        }
+        .rd-page-title-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .rd-page-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background: #e6f1fb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #185fa5;
+          flex-shrink: 0;
+        }
+        .rd-page-title {
+          font-size: 17px;
+          font-weight: 600;
+          color: #0c447c;
+          margin: 0;
+        }
+        .rd-page-sub {
+          font-size: 12px;
+          color: #6b7280;
+          margin: 0;
+        }
+        .rd-add-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: #185fa5;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 9px 18px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(24,95,165,0.2);
+          transition: background 0.15s, transform 0.1s;
+        }
+        .rd-add-btn:hover  { background: #0c447c; }
+        .rd-add-btn:active { transform: scale(0.97); }
+
+        /* Table */
+        .rd-table-wrapper {
+          border: 0.5px solid #d0dce9;
+          border-radius: 10px;
+          overflow: hidden;
+          overflow-x: auto;
+          margin-bottom: 12px;
+        }
+        .rd-table { margin-bottom: 0 !important; font-size: 13px; }
+        .rd-th {
+          background: #185fa5 !important;
+          color: #fff !important;
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          padding: 11px 14px !important;
+          white-space: nowrap;
+          border: none !important;
+        }
+        .rd-tr { transition: background 0.12s; }
+        .rd-tr:hover { background: #f0f5fb !important; }
+        .rd-td {
+          padding: 11px 14px !important;
+          vertical-align: middle !important;
+          font-size: 13px;
+          color: #374151;
+          border-bottom: 0.5px solid #eef2f7 !important;
+          border-top: none !important;
+        }
+        .rd-td-num { color: #9ca3af; font-size: 12px; }
+        .rd-muted   { color: #6b7280; }
+        .rd-address { font-size: 12px; max-width: 260px; }
+
+        /* Name */
+        .rd-name {
+          font-weight: 600;
+          font-size: 13px;
+          color: #0c447c;
+        }
+
+        /* Clinic badge */
+        .rd-clinic-badge {
+          background: #eaf3de;
+          color: #3b6d11;
+          border: 0.5px solid #c0dd97;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 10px;
+          white-space: nowrap;
+        }
+
+        /* Actions */
+        .rd-actions {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
+        .rd-action-btn {
+          width: 30px;
+          height: 30px;
+          border-radius: 7px;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: filter 0.12s, transform 0.1s;
+          flex-shrink: 0;
+        }
+        .rd-action-btn.view { background: #e6f1fb; color: #185fa5; }
+        .rd-action-btn.edit { background: #eaf3de; color: #3b6d11; }
+        .rd-action-btn.del  { background: #fcebeb; color: #a32d2d; }
+        .rd-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
+        .rd-action-btn:active { transform: scale(0.94); }
+
+        /* Empty state */
+        .rd-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          padding: 40px 0;
+          color: #9ca3af;
+          font-size: 14px;
+        }
+        .rd-empty-icon { color: #d0dce9; }
+      `}</style>
+    </>
   )
 }
 

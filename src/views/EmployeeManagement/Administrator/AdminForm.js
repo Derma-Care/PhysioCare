@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import {
-  CButton,
   CForm,
-  CFormInput,
-  CFormLabel,
   CModal,
   CModalHeader,
   CModalTitle,
   CModalBody,
   CModalFooter,
-  CFormTextarea,
-  CFormSelect,
 } from '@coreui/react'
-import { toast, ToastContainer } from 'react-toastify'
+import { ToastContainer } from 'react-toastify'
 import { actions, features } from '../../../Constant/Features'
 import capitalizeWords from '../../../Utils/capitalizeWords'
 import UserPermissionModal from '../UserPermissionModal'
@@ -20,8 +15,13 @@ import { validateField } from '../../../Utils/Validators'
 import FilePreview from '../../../Utils/FilePreview'
 import { emailPattern } from '../../../Constant/Constants'
 import { showCustomToast } from '../../../Utils/Toaster'
+import {
+  User, Briefcase, MapPin, CreditCard, FileText,
+  Save, X, RotateCcw, UserCog,
+} from 'lucide-react'
+
 const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fetchAdmins }) => {
-  const emptyPermissions = {} // ✅ no feature is selected by default
+  const emptyPermissions = {}
 
   const emptyForm = {
     clinicId: localStorage.getItem('HospitalId'),
@@ -39,8 +39,6 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
     dateOfJoining: '',
     department: '',
     yearOfExperience: '',
-    // specialization: '',
-    // shiftTimingsOrAvailability: '',
     role: 'Administrator',
     address: {
       houseNo: '',
@@ -60,19 +58,14 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
       branchName: '',
       panCardNumber: '',
     },
-    // medicalFitnessCertificate: '',
     profilePicture: '',
-    // labLicenseOrRegistration: '',
-    // vaccinationStatus: 'Fully Vaccinated',
-    // previousEmploymentHistory: '',
     permissions: emptyPermissions,
     userName: '',
     password: '',
   }
 
-  //State
   const [formData, setFormData] = useState(emptyForm)
-  const [clinicId, setClinicID] = useState(localStorage.getItem('HospitalId'))
+  const [clinicId] = useState(localStorage.getItem('HospitalId'))
   const [showModal, setShowModal] = useState(false)
   const [showPModal, setShowPModal] = useState(false)
   const [previewFileUrl, setPreviewFileUrl] = useState(null)
@@ -81,104 +74,53 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
   const [loading, setLoading] = useState(false)
   const [ifscLoading, setIfscLoading] = useState(false)
 
-  // Mandatory fields
   const mandatoryFields = [
-    'fullName',
-    'gender',
-    'dateOfBirth',
-    'contactNumber',
-    'emailId',
-    'governmentId',
-    'dateOfJoining',
-    'department',
-    // 'yearOfExperience',
-    'clinicId',
-    // 'vaccinationStatus',
-    'profilePicture',
-    'role',
-    'emergencyContact',
-    // address fields
-    'address.houseNo',
-    'address.street',
-    'address.city',
-    'address.state',
-    'address.postalCode',
-    'address.country',
-
-    // bank details fields
-    'bankAccountDetails.accountNumber',
-    'bankAccountDetails.accountHolderName',
-    'bankAccountDetails.bankName',
-    'bankAccountDetails.branchName',
-    'bankAccountDetails.ifscCode',
-    'bankAccountDetails.panCardNumber',
+    'fullName', 'gender', 'dateOfBirth', 'contactNumber', 'emailId',
+    'governmentId', 'dateOfJoining', 'department', 'clinicId',
+    'profilePicture', 'role', 'emergencyContact',
+    'address.houseNo', 'address.street', 'address.city', 'address.state',
+    'address.postalCode', 'address.country',
+    'bankAccountDetails.accountNumber', 'bankAccountDetails.accountHolderName',
+    'bankAccountDetails.bankName', 'bankAccountDetails.branchName',
+    'bankAccountDetails.ifscCode', 'bankAccountDetails.panCardNumber',
   ]
 
   function validateMandatoryFields(formData, mandatoryFields) {
     const missingFields = []
-
     for (const field of mandatoryFields) {
       const keys = field.split('.')
       let value = formData
-
-      for (const key of keys) {
-        value = value?.[key]
-        if (value === undefined || value === null) break
-      }
-
-      // ✅ Avoid false negatives like 0 or false (which are valid values)
-      if (value === undefined || value === null || String(value).trim() === '') {
-        missingFields.push(field)
-      }
+      for (const key of keys) { value = value?.[key]; if (value === undefined || value === null) break }
+      if (value === undefined || value === null || String(value).trim() === '') missingFields.push(field)
     }
-
     return missingFields
   }
 
-  // Toggle feature
   const toggleFeature = (feature) => {
     setFormData((prev) => {
       const updated = { ...prev.permissions }
-
-      if (updated[feature]) {
-        delete updated[feature] // remove completely when unchecked
-      } else {
-        updated[feature] = [] // add with no actions when checked
-      }
-
+      if (updated[feature]) delete updated[feature]
+      else updated[feature] = []
       return { ...prev, permissions: updated }
     })
   }
 
-  // Toggle one action
   const togglePermission = (feature, action) => {
     setFormData((prev) => {
       const updated = { ...prev.permissions }
       if (!updated[feature]) updated[feature] = []
-
-      if (updated[feature].includes(action)) {
-        updated[feature] = updated[feature].filter((a) => a !== action)
-      } else {
-        updated[feature] = [...updated[feature], action]
-      }
-
+      if (updated[feature].includes(action)) updated[feature] = updated[feature].filter((a) => a !== action)
+      else updated[feature] = [...updated[feature], action]
       return { ...prev, permissions: updated }
     })
   }
 
-  // Select All actions
   const toggleAllActions = (feature) => {
     setFormData((prev) => {
       const updated = { ...prev.permissions }
-
-      if (!updated[feature]) {
-        updated[feature] = [...actions] // select all
-      } else if (updated[feature].length === actions.length) {
-        updated[feature] = [] // unselect all
-      } else {
-        updated[feature] = [...actions] // select all
-      }
-
+      if (!updated[feature]) updated[feature] = [...actions]
+      else if (updated[feature].length === actions.length) updated[feature] = []
+      else updated[feature] = [...actions]
       return { ...prev, permissions: updated }
     })
   }
@@ -186,113 +128,56 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
   const toBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader()
-      reader.readAsDataURL(file) // ✅ Converts file to base64 with data:image/... prefix
+      reader.readAsDataURL(file)
       reader.onload = () => resolve(reader.result)
       reader.onerror = (error) => reject(error)
     })
 
   useEffect(() => {
-    if (initialData) {
-      setFormData(initialData)
-    } else {
-      setFormData(emptyForm)
-    }
+    if (initialData) setFormData(initialData)
+    else setFormData(emptyForm)
   }, [initialData])
 
-  // 🔹 Handle text inputs (top-level fields)
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-
-    // Run validation on each change
     const error = validateField(field, value, { ...formData, [field]: value }, admins)
-
     setErrors((prev) => ({ ...prev, [field]: error }))
   }
+
   const handleNestedChange = (parent, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [parent]: { ...prev[parent], [field]: value },
-    }))
+    setFormData((prev) => ({ ...prev, [parent]: { ...prev[parent], [field]: value } }))
   }
 
-  // 🔹 File upload → Base64
+  const handleBlur = (field, value) => {
+    const error = validateField(field, value, formData, admins)
+    setErrors((prev) => ({ ...prev, [field]: error }))
+  }
+
   const handleFileUpload = (e, field) => {
     const file = e.target.files[0]
     if (!file) return
-
-    // ✅ Check file size (bytes → KB)
-    if (file.size > 250 * 1024) {
-      showCustomToast('File size must be less than 250KB.', 'error')
-      return // do not proceed
-    }
-
+    if (file.size > 250 * 1024) { showCustomToast('File size must be less than 250KB.', 'error'); return }
     const reader = new FileReader()
-    reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: reader.result, // Full Data URL
-      }))
-    }
+    reader.onloadend = () => setFormData((prev) => ({ ...prev, [field]: reader.result }))
     reader.readAsDataURL(file)
   }
 
   const validateForm = () => {
-    // 1️⃣ Mandatory fields
     const missing = validateMandatoryFields(formData, mandatoryFields)
-    if (missing.length > 0) {
-      showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error')
-
-      // toast.error(`Please fill required fields: ${missing.join(', ')}`)
-      return false
-    }
-
-    // 2️⃣ Age check
+    if (missing.length > 0) { showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error'); return false }
     if (formData.dateOfBirth) {
       const dob = new Date(formData.dateOfBirth)
       const today = new Date()
       let age = today.getFullYear() - dob.getFullYear()
-      if (
-        today.getMonth() < dob.getMonth() ||
-        (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-      ) {
-        age -= 1
-      }
-      if (age < 18) {
-        showCustomToast('Admin must be at least 18 years old.', 'error')
-        return false
-      }
+      if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age -= 1
+      if (age < 18) { showCustomToast('Admin must be at least 18 years old.', 'error'); return false }
     }
-
-    // 3️⃣ Mobile number
-    const mobileRegex = /^[6-9]\d{9}$/
-    if (!mobileRegex.test(formData.contactNumber)) {
-      showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error')
-      return false
-    }
-
-    // 4️⃣ Emergency contact
-    if (formData.contactNumber === formData.emergencyContact) {
-      showCustomToast('Contact Number and Emergency Contact cannot be the same.', 'error')
-      return false
-    }
-
-    // 5️⃣ Email
-    if (!emailPattern.test(formData.emailId)) {
-      showCustomToast('Please enter a valid email address.', 'error')
-      return false
-    }
-
-    // 6️⃣ Duplicates
-    if (admins?.some((t) => t.contactNumber === formData.contactNumber && t.id !== formData.id)) {
-      showCustomToast('Contact number already exists!', 'error')
-      return false
-    }
-    if (admins?.some((t) => t.emailId === formData.emailId && t.id !== formData.id)) {
-      showCustomToast('Email already exists!', 'error')
-      return false
-    }
-
-    return true //  everything is valid
+    if (!/^[6-9]\d{9}$/.test(formData.contactNumber)) { showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error'); return false }
+    if (formData.contactNumber === formData.emergencyContact) { showCustomToast('Contact Number and Emergency Contact cannot be the same.', 'error'); return false }
+    if (!emailPattern.test(formData.emailId)) { showCustomToast('Please enter a valid email address.', 'error'); return false }
+    if (admins?.some((t) => t.contactNumber === formData.contactNumber && t.id !== formData.id)) { showCustomToast('Contact number already exists!', 'error'); return false }
+    if (admins?.some((t) => t.emailId === formData.emailId && t.id !== formData.id)) { showCustomToast('Email already exists!', 'error'); return false }
+    return true
   }
 
   const handleSubmit = async () => {
@@ -302,16 +187,10 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
       showCustomToast('Please assign at least one user permission before saving.', 'error')
       return
     }
-
-    //  If everything passed → Save admin
     try {
       setLoading(true)
       const res = await onSave(formData)
-      console.log(res) // Now this will log actual API response
-      if (res != undefined) {
-        setFormData(emptyForm)
-        onClose()
-      }
+      if (res != undefined) { setFormData(emptyForm); onClose() }
     } catch (err) {
       console.error('Submit failed', err)
     } finally {
@@ -322,837 +201,530 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
   const handleUserPermission = () => {
     const isValid = validateForm()
     if (!isValid) return
-
-    console.log(formData)
     setShowPModal(true)
   }
 
-  // 🔹 Close Preview Modal
-  const handleCloseModal = () => {
-    setShowModal(false)
-    setPreviewFileUrl(null)
-    setIsPreviewPdf(false)
-  }
+  const handleCloseModal = () => { setShowModal(false); setPreviewFileUrl(null); setIsPreviewPdf(false) }
 
-  //decode image
-  const decodeImage = (data) => {
-    try {
-      // decode base64 string into normal string
-      return atob(data)
-    } catch {
-      return null
-    }
-  }
-
-  // 🔹 Small reusable info component
-  const Section = ({ title, children }) => (
-    <div>
-      <h5 className="text-lg font-semibold border-b pb-2 mb-4">{title}</h5>
-      <div className="grid grid-cols-3 gap-4">{children}</div>
+  // ── View Mode helpers ──
+  const InfoCard = ({ icon: Icon, title, children }) => (
+    <div className="af-card">
+      <div className="af-card-header"><Icon size={14} className="af-card-icon" />{title}</div>
+      <div className="af-card-body">{children}</div>
     </div>
   )
 
-  const Row = ({ label, value }) => (
-    <div>
-      <p className="text-sm font-medium text-gray-600 fw-bold">{label}</p>
-      <p className="text-base text-gray-900 text-break">{value || 'N/A'}</p>
+  const InfoRow = ({ label, value }) => (
+    <div className="af-info-row">
+      <span className="af-info-label">{label}</span>
+      <span className="af-info-value">{value || '—'}</span>
     </div>
   )
 
-  const RowFull = ({ label, value }) => (
-    <div className="col-span-3">
-      {label && <p className="text-sm font-medium text-gray-600 fw-bold">{label}</p>}
-      <p className="text-base text-gray-900 text-break">{value || 'N/A'}</p>
+  // ── Edit Mode helpers ──
+  const FormSection = ({ icon: Icon, title, children }) => (
+    <div className="af-section">
+      <div className="af-section-title"><Icon size={14} className="af-section-icon" />{title}</div>
+      <div className="af-section-body">{children}</div>
+    </div>
+  )
+
+  const Field = ({ label, required, error, children }) => (
+    <div className="af-field">
+      <label className="af-label">{label}{required && <span className="af-required">*</span>}</label>
+      {children}
+      {error && <span className="af-error">{error}</span>}
     </div>
   )
 
   return (
     <>
       <ToastContainer />
-      <CModal
-        visible={visible}
-        onClose={onClose}
-        size="lg"
-        className="custom-modal"
-        backdrop="static"
-      >
-        <CModalHeader>
-          <CModalTitle>{viewMode ? 'Personal Information' : 'Add / Edit Admin'}</CModalTitle>
+
+      {/* ── Main Modal ── */}
+      <CModal visible={visible} onClose={onClose} size="lg" backdrop="static">
+        <CModalHeader style={{ borderBottom: '0.5px solid #d0dce9', padding: '16px 20px' }}>
+          <CModalTitle style={{ fontSize: 15, fontWeight: 600, color: '#0c447c' }}>
+            {viewMode ? 'Admin Profile' : initialData ? 'Edit Admin' : 'Add Admin'}
+          </CModalTitle>
         </CModalHeader>
-        <CModalBody>
+
+        <CModalBody style={{ padding: '20px', maxHeight: '75vh', overflowY: 'auto' }}>
           {viewMode ? (
-            <div className="container my-4">
+            /* ═══════════════ VIEW MODE ═══════════════ */
+            <div>
               {/* Profile Header */}
-              <div className="card p-4 mb-4 shadow-sm border-light">
-                <div className="d-flex flex-column flex-md-row align-items-center">
-                  {/* Profile Image */}
-                  <div className="text-center me-md-4 mb-3 mb-md-0">
-                    <img
-                      src={formData.profilePicture || '/assets/images/default-avatar.png'}
-                      alt={formData.fullName}
-                      width="100"
-                      height="100"
-                      className="rounded-circle border"
-                      style={{ objectFit: 'cover', borderColor: '#ccc' }}
-                    />
-                  </div>
-
-                  {/* Basic Info */}
-                  <div className="flex-grow-1 text-center text-md-start">
-                    <h4 className="fw-bold mb-1" style={{ color: '#7e3a93' }}>
-                      {formData.fullName}
-                    </h4>
-                    <p className="text-muted mb-1">
-                      <strong>Email:</strong> {formData.emailId}
-                    </p>
-                    <p className="text-muted mb-1">
-                      <strong>Contact:</strong> {formData.contactNumber}
-                    </p>
-                    <div>
-                      <span className="badge bg-secondary mt-2">ID: {formData.adminId}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Personal Information */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Personal Information</h5>
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Row label="Full Name" value={formData.fullName} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Email" value={formData.emailId} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Contact" value={formData.contactNumber} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Gender" value={formData.gender} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Date of Birth" value={formData.dateOfBirth} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Government ID" value={formData.governmentId} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Work Information */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Work Information</h5>
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Row label="Date of Joining" value={formData.dateOfJoining} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Department/Lab" value={formData.department} />
-                  </div>
-                  {/* <div className="col-md-4">
-                    <Row label="Lab License" value={formData.labLicenseOrRegistration} />
-                  </div> */}
-                  <div className="col-md-4">
-                    <Row label="Experience" value={formData.yearOfExperience} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Emergency Contact" value={formData.emergencyContact} />
-                  </div>
-                  {/* <div className="col-md-4">
-                    <Row label="Shift Timings" value={formData.shiftTimingsOrAvailability} />
-                  </div> */}
-                  {/* <div className="col-md-4">
-                    <Row label="Specialization" value={formData.specialization} />
-                  </div> */}
-                </div>
-              </div>
-
-              {/* Address */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Address</h5>
-                <RowFull
-                  value={`${formData.address.houseNo}, ${formData.address.street}, ${formData.address.city}, ${formData.address.state} - ${formData.address.postalCode}, ${formData.address.country}`}
+              <div className="af-profile-header">
+                <img
+                  src={formData.profilePicture || '/assets/images/default-avatar.png'}
+                  alt={formData.fullName}
+                  className="af-profile-avatar"
                 />
-              </div>
-
-              {/* Bank Details */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Bank Details</h5>
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Row label="Account Number" value={formData.bankAccountDetails.accountNumber} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row
-                      label="Account Holder Name"
-                      value={formData.bankAccountDetails.accountHolderName}
-                    />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="IFSC Code" value={formData.bankAccountDetails.ifscCode} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Bank Name" value={formData.bankAccountDetails.bankName} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Branch Name" value={formData.bankAccountDetails.branchName} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="PAN Card" value={formData.bankAccountDetails.panCardNumber} />
-                  </div>
+                <div>
+                  <h4 className="af-profile-name">{formData.fullName}</h4>
+                  <p className="af-profile-meta">{formData.emailId || 'No email'}</p>
+                  <p className="af-profile-meta">{formData.contactNumber}</p>
+                  <span className="af-badge">ID: {formData.adminId}</span>
                 </div>
               </div>
 
-              {/* Documents */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="mb-3 border-bottom pb-2">Documents</h5>
-                <div className="row g-3">
+              <InfoCard icon={User} title="Personal Information">
+                <div className="af-inner-grid">
+                  <InfoRow label="Full Name"     value={formData.fullName} />
+                  <InfoRow label="Email"         value={formData.emailId} />
+                  <InfoRow label="Contact"       value={formData.contactNumber} />
+                  <InfoRow label="Gender"        value={formData.gender} />
+                  <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
+                  <InfoRow label="Government ID" value={formData.governmentId} />
+                </div>
+              </InfoCard>
+
+              <InfoCard icon={Briefcase} title="Work Information">
+                <div className="af-inner-grid">
+                  <InfoRow label="Date of Joining"   value={formData.dateOfJoining} />
+                  <InfoRow label="Department"         value={formData.department} />
+                  <InfoRow label="Years of Experience" value={formData.yearOfExperience} />
+                  <InfoRow label="Emergency Contact"  value={formData.emergencyContact} />
+                </div>
+              </InfoCard>
+
+              <InfoCard icon={MapPin} title="Address">
+                <p className="af-info-value" style={{ margin: 0 }}>
+                  {[
+                    formData.address?.houseNo, formData.address?.street,
+                    formData.address?.landmark, formData.address?.city,
+                    formData.address?.state, formData.address?.postalCode,
+                    formData.address?.country,
+                  ].filter(Boolean).join(', ')}
+                </p>
+              </InfoCard>
+
+              <InfoCard icon={CreditCard} title="Bank Details">
+                <div className="af-inner-grid">
+                  <InfoRow label="Account Number"    value={formData.bankAccountDetails?.accountNumber} />
+                  <InfoRow label="Account Holder"    value={formData.bankAccountDetails?.accountHolderName} />
+                  <InfoRow label="IFSC Code"         value={formData.bankAccountDetails?.ifscCode} />
+                  <InfoRow label="Bank Name"         value={formData.bankAccountDetails?.bankName} />
+                  <InfoRow label="Branch Name"       value={formData.bankAccountDetails?.branchName} />
+                  <InfoRow label="PAN Card"          value={formData.bankAccountDetails?.panCardNumber} />
+                </div>
+              </InfoCard>
+
+              <InfoCard icon={FileText} title="Documents">
+                <div className="af-grid-2">
                   {formData.qualificationOrCertifications ? (
-                    <div className="col-md-6">
-                      <FilePreview
-                        label="Qualification / Certifications"
-                        type={formData.qualificationOrCertificationsType}
-                        data={formData.qualificationOrCertifications}
-                      />
-                    </div>
+                    <FilePreview
+                      label="Qualification / Certifications"
+                      type={formData.qualificationOrCertificationsType}
+                      data={formData.qualificationOrCertifications}
+                    />
                   ) : (
-                    <p className="col-md-6 text-muted">
-                      Not Provided Qualification / Certifications
-                    </p>
+                    <p className="af-muted">Not Provided — Qualification / Certifications</p>
                   )}
-                  {/* {formData.medicalFitnessCertificate ? (
-                                 <div className="col-md-6">
-                                   <FilePreview
-                                     label="Medical Fitness Certificate"
-                                     type={formData.medicalFitnessCertificateType || 'application/pdf'}
-                                     data={formData.medicalFitnessCertificate}
-                                   />
-                                 </div>
-                               ) : (
-                                 <p className="col-md-6 text-muted">Not Provided Medical Fitness Certificate</p>
-                               )} */}
                 </div>
-              </div>
-             
+              </InfoCard>
             </div>
           ) : (
-            // ✅ EDIT MODE
+            /* ═══════════════ EDIT MODE ═══════════════ */
             <CForm>
-              {/* 🔹 Basic Info */}
-              <h5>Basic Information</h5>
-
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <div className="row">
-                    <div className="col-md-5">
-                      <CFormLabel>
-                        ClinicID <span style={{ color: 'red' }}>*</span>
-                      </CFormLabel>
-                      <CFormInput
-                        value={clinicId}
-                        disabled
-                        onChange={(e) => handleChange('clinicId', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-md-7">
-                      <CFormLabel>
-                        Role <span style={{ color: 'red' }}>*</span>
-                      </CFormLabel>
-                      <CFormInput
-                        value={formData.role}
-                        disabled
-                        onChange={(e) => handleChange('role', e.target.value)}
-                      />
-                    </div>
+              {/* Basic Info */}
+              <FormSection icon={User} title="Basic Information">
+                <div className="af-row">
+                  <div className="af-col-half">
+                    <Field label="Clinic ID" required>
+                      <input className="af-input af-input-disabled" value={clinicId} disabled />
+                    </Field>
+                  </div>
+                  <div className="af-col-half">
+                    <Field label="Role" required>
+                      <input className="af-input af-input-disabled" value={formData.role} disabled />
+                    </Field>
                   </div>
                 </div>
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Full Name <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    value={formData.fullName}
-                    onChange={(e) => {
-                      const value = e.target.value
 
-                      // Update the form value
-                      handleChange('fullName', value)
-
-                      // Run validation from your validators file
-                      const error = validateField('fullName', value)
-
-                      // Update errors state for live feedback
-                      setErrors((prev) => ({ ...prev, fullName: error }))
-                    }}
-                  />
-                  {errors.fullName && <div className="text-danger mt-1">{errors.fullName}</div>}
-                </div>
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Gender <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormSelect
-                    value={formData.gender}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      handleChange('gender', value)
-
-                      // Live validation
-                      const error = value ? '' : 'Gender is required.'
-                      setErrors((prev) => ({ ...prev, gender: error }))
-                    }}
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </CFormSelect>
-
-                  {errors.gender && <div className="text-danger mt-1">{errors.gender}</div>}
-                </div>
-              </div>
-
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Date of Birth <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="date"
-                    value={formData.dateOfBirth}
-                    max={
-                      new Date(new Date().setFullYear(new Date().getFullYear() - 18))
-                        .toISOString()
-                        .split('T')[0]
-                    } // only allow DOB ≤ today-18yrs
-                    onChange={(e) => {
-                      const value = e.target.value
-                      handleChange('dateOfBirth', value)
-
-                      // Live validation using your validators file
-                      const err = validateField('dateOfBirth', value)
-                      setErrors((prev) => ({ ...prev, dateOfBirth: err }))
-                    }}
-                  />
-                  {errors.dateOfBirth && (
-                    <div className="text-danger mt-1">{errors.dateOfBirth}</div>
-                  )}
+                <div className="af-row">
+                  <div className="af-col-third">
+                    <Field label="Full Name" required error={errors.fullName}>
+                      <input
+                        className="af-input"
+                        value={formData.fullName}
+                        onChange={(e) => handleChange('fullName', e.target.value)}
+                        onBlur={() => handleBlur('fullName', formData.fullName)}
+                      />
+                    </Field>
+                  </div>
+                  <div className="af-col-third">
+                    <Field label="Gender" required error={errors.gender}>
+                      <select className="af-input" value={formData.gender} onChange={(e) => handleChange('gender', e.target.value)}>
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </Field>
+                  </div>
+                  <div className="af-col-third">
+                    <Field label="Date of Birth" required error={errors.dateOfBirth}>
+                      <input
+                        className="af-input" type="date"
+                        value={formData.dateOfBirth}
+                        max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                        onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+                      />
+                    </Field>
+                  </div>
                 </div>
 
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Contact Number <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="text"
-                    maxLength={10} // Restrict to 10 digits
-                    value={formData.contactNumber}
-                    onChange={(e) => {
-                      const value = e.target.value
-
-                      // Allow only digits
-                      if (/^\d*$/.test(value)) {
-                        handleChange('contactNumber', value)
-
-                        // Live validation using your existing function
-                        const err = validateField('contactNumber', value, formData, admins)
-                        setErrors((prev) => ({ ...prev, contactNumber: err }))
-                      }
-                    }}
-                  />
-                  {errors.contactNumber && (
-                    <div className="text-danger mt-1">{errors.contactNumber}</div>
-                  )}
+                <div className="af-row">
+                  <div className="af-col-third">
+                    <Field label="Contact Number" required error={errors.contactNumber}>
+                      <input
+                        className="af-input" type="text" maxLength={10}
+                        value={formData.contactNumber}
+                        onChange={(e) => {
+                          if (/^\d*$/.test(e.target.value)) handleChange('contactNumber', e.target.value)
+                        }}
+                      />
+                    </Field>
+                  </div>
+                  <div className="af-col-third">
+                    <Field label="Email" required error={errors.emailId}>
+                      <input
+                        className="af-input" type="email"
+                        value={formData.emailId}
+                        onChange={(e) => handleChange('emailId', e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <div className="af-col-third">
+                    <Field label="Government ID (Aadhaar)" required error={errors.governmentId}>
+                      <input
+                        className="af-input" maxLength={12}
+                        value={formData.governmentId}
+                        onChange={(e) => {
+                          if (/^\d*$/.test(e.target.value)) handleChange('governmentId', e.target.value)
+                        }}
+                      />
+                    </Field>
+                  </div>
                 </div>
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Email <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="email"
-                    value={formData.emailId}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      handleChange('emailId', value)
+              </FormSection>
 
-                      // Run live validation
-                      const err = validateField('emailId', value)
-                      setErrors((prev) => ({ ...prev, emailId: err }))
-                    }}
-                  />
-                  {errors.emailId && <div className="text-danger mt-1">{errors.emailId}</div>}
-                </div>
-              </div>
-
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <CFormLabel>
-                    GovernmentID(AadharCard No) <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    maxLength={12}
-                    value={formData.governmentId}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      // ✅ Only numbers allowed, max 12
-                      if (/^\d*$/.test(value)) {
-                        handleChange('governmentId', value)
-
-                        // Run live validation
-                        const err = validateField('governmentId', value)
-                        setErrors((prev) => ({ ...prev, governmentId: err }))
-                      }
-                    }}
-                  />
-                  {errors.governmentId && (
-                    <div className="text-danger mt-1">{errors.governmentId}</div>
-                  )}
+              {/* Work Info */}
+              <FormSection icon={Briefcase} title="Work Information">
+                <div className="af-row">
+                  <div className="af-col-third">
+                    <Field label="Date of Joining" required error={errors.dateOfJoining}>
+                      <input
+                        className="af-input" type="date"
+                        value={formData.dateOfJoining}
+                        max={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => handleChange('dateOfJoining', e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <div className="af-col-third">
+                    <Field label="Department" required error={errors.department}>
+                      <input
+                        className="af-input"
+                        value={formData.department}
+                        onChange={(e) => handleChange('department', e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <div className="af-col-third">
+                    <Field label="Years of Experience">
+                      <input
+                        className="af-input" type="number"
+                        value={formData.yearOfExperience}
+                        onChange={(e) => handleChange('yearOfExperience', e.target.value)}
+                      />
+                    </Field>
+                  </div>
                 </div>
 
-                {/* <div className="col-md-4">
-                  <CFormLabel>Lab License / Registration</CFormLabel>
-                  <CFormInput
-                    value={formData.labLicenseOrRegistration}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      handleChange('labLicenseOrRegistration', value)
-
-                      // Run live validation using your validator file
-                      const err = validateField('labLicenseOrRegistration', value)
-                      setErrors((prev) => ({ ...prev, labLicenseOrRegistration: err }))
-                    }}
-                  />
-                  {errors.labLicenseOrRegistration && (
-                    <div className="text-danger mt-1">{errors.labLicenseOrRegistration}</div>
-                  )}
-                </div> */}
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Date of Joining <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="date"
-                    value={formData.dateOfJoining}
-                    max={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      handleChange('dateOfJoining', value)
-
-                      const err = validateField('dateOfJoining', value)
-                      setErrors((prev) => ({ ...prev, dateOfJoining: err }))
-                    }}
-                  />
-                  {errors.dateOfJoining && (
-                    <div className="text-danger mt-1">{errors.dateOfJoining}</div>
-                  )}
+                <div className="af-row">
+                  <div className="af-col-third">
+                    <Field label="Emergency Contact" required>
+                      <input
+                        className="af-input" type="text" maxLength={10}
+                        value={formData.emergencyContact}
+                        onChange={(e) => {
+                          if (/^\d*$/.test(e.target.value)) handleChange('emergencyContact', e.target.value)
+                        }}
+                      />
+                    </Field>
+                  </div>
                 </div>
-              </div>
+              </FormSection>
 
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  {' '}
-                  <CFormLabel>
-                    Department<span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    value={formData.department}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      handleChange('department', value)
-
-                      // run live validation
-                      const err = validateField('department', value)
-                      setErrors((prev) => ({ ...prev, department: err }))
-                    }}
-                  />
-                  {errors.department && <div className="text-danger mt-1">{errors.department}</div>}
-                </div>
-                <div className="col-md-4">
-                  {' '}
-                  <CFormLabel>Years of Experience</CFormLabel>
-                  <CFormInput
-                    type="number"
-                    value={formData.yearOfExperience}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      handleChange('yearOfExperience', value)
-
-                      // run live validation
-                      // const err = validateField('yearOfExperience', value)
-                      // setErrors((prev) => ({ ...prev, yearOfExperience: err }))
-                    }}
-                  />
-                  {/* {errors.yearOfExperience && (
-                    <div className="text-danger mt-1">{errors.yearOfExperience}</div>
-                  )} */}
-                </div>
-              </div>
-
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Emergency Contact<span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-
-                  <CFormInput
-                    type="text"
-                    maxLength={10} // ✅ Restrict to 10 digits
-                    value={formData.emergencyContact}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      // ✅ Allow only digits
-                      if (/^\d*$/.test(value)) {
-                        handleChange('emergencyContact', e.target.value)
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* 🔹 Address */}
-              <h5 className="mt-3">Address</h5>
-
-              {Object.keys(formData.address)
-                .reduce((rows, field, index) => {
-                  if (index % 3 === 0) rows.push([]) // start new row every 3 fields
-                  rows[rows.length - 1].push(field)
-                  return rows
-                }, [])
-                .map((rowFields, rowIndex) => (
-                  <div className="row mb-3" key={rowIndex}>
-                    {rowFields.map((field) => (
-                      <div className="col-md-4" key={field}>
-                        <CFormLabel className="text-capitalize">
-                          {field}
-                          {field !== 'landmark' && <span style={{ color: 'red' }}> *</span>}
-                        </CFormLabel>
-                        <CFormInput
-                          type="text"
+              {/* Address */}
+              <FormSection icon={MapPin} title="Address">
+                <div className="af-row">
+                  {Object.keys(formData.address).map((field) => (
+                    <div className="af-col-third" key={field}>
+                      <Field
+                        label={field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
+                        required={field !== 'landmark'}
+                        error={errors.address?.[field]}
+                      >
+                        <input
+                          className="af-input" type="text"
                           maxLength={field === 'postalCode' ? 6 : undefined}
                           value={formData.address[field]}
                           onChange={(e) => {
                             let value = e.target.value
                             if (field === 'postalCode') {
-                              // Only digits allowed
-                              if (/^\d*$/.test(value)) {
-                                handleNestedChange('address', field, value)
-                                // Live validation
-                                const err = validateField(field, value, formData)
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  address: { ...prev.address, [field]: err },
-                                }))
-                              }
+                              if (/^\d*$/.test(value)) handleNestedChange('address', field, value)
                             } else {
                               handleNestedChange('address', field, value)
-                              // Live validation
-                              const err = validateField(field, value, formData)
-                              setErrors((prev) => ({
-                                ...prev,
-                                address: { ...prev.address, [field]: err },
-                              }))
                             }
+                            setErrors((p) => ({ ...p, address: { ...p.address, [field]: validateField(field, value, formData) } }))
                           }}
                         />
-                        {errors.address?.[field] && (
-                          <div className="text-danger mt-1">{errors.address[field]}</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                      </Field>
+                    </div>
+                  ))}
+                </div>
+              </FormSection>
 
-              {/* 🔹 Bank Details */}
-              <h5 className="mt-3">Bank Account Details</h5>
-              {Object.keys(formData.bankAccountDetails)
-                .reduce((rows, field, index) => {
-                  if (index % 3 === 0) rows.push([]) // start new row every 3 fields
-                  rows[rows.length - 1].push(field)
-                  return rows
-                }, [])
-                .map((rowFields, rowIndex) => (
-                  <div className="row mb-3" key={rowIndex}>
-                    {rowFields.map((field) => (
-                      <div className="col-md-4" key={field}>
-                        <CFormLabel className="text-capitalize">
-                          {field} <span style={{ color: 'red' }}>*</span>
-                        </CFormLabel>
-                        <CFormInput
+              {/* Bank Details */}
+              <FormSection icon={CreditCard} title="Bank Account Details">
+                <div className="af-row">
+                  {Object.keys(formData.bankAccountDetails).map((field) => (
+                    <div className="af-col-third" key={field}>
+                      <Field
+                        label={field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
+                        required
+                        error={errors.bankAccountDetails?.[field]}
+                      >
+                        <input
+                          className="af-input"
                           value={formData.bankAccountDetails[field]}
                           disabled={ifscLoading && (field === 'bankName' || field === 'branchName')}
-                          placeholder={
-                            ifscLoading && (field === 'bankName' || field === 'branchName')
-                              ? 'Fetching...'
-                              : ''
-                          }
+                          placeholder={ifscLoading && (field === 'bankName' || field === 'branchName') ? 'Fetching...' : ''}
                           maxLength={
-                            field === 'accountNumber'
-                              ? 20
-                              : field === 'panCardNumber'
-                                ? 10
-                                : field === 'ifscCode'
-                                  ? 11
-                                  : undefined
+                            field === 'accountNumber' ? 20
+                            : field === 'panCardNumber' ? 10
+                            : field === 'ifscCode' ? 11
+                            : undefined
                           }
                           onChange={async (e) => {
                             let value = e.target.value
-
-                            // Account Number → only digits
-                            if (field === 'accountNumber') {
-                              if (/^\d*$/.test(value))
-                                handleNestedChange('bankAccountDetails', field, value)
-                            }
-                            // PAN → uppercase, specific format
-                            else if (field === 'panCardNumber') {
+                            let err = ''
+                            if (field === 'accountHolderName') {
+                              value = value.replace(/[^A-Za-z\s]/g, '')
+                              handleNestedChange('bankAccountDetails', field, value)
+                            } else if (field === 'accountNumber') {
+                              if (/^\d*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
+                            } else if (field === 'panCardNumber') {
                               value = value.toUpperCase()
-                              if (/^[A-Z]{0,5}[0-9]{0,4}[A-Z]{0,1}$/.test(value))
-                                handleNestedChange('bankAccountDetails', field, value)
-                            }
-                            // IFSC → uppercase, alphanumeric
-                            else if (field === 'ifscCode') {
+                              if (/^[A-Z]{0,5}[0-9]{0,4}[A-Z]{0,1}$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
+                              err = value.length === 10 ? (/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? '' : 'Invalid PAN (ABCDE1234F)') : ''
+                            } else if (field === 'ifscCode') {
                               value = value.toUpperCase()
-                              if (/^[A-Z0-9]*$/.test(value))
-                                handleNestedChange('bankAccountDetails', field, value)
-                            }
-                            // Other fields
-                            else {
+                              if (/^[A-Z0-9]*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
+                            } else {
                               handleNestedChange('bankAccountDetails', field, value)
                             }
-
-                            // Live validation
-                            const error = validateField(field, value, formData)
-                            setErrors((prev) => ({
-                              ...prev,
-                              bankAccountDetails: {
-                                ...prev.bankAccountDetails,
-                                [field]: error,
-                              },
-                            }))
+                            setErrors((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, [field]: err || validateField(field, value, formData) } }))
                           }}
                           onBlur={async () => {
                             const value = formData.bankAccountDetails[field]
-                            const error = validateField(field, value, formData)
-                            setErrors((prev) => ({
-                              ...prev,
-                              bankAccountDetails: {
-                                ...prev.bankAccountDetails,
-                                [field]: error,
-                              },
-                            }))
-
-                            // Special handling for PAN
-                            if (field === 'panCardNumber' && value.length === 10) {
-                              const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]$/
-                              if (!panRegex.test(value))
-                                showCustomToast('Invalid PAN format (e.g., ABCDE1234F)', 'error')
-                            }
-
-                            // Special handling for IFSC
-                            if (field === 'ifscCode' && value.length === 11) {
-                              const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
-                              if (!ifscRegex.test(value)) {
-                                showCustomToast('Invalid IFSC format (e.g., HDFC0001234)', 'error')
-                                handleNestedChange('bankAccountDetails', 'bankName', '')
-                                handleNestedChange('bankAccountDetails', 'branchName', '')
-                              } else {
-                                try {
-                                  // Show loading in UI
-                                  setIfscLoading(true)
-                                  handleNestedChange(
-                                    'bankAccountDetails',
-                                    'bankName',
-                                    'Fetching...',
-                                  )
-                                  handleNestedChange(
-                                    'bankAccountDetails',
-                                    'branchName',
-                                    'Fetching...',
-                                  )
-
-                                  const res = await fetch(`https://ifsc.razorpay.com/${value}`)
-                                  if (res.ok) {
-                                    const data = await res.json()
-                                    handleNestedChange(
-                                      'bankAccountDetails',
-                                      'bankName',
-                                      data.BANK || '',
-                                    )
-                                    handleNestedChange(
-                                      'bankAccountDetails',
-                                      'branchName',
-                                      data.BRANCH || '',
-                                    )
-                                  } else {
-                                    showCustomToast('Invalid IFSC code', 'error')
-                                    handleNestedChange('bankAccountDetails', 'bankName', '')
-                                    handleNestedChange('bankAccountDetails', 'branchName', '')
-                                  }
-                                } catch (err) {
-                                  // showCustomToast('Error fetching bank details', 'error')
+                            if (field === 'ifscCode' && value.length === 11 && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value)) {
+                              try {
+                                setIfscLoading(true)
+                                handleNestedChange('bankAccountDetails', 'bankName', 'Fetching...')
+                                handleNestedChange('bankAccountDetails', 'branchName', 'Fetching...')
+                                const res = await fetch(`https://ifsc.razorpay.com/${value}`)
+                                if (res.ok) {
+                                  const data = await res.json()
+                                  handleNestedChange('bankAccountDetails', 'bankName', data.BANK || '')
+                                  handleNestedChange('bankAccountDetails', 'branchName', data.BRANCH || '')
+                                } else {
                                   handleNestedChange('bankAccountDetails', 'bankName', '')
                                   handleNestedChange('bankAccountDetails', 'branchName', '')
-                                } finally {
-                                  // Hide loading
-                                  setIfscLoading(false)
+                                  showCustomToast('Invalid IFSC code', 'error')
                                 }
+                              } catch {
+                                handleNestedChange('bankAccountDetails', 'bankName', '')
+                                handleNestedChange('bankAccountDetails', 'branchName', '')
+                              } finally {
+                                setIfscLoading(false)
                               }
                             }
                           }}
                         />
-                        {errors.bankAccountDetails?.[field] && (
-                          <div className="text-danger mt-1">{errors.bankAccountDetails[field]}</div>
-                        )}
-                      </div>
-                    ))}
+                      </Field>
+                    </div>
+                  ))}
+                </div>
+              </FormSection>
+
+              {/* Documents */}
+              <FormSection icon={FileText} title="Documents">
+                <div className="af-row">
+                  <div className="af-col-third">
+                    <Field label="Profile Image" required>
+                      <input
+                        className="af-input" type="file" accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            const base64 = await toBase64(file)
+                            const error = validateField('profilePicture', base64)
+                            if (error) { showCustomToast(error, 'error'); return }
+                            handleChange('profilePicture', base64)
+                          }
+                        }}
+                      />
+                    </Field>
                   </div>
-                ))}
-
-              {/* 🔹 Documents */}
-              <h5 className="mt-3">Documents</h5>
-
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <CFormLabel>
-                    Profile Image <span style={{ color: 'red' }}>*</span>
-                  </CFormLabel>
-                  <CFormInput
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files[0]
-                      if (file) {
-                        //Convert to Base64
-                        const base64 = await toBase64(file)
-
-                        //Validate using validators.js
-                        const error = validateField('profilePicture', base64)
-                        if (error) {
-                          showCustomToast(error, 'error') // show error message
-                          return // do not save invalid file
-                        }
-
-                        // ✅ Save valid file
-                        handleChange('profilePicture', base64)
-                      }
-                    }}
-                  />
+                  <div className="af-col-third">
+                    <Field label="Qualification / Certifications">
+                      <input
+                        className="af-input" type="file"
+                        onChange={(e) => handleFileUpload(e, 'qualificationOrCertifications')}
+                      />
+                    </Field>
+                  </div>
                 </div>
 
-                <div className="col-md-4">
-                  <CFormLabel>Qualification / Certifications</CFormLabel>
-                  <CFormInput
-                    type="file"
-                    onChange={(e) => handleFileUpload(e, 'qualificationOrCertifications')}
-                  />
+                {/* User Permissions Button */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                  <button type="button" className="af-btn-permission" onClick={handleUserPermission}>
+                    <UserCog size={13} /> User Permissions
+                  </button>
                 </div>
-              </div>
-              <div
-                className="mb-3 w-100 mt-4"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'end',
-                  alignContent: 'end',
-                  alignItems: 'end',
-                }}
-              >
-                <CButton
-                  style={{
-                    color: 'var(--color-black)',
-                    backgroundColor: 'var(--color-bgcolor)',
-                  }}
-                  onClick={handleUserPermission}
-                >
-                  User Permissions
-                </CButton>
-              </div>
-              <UserPermissionModal
-                show={showPModal}
-                onClose={() => setShowPModal(false)}
-                features={features}
-                actions={actions}
-                permissions={formData.permissions}
-                toggleFeature={toggleFeature}
-                toggleAllActions={toggleAllActions}
-                togglePermission={togglePermission}
-                onSave={() => {
-                  console.log('Saved Permissions', formData.permissions)
-                  setShowPModal(false)
-                }}
-              />
+
+                <UserPermissionModal
+                  show={showPModal}
+                  onClose={() => setShowPModal(false)}
+                  features={features}
+                  actions={actions}
+                  permissions={formData.permissions}
+                  toggleFeature={toggleFeature}
+                  toggleAllActions={toggleAllActions}
+                  togglePermission={togglePermission}
+                  onSave={() => { console.log('Saved Permissions', formData.permissions); setShowPModal(false) }}
+                />
+              </FormSection>
             </CForm>
           )}
         </CModalBody>
-        <CModalFooter>
+
+        <CModalFooter style={{ borderTop: '0.5px solid #d0dce9', padding: '12px 20px', gap: 8 }}>
           {viewMode ? (
-            <CButton color="secondary" onClick={onClose}>
-              Close
-            </CButton>
+            <button className="af-btn-cancel" onClick={onClose}><X size={13} /> Close</button>
           ) : (
             <>
-              <CButton
-                style={{ backgroundColor: 'var(--color-bgcolor)', color: 'var(--color-black)' }}
-                onClick={() => setFormData(emptyForm)}
-              >
-                Clear
-              </CButton>
-              <CButton
-                color="secondary"
-                onClick={() => {
-                  setFormData(emptyForm)
-                  onClose()
-                }}
-              >
-                Cancel
-              </CButton>
-              <CButton
-               style={{
-                backgroundColor: 'var(--color-bgcolor)',
-                color: 'var(--color-black)',
-              }}
-                onClick={handleSubmit}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2 text-white"
-                      role="status"
-                    />
-                    Saving...
-                  </>
-                ) : (
-                  'Save'
-                )}
-              </CButton>
+              <button type="button" className="af-btn-cancel" onClick={() => setFormData(emptyForm)}>
+                <RotateCcw size={13} /> Clear
+              </button>
+              <button type="button" className="af-btn-cancel" onClick={() => { setFormData(emptyForm); onClose() }}>
+                <X size={13} /> Cancel
+              </button>
+              <button type="button" className="af-btn-save" onClick={handleSubmit} disabled={loading}>
+                {loading
+                  ? (<><span className="spinner-border spinner-border-sm me-1" role="status" />Saving...</>)
+                  : (<><Save size={13} /> Save</>)}
+              </button>
             </>
           )}
         </CModalFooter>
       </CModal>
 
-      {/* 🔹 Preview Modal */}
+      {/* ── File Preview Modal ── */}
       <CModal visible={showModal} onClose={handleCloseModal} size="xl">
-        <CModalHeader onClose={handleCloseModal}>
-          <strong>{isPreviewPdf ? 'PDF Preview' : 'Image Preview'}</strong>
+        <CModalHeader onClose={handleCloseModal} style={{ borderBottom: '0.5px solid #d0dce9', padding: '16px 20px' }}>
+          <CModalTitle style={{ fontSize: 14, fontWeight: 600, color: '#0c447c' }}>
+            {isPreviewPdf ? 'PDF Preview' : 'Image Preview'}
+          </CModalTitle>
         </CModalHeader>
         <CModalBody className="text-center">
-          {isPreviewPdf ? (
-            <iframe
-              src={previewFileUrl}
-              title="PDF Preview"
-              style={{ width: '100%', height: '80vh', border: 'none' }}
-            />
-          ) : (
-            <img
-              src={previewFileUrl}
-              alt="Preview"
-              style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '8px' }}
-            />
-          )}
+          {isPreviewPdf
+            ? <iframe src={previewFileUrl} title="PDF Preview" style={{ width: '100%', height: '80vh', border: 'none' }} />
+            : <img src={previewFileUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8 }} />}
         </CModalBody>
       </CModal>
 
-      {/* 🔹 Permissions */}
+      {/* ── STYLES ── */}
+      <style>{`
+        /* Profile header */
+        .af-profile-header { display: flex; align-items: center; gap: 16px; padding: 16px; background: #f0f5fb; border-radius: 10px; margin-bottom: 14px; }
+        .af-profile-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid #b5d4f4; flex-shrink: 0; }
+        .af-profile-name { font-size: 16px; font-weight: 700; color: #0c447c; margin: 0 0 4px; }
+        .af-profile-meta { font-size: 12px; color: #6b7280; margin: 0 0 2px; }
+        .af-badge { display: inline-block; background: #185fa5; color: #fff; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; margin-top: 4px; }
+
+        /* View cards */
+        .af-card { border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+        .af-card-header { display: flex; align-items: center; gap: 8px; background: #185fa5; color: #fff; font-size: 12px; font-weight: 600; padding: 9px 14px; }
+        .af-card-icon { color: #b5d4f4; }
+        .af-card-body { padding: 14px; background: #fff; }
+        .af-inner-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+        .af-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .af-info-row { display: flex; flex-direction: column; gap: 2px; }
+        .af-info-label { font-size: 10.5px; font-weight: 600; color: #185fa5; text-transform: uppercase; letter-spacing: 0.3px; }
+        .af-info-value { font-size: 13px; color: #374151; font-weight: 500; }
+        .af-muted { font-size: 12px; color: #9ca3af; font-style: italic; margin: 0; }
+
+        /* Edit sections */
+        .af-section { margin-bottom: 18px; border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; }
+        .af-section-title { display: flex; align-items: center; gap: 8px; background: #185fa5; color: #fff; font-size: 12px; font-weight: 600; padding: 9px 14px; }
+        .af-section-icon { color: #b5d4f4; }
+        .af-section-body { padding: 14px; }
+
+        .af-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 0; }
+        .af-col-third { flex: 1 1 calc(33.333% - 12px); min-width: 150px; }
+        .af-col-half  { flex: 1 1 calc(50% - 12px); min-width: 140px; }
+        .af-col-full  { flex: 1 1 100%; }
+
+        .af-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+        .af-label { font-size: 11px; font-weight: 600; color: #374151; display: flex; align-items: center; gap: 3px; }
+        .af-required { color: #e24b4a; font-size: 11px; }
+        .af-error { font-size: 11px; color: #e24b4a; }
+
+        .af-input {
+          width: 100%; padding: 7px 10px; font-size: 12.5px; color: #374151;
+          background: #fff; border: 0.5px solid #d0dce9; border-radius: 7px;
+          outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+          appearance: none; -webkit-appearance: none;
+        }
+        .af-input:focus { border-color: #185fa5; box-shadow: 0 0 0 2.5px rgba(24,95,165,0.12); }
+        .af-input-disabled { background: #f0f5fb !important; color: #9ca3af !important; cursor: not-allowed; }
+
+        /* Footer buttons */
+        .af-btn-cancel {
+          display: inline-flex; align-items: center; gap: 5px;
+          background: #fff; color: #374151; border: 0.5px solid #d0dce9;
+          border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: 600;
+          cursor: pointer; transition: background 0.15s;
+        }
+        .af-btn-cancel:hover { background: #f3f4f6; }
+
+        .af-btn-save {
+          display: inline-flex; align-items: center; gap: 5px;
+          background: #185fa5; color: #fff; border: none;
+          border-radius: 8px; padding: 7px 18px; font-size: 12px; font-weight: 600;
+          cursor: pointer; transition: filter 0.15s;
+        }
+        .af-btn-save:hover { filter: brightness(0.9); }
+        .af-btn-save:disabled { opacity: 0.65; cursor: not-allowed; }
+
+        .af-btn-permission {
+          display: inline-flex; align-items: center; gap: 5px;
+          background: #e6f1fb; color: #185fa5; border: 0.5px solid #b5d4f4;
+          border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: 600;
+          cursor: pointer; transition: filter 0.15s;
+        }
+        .af-btn-permission:hover { filter: brightness(0.93); }
+
+        @media (max-width: 600px) {
+          .af-col-third, .af-col-half { flex: 1 1 100%; }
+          .af-inner-grid, .af-grid-2 { grid-template-columns: 1fr; }
+        }
+      `}</style>
     </>
   )
 }

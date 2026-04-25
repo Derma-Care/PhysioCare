@@ -1,38 +1,21 @@
 import React, { useEffect, useRef } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   CContainer,
-  CDropdown,
-  CDropdownItem,
-  CDropdownMenu,
-  CDropdownToggle,
   CHeader,
   CHeaderNav,
   CHeaderToggler,
-  CNavLink,
-  CNavItem,
   useColorModes,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import ThemeSelector from '../Constant/ThemeSelector'
-import {
-  cilBell,
-  cilContrast,
-  cilEnvelopeOpen,
-  cilList,
-  cilMenu,
-  cilMoon,
-  cilSun,
-} from '@coreui/icons'
+import { cilBell, cilMenu } from '@coreui/icons'
 
 import { AppBreadcrumb } from './index'
 import { AppHeaderDropdown } from './header/index'
-import { HospitalProvider } from '../views/Usecontext/HospitalContext'
 import { useHospital } from '../views/Usecontext/HospitalContext'
-import { COLORS } from '../Constant/Themes'
 import { useGlobalSearch } from '../views/Usecontext/GlobalSearchContext'
-import BackButton from '../views/widgets/BackButton'
 
 const AppHeader = () => {
   const headerRef = useRef()
@@ -41,12 +24,12 @@ const AppHeader = () => {
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.sidebarShow)
   const navigate = useNavigate()
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
+
   const HospitalName = localStorage.getItem('staffName')
     ? localStorage.getItem('staffName')
     : localStorage.getItem('HospitalName')?.split(' ')[0] || 'Hospital'
-  const branch = localStorage.getItem('branchName')
-    ? localStorage.getItem('branchName')
-    : localStorage.getItem('branchName') || 'branchName'
+  const branch = localStorage.getItem('branchName') || 'branchName'
 
   useEffect(() => {
     document.addEventListener('scroll', () => {
@@ -54,95 +37,137 @@ const AppHeader = () => {
         headerRef.current.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0)
     })
   }, [])
-  const { searchQuery, setSearchQuery } = useGlobalSearch()
 
   return (
     <CHeader
       position="sticky"
       className="mb-4 p-0"
       ref={headerRef}
-      style={{ backgroundColor: 'var(--color-bgcolor)' }}
+      style={{ backgroundColor: '#1B4F8A' }}
     >
-      <CContainer className="border-bottom px-4" fluid>
+      <CContainer className="px-4" fluid style={{ borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+
+        {/* ── Sidebar toggler ─────────────────────────── */}
         <CHeaderToggler
           onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
-          style={{ marginInlineStart: '-14px', color: "white" }}
+          style={{ marginInlineStart: '-14px', color: 'white' }}
         >
           <CIcon icon={cilMenu} size="lg" />
         </CHeaderToggler>
-        {/* Search Bar */}
-        {/* <div className="d-none d-md-block me-4" style={{ color: 'var(--color-black)' }}>
-          <input
-            type="text"
-            placeholder="Search..."
-            className="form-control search-input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              color: 'white',
-              borderRadius: '10px',
-              padding: '10px 15px',
-              border: `1px solid var(--color-white)`,
-              outline: 'none',
-              width: '350px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              height: '40px',
-              backgroundColor: 'transparent',
-            }}
-          />
-        </div> */}
 
-        {/* Notification Icons */}
-        <div className="d-flex align-items-center ms-auto">
-        
+     
 
-       
-          <div
-            className="fw-bold mx-5"
-            style={{
-              color: 'var(--color-black)',
-              textAlign: 'center', // center-align both lines
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
-            <div style={{ fontSize: '1.2rem' }}>Welcome, {HospitalName}</div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 'normal', opacity: 0.9 }}>{branch}</div>
+        {/* ── Right cluster ───────────────────────────── */}
+        <div className="d-flex align-items-center ms-auto gap-3">
+
+          {/* Welcome text */}
+          <div className="ah-welcome">
+            <span className="ah-welcome-name">Welcome, {HospitalName}</span>
+            <span className="ah-welcome-branch">{branch}</span>
           </div>
 
-          <div
-            className="position-relative me-3 cursor-pointer"
-            style={{ cursor: 'pointer' }}
-            onClick={() => {
-              navigate('/doctor-notifications')
-            }}
-          >
-            {/* <CIcon
-              icon={cilBell}
-              size="lg"
-              className="mx-2"
-              style={{ color: 'var(--color-black)' }}
-            /> */}
-            {notificationCount > 0 && (
-              <span
-                className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                style={{ fontSize: '0.7rem' }}
-              >
-                {notificationCount}
-              </span>
-            )}
-          </div>
-          <CHeaderNav>
-           
+
+          {/* Theme selector + user dropdown */}
+          <CHeaderNav className="d-flex align-items-center gap-1">
             <ThemeSelector />
             <AppHeaderDropdown />
           </CHeaderNav>
         </div>
       </CContainer>
+
+      {/* ── Breadcrumb row ──────────────────────────────── */}
       <CContainer className="px-4" fluid>
         <AppBreadcrumb />
       </CContainer>
+
+      {/* ── Styles ─────────────────────────────────────── */}
+      <style>{`
+        /* ── Search bar ─────────────────────────── */
+        .ah-search-wrap {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(255,255,255,0.12);
+          border: 1px solid rgba(255,255,255,0.22);
+          border-radius: 8px;
+          padding: 0 12px;
+          height: 38px;
+          width: 320px;
+          margin-left: 16px;
+          transition: background 0.15s, border-color 0.15s;
+        }
+        .ah-search-wrap:focus-within {
+          background: rgba(255,255,255,0.18);
+          border-color: rgba(255,255,255,0.45);
+          box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
+        }
+        .ah-search-icon { color: rgba(255,255,255,0.6); flex-shrink: 0; }
+        .ah-search-input {
+          flex: 1;
+          background: transparent;
+          border: none;
+          outline: none;
+          color: #fff;
+          font-size: 13px;
+        }
+        .ah-search-input::placeholder { color: rgba(255,255,255,0.52); }
+        .ah-search-clear {
+          background: none; border: none;
+          color: rgba(255,255,255,0.55);
+          cursor: pointer; font-size: 12px;
+          padding: 0; line-height: 1;
+          transition: color 0.12s;
+        }
+        .ah-search-clear:hover { color: #fff; }
+
+        /* ── Welcome text ───────────────────────── */
+        .ah-welcome {
+          display: flex; flex-direction: column;
+          align-items: flex-end; gap: 1px;
+        }
+        .ah-welcome-name {
+          font-size: 13px; font-weight: 600;
+          color: #fff; white-space: nowrap;
+        }
+        .ah-welcome-branch {
+          font-size: 11px; font-weight: 400;
+          color: rgba(255,255,255,0.72); white-space: nowrap;
+        }
+
+        /* ── Notification bell ──────────────────── */
+        .ah-bell {
+          position: relative;
+          width: 36px; height: 36px;
+          border-radius: 8px;
+          background: rgba(255,255,255,0.12);
+          border: 1px solid rgba(255,255,255,0.18);
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; flex-shrink: 0;
+          transition: background 0.15s, transform 0.1s;
+        }
+        .ah-bell:hover  { background: rgba(255,255,255,0.22); transform: scale(1.06); }
+        .ah-bell:active { transform: scale(0.94); }
+
+        .ah-bell-badge {
+          position: absolute;
+          top: -5px; right: -5px;
+          min-width: 17px; height: 17px;
+          background: #e53935;
+          color: #fff;
+          font-size: 10px; font-weight: 700;
+          border-radius: 999px;
+          display: flex; align-items: center; justify-content: center;
+          padding: 0 4px;
+          border: 1.5px solid #1B4F8A;
+          line-height: 1;
+          animation: ah-pop 0.25s ease;
+        }
+        @keyframes ah-pop {
+          0%   { transform: scale(0.5); opacity: 0; }
+          70%  { transform: scale(1.15); }
+          100% { transform: scale(1);   opacity: 1; }
+        }
+      `}</style>
     </CHeader>
   )
 }

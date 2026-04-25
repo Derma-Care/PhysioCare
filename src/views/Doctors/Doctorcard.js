@@ -1,180 +1,265 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import CIcon from '@coreui/icons-react'
-import { cilStar } from '@coreui/icons'
-import { CFormSwitch } from '@coreui/react' // <-- import this for the toggle switch
-import { toast } from 'react-toastify'
-import { updateDoctorAvailability } from './DoctorAPI' // Adjust path accordingly
-import { COLORS } from '../../Constant/Themes'
+import { CFormSwitch } from '@coreui/react'
+import { Eye } from 'lucide-react'
+import { updateDoctorAvailability } from './DoctorAPI'
 import capitalizeWords from '../../Utils/capitalizeWords'
 import { showCustomToast } from '../../Utils/Toaster'
+import { cilArrowRight } from '@coreui/icons'
+import CIcon from '@coreui/icons-react'
 
 const DoctorCard = ({ doctor }) => {
   const navigate = useNavigate()
-  const [availability, setAvailability] = useState(doctor.doctorAvailabilityStatus || false)
+  const [availability, setAvailability] = useState(doctor?.doctorAvailabilityStatus || false)
 
   if (!doctor) return null
 
   const handleToggle = async (e) => {
     const value = e.target.checked
-    setAvailability(value) // Optimistic update
-
+    setAvailability(value)
     const success = await updateDoctorAvailability(doctor.doctorId, value)
     if (success) {
       showCustomToast(`Availability set to ${value ? 'Available' : 'Not Available'}`, 'success')
     } else {
       showCustomToast('Failed to update availability', 'error')
-      setAvailability(!value) // revert change if failed
+      setAvailability(!value)
     }
   }
 
+  const initials = doctor.doctorName
+    ? doctor.doctorName
+        .split(' ')
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+    : 'DR'
+
   return (
-    <div className="doctor-card">
-      {/* Left: Avatar */}
-      <div className="doctor-avatar">
-        <img
-          src={doctor.doctorPicture}
-          alt={`Photo of Dr. ${doctor.doctorName || 'Doctor'}`}
-          onError={(e) => {
-            if (e.target.src !== window.location.origin + '/default-avatar.png') {
-              e.target.src = '/default-avatar.png'
-            }
-          }}
-        />
+    <div className="dc-card">
+      {/* Avatar */}
+      <div className="dc-avatar">
+        {doctor.doctorPicture ? (
+          <img
+            src={doctor.doctorPicture}
+            alt={`Dr. ${doctor.doctorName}`}
+            onError={(e) => {
+              e.target.style.display = 'none'
+              e.target.nextSibling.style.display = 'flex'
+            }}
+          />
+        ) : null}
+        <div
+          className="dc-initials"
+          style={{ display: doctor.doctorPicture ? 'none' : 'flex' }}
+        >
+          {initials}
+        </div>
       </div>
 
-      {/* Middle: Doctor Info */}
-      <div className="doctor-info">
-        <h2>
-          {capitalizeWords(doctor.doctorName)}, {(doctor.qualification)}
-        </h2>
-        <p className="speciality">{capitalizeWords(doctor.specialization)}</p>
-        <p>{doctor.experience} Years of experience</p>
+      {/* Info */}
+      <div className="dc-info">
+        <div className="dc-name">
+          {capitalizeWords(doctor.doctorName)}, {doctor.qualification}
+        </div>
+        <div className="dc-spec">{capitalizeWords(doctor.specialization)}</div>
+        <div className="dc-exp">{doctor.experience} years of experience</div>
 
-        {/* ✅ Availability toggle placed right under experience */}
-        <div className="availability-toggle d-flex align-items-center gap-2 mt-2">
-          <label
-            htmlFor={`availability-${doctor.doctorId}`}
-            className="fw-bold mb-0  "
-            style={{ whiteSpace: 'nowrap' }}
-          >
-            Doctor Availability
-          </label>
+        <div className="dc-avail-row">
+          <span className="dc-avail-label">Availability</span>
           <CFormSwitch
             id={`availability-${doctor.doctorId}`}
             checked={availability}
             onChange={handleToggle}
-            style={{
-              backgroundColor: 'var(--color-bgcolor)',
-              marginTop: '-10px',
-              borderColor: 'var(--color-bgcolor)',
-            }}
+            className="dc-toggle"
           />
+          <span className={`dc-avail-badge ${availability ? 'available' : 'unavailable'}`}>
+            {availability ? 'Available' : 'Not Available'}
+          </span>
         </div>
       </div>
 
-      {/* Right: Actions */}
-      <div className="doctor-action d-flex flex-column align-items-center gap-2 p-2 border rounded shadow-sm">
+      {/* Action panel */}
+      <div className="dc-action">
         <button
-          className="btn btn-info w-100"
+          className="dc-view-btn"
           onClick={() => navigate(`/doctor/${doctor.doctorId}`, { state: { doctor } })}
           aria-label={`View details of Dr. ${doctor.doctorName}`}
         >
+          <Eye size={14} />
           View Details
         </button>
-        <p className="mb-0 " style={{ color: 'var(--color-bgcolor)' }}>
-          <strong>ID:</strong> {doctor.doctorId}
-        </p>
+        <div className="dc-id">
+          <span>ID:</span> {doctor.doctorId}
+        </div>
       </div>
 
-      {/* Styles */}
       <style>{`
-       .doctor-card {
-  display: flex;
-  align-items: flex-start;
-  padding: 16px ;
-  border: 1px solid #eaeaea;
-  border-radius: 12px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  background-color:rgba(39, 30, 30, 0.07);
-  gap: 16px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
+        .dc-card {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          padding: 14px 16px;
+          border: 0.5px solid #d0dce9;
+          border-radius: 12px;
+          margin-bottom: 12px;
+          background: #ffffff;
+          transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+        .dc-card:hover {
+          transform: translateY(-2px);
+          border-color: #85b7eb;
+          box-shadow: 0 4px 16px rgba(24, 95, 165, 0.08);
+        }
 
-.doctor-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
+        /* Avatar */
+        .dc-avatar {
+          flex-shrink: 0;
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          border: 2px solid #b5d4f4;
+          overflow: hidden;
+          background: #e6f1fb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .dc-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .dc-initials {
+          font-size: 22px;
+          font-weight: 500;
+          color: #0c447c;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+        }
 
-.doctor-avatar img {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #f1f1f1;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-}
+        /* Info */
+        .dc-info {
+          flex-grow: 1;
+          min-width: 0;
+        }
+        .dc-name {
+          font-size: 15px;
+          font-weight: 500;
+          color: #0c447c;
+          margin-bottom: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .dc-spec {
+          font-size: 12px;
+          font-weight: 500;
+          color: #185fa5;
+          margin-bottom: 3px;
+        }
+        .dc-exp {
+          font-size: 12px;
+          color: #6b7280;
+          margin-bottom: 10px;
+        }
 
-.doctor-info {
-  flex-grow: 1;
-  padding: 0 10px;
-}
+        /* Availability row */
+        .dc-avail-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .dc-avail-label {
+          font-size: 12px;
+          font-weight: 500;
+          color: #6b7280;
+          white-space: nowrap;
+        }
+        .dc-toggle {
+          /* override CoreUI switch to use brand blue */
+          --cui-form-switch-checked-bg: #185fa5 !important;
+          --cui-form-switch-bg: #ccc !important;
+          margin-bottom: 0 !important;
+          cursor: pointer;
+        }
+        .dc-avail-badge {
+          font-size: 11px;
+          font-weight: 500;
+          padding: 2px 8px;
+          border-radius: 4px;
+          white-space: nowrap;
+        }
+        .dc-avail-badge.available {
+          background: #eaf3de;
+          color: #3b6d11;
+        }
+        .dc-avail-badge.unavailable {
+          background: #fcebeb;
+          color: #a32d2d;
+        }
 
-.doctor-info h2 {
-  color:${'var(--color-bgcolor)'};
-  font-size: 18px;
-  margin: 0 0 6px;
-  font-weight: 700;
-}
+        /* Action panel */
+        .dc-action {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 12px;
+          border: 0.5px solid #b5d4f4;
+          border-radius: 10px;
+          background: #e6f1fb;
+          min-width: 140px;
+          flex-shrink: 0;
+        }
+        .dc-view-btn {
+          background: #185fa5;
+          color: #fff;
+          border: none;
+          padding: 7px 14px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 500;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          transition: background 0.15s ease;
+        }
+        .dc-view-btn:hover {
+          background: #0c447c;
+        }
+        .dc-id {
+          font-size: 11px;
+          color: #185fa5;
+        }
+        .dc-id span {
+          font-weight: 500;
+        }
 
-.speciality {
-  margin: 4px 0;
-  color:${'var(--color-bgcolor)'};
-  font-size: 14px;
-}
-
-.doctor-info p {
- 
-  color:${'var(--color-bgcolor)'};
-  font-size: 14px;
-}
-
-.availability-toggle label {
-margin-top:-30px;
-  font-size: 14px;
-  color:${'var(--color-bgcolor)'};
-}
-
-.doctor-action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 10px;
-  border: 1px solid ${'var(--color-bgcolor)'};
-  border-radius: 10px;
-  background-color: #fafafa;
-  min-width: 160px;
-  max-width: 200px;
-}
-
-.doctor-action button {
-  background-color:${'var(--color-bgcolor)'};
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  width: 100%;
-  transition: background-color 0.2s;
-}
-
-.doctor-action button:hover {
-  background-color:${'var(--color-bgcolor)'};
-}
-
+        /* Responsive: stack on small screens */
+        @media (max-width: 480px) {
+          .dc-card {
+            flex-wrap: wrap;
+          }
+          .dc-action {
+            width: 100%;
+            min-width: unset;
+            flex-direction: row;
+            justify-content: space-between;
+          }
+          .dc-view-btn {
+            width: auto;
+            flex: 1;
+          }
+        }
       `}</style>
     </div>
   )

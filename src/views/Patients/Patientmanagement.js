@@ -1,805 +1,749 @@
 import React, { useState, useEffect } from 'react'
 import {
-  CCard,
-  CCardBody,
-  CNav,
-  CNavItem,
-  CNavLink,
-  CTabContent,
-  CTabPane,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
-  CSpinner,
-  CButton, CRow, CCol,
-  CModal,
-  CModalBody,
-  CModalHeader,
-  CModalTitle,
-  CBadge, CModalFooter
+  CSpinner, CModal, CModalBody, CModalHeader, CModalTitle,
+  CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow,
 } from '@coreui/react'
-import { CustomerByClinicNdBranchId } from '../customerManagement/CustomerManagementAPI'
-import { Eye, Edit2, Trash } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { BASE_URL, wifiUrl } from '../../baseUrl'
-import Pagination from '../../Utils/Pagination'
-import LoadingIndicator from '../../Utils/loader'
 import { http } from '../../Utils/Interceptors'
-import { useLocation } from 'react-router-dom'
-import { FONT_SIZES } from '../../Constant/Themes'
+import {
+  User, CalendarDays, FileText, ClipboardList,
+  Stethoscope, CreditCard, RefreshCw, AlertCircle, Activity, MapPin, Eye, Clock,
+} from 'lucide-react'
+
+const TAB_KEYS = { INFO: 1, APPOINTMENTS: 2, REPORTS: 3, HISTORY: 4 }
 
 const PatientManagement = () => {
-  const location = useLocation();
-  const patientInfo = location.state?.patientInfo;
-  console.log(patientInfo);
+  const location = useLocation()
+  const patientInfo = location.state?.patientInfo
+
   const [activeKey, setActiveKey] = useState(1)
-  // const [loading, setLoading] = useState(false)
-  // const [report, setReport] = useState([]);
-  const [appointmentInfo, setAppointmentInfo] = useState(null);
-
-  const [reportLoading, setReportLoading] = useState(false);
-
-  const [visible, setVisible] = useState(false);
-
-  const [error, setError] = useState(null)
-
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [selectedPatient] = useState(patientInfo || null)
+  const [appointments, setAppointments] = useState([])
+  const [selectedAppointment, setSelectedAppointment] = useState(null)
+  const [appointmentInfo, setAppointmentInfo] = useState(null)
+  const [history, setHistory] = useState([])
+  const [report, setReport] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [reportLoading, setReportLoading] = useState(false)
+  const [viewModal, setViewModal] = useState(false)
   const [selectedHistory, setSelectedHistory] = useState(null)
 
-  const [showModal, setShowModal] = useState(false);
+  const getValue = (val) => (val !== undefined && val !== null && val !== '' ? val : '—')
 
-
-  const [responseMessage, setResponseMessage] = useState('')
-  const [appointmentTab, setAppointmentTab] = useState(null)
-
-
-  const [selectedPatient, setSelectedPatient] = useState(patientInfo || null);
-
-  const [appointments, setAppointments] = useState([]);
-  const [history, setHistory] = useState([]);
-  const [report, setReport] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [viewModal, setViewModal] = useState(false);
   const openBase64File = (base64Data, fileType, fileName) => {
-    if (!base64Data) return;
-
-    let blob;
-
+    if (!base64Data) return
+    let blob
     if (fileType === 'application/pdf') {
-      // Decode PDF base64
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      blob = new Blob([byteArray], { type: fileType });
+      const byteCharacters = atob(base64Data)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i)
+      blob = new Blob([new Uint8Array(byteNumbers)], { type: fileType })
     } else {
-      // Decode image base64
-      blob = new Blob([Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))], { type: fileType });
+      blob = new Blob([Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))], { type: fileType })
     }
-
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-  };
-
-
-  // // 🔹 Fetch Patients List
-  // useEffect(() => {
-  //   const fetchPatients = async () => {
-  //     try {
-  //       setLoading(true)
-  //       setError(null)
-  //       const hospitalId = localStorage.getItem('HospitalId')
-  //       const branchId = localStorage.getItem('branchId')
-  //       const data = await CustomerByClinicNdBranchId(hospitalId, branchId)
-  //       setPatients(data || [])
-  //     } catch (err) {
-  //       console.error('Error fetching patients:', err)
-  //     } finally {
-  //       setLoading(false)
-  //     }
-  //   }
-  //   fetchPatients()
-  // }, [])
-
-
-
-
-  // 🔹 API call for Appointments
- const fetchAppointments = async (patientId) => {
-  try {
-    setLoading(true);
-
-    const response = await http.get(
-      `${BASE_URL}/bookings/byPatientId/${patientId}` // ✅ fixed
-    );
-
-    console.log('Full API response:', response.data);
-
-    const data = response.data?.data || [];
-    setAppointments(data);
-
-    if (data.length > 0) {
-      const firstAppointment = data[0];
-
-      setSelectedAppointment(firstAppointment);
-      setAppointmentInfo(firstAppointment);
-
-      // ✅ safe bookingId extraction
-      const bookingId =
-        firstAppointment.bookingId ||
-        firstAppointment.bookingID ||
-        firstAppointment.id;
-
-      console.log("BOOKING ID:", bookingId);
-
-      if (bookingId) {
-        fetchReportByBookingId(bookingId);
-      } else {
-        console.warn("BookingId missing ❌");
-      }
-
-    } else {
-      setSelectedAppointment(null);
-      setAppointmentInfo(null);
-      setReport([]);
-    }
-
-  } catch (error) {
-    console.error('Error fetching appointments:', error);
-    setAppointments([]);
-    setReport([]);
-  } finally {
-    setLoading(false);
-  }
-};
-  //API call for reports and history
- const fetchVisitHistory = async () => {
-  const patientId = selectedAppointment?.patientId;
-  const bookingId = selectedAppointment?.bookingId;
-
-  if (!patientId || !bookingId) {
-    console.warn("Skip API → missing patientId/bookingId", { patientId, bookingId });
-    return;
+    window.open(URL.createObjectURL(blob), '_blank')
   }
 
-  try {
-    const res = await axios.get(
-      `${wifiUrl}/api/physiotherapy-doctor/visitHistoryByUsingPatientIdAndBooking/${patientId}/${bookingId}`
-    );
-
-    console.log("Visit history:", res.data);
-  } catch (err) {
-    console.error("Error fetching visit history:", err);
-  }
-};
-  const fetchReportByBookingId = async (bookingId) => {
+  /* ── API calls ── */
+  const fetchAppointments = async (patientId) => {
     try {
-      setReportLoading(true);
+      setLoading(true)
+      const response = await http.get(`${BASE_URL}/bookings/byPatientId/${patientId}`)
+      const data = response.data?.data || []
+      setAppointments(data)
+      if (data.length > 0) {
+        const first = data[0]
+        setSelectedAppointment(first)
+        setAppointmentInfo(first)
+        const bookingId = first.bookingId || first.bookingID || first.id
+        if (bookingId) fetchReportByBookingId()
+      } else {
+        setSelectedAppointment(null)
+        setAppointmentInfo(null)
+        setReport([])
+      }
+    } catch { setAppointments([]); setReport([]) }
+    finally { setLoading(false) }
+  }
 
-      const response = await http.get(
-        `${BASE_URL}/reports/patientId/${bookingId}`
-      );
+  const fetchVisitHistory = async () => {
+    const patientId = selectedAppointment?.patientId
+    const bookingId = selectedAppointment?.bookingId
+    if (!patientId || !bookingId) return
+    try {
+      const res = await axios.get(
+        `${wifiUrl}/api/physiotherapy-doctor/visitHistoryByUsingPatientIdAndBooking/${patientId}/${bookingId}`
+      )
+      setHistory(res.data?.data || [])
+    } catch { setHistory([]) }
+  }
 
-      console.log("Report By Booking ID:", response.data);
+  const fetchReportByBookingId = async () => {
+    try {
+      setReportLoading(true)
+      const response = await http.get(`${BASE_URL}/reports/patientId/${patientInfo?.patientId}`)
+      setReport(Array.isArray(response.data?.data) ? response.data.data : [])
+    } catch { setReport([]) }
+    finally { setReportLoading(false) }
+  }
 
-      // Extract the reportsList safely
-      const reportList = response.data?.data?.flatMap(item => item.reportsList || []);
-
-      setReport(reportList);
-    } catch (err) {
-      console.error("Error fetching report:", err);
-      setReport([]);
-    } finally {
-      setReportLoading(false);
-    }
-  };
-  // useEffect(() => {
-  //   if (selectedPatient?.patientId) {
-  //     fetchAppointments(selectedPatient.patientId);
-  //     fetchVisitHistory(selectedPatient.patientId);
-  //   }
-  // }, [selectedPatient]);nt 
   useEffect(() => {
-    if (activeKey === 2 && selectedPatient?.patientId) {
-      console.log('Fetching appointments for:', selectedPatient.patientId)
+    if (activeKey === TAB_KEYS.APPOINTMENTS && selectedPatient?.patientId)
       fetchAppointments(selectedPatient.patientId)
-    }
   }, [activeKey, selectedPatient])
+
   useEffect(() => {
-    if (activeKey === 4 && selectedPatient?.patientId) {
-      fetchVisitHistory(selectedPatient.patientId)
-    }
+    if (activeKey === TAB_KEYS.HISTORY && selectedPatient?.patientId)
+      fetchVisitHistory()
   }, [activeKey, selectedPatient])
+
   useEffect(() => {
-    if (activeKey === 3 && selectedAppointment?.bookingId) {
-      fetchReportByBookingId(selectedAppointment.bookingId);
-    }
-  }, [activeKey, selectedAppointment]);
-
-
+    if (activeKey === TAB_KEYS.REPORTS && selectedAppointment?.bookingId)
+      fetchReportByBookingId()
+  }, [activeKey, selectedAppointment])
 
   useEffect(() => {
     if (selectedPatient?.patientId) {
-      fetchAppointments(selectedPatient.patientId);
-      fetchVisitHistory(selectedPatient.patientId);
+      fetchAppointments(selectedPatient.patientId)
+      fetchVisitHistory()
     }
-  }, [selectedPatient]);
+  }, [selectedPatient])
 
+  /* ── Shared sub-components ── */
+  const InfoCard = ({ icon: Icon, title, children }) => (
+    <div className="pm2-info-card">
+      <div className="pm2-info-card-header">
+        <Icon size={14} className="pm2-header-icon" />
+        {title}
+      </div>
+      <div className="pm2-info-card-body">{children}</div>
+    </div>
+  )
 
+  const InfoRow = ({ label, value }) => (
+    <div className="pm2-info-row">
+      <span className="pm2-info-label">{label}</span>
+      <span className="pm2-info-value">{getValue(value)}</span>
+    </div>
+  )
 
+  const TABS = [
+    { key: TAB_KEYS.INFO, label: 'Patient Info', icon: User },
+    { key: TAB_KEYS.APPOINTMENTS, label: 'Appointments', icon: CalendarDays },
+    { key: TAB_KEYS.REPORTS, label: 'Reports', icon: FileText },
+    { key: TAB_KEYS.HISTORY, label: 'History', icon: ClipboardList },
+  ]
 
   return (
-    <div className="p-4">
-      <CCard className="shadow-sm border-0">
-        <CCardBody>
-          {/* Tabs */}
-          <CNav variant="tabs" className="mb-3">
-            <CNavItem>
-              <CNavLink
-                active={activeKey === 1}
-                onClick={() => setActiveKey(1)}
-                style={{ cursor: "pointer" , color: 'var(--color-bgcolor)'}}
-              >
-                Patient Info
-              </CNavLink>
-            </CNavItem>
+    <div style={{ padding: '16px' }}>
 
-            <CNavItem>
-              <CNavLink
-                active={activeKey === 2}
-                onClick={() => setActiveKey(2)}
-                style={{ cursor: "pointer" ,color: 'var(--color-bgcolor)'}}
-              >
-                Appointments
-              </CNavLink>
-            </CNavItem>
-
-            <CNavItem>
-              <CNavLink
-                active={activeKey === 3}
-                onClick={() => setActiveKey(3)}
-                style={{ cursor: "pointer" ,color: 'var(--color-bgcolor)'}}
-              >
-                Reports
-              </CNavLink>
-            </CNavItem>
-
-            <CNavItem>
-              <CNavLink
-                active={activeKey === 4}
-                onClick={() => setActiveKey(4)}
-                style={{ cursor: "pointer",color: 'var(--color-bgcolor)' }}
-              >
-                History
-              </CNavLink>
-            </CNavItem>
-          </CNav>
-
-          <CTabContent className="mt-3">
-            {/* 🔹 Patient Info Tab */}
-            <CTabPane visible={activeKey === 1}>
-              {selectedPatient && (
-                <CRow className="g-3">
-                  <CCol md={6}><strong>Customer ID:</strong> {selectedPatient.customerId}</CCol>
-                  <CCol md={6}><strong>Patient ID:</strong> {selectedPatient.patientId}</CCol>
-                  <CCol md={6}><strong>Full Name:</strong> {selectedPatient.fullName}</CCol>
-                  <CCol md={6}><strong>Gender:</strong> {selectedPatient.gender}</CCol>
-                  <CCol md={6}><strong>Age:</strong> {selectedPatient.age}</CCol>
-                  <CCol md={6}><strong>DOB:</strong> {selectedPatient.dateOfBirth}</CCol>
-                  <CCol md={6}><strong>Mobile:</strong> {selectedPatient.mobileNumber}</CCol>
-                  <CCol md={6}><strong>Email:</strong> {selectedPatient.email || 'N/A'}</CCol>
-                  <CCol md={12}>
-                    <strong>Address:</strong>{" "}
-                    {selectedPatient.address?.houseNo},{" "}
-                    {selectedPatient.address?.street},{" "}
-                    {selectedPatient.address?.city},{" "}
-                    {selectedPatient.address?.state},{" "}
-                    {selectedPatient.address?.postalCode}
-                  </CCol>
-                </CRow>
-              )}
-            </CTabPane>
-
-
-
-
-            {/* 🔹 Appointments Tab */}
-         <CTabPane visible={activeKey === 2}>
-  {selectedAppointment && (
-    <CCard className="mt-3 shadow-sm" style={{ borderRadius: "12px" }}>
-      <CCardBody>
-
-        {/* 🔹 HEADER */}
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          {/* <h5 style={{ color: "var(--color-bgcolor)", margin: 0 }}>
-            Booking Summary
-          </h5> */}
-
-          {/* <CBadge
-            style={{
-              backgroundColor: "var(--color-bgcolor)",
-              color: "#fff",
-              padding: "6px 12px",
-              borderRadius: "10px",
-              textTransform: "capitalize"
-            }}
-          >
-            {selectedAppointment.status}
-          </CBadge> */}
+      {/* ── Page Header ── */}
+      <div className="pm2-page-header">
+        <div className="pm2-title-group">
+          <div className="pm2-page-icon"><Stethoscope size={20} /></div>
+          <div>
+            <h4 className="pm2-page-title">Patient Management</h4>
+            <p className="pm2-page-sub">{selectedPatient?.fullName || 'No patient selected'}</p>
+          </div>
         </div>
+      </div>
 
-        <CRow className="g-3">
+      {/* ── Tab Bar ── */}
+      <div className="pm2-tab-bar">
+        {TABS.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            className={`pm2-tab-btn${activeKey === key ? ' pm2-tab-active' : ''}`}
+            onClick={() => setActiveKey(key)}
+          >
+            <Icon size={13} />{label}
+          </button>
+        ))}
+      </div>
 
-          {/* 🧑 PATIENT INFO */}
-          {/* <CCol md={6}>
-            <CCard className="h-100">
-              <CCardBody >
-                <h6 style={{ color: "var(--color-bgcolor)", fontWeight:"bold" , marginBottom: "10px"}}>Patient Info</h6>
+      {/* ── Tab Content ── */}
+      <div className="pm2-tab-content">
 
-                <p><b>Name:</b> {selectedAppointment.name}</p>
-                <p><b>Patient ID:</b> {selectedAppointment.patientId}</p>
-                <p><b>Mobile:</b> {selectedAppointment.mobileNumber}</p>
-                <p><b>Age:</b> {selectedAppointment.age}</p>
-                <p><b>Gender:</b> {selectedAppointment.gender}</p>
-                <p><b>Address:</b> {selectedAppointment.patientAddress}</p>
-              </CCardBody>
-            </CCard>
-          </CCol> */}
+        {/* ── Tab 1: Patient Info ── */}
+        {activeKey === TAB_KEYS.INFO && selectedPatient && (
+          <div>
+            <div className="pm2-profile-header">
+              <div className="pm2-profile-avatar-wrap">
+                <User size={32} color="#185fa5" />
+              </div>
+              <div>
+                <h4 className="pm2-profile-name">{selectedPatient.fullName}</h4>
+                <p className="pm2-profile-meta">{selectedPatient.mobileNumber}</p>
+                <p className="pm2-profile-meta">{selectedPatient.email || 'No email'}</p>
+                <span className="pm2-badge">ID: {selectedPatient.patientId}</span>
+              </div>
+            </div>
 
-          {/* 📅 BOOKING INFO */}
-          <CCol md={6}>
-            <CCard className="h-100">
-              <CCardBody>
-                <h6 style={{ color: "var(--color-bgcolor)",fontWeight:"bold" , marginBottom: "10px"}}>Booking Info</h6>
+            <div className="pm2-info-card" style={{ marginBottom: 12 }}>
+              <div className="pm2-info-card-header">
+                <User size={14} className="pm2-header-icon" /> Personal Details
+              </div>
+              <div className="pm2-info-card-body pm2-inner-grid">
+                <InfoRow label="Customer ID" value={selectedPatient.customerId} />
+                <InfoRow label="Patient ID" value={selectedPatient.patientId} />
+                <InfoRow label="Full Name" value={selectedPatient.fullName} />
+                <InfoRow label="Gender" value={selectedPatient.gender} />
+                <InfoRow label="Age" value={selectedPatient.age} />
+                <InfoRow label="Date of Birth" value={selectedPatient.dateOfBirth} />
+                <InfoRow label="Mobile" value={selectedPatient.mobileNumber} />
+                <InfoRow label="Email" value={selectedPatient.email} />
+              </div>
+            </div>
 
-                <p><b>Booking ID:</b> {selectedAppointment.bookingId}</p>
-                <p><b>Date:</b> {selectedAppointment.serviceDate}</p>
-                <p><b>Time:</b> {selectedAppointment.servicetime}</p>
-                <p><b>Doctor:</b> {selectedAppointment.doctorName}</p>
-                <p><b>Visit Type:</b> {selectedAppointment.visitType}</p>
-              </CCardBody>
-            </CCard>
-          </CCol>
+            <div className="pm2-info-card">
+              <div className="pm2-info-card-header">
+                <MapPin size={14} className="pm2-header-icon" /> Address
+              </div>
+              <div className="pm2-info-card-body pm2-inner-grid">
+                <InfoRow label="House No" value={selectedPatient.address?.houseNo} />
+                <InfoRow label="Street" value={selectedPatient.address?.street} />
+                <InfoRow label="Landmark" value={selectedPatient.address?.landmark} />
+                <InfoRow label="City" value={selectedPatient.address?.city} />
+                <InfoRow label="State" value={selectedPatient.address?.state} />
+                <InfoRow label="Postal Code" value={selectedPatient.address?.postalCode} />
+              </div>
+            </div>
+          </div>
+        )}
 
-          {/* 🏥 MEDICAL INFO */}
-          <CCol md={6}>
-            <CCard className="h-100">
-              <CCardBody>
-                <h6 style={{ color: "var(--color-bgcolor)",fontWeight:"bold" , marginBottom: "10px"}}>Medical Info</h6>
-
-                <p><b>Problem:</b> {selectedAppointment.problem || '-'}</p>
-                <p><b>Symptoms Duration:</b> {selectedAppointment.symptomsDuration}</p>
-                <p><b>Consultation Type:</b> {selectedAppointment.consultationType}</p>
-              </CCardBody>
-            </CCard>
-          </CCol>
-
-          {/* 💰 PAYMENT INFO */}
-          <CCol md={6}>
-            <CCard className="h-100">
-              <CCardBody>
-                <h6 style={{ color: "var(--color-bgcolor)" ,fontWeight:"bold", marginBottom: "10px"}}>Payment Info</h6>
-
-                <p><b>Consultation Fee:</b> ₹{selectedAppointment.consultationFee}</p>
-                <p><b>Total Fee:</b> ₹{selectedAppointment.totalFee}</p>
-                <p><b>Payment Type:</b> {selectedAppointment.paymentType}</p>
-              </CCardBody>
-            </CCard>
-          </CCol>
-
-          {/* 🔁 FOLLOW-UP */}
-          <CCol md={6}>
-            <CCard className="h-100">
-              <CCardBody>
-                <h6 style={{ color: "var(--color-bgcolor)",fontWeight:"bold", marginBottom: "10px"}}>Follow-Up</h6>
-
-                <p><b>Free Follow-Ups Left:</b> {selectedAppointment.freeFollowUpsLeft}</p>
-                <p><b>Follow-Up Status:</b> {selectedAppointment.followupStatus}</p>
-                <p><b>Consultation Expiry:</b> {selectedAppointment.consultationExpiration}</p>
-              </CCardBody>
-            </CCard>
-          </CCol>
-
-          {/* 🧾 EXTRA INFO */}
-          <CCol md={6}>
-            <CCard className="h-100">
-              <CCardBody>
-                <h6 style={{ color: "var(--color-bgcolor)",fontWeight:"bold" , marginBottom: "10px"}}>Additional Info</h6>
-
-                <p><b>Clinic:</b> {selectedAppointment.clinicName}</p>
-                <p><b>Branch:</b> {selectedAppointment.branchname}</p>
-                <p><b>Booking For:</b> {selectedAppointment.bookingFor}</p>
-              </CCardBody>
-            </CCard>
-          </CCol>
-
-        </CRow>
-
-      </CCardBody>
-    </CCard>
-  )}
-</CTabPane>
-
-
-
-            <CTabPane visible={activeKey === 4}>
-              {loading ? (
-                <div className="text-center py-4">
-                  <CSpinner color="primary" />
-                </div>
-              ) : history.length > 0 ? (
-                <>
-                  <h5 className="mb-3" style={{ color: 'var(--color-black)' }}>
-                    Visit History for {selectedPatient?.fullName} ({selectedPatient?.patientId})
-                  </h5>
-
-                  <CTable >
-                    <CTableHead className="pink-table w-auto">
-                      <CTableRow>
-                        <CTableHeaderCell>S.No</CTableHeaderCell>
-                        <CTableHeaderCell>Date</CTableHeaderCell>
-                        <CTableHeaderCell>Doctor</CTableHeaderCell>
-                        <CTableHeaderCell>Visit Type</CTableHeaderCell>
-                        <CTableHeaderCell>Diagnosis</CTableHeaderCell>
-                        <CTableHeaderCell>Treatment</CTableHeaderCell>
-                        <CTableHeaderCell>Follow-up Date</CTableHeaderCell>
-                        <CTableHeaderCell>Action</CTableHeaderCell> {/* 👈 Added column */}
-                      </CTableRow>
-                    </CTableHead>
-
-                    <CTableBody className="pink-table">
-                      {history.map((h, index) => (
-                        <CTableRow key={h.id || index}>
-                          <CTableDataCell>{index + 1}</CTableDataCell>
-
-                          <CTableDataCell>
-                            {h.visitDateTime
-                              ? new Date(h.visitDateTime).toLocaleDateString()
-                              : '-'}
-                          </CTableDataCell>
-                          <CTableDataCell>{h.doctorName || '-'}</CTableDataCell>
-                          <CTableDataCell>{h.visitType || '-'}</CTableDataCell>
-                          <CTableDataCell>{h.symptoms?.diagnosis || '-'}</CTableDataCell>
-                          <CTableDataCell>
-                            {h.treatments?.generatedData
-                              ? Object.keys(h.treatments.generatedData).join(', ')
-                              : '-'}
-                          </CTableDataCell>
-                          <CTableDataCell>
-                            {h.followUp?.nextFollowUpDate || '-'}
-                          </CTableDataCell>
-
-                          {/* View Button */}
-                          <CTableDataCell className="text-center">
-                            <CButton
-                              color="info"
-                              size="sm"
-                              className="actionBtn"
-                              style={{ color: 'var(--color-black)' }}
-                              onClick={() => {
-                                setSelectedHistory(h)
-                                setViewModal(true)
-                              }}
-                            >
-                              <Eye size={18} />
-                            </CButton>
-                          </CTableDataCell>
-                        </CTableRow>
-                      ))}
-                    </CTableBody>
-                  </CTable>
-                </>
-              ) : (
-                <p className="text-center py-3">
-                  {responseMessage ||
-                    `No visit history found for ${selectedPatient?.fullName}`}
-                </p>
-              )}
-            </CTabPane>
-          </CTabContent>
-        </CCardBody>
-      </CCard>
-
-      {/* 🔹 Modal for Patient Details */}
-      <CModal visible={visible} onClose={() => setVisible(false)} >
-        <CModalHeader closeButton>
-          <CModalTitle>Patient Details</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          {patientInfo ? (
+        {/* ── Tab 2: Appointments ── */}
+        {activeKey === TAB_KEYS.APPOINTMENTS && (
+          loading ? (
+            <div className="pm2-center"><CSpinner color="primary" /></div>
+          ) : selectedAppointment ? (
             <div>
-              <p><b>Patient ID:</b> {patientInfo.patientId}</p>
-              <p><b>Customer ID:</b> {patientInfo.customerId}</p>
-              <p><b>Full Name:</b> {selectedPatient.fullName}</p>
-              <p><b>Gender:</b> {selectedPatient.gender}</p>
-              <p><b>Age:</b> {selectedPatient.age}</p>
-              <p><b>Date of Birth:</b> {selectedPatient.dateOfBirth}</p>
-              <p><b>Mobile:</b> {selectedPatient.mobileNumber}</p>
-              <p><b>Email:</b> {selectedPatient.email || 'N/A'}</p>
-              <p><b>Branch ID:</b> {selectedPatient.branchId}</p>
+              {appointments.length > 1 && (
+                <div style={{ marginBottom: 14 }}>
+                  <label className="pm2-select-label">Select Appointment</label>
+                  <select
+                    className="pm2-select"
+                    value={selectedAppointment.bookingId}
+                    onChange={(e) => {
+                      const found = appointments.find((a) => a.bookingId === e.target.value)
+                      if (found) setSelectedAppointment(found)
+                    }}
+                  >
+                    {appointments.map((a, i) => (
+                      <option key={i} value={a.bookingId}>
+                        {a.bookingId} — {a.serviceDate}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="pm2-grid-2">
+                <InfoCard icon={CalendarDays} title="Booking Info">
+                  <InfoRow label="Booking ID" value={selectedAppointment.bookingId} />
+                  <InfoRow label="Date" value={selectedAppointment.serviceDate} />
+                  <InfoRow label="Time" value={selectedAppointment.servicetime} />
+                  <InfoRow label="Doctor" value={selectedAppointment.doctorName} />
+                  <InfoRow label="Visit Type" value={selectedAppointment.visitType} />
+                </InfoCard>
 
-              <hr />
+                <InfoCard icon={Activity} title="Medical Info">
+                  <InfoRow label="Problem" value={selectedAppointment.problem} />
+                  <InfoRow label="Symptoms Duration" value={selectedAppointment.symptomsDuration} />
+                  <InfoRow label="Consultation Type" value={selectedAppointment.consultationType} />
+                </InfoCard>
 
-              <h6 style={{ color: 'var(--color-black)', fontWeight: 'bold' }}>Address</h6>
-              <p>
-                {selectedPatient.address?.houseNo}, {selectedPatient.address?.street},
-                {selectedPatient.address?.landmark && ` ${selectedPatient.address?.landmark},`}
-                {selectedPatient.address?.city}
-              </p>
-              <p>
-                {selectedPatient.address?.state}, {selectedPatient.address?.country} -{' '}
-                {selectedPatient.address?.postalCode}
-              </p>
+                <InfoCard icon={CreditCard} title="Payment Info">
+                  <InfoRow label="Consultation Fee" value={selectedAppointment.consultationFee ? `₹${selectedAppointment.consultationFee}` : null} />
+                  <InfoRow label="Total Fee" value={selectedAppointment.totalFee ? `₹${selectedAppointment.totalFee}` : null} />
+                  <InfoRow label="Payment Type" value={selectedAppointment.paymentType} />
+                </InfoCard>
+
+                <InfoCard icon={RefreshCw} title="Follow-Up">
+                  <InfoRow label="Free Follow-Ups Left" value={selectedAppointment.freeFollowUpsLeft} />
+                  <InfoRow label="Follow-Up Status" value={selectedAppointment.followupStatus} />
+                  <InfoRow label="Consultation Expiry" value={selectedAppointment.consultationExpiration} />
+                </InfoCard>
+
+                <InfoCard icon={Stethoscope} title="Additional Info">
+                  <InfoRow label="Clinic" value={selectedAppointment.clinicName} />
+                  <InfoRow label="Branch" value={selectedAppointment.branchname} />
+                  <InfoRow label="Booking For" value={selectedAppointment.bookingFor} />
+                </InfoCard>
+              </div>
             </div>
           ) : (
-            <p className="text-muted">No patient details available</p>
-          )}
-        </CModalBody>
-      </CModal>
+            <div className="pm2-empty">
+              <CalendarDays size={36} className="pm2-empty-icon" />
+              <p>No appointments found.</p>
+            </div>
+          )
+        )}
 
+        {/* ── Tab 3: Reports ── */}
+        {activeKey === TAB_KEYS.REPORTS && (
+          reportLoading ? (
+            <div className="pm2-center"><CSpinner color="primary" /></div>
+          ) : Array.isArray(report) && report.length > 0 ? (
+            report.map((r, index) => (
+              <div key={index} className="pm2-info-card" style={{ marginBottom: 12 }}>
+                <div className="pm2-info-card-header" style={{ justifyContent: 'space-between' }}>
+                  <div className="pm2-info-card-header">
+                    <FileText size={14} className="pm2-header-icon" />Reports ({getValue(r.reportName)})
 
-      <CModal visible={viewModal} onClose={() => setViewModal(false)}>
-        <CModalHeader style={{ color: 'var(--color-black)', fontSize: '20px', fontWeight: 'bold' }} >Visit Details</CModalHeader>
-        <CModalBody>
-          {/* --- Basic Info --- */}
-          <h5 className='mb-3'>Basic Info </h5>
-          <p><strong>Date:</strong> {selectedHistory?.visitDateTime ? new Date(selectedHistory.visitDateTime).toLocaleDateString() : '-'}</p>
-          <p><strong>Doctor:</strong> {selectedHistory?.doctorName || '-'}</p>
-          <p><strong>Clinic Name:</strong> {selectedHistory?.clinicName || '-'}</p>
-          <p><strong>Booking ID:</strong> {selectedHistory?.bookingId || '-'}</p>
-
-          <hr />
-
-          {/* --- Symptoms Section --- */}
-          <h5 className='mb-3'>Symptoms</h5>
-          <p><strong>Details:</strong> {selectedHistory?.symptoms?.symptomDetails || '-'}</p>
-          <p><strong>Doctor Observation:</strong> {selectedHistory?.symptoms?.doctorObs || '-'}</p>
-          <p><strong>Diagnosis:</strong> {selectedHistory?.symptoms?.diagnosis || '-'}</p>
-          <p><strong>Duration:</strong> {selectedHistory?.symptoms?.duration || '-'}</p>
-
-          <hr />
-
-          {/* --- Tests Section --- */}
-          <h5 className='mb-3'>Tests</h5>
-          {selectedHistory?.tests?.selectedTests?.length > 0 ? (
-            <ul>
-              {selectedHistory.tests.selectedTests.map((test, i) => (
-                <li key={i} style={{ color: 'var(--color-black)' }}>{test}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>No tests found</p>
-          )}
-
-          <hr />
-
-          {/* --- Treatment Section --- */}
-          <h5 className='mb-3'>Treatments</h5>
-          {selectedHistory?.treatments?.generatedData ? (
-            Object.entries(selectedHistory.treatments.generatedData).map(([treatmentName, details], i) => (
-              <div key={i}>
-                <p><strong>Treatment:</strong> {treatmentName}</p>
-                <p><strong>Frequency:</strong> {details.frequency || '-'}</p>
-                <p><strong>Total Sittings:</strong> {details.totalSittings || '-'}</p>
-                <p><strong>Pending Sittings:</strong> {details.pendingSittings || '-'}</p>
-                <p><strong>Current Sitting:</strong> {details.currentSitting || '-'}</p>
-                <p><strong>Completed Sittings:</strong> {details.takenSittings || '-'}</p>
-
-
-
-
-                {details?.dates?.length > 0 && (
-                  <CTable bordered>
-                    <CTableHead>
-                      <CTableRow>
-                        <CTableHeaderCell style={{ color: 'var(--color-black)' }} >Date</CTableHeaderCell>
-                        <CTableHeaderCell style={{ color: 'var(--color-black)' }}>Sitting</CTableHeaderCell>
-                        <CTableHeaderCell style={{ color: 'var(--color-black)' }}>Status</CTableHeaderCell>
-                      </CTableRow>
-                    </CTableHead>
-                    <CTableBody>
-                      {details.dates.map((d, idx) => (
-                        <CTableRow key={idx}>
-                          <CTableDataCell style={{ color: 'var(--color-black)' }}>
-                            {d.date ? new Date(d.date).toLocaleDateString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            }) : '-'}
-                          </CTableDataCell>
-
-                          <CTableDataCell style={{ color: 'var(--color-black)' }} >{d.sitting}</CTableDataCell>
-                          <CTableDataCell style={{ color: 'var(--color-black)' }} >{d.status}</CTableDataCell>
-                        </CTableRow>
-                      ))}
-                    </CTableBody>
-                  </CTable>
-                )}
+                  </div>
+                  <span
+                    className="pm2-status-pill"
+                    style={{
+                      background:
+                        r.reportStatus === 'Normal' ? '#3b6d11' :
+                          r.reportStatus === 'Abnormal' ? '#a32d2d' : '#5f5e5a',
+                    }}
+                  >
+                    {getValue(r.reportStatus)}
+                  </span>
+                </div>
+                <div className="pm2-info-card-body">
+                  <div className="pm2-inner-grid" style={{ marginBottom: 12 }}>
+                    <InfoRow label="Date" value={r.reportDate} />
+                    <InfoRow label="Type" value={r.reportType} />
+                    <InfoRow label="Booking ID" value={r.bookingId} />
+                  </div>
+                  <div style={{ borderTop: '0.5px solid #d0dce9', paddingTop: 10 }}>
+                    <span className="pm2-info-label" style={{ display: 'block', marginBottom: 6 }}>Report File</span>
+                    {Array.isArray(r.reportFile) && r.reportFile.length > 0 ? (
+                      r.reportFile.map((file, i) => {
+                        const fileType = (file.startsWith('/9j/') || file.startsWith('iVBOR')) ? 'image/png' : 'application/pdf'
+                        return (
+                          <button
+                            key={i}
+                            className="pm2-file-btn"
+                            onClick={() => openBase64File(file, fileType, `${r.reportName || 'report'}${fileType === 'application/pdf' ? '.pdf' : '.png'}`)}
+                          >
+                            <FileText size={12} /> View File {i + 1}
+                          </button>
+                        )
+                      })
+                    ) : <span className="pm2-info-value">N/A</span>}
+                  </div>
+                </div>
               </div>
             ))
           ) : (
-            <p>No treatments found</p>
-          )}
+            <div className="pm2-empty">
+              <FileText size={36} className="pm2-empty-icon" />
+              <p>No reports available.</p>
+            </div>
+          )
+        )}
 
-          <hr />
+        {/* ── Tab 4: History ── */}
+        {activeKey === TAB_KEYS.HISTORY && (
+          loading ? (
+            <div className="pm2-center"><CSpinner color="primary" /></div>
+          ) : Array.isArray(history) && history.length > 0 ? (
+            history.map((item, index) => {
+              const doc = item.physiotherapyDoctorData || {}
+              const complaints = doc.complaints || {}
+              return (
+                <div key={index} className="pm2-info-card" style={{ marginBottom: 12 }}>
+                  <div className="pm2-info-card-header" style={{ justifyContent: 'space-between' }}>
+                    <div className="pm2-info-card-header">
+                      <ClipboardList size={14} className="pm2-header-icon" />History ({getValue(item.visitNumber)})
 
-          {/* --- Follow-up Section --- */}
-          <h5 className='mb-3'>Follow-Up</h5>
-          <p><strong>Next Follow-Up:</strong> {selectedHistory?.followUp?.nextFollowUpDate || '-'}</p>
-          <p><strong>Duration:</strong> {selectedHistory?.followUp?.durationValue ? `${selectedHistory.followUp.durationValue} ${selectedHistory.followUp.durationUnit}` : '-'}</p>
-          <p><strong>Note:</strong> {selectedHistory?.followUp?.followUpNote || '-'}</p>
+                    </div>
+                    <span
+                      className="pm2-status-pill"
+                      style={{
+                        background:
+                          doc.overallStatus === 'Completed' ? '#3b6d11' :
+                            doc.overallStatus === 'Pending' ? '#854f0b' : '#5f5e5a',
+                      }}
+                    >
+                      {getValue(doc.overallStatus)}
+                    </span>
+                  </div>
+                  <div className="pm2-info-card-body">
+                    {/* Visit summary row */}
+                    <div className="pm2-inner-grid" style={{ marginBottom: 12 }}>
+                      <InfoRow label="Date" value={item.visitDate} />
+                      <InfoRow label="Time" value={item.visitTime} />
+                      <InfoRow label="Booking ID" value={doc.bookingId} />
+                      <InfoRow label="Record ID" value={doc.therapistRecordId} />
+                    </div>
 
-          <hr />
+                    {/* Complaints section */}
+                    <div style={{ borderTop: '0.5px solid #d0dce9', paddingTop: 10, marginBottom: 10 }}>
+                      <div className="pm2-mini-section-title">
+                        <AlertCircle size={12} style={{ color: '#b5d4f4' }} /> Complaints
+                      </div>
+                      <div className="pm2-inner-grid-3">
+                        <InfoRow label="Complaint" value={complaints.complaintDetails} />
+                        <InfoRow label="Duration" value={complaints.duration} />
+                        <InfoRow label="Pain Type" value={complaints.painType} />
+                        <InfoRow label="Pain Intensity" value={complaints.painIntensity} />
+                        <InfoRow label="Aggravating" value={complaints.aggravatingFactors} />
+                        <InfoRow label="Relieving" value={complaints.relievingFactors} />
+                        <InfoRow label="Medical History" value={complaints.medicalHistory} />
+                        <InfoRow label="Surgical History" value={complaints.surgicalHistory} />
+                        <InfoRow label="Medications" value={complaints.medications} />
+                        <InfoRow label="Allergies" value={complaints.allergies} />
+                        <InfoRow label="Previous Treatment" value={complaints.previousTreatment} />
+                      </div>
+                    </div>
 
-          {/* --- Prescription Section --- */}
-          <h5 className='mb-3'>Prescription</h5>
-          {selectedHistory?.prescription?.medicines?.length > 0 ? (
-            <CTable bordered>
-              <CTableHead>
-                <CTableRow>
-                  <CTableHeaderCell style={{ color: 'var(--color-black)' }} >Name</CTableHeaderCell>
-                  <CTableHeaderCell style={{ color: 'var(--color-black)' }} >Dose</CTableHeaderCell>
-                  <CTableHeaderCell style={{ color: 'var(--color-black)' }} >Duration</CTableHeaderCell>
-                  <CTableHeaderCell style={{ color: 'var(--color-black)' }} >Food</CTableHeaderCell>
-                  <CTableHeaderCell style={{ color: 'var(--color-black)' }} >Type</CTableHeaderCell>
-                  <CTableHeaderCell style={{ color: 'var(--color-black)' }} >Times</CTableHeaderCell>
-                </CTableRow>
-              </CTableHead>
-              <CTableBody>
-                {selectedHistory.prescription.medicines.map((m, i) => (
-                  <CTableRow key={i}>
-                    <CTableDataCell style={{ color: 'var(--color-black)' }} >{m.name}</CTableDataCell>
-                    <CTableDataCell style={{ color: 'var(--color-black)' }} >{m.dose}</CTableDataCell>
-                    <CTableDataCell style={{ color: 'var(--color-black)' }} >{m.duration} {m.durationUnit}</CTableDataCell>
-                    <CTableDataCell style={{ color: 'var(--color-black)' }} >{m.food}</CTableDataCell>
-                    <CTableDataCell style={{ color: 'var(--color-black)' }} >{m.medicineType}</CTableDataCell>
-                    <CTableDataCell style={{ color: 'var(--color-black)' }} >{m.times?.join(', ')}</CTableDataCell>
-                  </CTableRow>
-                ))}
-              </CTableBody>
-            </CTable>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        className="pm2-view-detail-btn"
+                        onClick={() => { setSelectedHistory(item); setViewModal(true) }}
+                      >
+                        <Eye size={13} /> View Full Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
           ) : (
-            <p>No prescription details found</p>
-          )}
+            <div className="pm2-empty">
+              <ClipboardList size={36} className="pm2-empty-icon" />
+              <p>No visit history available.</p>
+            </div>
+          )
+        )}
+      </div>
 
-          {/* --- Prescription PDF --- */}
-          {selectedHistory?.prescriptionPdf?.length > 0 && (
-            <>
-              <hr />
-              <h6>Prescription PDF</h6>
-              {/* <iframe
-          title="Prescription PDF"
-          src={`data:application/pdf;base64,${selectedHistory.prescriptionPdf[0]}`}
-          width="100%"
-          height="500px"
-          style={{ border: '1px solid #ccc', borderRadius: '6px' }}
-        /> */}
-              <iframe
-                title="Prescription PDF"
-                src={`data:application/pdf;base64,${selectedHistory.prescriptionPdf[0]}#toolbar=0&navpanes=0&scrollbar=0`}
-                width="100%"
-                height="500px"
-                style={{ border: '1px solid #ccc', borderRadius: '6px' }}
-              />
+      {/* ── Visit Detail Modal ── */}
+      <CModal visible={viewModal} onClose={() => setViewModal(false)} size="lg">
+        <CModalHeader style={{ borderBottom: '0.5px solid #d0dce9', padding: '16px 20px' }}>
+          <CModalTitle style={{ fontSize: 15, fontWeight: 600, color: '#0c447c', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Clock size={14} className="pm2-header-icon" /> Visit Details
+          </CModalTitle>
+        </CModalHeader>
+        <CModalBody style={{ padding: 20, maxHeight: '80vh', overflowY: 'auto' }}>
+          {selectedHistory && (() => {
+            const doc = selectedHistory.physiotherapyDoctorData || {}
+            return (
+              <div>
+                {/* Basic Info */}
+                <div className="pm2-modal-section">
+                  <div className="pm2-modal-section-title"><User size={13} /> Basic Info</div>
+                  <div className="pm2-modal-grid">
+                    <InfoRow label="Date" value={selectedHistory.visitDate} />
+                    <InfoRow label="Doctor" value={doc.doctorName} />
+                    <InfoRow label="Clinic" value={selectedHistory.clinicName} />
+                    <InfoRow label="Booking ID" value={doc.bookingId} />
+                  </div>
+                </div>
 
-            </>
-          )}
+                {/* Symptoms */}
+                {selectedHistory.symptoms && (
+                  <div className="pm2-modal-section">
+                    <div className="pm2-modal-section-title"><Activity size={13} /> Symptoms</div>
+                    <div className="pm2-modal-grid">
+                      <InfoRow label="Details" value={selectedHistory.symptoms?.symptomDetails} />
+                      <InfoRow label="Doctor Observation" value={selectedHistory.symptoms?.doctorObs} />
+                      <InfoRow label="Diagnosis" value={selectedHistory.symptoms?.diagnosis} />
+                      <InfoRow label="Duration" value={selectedHistory.symptoms?.duration} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Tests */}
+                <div className="pm2-modal-section">
+                  <div className="pm2-modal-section-title"><FileText size={13} /> Tests</div>
+                  {selectedHistory.tests?.selectedTests?.length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 14px' }}>
+                      {selectedHistory.tests.selectedTests.map((test, i) => (
+                        <span key={i} className="pm2-tag">{test}</span>
+                      ))}
+                    </div>
+                  ) : <p className="pm2-muted-text">No tests found.</p>}
+                </div>
+
+                {/* Treatments */}
+                <div className="pm2-modal-section">
+                  <div className="pm2-modal-section-title"><Stethoscope size={13} /> Treatments</div>
+                  <div style={{ padding: '10px 14px' }}>
+                    {selectedHistory.treatments?.generatedData ? (
+                      Object.entries(selectedHistory.treatments.generatedData).map(([name, details], i) => (
+                        <div key={i} style={{ marginBottom: 16 }}>
+                          <p style={{ fontWeight: 600, fontSize: 13, color: '#0c447c', marginBottom: 8 }}>{name}</p>
+                          <div className="pm2-modal-grid" style={{ marginBottom: 10 }}>
+                            <InfoRow label="Frequency" value={details.frequency} />
+                            <InfoRow label="Total" value={details.totalSittings} />
+                            <InfoRow label="Pending" value={details.pendingSittings} />
+                            <InfoRow label="Current" value={details.currentSitting} />
+                            <InfoRow label="Completed" value={details.takenSittings} />
+                          </div>
+                          {details?.dates?.length > 0 && (
+                            <div className="pm2-table-wrapper">
+                              <CTable className="pm2-table">
+                                <CTableHead>
+                                  <CTableRow>
+                                    {['Date', 'Sitting', 'Status'].map((h) => (
+                                      <CTableHeaderCell key={h} className="pm2-th">{h}</CTableHeaderCell>
+                                    ))}
+                                  </CTableRow>
+                                </CTableHead>
+                                <CTableBody>
+                                  {details.dates.map((d, idx) => (
+                                    <CTableRow key={idx} className="pm2-tr">
+                                      <CTableDataCell className="pm2-td pm2-muted">
+                                        {d.date ? new Date(d.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                                      </CTableDataCell>
+                                      <CTableDataCell className="pm2-td pm2-muted">{d.sitting}</CTableDataCell>
+                                      <CTableDataCell className="pm2-td pm2-muted">{d.status}</CTableDataCell>
+                                    </CTableRow>
+                                  ))}
+                                </CTableBody>
+                              </CTable>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : <p className="pm2-muted-text">No treatments found.</p>}
+                  </div>
+                </div>
+
+                {/* Follow-Up */}
+                {selectedHistory.followUp && (
+                  <div className="pm2-modal-section">
+                    <div className="pm2-modal-section-title"><RefreshCw size={13} /> Follow-Up</div>
+                    <div className="pm2-modal-grid">
+                      <InfoRow label="Next Follow-Up" value={selectedHistory.followUp?.nextFollowUpDate} />
+                      <InfoRow label="Duration" value={selectedHistory.followUp?.durationValue ? `${selectedHistory.followUp.durationValue} ${selectedHistory.followUp.durationUnit}` : null} />
+                      <InfoRow label="Note" value={selectedHistory.followUp?.followUpNote} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Prescription */}
+                <div className="pm2-modal-section">
+                  <div className="pm2-modal-section-title"><FileText size={13} /> Prescription</div>
+                  {selectedHistory.prescription?.medicines?.length > 0 ? (
+                    <div className="pm2-table-wrapper" style={{ margin: '10px 14px 14px' }}>
+                      <CTable className="pm2-table">
+                        <CTableHead>
+                          <CTableRow>
+                            {['Name', 'Dose', 'Duration', 'Food', 'Type', 'Times'].map((h) => (
+                              <CTableHeaderCell key={h} className="pm2-th">{h}</CTableHeaderCell>
+                            ))}
+                          </CTableRow>
+                        </CTableHead>
+                        <CTableBody>
+                          {selectedHistory.prescription.medicines.map((m, i) => (
+                            <CTableRow key={i} className="pm2-tr">
+                              <CTableDataCell className="pm2-td pm2-bold">{m.name}</CTableDataCell>
+                              <CTableDataCell className="pm2-td pm2-muted">{m.dose}</CTableDataCell>
+                              <CTableDataCell className="pm2-td pm2-muted">{m.duration} {m.durationUnit}</CTableDataCell>
+                              <CTableDataCell className="pm2-td pm2-muted">{m.food}</CTableDataCell>
+                              <CTableDataCell className="pm2-td pm2-muted">{m.medicineType}</CTableDataCell>
+                              <CTableDataCell className="pm2-td pm2-muted">{m.times?.join(', ')}</CTableDataCell>
+                            </CTableRow>
+                          ))}
+                        </CTableBody>
+                      </CTable>
+                    </div>
+                  ) : <p className="pm2-muted-text">No prescription found.</p>}
+
+                  {selectedHistory.prescriptionPdf?.length > 0 && (
+                    <div style={{ padding: '0 14px 14px' }}>
+                      <iframe
+                        title="Prescription PDF"
+                        src={`data:application/pdf;base64,${selectedHistory.prescriptionPdf[0]}#toolbar=0&navpanes=0&scrollbar=0`}
+                        width="100%" height="400px"
+                        style={{ border: '0.5px solid #d0dce9', borderRadius: 8 }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
         </CModalBody>
       </CModal>
-      <br></br>
-      <CTabPane visible={activeKey === 2}>
 
-  {/* 🔥 YOUR APPOINTMENTS TABLE ABOVE */}
+      {/* ── STYLES ── */}
+      <style>{`
+        /* Page header */
+        .pm2-page-header {
+          display: flex; align-items: center; justify-content: space-between;
+          flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
+          padding-bottom: 14px; border-bottom: 0.5px solid #d0dce9;
+        }
+        .pm2-title-group { display: flex; align-items: center; gap: 12px; }
+        .pm2-page-icon {
+          width: 42px; height: 42px; border-radius: 10px;
+          background: #e6f1fb; display: flex; align-items: center;
+          justify-content: center; color: #185fa5; flex-shrink: 0;
+        }
+        .pm2-page-title { font-size: 17px; font-weight: 600; color: #0c447c; margin: 0; }
+        .pm2-page-sub   { font-size: 12px; color: #6b7280; margin: 0; }
 
-  {/* 🔥 BOOKING SUMMARY BELOW TABLE */}
- 
+        /* Tab bar */
+        .pm2-tab-bar {
+          display: flex; gap: 4px; border-bottom: 0.5px solid #d0dce9;
+          margin-bottom: 18px; overflow-x: auto;
+        }
+        .pm2-tab-btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 9px 16px; font-size: 12px; font-weight: 600;
+          color: #6b7280; background: transparent; border: none;
+          border-bottom: 2px solid transparent; cursor: pointer;
+          transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+        }
+        .pm2-tab-btn:hover { color: #185fa5; }
+        .pm2-tab-active { color: #185fa5 !important; border-bottom-color: #185fa5 !important; }
 
-</CTabPane>
+        /* Profile header */
+        .pm2-profile-header {
+          display: flex; align-items: center; gap: 16px;
+          padding: 16px; background: #f0f5fb; border-radius: 10px; margin-bottom: 16px;
+        }
+        .pm2-profile-avatar-wrap {
+          width: 64px; height: 64px; border-radius: 50%;
+          background: #e6f1fb; border: 2px solid #b5d4f4;
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .pm2-profile-name { font-size: 16px; font-weight: 700; color: #0c447c; margin: 0 0 4px; }
+        .pm2-profile-meta { font-size: 12px; color: #6b7280; margin: 0 0 2px; }
+        .pm2-badge {
+          display: inline-block; background: #185fa5; color: #fff;
+          font-size: 11px; font-weight: 600; padding: 2px 10px;
+          border-radius: 20px; margin-top: 4px;
+        }
 
-      <CTabPane visible={activeKey === 3}>
-       {reportLoading ? (
-  <div className="text-center py-4">
-    <CSpinner color="primary" />
-  </div>
-) : Array.isArray(report) && report.length > 0 ? (
-          <>
-            <h5 className="mb-6" style={{ color: 'var(--color-black)' }}>
-              Reports for {selectedPatient?.fullName} ({selectedPatient?.patientId})
-            </h5>
+        /* Info cards — same as FrontDeskForm */
+        .pm2-info-card { border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+        .pm2-info-card-header {
+          display: flex; align-items: center; gap: 8px;
+          background: #185fa5; color: #fff;
+          font-size: 12px; font-weight: 600; padding: 9px 14px;
+        }
+        .pm2-header-icon { color: #b5d4f4; }
+        .pm2-info-card-body { padding: 12px 14px; background: #fff; }
 
-            <CTable >
-              <CTableHead className="pink-table w-auto">
-                <CTableRow style={{ color: 'var(--color-black)' }}>
-                  <CTableHeaderCell>S.No</CTableHeaderCell>
-                  <CTableHeaderCell>Report Name</CTableHeaderCell>
-                  <CTableHeaderCell>Date</CTableHeaderCell>
-                  <CTableHeaderCell>Status</CTableHeaderCell>
-                  <CTableHeaderCell>Type</CTableHeaderCell>
-                  <CTableHeaderCell>Report File</CTableHeaderCell>
-                </CTableRow>
-              </CTableHead>
+        /* Grid layouts */
+        .pm2-grid-2      { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .pm2-inner-grid  { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; }
+        .pm2-inner-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 16px; }
 
-              <CTableBody>
-                {report
-                  .filter((r) => r.patientId === selectedAppointment?.patientId) // Filter reports
-                  .map((r, i) => (
-                    <CTableRow key={i}>
-                      <CTableDataCell style={{ color: 'var(--color-black)' }}>{startIndex + i + 1}</CTableDataCell>
-                      <CTableDataCell style={{ color: 'var(--color-black)' }}>{r.reportName || '-'}</CTableDataCell>
-                      <CTableDataCell style={{ color: 'var(--color-black)' }}>
-                        {r.reportDate ? new Date(r.reportDate).toLocaleDateString() : '-'}
-                      </CTableDataCell>
-                      <CTableDataCell style={{ color: 'var(--color-black)' }}>{r.reportStatus || '-'}</CTableDataCell>
-                      <CTableDataCell style={{ color: 'var(--color-black)' }}>{r.reportType || '-'}</CTableDataCell>
-                      <CTableDataCell>
-                        {r.reportFile?.length > 0 ? (
-                          r.reportFile.map((file, index) => {
-                            let fileType = 'application/pdf';
-                            if (file.startsWith('/9j/') || file.startsWith('iVBOR')) fileType = 'image/png';
+        /* Info rows */
+        .pm2-info-row { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+        .pm2-info-row:last-child { margin-bottom: 0; }
+        .pm2-info-label {
+          font-size: 11px; font-weight: 700; color: #185fa5;
+          text-transform: none; letter-spacing: 0; white-space: nowrap;
+        }
+        .pm2-info-value { font-size: 13px; color: #374151; font-weight: 500; }
 
-                            const fileName = `${r.reportName}`;
+        /* Status pill */
+        .pm2-status-pill {
+          font-size: 11px; font-weight: 600; color: #fff;
+          padding: 3px 10px; border-radius: 20px;
+        }
 
-                            return (
-                              <div key={index} style={{ marginBottom: '5px' }}>
-                                <a
-                                  href="#"
-                                  style={{ color: '#007bff', textDecoration: 'underline', display: 'inline-block' }}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    openBase64File(
-                                      file,
-                                      fileType,
-                                      `${fileName}${fileType === 'application/pdf' ? '.pdf' : '.png'}`
-                                    );
-                                  }}
-                                >
-                                  {fileName}
-                                </a>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <span>-</span>
-                        )}
-                      </CTableDataCell>
-                    </CTableRow>
-                  ))}
-              </CTableBody>
-            </CTable>
-          </>
-        ) : (
-          <p className="text-center py-3">No reports available for {selectedPatient?.fullName}</p>
-        )}
-      </CTabPane>
-      {/* <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        onPageChange={(page) => setCurrentPage(page)}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setCurrentPage(1); // reset to page 1
-        }}
-      /> */}
+        /* Appointment selector */
+        .pm2-select-label { font-size: 11px; font-weight: 700; color: #374151; display: block; margin-bottom: 4px; }
+        .pm2-select {
+          width: 100%; max-width: 360px; padding: 7px 10px;
+          font-size: 12.5px; color: #374151; background: #fff;
+          border: 0.5px solid #d0dce9; border-radius: 7px; outline: none;
+          appearance: none; -webkit-appearance: none;
+        }
+        .pm2-select:focus { border-color: #185fa5; box-shadow: 0 0 0 2.5px rgba(24,95,165,0.12); }
 
+        /* File button */
+        .pm2-file-btn {
+          display: inline-flex; align-items: center; gap: 5px;
+          background: #e6f1fb; color: #185fa5;
+          border: 0.5px solid #b5d4f4; border-radius: 6px;
+          padding: 4px 12px; font-size: 12px; font-weight: 600;
+          cursor: pointer; margin-right: 6px; margin-bottom: 4px; transition: background 0.15s;
+        }
+        .pm2-file-btn:hover { background: #d0e6f7; }
 
+        /* View details button */
+        .pm2-view-detail-btn {
+          display: inline-flex; align-items: center; gap: 5px;
+          background: #185fa5; color: #fff; border: none;
+          padding: 6px 14px; border-radius: 7px;
+          font-size: 12px; font-weight: 600;
+          cursor: pointer; transition: filter 0.15s;
+        }
+        .pm2-view-detail-btn:hover { filter: brightness(0.9); }
 
+        /* Mini section title inside card body */
+        .pm2-mini-section-title {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 11px; font-weight: 700; color: #185fa5;
+          margin-bottom: 10px;
+        }
 
+        /* Table */
+        .pm2-table-wrapper {
+          border: 0.5px solid #d0dce9; border-radius: 10px;
+          overflow: hidden; overflow-x: auto; margin-bottom: 12px;
+        }
+        .pm2-table { margin-bottom: 0 !important; font-size: 13px; }
+        .pm2-th {
+          background: #185fa5 !important; color: #fff !important;
+          font-size: 12px !important; font-weight: 600 !important;
+          padding: 10px 14px !important; white-space: nowrap; border: none !important;
+        }
+        .pm2-tr:hover { background: #f0f5fb !important; }
+        .pm2-td {
+          padding: 10px 14px !important; vertical-align: middle !important;
+          font-size: 13px; color: #374151;
+          border-bottom: 0.5px solid #eef2f7 !important; border-top: none !important;
+        }
+        .pm2-muted { color: #6b7280; }
+        .pm2-bold  { font-weight: 600; color: #0c447c; }
 
+        /* Tag chip */
+        .pm2-tag {
+          display: inline-block; background: #e6f1fb; color: #0c447c;
+          border: 0.5px solid #b5d4f4; border-radius: 20px;
+          padding: 3px 10px; font-size: 12px; font-weight: 500;
+        }
 
+        /* Modal sections */
+        .pm2-modal-section {
+          border: 0.5px solid #d0dce9; border-radius: 10px;
+          overflow: hidden; margin-bottom: 12px;
+        }
+        .pm2-modal-section-title {
+          display: flex; align-items: center; gap: 8px;
+          background: #185fa5; color: #fff;
+          font-size: 12px; font-weight: 600; padding: 9px 14px;
+        }
+        .pm2-modal-grid {
+          display: grid; grid-template-columns: repeat(2, 1fr);
+          gap: 10px; padding: 12px 14px; background: #fff;
+        }
+        .pm2-muted-text { font-size: 13px; color: #9ca3af; padding: 8px 14px; }
 
+        /* Empty / center */
+        .pm2-empty {
+          display: flex; flex-direction: column; align-items: center;
+          gap: 10px; padding: 48px 0; color: #9ca3af; font-size: 14px;
+        }
+        .pm2-empty-icon { color: #d0dce9; }
+        .pm2-center { display: flex; align-items: center; justify-content: center; min-height: 180px; }
 
+        /* Scrollbar */
+        .modal-body::-webkit-scrollbar { width: 5px; }
+        .modal-body::-webkit-scrollbar-track { background: #f0f5fb; }
+        .modal-body::-webkit-scrollbar-thumb { background: #b5d4f4; border-radius: 10px; }
 
-
-
+        @media (max-width: 640px) {
+          .pm2-grid-2, .pm2-inner-grid, .pm2-inner-grid-3, .pm2-modal-grid { grid-template-columns: 1fr; }
+          .pm2-tab-btn { padding: 8px 10px; font-size: 11px; }
+        }
+      `}</style>
     </div>
   )
 }
 
 export default PatientManagement
-
