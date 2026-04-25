@@ -192,29 +192,16 @@ const PatientManagement = () => {
       fetchAppointments(selectedPatient.patientId)
     }
   }, [activeKey, selectedPatient])
-  
   useEffect(() => {
-  if (activeKey === 3) {
-    const bookingId = selectedAppointment?.bookingId;
-
-    console.log("Reports Trigger:", bookingId);
-
-    if (bookingId) {
-      fetchReportByBookingId(bookingId);
-    } else {
-      console.warn("❌ No bookingId for reports");
+    if (activeKey === 4 && selectedPatient?.patientId) {
+      fetchVisitHistory(selectedPatient.patientId)
     }
-  }
-}, [activeKey, selectedAppointment]);
+  }, [activeKey, selectedPatient])
   useEffect(() => {
-  if (
-    activeKey === 4 &&
-    selectedAppointment?.bookingId &&
-    selectedAppointment?.patientId
-  ) {
-    fetchVisitHistory();
-  }
-}, [activeKey, selectedAppointment]);
+    if (activeKey === 3 && selectedAppointment?.bookingId) {
+      fetchReportByBookingId(selectedAppointment.bookingId);
+    }
+  }, [activeKey, selectedAppointment]);
 
 
 
@@ -238,7 +225,7 @@ const PatientManagement = () => {
               <CNavLink
                 active={activeKey === 1}
                 onClick={() => setActiveKey(1)}
-                style={{ cursor: "pointer" }}
+                style={{ cursor: "pointer" , color: 'var(--color-bgcolor)'}}
               >
                 Patient Info
               </CNavLink>
@@ -248,7 +235,7 @@ const PatientManagement = () => {
               <CNavLink
                 active={activeKey === 2}
                 onClick={() => setActiveKey(2)}
-                style={{ cursor: "pointer" }}
+                style={{ cursor: "pointer" ,color: 'var(--color-bgcolor)'}}
               >
                 Appointments
               </CNavLink>
@@ -258,7 +245,7 @@ const PatientManagement = () => {
               <CNavLink
                 active={activeKey === 3}
                 onClick={() => setActiveKey(3)}
-                style={{ cursor: "pointer" }}
+                style={{ cursor: "pointer" ,color: 'var(--color-bgcolor)'}}
               >
                 Reports
               </CNavLink>
@@ -268,7 +255,7 @@ const PatientManagement = () => {
               <CNavLink
                 active={activeKey === 4}
                 onClick={() => setActiveKey(4)}
-                style={{ cursor: "pointer" }}
+                style={{ cursor: "pointer",color: 'var(--color-bgcolor)' }}
               >
                 History
               </CNavLink>
@@ -399,17 +386,14 @@ const PatientManagement = () => {
                                   size="sm"
                                   className="actionBtn"
                                   style={{ color: 'var(--color-black)' }}
-                                 onClick={() => {
-  setSelectedAppointment(a);
+                                  onClick={() => {
+                                    setSelectedAppointment(a);
+                                    setAppointmentInfo(a); // <-- Add this
+                                    setShowModal(true);
+                                    fetchReportByBookingId(a.bookingId);
+                                    setActiveKey(3);
+                                  }}
 
-  if (a?.bookingId) {
-    fetchReportByBookingId(a.bookingId); // ✅ direct call
-  } else {
-    console.log("❌ bookingId missing");
-  }
-
-  setActiveKey(3);
-}}
                                 >
                                   <Eye size={18} />
                                 </CButton>

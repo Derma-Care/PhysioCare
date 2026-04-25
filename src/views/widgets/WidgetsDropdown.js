@@ -566,80 +566,134 @@ const WidgetsDropdown = (props) => {
       {/*to display today Appointments Table */}
       <div className="container mt-3 ">
 
-        <div className="row">
-          <div className="d-flex justify-content-between align-items-center align-content-center  ">
-            <h5 className="mb-4 "  style={{ color: "var(--color-bgcolor)"  , fontSize: FONT_SIZES.lg}}>Today's Appointments</h5>
+       <div className="row">
 
-            {/* 
-            <div className="d-flex gap-2">
-              <CButton
-                style={{ backgroundColor: 'var(--color-black)', color: COLORS.white }}
-                onClick={() => {
-                  setSelectedServiceTypes([])
-                  setSelectedConsultationTypes([])
-                  setFilterTypes([])
-                  setStatusFilters([])
-                }}
-              >
-                All
-              </CButton>
+  {/* 🔹 HEADER ROW */}
+  <div className="d-flex justify-content-between align-items-center mb-3">
 
-              <button
-                onClick={() => toggleFilter('Service & Treatment')}
-                className={`btn ${filterTypes.includes('Service & Treatment') ? 'btn-selected' : 'btn-unselected'
-                  }`}
-              >
-                Therapy
-              </button>
+    {/* LEFT - Title */}
+    <h5
+      style={{
+        color: "var(--color-bgcolor)",
+        fontSize: FONT_SIZES.lg,
+        margin: 0
+      }}
+    >
+      Today's Appointments
+    </h5>
 
-              <button
-                onClick={() => toggleFilter('In-clinic')}
-                className={`btn ${filterTypes.includes('In-clinic') ? 'btn-selected' : 'btn-unselected'
-                  }`}
-              >
-                Consultation
-              </button>
+    {/* RIGHT - Search Cards */}
+    <div className="d-flex gap-3">
 
+      {/* 🔍 Search Patients */}
+      <CCard
+        onClick={() => navigate("/customer-management")}
+        style={{
+          cursor: "pointer",
+          minWidth: "220px",
+          borderRadius: "12px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+        }}
+      >
+        <CCardBody className="d-flex justify-content-between align-items-center p-2">
 
-            </div> */}
-
-            {/* <CButton
-              className="mx-2"
-              style={{ backgroundColor: 'var(--color-black)', color: COLORS.white }}
-              onClick={() => navigate('/in-progress')}
-            >
-              Active Appointments
-            </CButton> */}
-          </div>
-          <div className="d-flex gap-2 mb-3">
-            <CButton
+          <div className="d-flex align-items-center gap-2">
+            <div
               style={{
-                backgroundColor: statusFilter === '' ? 'var(--color-bgcolor)' : '#ccc',
-                color: '#fff'
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                backgroundColor: "#e7f1ff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: "bold",
+                color: "var(--color-bgcolor)",
               }}
-              onClick={() => setStatusFilter('')}
             >
-              All
-            </CButton>
+              {totalPatientsCount}
+            </div>
 
-
-            <button
-              onClick={() => setStatusFilter('confirmed')}
-              className={`btn ${statusFilter.includes('confirmed') ? 'btn-selected' : 'btn-unselected'
-                }`}
-            >
-              Confirmed
-            </button>
-            <button
-              onClick={() => setStatusFilter('pending')}
-              className={`btn ${statusFilter.includes('pending') ? 'btn-selected' : 'btn-unselected'
-                }`}
-            >
-              Pending
-            </button>
-
+            <span style={{ fontSize: "14px", fontWeight: 500 }}>
+              Search Patients
+            </span>
           </div>
-        </div>
+
+          <CIcon icon={cilArrowRight} />
+        </CCardBody>
+      </CCard>
+
+      {/* 🔍 Search Doctors */}
+      <CCard
+        onClick={() => navigate("/employee-management/doctor")}
+        style={{
+          cursor: "pointer",
+          minWidth: "220px",
+          borderRadius: "12px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+        }}
+      >
+        <CCardBody className="d-flex justify-content-between align-items-center p-2">
+
+          <div className="d-flex align-items-center gap-2">
+            <div
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                backgroundColor: "#e7f1ff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: "bold",
+                color: "var(--color-bgcolor)",
+              }}
+            >
+              {totalDoctorsCount}
+            </div>
+
+            <span style={{ fontSize: "14px", fontWeight: 500 }}>
+              Search Doctors
+            </span>
+          </div>
+
+          <CIcon icon={cilArrowRight} />
+        </CCardBody>
+      </CCard>
+
+    </div>
+  </div>
+
+  {/* 🔹 FILTER ROW (SEPARATE) */}
+  <div className="d-flex gap-2 mb-3">
+
+    <CButton
+      style={{
+        backgroundColor: statusFilter === '' ? 'var(--color-bgcolor)' : '#ccc',
+        color: '#fff'
+      }}
+      onClick={() => setStatusFilter('')}
+    >
+      All
+    </CButton>
+
+    <button
+      onClick={() => setStatusFilter('confirmed')}
+      className={`btn ${statusFilter === 'confirmed' ? 'btn-selected' : 'btn-unselected'}`}
+    >
+      Confirmed
+    </button>
+
+    <button
+      onClick={() => setStatusFilter('pending')}
+      className={`btn ${statusFilter === 'pending' ? 'btn-selected' : 'btn-unselected'}`}
+    >
+      Pending
+    </button>
+
+  </div>
+
+</div>
 
         <CTable striped hover responsive>
           <CTableHead className="pink-table">
@@ -935,141 +989,7 @@ const WidgetsDropdown = (props) => {
 
             </CCol> */}
 
-            <CCol sm={6} xl={4}>
-
-
-              <CCard
-                onClick={() => navigate("/customer-management")}
-                style={{
-                  cursor: "pointer",
-                  border: "1px solid #var(--color-black)",
-                  borderRadius: "14px",
-                  backgroundColor: "#ffffff",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)"
-                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)"
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
-                }}
-              >
-                <CCardBody
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "14px 18px",
-                  }}
-                >
-                  {/* 🔹 Left Side (Count + Text) */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-
-                    {/* 🔵 Rounded Count */}
-                    <div
-                      style={{
-                        width: "42px",
-                        height: "42px",
-                        borderRadius: "50%",
-                        backgroundColor: "#e7f1ff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "bold",
-                        color: "var(--color-bgcolor)",
-
-                        fontSize: "16px",
-                      }}
-                    >
-                      {totalPatientsCount}
-                    </div>
-
-                    {/* 📝 Text */}
-                    <div style={{ fontSize: "15px", color: "var(--color-bgcolor)", fontWeight: "500" }}>
-                      Search Patients
-                    </div>
-                  </div>
-
-                  {/* ➡️ Arrow */}
-                  <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-bgcolor)" }} />
-                </CCardBody>
-              </CCard>
-
-
-            </CCol>
-
-            {/* <CCol sm={6} xl={4}>
-          <CWidgetStatsA
-            color="success"
-            value={totalPatientsCount}
-            title="Total Patients"
-
-          />
-        </CCol> */}
-            <CCol sm={6} xl={4}>
-              <CCard
-                onClick={() => navigate("/employee-management/doctor")}
-                style={{
-                  cursor: "pointer",
-                  border: "1px solid #var(--color-black)",
-                  borderRadius: "14px",
-                  backgroundColor: "#ffffff",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)"
-                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)"
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
-                }}
-              >
-                <CCardBody
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "14px 18px",
-                  }}
-                >
-                  {/* 🔹 Left Side (Count + Text) */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-
-                    {/* 🔵 Rounded Count */}
-                    <div
-                      style={{
-                        width: "42px",
-                        height: "42px",
-                        borderRadius: "50%",
-                        backgroundColor: "#e7f1ff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "bold",
-                        color: "var(--color-bgcolor)",
-
-                        fontSize: "16px",
-                      }}
-                    >
-                      {totalDoctorsCount}
-                    </div>
-
-                    {/* 📝 Text */}
-                    <div style={{ fontSize: "15px", color: "var(--color-bgcolor)", fontWeight: "500" }}>
-                      Search Doctors
-                    </div>
-                  </div>
-
-                  {/* ➡️ Arrow */}
-                  <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-bgcolor)" }} />
-                </CCardBody>
-              </CCard>
-            </CCol>
+          
 
           </CRow>
         </>
