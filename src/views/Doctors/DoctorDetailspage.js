@@ -711,8 +711,8 @@ const DoctorDetailsPage = () => {
                       padding: '6px 10px',
                       borderRadius: t.radiusSm,
                       border: `1px solid ${isSelected ? 'var(--color-bgcolor)' : t.border}`,
-                      backgroundColor: isSelected ? '#1e3a8a' : '#fff', // darker blue
-                      color: isSelected ? '#fff' : t.text,
+                      backgroundColor: isSelected ? '#1e3a8a' : '#fff',
+                      color: isSelected ? '#ffffff' : t.text,
                       cursor: 'pointer',
                       fontSize: '11px',
                       fontWeight: isSelected ? '700' : '500',
@@ -721,8 +721,8 @@ const DoctorDetailsPage = () => {
                       transition: 'all .15s',
                     }}
                   >
-                    <div>{dayObj.dayLabel}</div>
-                    <div style={{ fontSize: '10px', opacity: 0.85 }}>{dayObj.dateLabel}</div>
+                    <div style={{ color: isSelected ? '#ffffff' : t.text }}>{dayObj.dayLabel}</div>
+                    <div style={{ fontSize: '10px', color: isSelected ? 'rgba(255,255,255,0.85)' : t.textMuted }}>{dayObj.dateLabel}</div>
                   </button>
                 )
               })}
@@ -767,11 +767,13 @@ const DoctorDetailsPage = () => {
                           fontSize: '11px',
                           fontWeight: '600',
                           cursor: isBooked ? 'not-allowed' : 'pointer',
-                          border: `1px solid ${isBooked ? '#fca5a5' : isSelected ? 'var(--color-bgcolor)' : t.border}`,
-                          backgroundColor: isBooked ? '#fee2e2' : isSelected ? 'var(--color-bgcolor)' : '#fff',
-                          color: isBooked ? t.danger : isSelected ? '#fff' : t.text,
+                          border: `1px solid ${isSelected ? '#1e3a8a' : isBooked ? '#fca5a5' : t.border}`,
+                          /* ✅ FIX: isSelected checked FIRST so white text always wins on dark bg */
+                          backgroundColor: isSelected ? '#1e3a8a' : isBooked ? '#fee2e2' : '#fff',
+                          color: isSelected ? '#ffffff' : isBooked ? t.danger : t.text,
                           opacity: isBooked ? 0.8 : 1,
                           transition: 'all .15s',
+                          userSelect: 'none',
                         }}
                       >
                         {slotObj?.slot}
@@ -786,7 +788,7 @@ const DoctorDetailsPage = () => {
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
               {[
                 { color: '#fff', border: t.border, text: t.text, label: 'Available' },
-                { color: 'var(--color-bgcolor)', border: 'var(--color-bgcolor)', text: '#fff', label: 'Selected' },
+                { color: '#1e3a8a', border: '#1e3a8a', text: '#fff', label: 'Selected' },
                 { color: '#fee2e2', border: '#fca5a5', text: t.danger, label: 'Booked' },
               ].map(item => (
                 <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: t.textMuted }}>
@@ -1190,8 +1192,9 @@ const DoctorDetailsPage = () => {
                   style={{
                     width: '76px', height: '34px', fontSize: '11px', fontWeight: '600',
                     borderRadius: t.radiusSm, border: 'none', cursor: slotObj.available ? 'pointer' : 'not-allowed',
-                    backgroundColor: !slotObj.available ? '#e2e8f0' : isSelected ? 'var(--color-bgcolor)' : '#64748b',
-                    color: !slotObj.available ? t.textMuted : '#fff',
+                    /* ✅ FIX: isSelected checked FIRST so white text always wins */
+                    backgroundColor: isSelected ? '#1e3a8a' : !slotObj.available ? '#e2e8f0' : '#64748b',
+                    color: isSelected ? '#ffffff' : !slotObj.available ? t.textMuted : '#fff',
                     opacity: !slotObj.available ? 0.6 : 1,
                   }}
                 >
