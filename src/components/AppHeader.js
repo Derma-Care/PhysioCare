@@ -71,7 +71,7 @@ const AppHeader = () => {
           <CIcon icon={cilMenu} size="lg" />
         </CHeaderToggler>
         {/* Search Bar */}
-        <div className="d-none d-md-block me-4" style={{ color: 'var(--color-black)' }}>
+        {/* <div className="d-none d-md-block me-4" style={{ color: 'var(--color-black)' }}>
           <input
             type="text"
             placeholder="Search..."
@@ -90,13 +90,13 @@ const AppHeader = () => {
               backgroundColor: 'transparent',
             }}
           />
-        </div>
+        </div> */}
 
         {/* Notification Icons */}
         <div className="d-flex align-items-center ms-auto">
-          {/* Bell icon with badge */}
+        
 
-          {/* Welcome text */}
+       
           <div
             className="fw-bold mx-5"
             style={{
@@ -118,12 +118,12 @@ const AppHeader = () => {
               navigate('/doctor-notifications')
             }}
           >
-            <CIcon
+            {/* <CIcon
               icon={cilBell}
               size="lg"
               className="mx-2"
               style={{ color: 'var(--color-black)' }}
-            />
+            /> */}
             {notificationCount > 0 && (
               <span
                 className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
@@ -134,52 +134,7 @@ const AppHeader = () => {
             )}
           </div>
           <CHeaderNav>
-            {/* <li className="nav-item py-1">
-            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
-          </li>
-          <CDropdown variant="nav-item" placement="bottom-end">
-            <CDropdownToggle caret={false}>
-              {colorMode === 'dark' ? (
-                <CIcon icon={cilMoon} size="lg" />
-              ) : colorMode === 'auto' ? (
-                <CIcon icon={cilContrast} size="lg" />
-              ) : (
-                <CIcon icon={cilSun} size="lg" />
-              )}
-            </CDropdownToggle>
-            <CDropdownMenu>
-              <CDropdownItem
-                active={colorMode === 'light'}
-                className="d-flex align-items-center"
-                as="button"
-                type="button"
-                onClick={() => setColorMode('light')}
-              >
-                <CIcon className="me-2" icon={cilSun} size="lg" /> Light
-              </CDropdownItem>
-              <CDropdownItem
-                active={colorMode === 'dark'}
-                className="d-flex align-items-center"
-                as="button"
-                type="button"
-                onClick={() => setColorMode('dark')}
-              >
-                <CIcon className="me-2" icon={cilMoon} size="lg" /> Dark
-              </CDropdownItem>
-              <CDropdownItem
-                active={colorMode === 'auto'}
-                className="d-flex align-items-center"
-                as="button"
-                type="button"
-                onClick={() => setColorMode('auto')}
-              >
-                <CIcon className="me-2" icon={cilContrast} size="lg" /> Auto
-              </CDropdownItem>
-            </CDropdownMenu>
-          </CDropdown>
-          <li className="nav-item py-1">
-            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
-          </li> */}
+           
             <ThemeSelector />
             <AppHeaderDropdown />
           </CHeaderNav>

@@ -30,7 +30,6 @@ import 'slick-carousel/slick/slick.css'
 import 'slick-carousel/slick/slick-theme.css'
 import axios from 'axios'
 import { MainAdmin_URL, AllCustomerAdvertisements } from '../../baseUrl'
-// import { appointments_Ref } from '../../baseUrl'
 import { AppointmentData, bookingUpdate, GetBookingByClinicIdData, GetTodayBooking } from '../AppointmentManagement/appointmentAPI'
 import { DoctorData, getDoctorByClinicIdData } from '../Doctors/DoctorAPI'
 import { COLORS, FONT_SIZES } from '../../Constant/Themes'
@@ -49,19 +48,19 @@ const WidgetsDropdown = (props) => {
   const currentIndex = useRef(0)
   const intervalRef = useRef(null)
   const [bookings, setBookings] = useState([])
-  const [activeCard, setActiveCard] = useState('') // state to keep track of which card is clicked eg:"appointments"
+  const [activeCard, setActiveCard] = useState('')
   const [len, setLen] = useState(0)
   const widgetChartRef1 = useRef(null)
   const widgetChartRef2 = useRef(null)
   const widgetChartRef3 = useRef(null)
   const [todayBookings, setTodayBookings] = useState([])
-  const [totalAppointmentsCount, setTotalAppointmentsCount] = useState(0) // NEW: State to hold total appointments count
-  const [totalDoctorsCount, setTotalDoctorsCount] = useState(0) // NEW: State to hold total appointments count
-  const [totalPatientsCount, setTotalPatientsCount] = useState(0) // NEW: State to hold total appointments count
-  const [loadingAppointments, setLoadingAppointments] = useState(true) // New state for loading indicator
-  const [appointmentError, setAppointmentError] = useState(null) // New state for appointment fetch error
-  const [loadingPatients, setLoadingPatients] = useState(true) // New state for loading indicator
-  const [loadingDoctors, setLoadingDoctors] = useState(true) // New state for loading indicator
+  const [totalAppointmentsCount, setTotalAppointmentsCount] = useState(0)
+  const [totalDoctorsCount, setTotalDoctorsCount] = useState(0)
+  const [totalPatientsCount, setTotalPatientsCount] = useState(0)
+  const [loadingAppointments, setLoadingAppointments] = useState(true)
+  const [appointmentError, setAppointmentError] = useState(null)
+  const [loadingPatients, setLoadingPatients] = useState(true)
+  const [loadingDoctors, setLoadingDoctors] = useState(true)
   const [patientError, setPatientError] = useState(null)
   const [doctorError, setDoctorError] = useState(null)
   const [doctors, setDoctors] = useState([])
@@ -75,10 +74,11 @@ const WidgetsDropdown = (props) => {
   const [inprogressApt, setInprogressApt] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('')
   const [showAppointments, setShowAppointments] = useState(false)
-  const [editingPaymentId, setEditingPaymentId] = useState(null);
+  const [editingPaymentId, setEditingPaymentId] = useState(null)
   const [printData, setPrintData] = useState(null)
+
   const statusLabelMap = {
     'In-Progress': 'Active',
     Completed: 'Completed',
@@ -86,58 +86,28 @@ const WidgetsDropdown = (props) => {
     Rejected: 'Rejected',
     Confirmed: 'Confirmed',
   }
-  const handleStatusChange = (e) => {
-    const value = e.target.value
 
-    if (statusFilters.includes(value)) {
-      setStatusFilters([]) // Deselect if the same one is clicked
-    } else {
-      setStatusFilters([value]) // Allow only one selection
-    }
-  }
   const role = localStorage.getItem('role')
+
   const PrintContent = ({ data }) => {
     if (!data) return null
-
     return (
       <PrintLetterHead>
         <div style={{ padding: 20, fontFamily: 'Arial' }}>
-
-          {/* TITLE */}
-          <h2 style={{ textAlign: 'center', marginBottom: 10 }}>
-            CONSULTATION RECEIPT
-          </h2>
-
-          {/* RECEIPT META */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: 14,
-            marginBottom: 10
-          }}>
+          <h2 style={{ textAlign: 'center', marginBottom: 10 }}>CONSULTATION RECEIPT</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 10 }}>
             <div><strong>Booking Id:</strong> {data.bookingId || '---'}</div>
             <div><strong>Date:</strong> {data.serviceDate}</div>
           </div>
-
           <hr />
-
-          {/* PATIENT DETAILS */}
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', fontSize: 14, color: "black" }}  >
-            <p style={{ color: "black" }}><strong>Patient ID:</strong> {data.patientId}</p>
-            <p style={{ color: "black" }}><strong>Name:</strong> {data.name}</p>
-            <p style={{ color: "black" }}><strong>Doctor:</strong> {data.doctorName}</p>
-            <p style={{ color: "black" }}><strong>Time:</strong> {data.slot || data.servicetime}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', fontSize: 14, color: 'black' }}>
+            <p style={{ color: 'black' }}><strong>Patient ID:</strong> {data.patientId}</p>
+            <p style={{ color: 'black' }}><strong>Name:</strong> {data.name}</p>
+            <p style={{ color: 'black' }}><strong>Doctor:</strong> {data.doctorName}</p>
+            <p style={{ color: 'black' }}><strong>Time:</strong> {data.slot || data.servicetime}</p>
           </div>
-
           <hr />
-
-          {/* BILL TABLE */}
-          <table style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            marginTop: 10
-          }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10 }}>
             <thead>
               <tr style={{ background: '#f2f2f2' }}>
                 <th style={thStyle}>#</th>
@@ -145,7 +115,6 @@ const WidgetsDropdown = (props) => {
                 <th style={thStyle}>Amount (₹)</th>
               </tr>
             </thead>
-
             <tbody>
               <tr>
                 <td style={tdStyle}>1</td>
@@ -154,178 +123,103 @@ const WidgetsDropdown = (props) => {
               </tr>
             </tbody>
           </table>
-
-          {/* TOTAL */}
-          <div style={{
-            marginTop: 15,
-            display: 'flex',
-            justifyContent: 'flex-end'
-          }}>
-            <div style={{
-              border: '1px solid black',
-              padding: '10px 20px',
-              fontWeight: 'bold'
-            }}>
+          <div style={{ marginTop: 15, display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ border: '1px solid black', padding: '10px 20px', fontWeight: 'bold' }}>
               Total: ₹ {data.consultationFee ?? 0}
             </div>
           </div>
-
-          {/* FOOTER NOTE */}
-          <div style={{
-            marginTop: 20,
-            fontSize: 12,
-            textAlign: 'center',
-            color: 'gray'
-          }}>
+          <div style={{ marginTop: 20, fontSize: 12, textAlign: 'center', color: 'gray' }}>
             * This is a computer-generated receipt. No signature required.
           </div>
-
         </div>
       </PrintLetterHead>
     )
   }
+
   const navigate = useNavigate()
+
   const toggleFilter = (type) => {
     if (filterTypes.includes(type)) {
-      // setFilterTypes(filterTypes.filter((t) => t !== type))// multiple selections.
-      setFilterTypes([]) //one selection at a time
+      setFilterTypes([])
     } else {
-      setFilterTypes([type]) //one selection at a time
-      // setFilterTypes([...filterTypes, type])// multiple selections.
+      setFilterTypes([type])
     }
   }
+
   const convertToISODate = useCallback((dateString) => {
     if (!dateString) return ''
-
     let date
-    // Check if dateString is already in YYYY-MM-DD format (preferred)
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
       date = new Date(dateString)
     } else if (/^\d{2}-\d{2}-\d{4}$/.test(dateString)) {
-      // dd-MM-yyyy format
       const [day, month, year] = dateString.split('-')
       date = new Date(`${year}-${month}-${day}`)
     } else {
-      // Attempt to parse other formats, though YYYY-MM-DD or dd-MM-yyyy are safer
       date = new Date(dateString)
     }
-
-    if (isNaN(date.getTime())) {
-      // Use getTime() for robust NaN check
-      // console.warn('Invalid date string for conversion:', dateString)
-      return ''
-    }
-
+    if (isNaN(date.getTime())) return ''
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
-
     return `${year}-${month}-${day}`
   }, [])
 
   const normalize = (str) => (str ? str.toString().toLowerCase().trim() : '')
-
-  // Get today's date in YYYY-MM-DD format, using a consistent method
   const todayISO = new Date().toISOString().split('T')[0]
 
-  // Fetch Advertisements (unchanged)
   const fetchAdvertisements = async () => {
     try {
-      const response = await axios.get(`${MainAdmin_URL}/${AllCustomerAdvertisements}`) //TODO:chnage when apigetway call axios to http
-      console.log('✅ Advertisements Response:', response.data)
+      const response = await axios.get(`${MainAdmin_URL}/${AllCustomerAdvertisements}`)
       if (Array.isArray(response.data)) {
         setSlides(response.data)
-      } else {
-        console.error('No advertisements found:', response.data)
       }
     } catch (error) {
       console.error('Error fetching advertisements:', error)
     }
   }
 
-  // Use useCallback for fetchAppointments to stabilize the function reference
-  const fetchAppointments = useCallback(
-    async (clinicId) => {
-      setLoadingAppointments(true)
-      setAppointmentError(null)
-
-      try {
-        const response = await GetTodayBooking()
-        console.log('Raw Appointments Data:', response)
-
-        if (response && Array.isArray(response.data)) {
-          const allAppointments = response.data
-          setTotalAppointmentsCount(allAppointments.length)
-
-          const inprogreeAppointments = allAppointments.filter((item) => {
-            const itemDate = item.status
-            return itemDate === 'in-progress'
-          })
-          const filteredAppointments = allAppointments;
-          setInprogressApt(inprogreeAppointments)
-          setTodayBookings(filteredAppointments)
-        } else {
-          setTodayBookings([])
-          setAppointmentError('No  appointments found.')
-        }
-      } catch (error) {
-        console.error('Failed to fetch appointments:', error)
-        setAppointmentError('No Appointment Found')
+  const fetchAppointments = useCallback(async (clinicId) => {
+    setLoadingAppointments(true)
+    setAppointmentError(null)
+    try {
+      const response = await GetTodayBooking()
+      if (response && Array.isArray(response.data)) {
+        const allAppointments = response.data
+        setTotalAppointmentsCount(allAppointments.length)
+        const inprogreeAppointments = allAppointments.filter((item) => item.status === 'in-progress')
+        setInprogressApt(inprogreeAppointments)
+        setTodayBookings(allAppointments)
+      } else {
         setTodayBookings([])
-      } finally {
-        setLoadingAppointments(false)
+        setAppointmentError('No appointments found.')
       }
-    },
-    [todayISO, convertToISODate],
-  )
+    } catch (error) {
+      setAppointmentError('No Appointment Found')
+      setTodayBookings([])
+    } finally {
+      setLoadingAppointments(false)
+    }
+  }, [todayISO, convertToISODate])
+
   const fetchPatients = useCallback(async (clinicId) => {
     setLoadingPatients(true)
     setPatientError(null)
     try {
       const branchId = localStorage.getItem('branchId')
-      // The response here is ALREADY the array of patients, 
-      // as determined by the CustomerByClinicNdBranchId function.
       const response = await CustomerByClinicNdBranchId(clinicId, branchId)
-      console.log('Raw Patients Data:', response)
-
-      //  Access the response directly, not response?.data
       const patientArray = response || []
-
       if (Array.isArray(patientArray)) {
-        // Use setTotalPatientsCount, not setTotalDoctorsCount
         setTotalPatientsCount(patientArray.length)
         setPatients(patientArray)
       } else {
-        console.error('Invalid patients response format:', response)
-        //Use setPatientError, not setDoctorError
         setPatientError('No patients found.')
       }
     } catch (error) {
-      console.error('Failed to fetch patients:', error)
-      //  Use setPatientError, not setDoctorError
       setPatientError('Failed to fetch patients.')
     } finally {
       setLoadingPatients(false)
     }
   }, [])
-
-  const updatePaymentStatus = async (bookingId, paymentType) => {
-    try {
-      await bookingUpdate({ bookingId, paymentType }) // Assuming bookingUpdate accepts an object with these properties
-
-
-      // ✅ update UI locally (no reload)
-      setTodayBookings((prev) =>
-        prev.map((item) =>
-          item.bookingId === bookingId
-            ? { ...item, paymentType }
-            : item
-        )
-      );
-    } catch (err) {
-      console.error("Payment update failed", err);
-    }
-  };
 
   const fetchDoctors = useCallback(async (clinicId) => {
     setLoadingDoctors(true)
@@ -333,20 +227,14 @@ const WidgetsDropdown = (props) => {
     try {
       const branchId = localStorage.getItem('branchId')
       const response = await getDoctorByClinicIdData(clinicId, branchId)
-      console.log('Raw Doctors Data:', response)
-
-      // ✅ Access the inner data array
       const doctorArray = response?.data || []
-
       if (Array.isArray(doctorArray)) {
         setTotalDoctorsCount(doctorArray.length)
         setDoctors(doctorArray)
       } else {
-        console.error('Invalid doctors response format:', response)
         setDoctorError('No doctors found.')
       }
     } catch (error) {
-      console.error('Failed to fetch doctors:', error)
       setDoctorError('Failed to fetch doctors.')
     } finally {
       setLoadingDoctors(false)
@@ -359,52 +247,33 @@ const WidgetsDropdown = (props) => {
 
   useEffect(() => {
     const hospitalId = localStorage.getItem('HospitalId')
-    console.log(hospitalId)
     if (hospitalId) {
       fetchAppointments(hospitalId)
       fetchDoctors(hospitalId)
       fetchPatients(hospitalId)
-      // Set up daily refresh:
-      // 1. Calculate time until next midnight
       const now = new Date()
       const tomorrow = new Date(now)
       tomorrow.setDate(now.getDate() + 1)
-      tomorrow.setHours(0, 0, 0, 0) // Set to midnight of the next day
-
+      tomorrow.setHours(0, 0, 0, 0)
       const timeUntilMidnight = tomorrow.getTime() - now.getTime()
-
-      // 2. Set a timeout to refresh exactly at midnight
       const midnightTimeout = setTimeout(() => {
-        fetchAppointments(hospitalId) // Fetch date at midnight
-        // After the first midnight fetch, set up an interval for daily fetches
-        const dailyInterval = setInterval(() => fetchAppointments(hospitalId), 24 * 60 * 60 * 1000) // Fetch every 24 hours
-        return () => clearInterval(dailyInterval) // Cleanup interval on unmount
+        fetchAppointments(hospitalId)
+        const dailyInterval = setInterval(() => fetchAppointments(hospitalId), 24 * 60 * 60 * 1000)
+        return () => clearInterval(dailyInterval)
       }, timeUntilMidnight)
-
-      // Cleanup the initial midnight timeout if the component unmounts
       return () => clearTimeout(midnightTimeout)
     } else {
-      // console.warn('No HospitalId in localStorage for fetching appointments')
       setAppointmentError('No appointments found for this Hospital Id')
       setLoadingAppointments(false)
     }
-  }, [fetchAppointments, fetchDoctors]) // Depend on fetchAppointments
+  }, [fetchAppointments, fetchDoctors])
 
-  // confirmed appointments count for today
-  const confirmedTodayCount = todayBookings.filter(
-    (item) => item.status?.toLowerCase() === 'confirmed',
-  ).length
-
-  // Slider settings for react-slick
   useEffect(() => {
-    // Clear existing interval
     clearInterval(intervalRef.current)
     if (slides.length === 0 || !sliderRef.current) return
-
     const handleSlide = () => {
       const currentSlide = slides[currentIndex.current]
       const isVideo = currentSlide.mediaUrlOrImage?.toLowerCase().endsWith('.mp4')
-
       if (isVideo) {
         const video = document.getElementById(`video-${currentIndex.current}`)
         if (video) {
@@ -422,102 +291,26 @@ const WidgetsDropdown = (props) => {
         }, 3000)
       }
     }
-
     handleSlide()
-
-    return () => {
-      clearInterval(intervalRef.current)
-    }
+    return () => clearInterval(intervalRef.current)
   }, [slides])
+
   const consultationTypeMap = {
     'Service & Treatment': 'services & treatments',
-    'Tele Consultation': ['tele consultation', 'online consultation'], // Map a single button to multiple backend values
+    'Tele Consultation': ['tele consultation', 'online consultation'],
     'In-clinic': 'in-clinic consultation',
   }
+
   const getMediaSrc = (src) => {
     if (!src) return ''
     if (src.startsWith('data:') || src.startsWith('http') || src.startsWith('blob:')) return src
-    if (src.toLowerCase().endsWith('.mp4')) return src // for external mp4 links
-    return `data:image/png;base64,${src}` // adjust type if JPG or SVG
+    if (src.toLowerCase().endsWith('.mp4')) return src
+    return `data:image/png;base64,${src}`
   }
 
-  // styles
-  const thStyle = {
-    border: '1px solid black',
-    padding: '8px',
-    textAlign: 'center'
-  }
+  const thStyle = { border: '1px solid black', padding: '8px', textAlign: 'center' }
+  const tdStyle = { border: '1px solid black', padding: '8px', textAlign: 'center' }
 
-  const tdStyle = {
-    border: '1px solid black',
-    padding: '8px',
-    textAlign: 'center'
-  }
-
-  const sliderSettings = {
-    dots: true,
-    infinite: slides.length > 1, // Only enable loop when more than 1
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3000,
-    arrows: true,
-  }
-
-  // Auto-slide for images
-  useEffect(() => {
-    let imageTimer
-    if (slides.length > 0) {
-      // Watch current slide index
-      const handleBeforeChange = (oldIndex, newIndex) => {
-        // Clear previous timer
-        clearTimeout(imageTimer)
-
-        const current = slides[newIndex]
-        const isVideo = isVideoFile(current.mediaUrlOrImage)
-
-        if (!isVideo) {
-          // For images: move to next after 3s
-          imageTimer = setTimeout(() => {
-            if (sliderRef.current) {
-              sliderRef.current.slickNext()
-            }
-          }, 1000)
-        }
-      }
-
-      // attach to slider events
-      sliderRef.current?.innerSlider?.list.addEventListener('transitionend', () => {
-        // optionally handle something after transition
-      })
-
-      // If using react-slick, you can get current index in afterChange
-      sliderRef.current?.props?.afterChange && sliderRef.current.props.afterChange(0)
-
-      return () => {
-        clearTimeout(imageTimer)
-      }
-    }
-  }, [slides])
-
-  // After component mounts, attach ended listeners for each video
-  useEffect(() => {
-    slides.forEach((item, idx) => {
-      const videoEl = document.getElementById(`video-${idx}`)
-      if (videoEl) {
-        // Clean up previous listener
-        videoEl.onended = null
-        videoEl.onended = () => {
-          if (sliderRef.current) {
-            sliderRef.current.slickNext()
-          }
-        }
-      }
-    })
-  }, [slides])
-
-  // Helper to check if it's video
   const isVideoFile = (src) => {
     if (!src) return false
     const lower = src.toLowerCase()
@@ -526,225 +319,194 @@ const WidgetsDropdown = (props) => {
       lower.endsWith('.mp4') ||
       lower.endsWith('.webm') ||
       lower.endsWith('.ogg') ||
-      lower.includes('video') // fallback if backend sends mime type
+      lower.includes('video')
     )
   }
+
   useEffect(() => {
     if (printData) {
       const timer = setTimeout(() => {
         window.print()
-
-        // ✅ IMPORTANT: clear after print
-        setTimeout(() => {
-          setPrintData(null)
-        }, 300)
+        setTimeout(() => setPrintData(null), 300)
       }, 500)
-
       return () => clearTimeout(timer)
     }
   }, [printData])
 
   const handlePrint = (item) => {
-    console.log("PRINT DATA:", item)
     setPrintData(item)
-
-
   }
+
+  // ─── Shared button style (matches Confirmed / Pending tabs) ───────────────
+  const filterBtnBase = {
+    fontSize: '12px',
+    fontWeight: '500',
+    padding: '4px 12px',
+    borderRadius: '6px',
+    border: '1px solid #ccc',
+    cursor: 'pointer',
+    lineHeight: '1.5',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    whiteSpace: 'nowrap',
+  }
+
+  const filterBtnActive = {
+    ...filterBtnBase,
+    backgroundColor: 'var(--color-bgcolor)',
+    color: '#fff',
+    border: '1px solid var(--color-bgcolor)',
+  }
+
+  const filterBtnInactive = {
+    ...filterBtnBase,
+    backgroundColor: '#f0f0f0',
+    color: '#555',
+  }
+
   return (
     <>
-   
-      {/* Carousel Section */}
-      {/* <CCard
-        className="mt-4 text-center border-2 border-dashed rounded"
-        style={{ backgroundColor: 'var(--color-bgcolor)' }}
-      > */}
-        {/* <CCardBody className="fw-bold fs-3" style={{ color: 'var(--color-black)' }}>
-          {/* Ad Space */}
-        {/* </CCardBody> */}
-      {/* </CCard> */} 
+      {/* ── TODAY'S APPOINTMENTS SECTION ─────────────────────────────────── */}
+      <div className="container mt-3">
 
-      {/*to display today Appointments Table */}
-      <div className="container mt-3 ">
+        {/* ── ROW: Title + Filter tabs + Search Patients / Search Doctors ── */}
+        <div
+          className="d-flex align-items-center mb-3"
+          style={{ gap: '8px', flexWrap: 'wrap' }}
+        >
+          {/* Title */}
+          <h5
+            style={{
+              color: 'var(--color-bgcolor)',
+              fontSize: '14px',      // ← reduced to match doctor app
+              fontWeight: '600',
+              margin: 0,
+              marginRight: '4px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Today's Appointments
+          </h5>
 
-       <div className="row">
+          {/* ── Status filter buttons ─────────────────────────────────────── */}
+          <button
+            style={statusFilter === '' ? filterBtnActive : filterBtnInactive}
+            onClick={() => setStatusFilter('')}
+          >
+            All
+          </button>
 
-  {/* 🔹 HEADER ROW */}
-  <div className="d-flex justify-content-between align-items-center mb-3">
+          <button
+            style={statusFilter === 'confirmed' ? filterBtnActive : filterBtnInactive}
+            onClick={() => setStatusFilter('confirmed')}
+          >
+            Confirmed
+          </button>
 
-    {/* LEFT - Title */}
-    <h5
-      style={{
-        color: "var(--color-bgcolor)",
-        fontSize: FONT_SIZES.lg,
-        margin: 0
-      }}
-    >
-      Today's Appointments
-    </h5>
+          <button
+            style={statusFilter === 'pending' ? filterBtnActive : filterBtnInactive}
+            onClick={() => setStatusFilter('pending')}
+          >
+            Pending
+          </button>
 
-    {/* RIGHT - Search Cards */}
-    <div className="d-flex gap-3">
+          {/* Spacer pushes the next items to the right */}
+          <div style={{ flex: 1 }} />
 
-      {/* 🔍 Search Patients */}
-      <CCard
-        onClick={() => navigate("/customer-management")}
-        style={{
-          cursor: "pointer",
-          minWidth: "220px",
-          borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-        }}
-      >
-        <CCardBody className="d-flex justify-content-between align-items-center p-2">
-
-          <div className="d-flex align-items-center gap-2">
-            <div
+          {/* ── Search Patients button ────────────────────────────────────── */}
+          <button
+            style={filterBtnInactive}
+            onClick={() => navigate('/customer-management')}
+          >
+            <span
               style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                backgroundColor: "#e7f1ff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: "bold",
-                color: "var(--color-bgcolor)",
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                backgroundColor: '#e7f1ff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: '700',
+                color: 'var(--color-bgcolor)',
+                fontSize: '11px',
+                flexShrink: 0,
               }}
             >
               {totalPatientsCount}
-            </div>
-
-            <span style={{ fontSize: "14px", fontWeight: 500 }}>
-              Search Patients
             </span>
-          </div>
+            Search Patients
+            <CIcon icon={cilArrowRight} style={{ width: '13px', height: '13px' }} />
+          </button>
 
-          <CIcon icon={cilArrowRight} />
-        </CCardBody>
-      </CCard>
-
-      {/* 🔍 Search Doctors */}
-      <CCard
-        onClick={() => navigate("/employee-management/doctor")}
-        style={{
-          cursor: "pointer",
-          minWidth: "220px",
-          borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-        }}
-      >
-        <CCardBody className="d-flex justify-content-between align-items-center p-2">
-
-          <div className="d-flex align-items-center gap-2">
-            <div
+          {/* ── Search Doctors button ─────────────────────────────────────── */}
+          <button
+            style={filterBtnInactive}
+            onClick={() => navigate('/employee-management/doctor')}
+          >
+            <span
               style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                backgroundColor: "#e7f1ff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: "bold",
-                color: "var(--color-bgcolor)",
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                backgroundColor: '#e7f1ff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: '700',
+                color: 'var(--color-bgcolor)',
+                fontSize: '11px',
+                flexShrink: 0,
               }}
             >
               {totalDoctorsCount}
-            </div>
-
-            <span style={{ fontSize: "14px", fontWeight: 500 }}>
-              Search Doctors
             </span>
-          </div>
+            Search Doctors
+            <CIcon icon={cilArrowRight} style={{ width: '13px', height: '13px' }} />
+          </button>
+        </div>
 
-          <CIcon icon={cilArrowRight} />
-        </CCardBody>
-      </CCard>
-
-    </div>
-  </div>
-
-  {/* 🔹 FILTER ROW (SEPARATE) */}
-  <div className="d-flex gap-2 mb-3">
-
-    <CButton
-      style={{
-        backgroundColor: statusFilter === '' ? 'var(--color-bgcolor)' : '#ccc',
-        color: '#fff'
-      }}
-      onClick={() => setStatusFilter('')}
-    >
-      All
-    </CButton>
-
-    <button
-      onClick={() => setStatusFilter('confirmed')}
-      className={`btn ${statusFilter === 'confirmed' ? 'btn-selected' : 'btn-unselected'}`}
-    >
-      Confirmed
-    </button>
-
-    <button
-      onClick={() => setStatusFilter('pending')}
-      className={`btn ${statusFilter === 'pending' ? 'btn-selected' : 'btn-unselected'}`}
-    >
-      Pending
-    </button>
-
-  </div>
-
-</div>
-
-        <CTable striped hover responsive>
+        {/* ── TABLE ─────────────────────────────────────────────────────────── */}
+        <CTable striped hover responsive style={{ fontSize: '13px' }}>
           <CTableHead className="pink-table">
             <CTableRow>
-              <CTableHeaderCell>S.No</CTableHeaderCell>
-              <CTableHeaderCell>Booking Id</CTableHeaderCell>
-              <CTableHeaderCell>Patient File_ID</CTableHeaderCell>
-              <CTableHeaderCell>Name</CTableHeaderCell>
-              <CTableHeaderCell>Doctor Name</CTableHeaderCell>
-              <CTableHeaderCell>Payment Status</CTableHeaderCell>
-              <CTableHeaderCell>Date</CTableHeaderCell>
-              <CTableHeaderCell>Time</CTableHeaderCell>
-              <CTableHeaderCell>Status</CTableHeaderCell>
-              <CTableHeaderCell>Action</CTableHeaderCell>
+              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>S.No</CTableHeaderCell>
+              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Booking Id</CTableHeaderCell>
+              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Patient File ID</CTableHeaderCell>
+              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Name</CTableHeaderCell>
+              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Doctor Name</CTableHeaderCell>
+              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Date</CTableHeaderCell>
+              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Time</CTableHeaderCell>
+              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Status</CTableHeaderCell>
+              <CTableHeaderCell style={{ fontSize: '12px', fontWeight: '600', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>Action</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
 
           <CTableBody>
             {loadingAppointments ? (
-
-              <CTableDataCell
-                colSpan="10"
-                className="text-center"
-                style={{ color: 'var(--color-black)' }}
-              >
-                <LoadingIndicator message="Loading appointments..." />
-              </CTableDataCell>
-
+              <CTableRow>
+                <CTableDataCell colSpan="9" className="text-center" style={{ color: 'var(--color-black)' }}>
+                  <LoadingIndicator message="Loading appointments..." />
+                </CTableDataCell>
+              </CTableRow>
             ) : appointmentError ? (
               <CTableRow>
-                <CTableDataCell
-                  colSpan="10"
-                  className="text-center "
-                  style={{ color: 'var(--color-black)' }}
-                >
+                <CTableDataCell colSpan="9" className="text-center" style={{ color: 'var(--color-black)' }}>
                   {appointmentError}
                 </CTableDataCell>
               </CTableRow>
             ) : (
               (() => {
-                // 1. Filter by status (Confirmed appointments)
+                // 1. Filter by status
                 const filteredByStatus = todayBookings.filter((item) => {
-                  if (!statusFilter) return true;
-                  return item.status?.toLowerCase() === statusFilter;
-                });
+                  if (!statusFilter) return true
+                  return item.status?.toLowerCase() === statusFilter
+                })
 
                 // 2. Filter by consultation type
                 const filteredByTypes = filteredByStatus.filter((item) => {
-                  if (filterTypes.length === 0) {
-                    return true
-                  }
+                  if (filterTypes.length === 0) return true
                   const itemType = item.consultationType?.toLowerCase().trim()
                   return filterTypes.some((type) => {
                     const mappedValues = consultationTypeMap[type]
@@ -756,25 +518,19 @@ const WidgetsDropdown = (props) => {
                   })
                 })
 
-                // 3. Apply global search filter to the result
+                // 3. Global search filter
                 const finalFilteredData = filteredByTypes.filter((item) => {
-                  if (searchQuery.trim().length < 2) {
-                    return true
-                  }
+                  if (searchQuery.trim().length < 2) return true
                   return Object.values(item).some((val) =>
                     normalize(val).includes(normalize(searchQuery)),
                   )
                 })
 
-                // 4. Handle no results found
+                // 4. No results
                 if (finalFilteredData.length === 0) {
                   return (
                     <CTableRow>
-                      <CTableDataCell
-                        colSpan="10"
-                        className="text-center"
-                        style={{ color: 'var(--color-blue)' }}
-                      >
+                      <CTableDataCell colSpan="9" className="text-center" style={{ color: 'var(--color-blue)', fontSize: '13px' }}>
                         {searchQuery || filterTypes.length > 0
                           ? 'No appointments match your search and filters.'
                           : 'No appointments for today.'}
@@ -783,93 +539,46 @@ const WidgetsDropdown = (props) => {
                   )
                 }
 
-                // 5. Render the filtered data
+                // 5. Render rows
                 return finalFilteredData
                   .slice((currentPage - 1) * pageSize, currentPage * pageSize)
                   .map((item, index) => (
                     <CTableRow key={`${item.id}-${index}`} className="pink-table">
-                      <CTableDataCell>{(currentPage - 1) * pageSize + index + 1}</CTableDataCell>
-                      <CTableDataCell>
-                        {/* {item.bookingId ? item.bookingId.slice(-4) : "-"}
-                         */}
-                        {item.bookingId || "-"}
+                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
+                        {(currentPage - 1) * pageSize + index + 1}
                       </CTableDataCell>
-                      <CTableDataCell>
-                        {/* {item.patientId ? item.patientId.slice(-6) : "-"}
-                         */}
-                        {item.patientId || "-"}
+                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
+                        {item.bookingId || '-'}
                       </CTableDataCell>
-                      <CTableDataCell>{item.name}</CTableDataCell>
-                      <CTableDataCell>{item.doctorName}</CTableDataCell>
-                      <CTableDataCell>
-                        {editingPaymentId === item.bookingId ? (
-                          <select
-                            className="form-select"
-                            autoFocus
-                            onChange={(e) => {
-                              updatePaymentStatus(item.bookingId, e.target.value);
-                              setEditingPaymentId(null);
-                            }}
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Select Payment</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Card">Card</option>
-                            <option value="UPI">UPI</option>
-                          </select>
-                        ) : (
-                          <CBadge
-                            style={{ cursor: "pointer" }}
-                            color={
-                              item.paymentType && item.paymentType.toLowerCase() !== "not paid"
-                                ? "success"
-                                : "danger"
-                            }
-                            onClick={() => {
-                              if (
-                                !item.paymentType ||
-                                item.paymentType.toLowerCase() === "not paid"
-                              ) {
-                                setEditingPaymentId(item.bookingId);
-                              }
-                            }}
-                          >
-                            {item.paymentType && item.paymentType.toLowerCase() !== "not paid"
-                              ? "Paid"
-                              : "Not Paid"}
-                          </CBadge>
-                        )}
+                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
+                        {item.patientId || '-'}
                       </CTableDataCell>
-                      <CTableDataCell>{item.serviceDate}</CTableDataCell>
-                      <CTableDataCell>{item.slot || item.servicetime}</CTableDataCell>
-                      <CTableDataCell>
+                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
+                        {item.name}
+                      </CTableDataCell>
+                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
+                        {item.doctorName}
+                      </CTableDataCell>
+                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
+                        {item.serviceDate}
+                      </CTableDataCell>
+                      <CTableDataCell style={{ fontSize: '12px', verticalAlign: 'middle' }}>
+                        {item.slot || item.servicetime}
+                      </CTableDataCell>
+                      <CTableDataCell style={{ verticalAlign: 'middle' }}>
                         <CBadge
-                          style={{ backgroundColor: 'var(--color-bgcolor)', color: COLORS.white }}
+                          style={{
+                            backgroundColor: 'var(--color-bgcolor)',
+                            color: COLORS.white,
+                            fontSize: '11px',
+                          }}
                         >
                           {statusLabelMap[item.status] || item.status}
                         </CBadge>
                       </CTableDataCell>
-                      {/* <CTableDataCell>
-                        <CButton
-                          style={{ backgroundColor: 'var(--color-black)' }}
-                          className="text-white"
-                          size="sm"
-                          onClick={() =>
-                            navigate(`/appointment-details/${item.bookingId}`, {
-                              state: { appointment: item },
-                            })
-                          }
-                        >
-                          View
-                        </CButton>
-
-
-                      </CTableDataCell> */}
-                      <CTableDataCell>
+                      <CTableDataCell style={{ verticalAlign: 'middle' }}>
                         <div className="d-flex align-items-center gap-2">
-
                           <CButton
-
                             className="text-white d-flex align-items-center justify-content-center actionBtn"
                             size="sm"
                             onClick={() =>
@@ -878,18 +587,15 @@ const WidgetsDropdown = (props) => {
                               })
                             }
                           >
-                            <Eye size={18} />
+                            <Eye size={15} />
                           </CButton>
-
                           <CButton
-
                             className="text-white d-flex align-items-center justify-content-center actionBtn"
                             size="sm"
                             onClick={() => handlePrint(item)}
                           >
-                            <Printer size={18} />
+                            <Printer size={15} />
                           </CButton>
-
                         </div>
                       </CTableDataCell>
                     </CTableRow>
@@ -899,101 +605,13 @@ const WidgetsDropdown = (props) => {
           </CTableBody>
         </CTable>
       </div>
-         {role.toLowerCase() === "admin" && (
-        <>
-          {/*to display cards*/}
-          <CRow className={props.className} xs={{ gutter: 4 }}>
-            {/* <CCol sm={6} xl={3}>
-          <CCard>
-            <CCardBody style={{ textAlign: "center" }}>
-              <h5>🏥Chiselon Clinic Management System</h5>
 
-              <p style={{ margin: "5px 0" }}>
-                Developed by <strong>ss</strong>
-              </p>
-
-              <p style={{ margin: "5px 0" }}>
-                Company: <strong>BP Tech Solutions</strong>
-              </p>
-
-              <p style={{ margin: "5px 0" }}>
-                📧 support@bptech.com | 📞 +91 9876543210
-              </p>
-
-              <small style={{ color: "gray" }}>
-                © 2026 All Rights Reserved
-              </small>
-            </CCardBody>
-          </CCard>
-        </CCol> */}
-            {/* <CCol sm={6} xl={4}>
-
-              <CCard
-                onClick={() => navigate("/appointment-management")}
-                style={{
-                  cursor: "pointer",
-                  border: "1px solid #var(--color-black)",
-                  borderRadius: "14px",
-                  backgroundColor: "#ffffff",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)"
-                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)"
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"
-                }}
-              >
-                <CCardBody
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "14px 18px",
-                  }}
-                >
-           
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", }}>
-
-                
-                    <div
-                      style={{
-                        width: "42px",
-                        height: "42px",
-                        borderRadius: "50%",
-                        backgroundColor: "#e7f1ff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "bold",
-                        color: "var(--color-black)",
-                        fontSize: "16px",
-                      }}
-                    >
-                      {totalAppointmentsCount}
-                    </div>
-                    <div style={{ fontSize: "15px", color: "var(--color-black)", fontWeight: "500" }}>
-                      Total Appointments
-                    </div>
-          
-                  </div>
-
-         
-                  <CIcon icon={cilArrowRight} size="lg" style={{ color: "var(--color-black)" }} />
-                </CCardBody>
-              </CCard>
-
-
-            </CCol> */}
-
-          
-
-          </CRow>
-        </>
+      {/* ── ADMIN CARDS ───────────────────────────────────────────────────── */}
+      {role?.toLowerCase() === 'admin' && (
+        <CRow className={props.className} xs={{ gutter: 4 }} />
       )}
+
+      {/* ── PAGINATION ───────────────────────────────────────────────────── */}
       {todayBookings.length > 0 && (
         <Pagination
           currentPage={currentPage}
@@ -1003,6 +621,8 @@ const WidgetsDropdown = (props) => {
           onPageSizeChange={setPageSize}
         />
       )}
+
+      {/* ── PRINT AREA ───────────────────────────────────────────────────── */}
       <div
         id="print-area"
         style={{
@@ -1012,7 +632,7 @@ const WidgetsDropdown = (props) => {
           width: '100%',
           background: 'white',
           zIndex: 9999,
-          display: printData ? 'block' : 'none', // ✅ hide when no data
+          display: printData ? 'block' : 'none',
         }}
       >
         {printData && <PrintContent data={printData} />}
