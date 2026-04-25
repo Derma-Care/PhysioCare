@@ -29,6 +29,7 @@ import Pagination from '../../Utils/Pagination'
 import LoadingIndicator from '../../Utils/loader'
 import { http } from '../../Utils/Interceptors'
 import { useLocation } from 'react-router-dom'
+import { FONT_SIZES } from '../../Constant/Themes'
 
 const PatientManagement = () => {
   const location = useLocation();
@@ -52,7 +53,7 @@ const PatientManagement = () => {
 
 
   const [responseMessage, setResponseMessage] = useState('')
-  const [appointmentTab, setAppointmentTab] = useState('active')
+  const [appointmentTab, setAppointmentTab] = useState(null)
 
 
   const [selectedPatient, setSelectedPatient] = useState(patientInfo || null);
@@ -109,34 +110,53 @@ const PatientManagement = () => {
 
 
   // 🔹 API call for Appointments
-  const fetchAppointments = async (patientId) => {
-    try {
-      setLoading(true);
-      const response = await http.get(`${BASE_URL}/bookings/byPatientId//${patientId}`);
-      console.log('Full API response:', response.data);
+ const fetchAppointments = async (patientId) => {
+  try {
+    setLoading(true);
 
-      const data = response.data?.data || [];
-      setAppointments(data);
+    const response = await http.get(
+      `${BASE_URL}/bookings/byPatientId/${patientId}` // ✅ fixed
+    );
 
-      if (data.length > 0) {
-        const firstAppointment = data[0]; // or sort based on date
-        setSelectedAppointment(firstAppointment);
-        setAppointmentInfo(firstAppointment);
-        fetchReportByBookingId(firstAppointment.bookingId);
+    console.log('Full API response:', response.data);
+
+    const data = response.data?.data || [];
+    setAppointments(data);
+
+    if (data.length > 0) {
+      const firstAppointment = data[0];
+
+      setSelectedAppointment(firstAppointment);
+      setAppointmentInfo(firstAppointment);
+
+      // ✅ safe bookingId extraction
+      const bookingId =
+        firstAppointment.bookingId ||
+        firstAppointment.bookingID ||
+        firstAppointment.id;
+
+      console.log("BOOKING ID:", bookingId);
+
+      if (bookingId) {
+        fetchReportByBookingId(bookingId);
       } else {
-        setSelectedAppointment(null);
-        setAppointmentInfo(null);
-        setReport([]); // clear previous reports if no appointments
+        console.warn("BookingId missing ❌");
       }
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
-      setAppointments([]);
-      setReport([]); // clear previous reports on error
-    } finally {
-      setLoading(false);
-    }
-  };
 
+    } else {
+      setSelectedAppointment(null);
+      setAppointmentInfo(null);
+      setReport([]);
+    }
+
+  } catch (error) {
+    console.error('Error fetching appointments:', error);
+    setAppointments([]);
+    setReport([]);
+  } finally {
+    setLoading(false);
+  }
+};
   //API call for reports and history
  const fetchVisitHistory = async () => {
   const patientId = selectedAppointment?.patientId;
@@ -183,9 +203,7 @@ const PatientManagement = () => {
   //     fetchAppointments(selectedPatient.patientId);
   //     fetchVisitHistory(selectedPatient.patientId);
   //   }
-  // }, [selectedPatient]);
-
-
+  // }, [selectedPatient]);nt 
   useEffect(() => {
     if (activeKey === 2 && selectedPatient?.patientId) {
       console.log('Fetching appointments for:', selectedPatient.patientId)
@@ -291,131 +309,121 @@ const PatientManagement = () => {
 
 
             {/* 🔹 Appointments Tab */}
-            <CTabPane visible={activeKey === 2}>
-              {loading ? (
-                <div className="text-center py-4">
-                  <CSpinner color="primary" />
-                </div>
-              ) : appointments && appointments.length > 0 ? (
-                <>
-                  <h5 className="mb-3">
-                    Appointments for {selectedPatient?.fullName} ({selectedPatient?.customerId})
-                  </h5>
+         <CTabPane visible={activeKey === 2}>
+  {selectedAppointment && (
+    <CCard className="mt-3 shadow-sm" style={{ borderRadius: "12px" }}>
+      <CCardBody>
 
-                  {/* 🔹 Sub-tabs for Active | Pending | Completed */}
-                  <CNav variant="tabs" role="tablist" className="mb-3" style={{ cursor: 'pointer' }} >
-                    <CNavItem>
-                      <CNavLink style={{ color: 'var(--color-black)' }}
-                        active={appointmentTab === 'active'}
-                        onClick={() => setAppointmentTab('active')}
-                      >
-                        Active
-                      </CNavLink>
-                    </CNavItem>
-                    <CNavItem>
-                      <CNavLink style={{ color: 'var(--color-black)' }}
-                        active={appointmentTab === 'pending'}
-                        onClick={() => setAppointmentTab('pending')}
-                      >
-                        Pending
-                      </CNavLink>
-                    </CNavItem>
-                    <CNavItem>
-                      <CNavLink style={{ color: 'var(--color-black)' }}
-                        active={appointmentTab === 'completed'}
-                        onClick={() => setAppointmentTab('completed')}
-                      >
-                        Completed
-                      </CNavLink>
-                    </CNavItem>
-                  </CNav>
+        {/* 🔹 HEADER */}
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          {/* <h5 style={{ color: "var(--color-bgcolor)", margin: 0 }}>
+            Booking Summary
+          </h5> */}
 
-                  {(() => {
-                    // 🧩 Filter based on sub-tab selection
-                    const filteredAppointments = appointments.filter((a) => {
-                      const status = a.status?.toLowerCase() || '';
-                      if (appointmentTab === 'active')
-                        return status === 'active' || status === 'in-progress';
-                      if (appointmentTab === 'pending') return status === 'pending';
-                      if (appointmentTab === 'completed') return status === 'completed';
-                      return true;
-                    });
+          {/* <CBadge
+            style={{
+              backgroundColor: "var(--color-bgcolor)",
+              color: "#fff",
+              padding: "6px 12px",
+              borderRadius: "10px",
+              textTransform: "capitalize"
+            }}
+          >
+            {selectedAppointment.status}
+          </CBadge> */}
+        </div>
 
-                    return filteredAppointments.length > 0 ? (
-                      <CTable >
-                        <CTableHead className="pink-table w-auto">
-                          <CTableRow>
-                            <CTableHeaderCell>S.No</CTableHeaderCell>
-                            <CTableHeaderCell>Date</CTableHeaderCell>
-                            <CTableHeaderCell>Doctor</CTableHeaderCell>
-                            <CTableHeaderCell>Department</CTableHeaderCell>
-                            <CTableHeaderCell>Status</CTableHeaderCell>
-                            <CTableHeaderCell>Consultation Type</CTableHeaderCell>
-                            <CTableHeaderCell>Service</CTableHeaderCell>
-                            <CTableHeaderCell>Action</CTableHeaderCell>
-                          </CTableRow>
-                        </CTableHead>
-                        <CTableBody className="pink-table">
-                          {filteredAppointments.map((a, index) => (
-                            <CTableRow key={index}>
-                              <CTableDataCell>{index + 1}</CTableDataCell>
+        <CRow className="g-3">
 
-                              <CTableDataCell>{a.serviceDate || '-'}</CTableDataCell>
-                              <CTableDataCell>{a.doctorName || '-'}</CTableDataCell>
-                              <CTableDataCell>{a.branchname || '-'}</CTableDataCell>
-                              <CTableDataCell>
-                                <CBadge
-                                  color="light"
-                                  style={{
-                                    color: 'var(--color-black)', // your text color
-                                  }}
-                                  className="fw-semibold text-uppercase"
-                                >
-                                  {a.status || '-'}
-                                </CBadge>
+          {/* 🧑 PATIENT INFO */}
+          {/* <CCol md={6}>
+            <CCard className="h-100">
+              <CCardBody >
+                <h6 style={{ color: "var(--color-bgcolor)", fontWeight:"bold" , marginBottom: "10px"}}>Patient Info</h6>
 
+                <p><b>Name:</b> {selectedAppointment.name}</p>
+                <p><b>Patient ID:</b> {selectedAppointment.patientId}</p>
+                <p><b>Mobile:</b> {selectedAppointment.mobileNumber}</p>
+                <p><b>Age:</b> {selectedAppointment.age}</p>
+                <p><b>Gender:</b> {selectedAppointment.gender}</p>
+                <p><b>Address:</b> {selectedAppointment.patientAddress}</p>
+              </CCardBody>
+            </CCard>
+          </CCol> */}
 
-                              </CTableDataCell>
-                              <CTableDataCell>{a.consultationType || '-'}</CTableDataCell>
-                              <CTableDataCell>{a.subServiceName || '-'}</CTableDataCell>
+          {/* 📅 BOOKING INFO */}
+          <CCol md={6}>
+            <CCard className="h-100">
+              <CCardBody>
+                <h6 style={{ color: "var(--color-bgcolor)",fontWeight:"bold" , marginBottom: "10px"}}>Booking Info</h6>
 
-                              {/* 🔹 View Icon Button */}
-                              <CTableDataCell className="text-end">
-                                <CButton
-                                  color="info"
-                                  size="sm"
-                                  className="actionBtn"
-                                  style={{ color: 'var(--color-black)' }}
-                                  onClick={() => {
-                                    setSelectedAppointment(a);
-                                    setAppointmentInfo(a); // <-- Add this
-                                    setShowModal(true);
-                                    fetchReportByBookingId(a.bookingId);
-                                    setActiveKey(3);
-                                  }}
+                <p><b>Booking ID:</b> {selectedAppointment.bookingId}</p>
+                <p><b>Date:</b> {selectedAppointment.serviceDate}</p>
+                <p><b>Time:</b> {selectedAppointment.servicetime}</p>
+                <p><b>Doctor:</b> {selectedAppointment.doctorName}</p>
+                <p><b>Visit Type:</b> {selectedAppointment.visitType}</p>
+              </CCardBody>
+            </CCard>
+          </CCol>
 
-                                >
-                                  <Eye size={18} />
-                                </CButton>
-                              </CTableDataCell>
-                            </CTableRow>
-                          ))}
-                        </CTableBody>
-                      </CTable>
-                    ) : (
-                      <p className="text-center py-3">
-                        No {appointmentTab} appointments found for{' '}
-                        {selectedPatient?.fullName}.
-                      </p>
-                    );
-                  })()}
-                </>
-              ) : (
-                <p className="text-center py-3">
-                  No appointments found for {selectedPatient?.fullName}.
-                </p>
-              )}
-            </CTabPane>
+          {/* 🏥 MEDICAL INFO */}
+          <CCol md={6}>
+            <CCard className="h-100">
+              <CCardBody>
+                <h6 style={{ color: "var(--color-bgcolor)",fontWeight:"bold" , marginBottom: "10px"}}>Medical Info</h6>
+
+                <p><b>Problem:</b> {selectedAppointment.problem || '-'}</p>
+                <p><b>Symptoms Duration:</b> {selectedAppointment.symptomsDuration}</p>
+                <p><b>Consultation Type:</b> {selectedAppointment.consultationType}</p>
+              </CCardBody>
+            </CCard>
+          </CCol>
+
+          {/* 💰 PAYMENT INFO */}
+          <CCol md={6}>
+            <CCard className="h-100">
+              <CCardBody>
+                <h6 style={{ color: "var(--color-bgcolor)" ,fontWeight:"bold", marginBottom: "10px"}}>Payment Info</h6>
+
+                <p><b>Consultation Fee:</b> ₹{selectedAppointment.consultationFee}</p>
+                <p><b>Total Fee:</b> ₹{selectedAppointment.totalFee}</p>
+                <p><b>Payment Type:</b> {selectedAppointment.paymentType}</p>
+              </CCardBody>
+            </CCard>
+          </CCol>
+
+          {/* 🔁 FOLLOW-UP */}
+          <CCol md={6}>
+            <CCard className="h-100">
+              <CCardBody>
+                <h6 style={{ color: "var(--color-bgcolor)",fontWeight:"bold", marginBottom: "10px"}}>Follow-Up</h6>
+
+                <p><b>Free Follow-Ups Left:</b> {selectedAppointment.freeFollowUpsLeft}</p>
+                <p><b>Follow-Up Status:</b> {selectedAppointment.followupStatus}</p>
+                <p><b>Consultation Expiry:</b> {selectedAppointment.consultationExpiration}</p>
+              </CCardBody>
+            </CCard>
+          </CCol>
+
+          {/* 🧾 EXTRA INFO */}
+          <CCol md={6}>
+            <CCard className="h-100">
+              <CCardBody>
+                <h6 style={{ color: "var(--color-bgcolor)",fontWeight:"bold" , marginBottom: "10px"}}>Additional Info</h6>
+
+                <p><b>Clinic:</b> {selectedAppointment.clinicName}</p>
+                <p><b>Branch:</b> {selectedAppointment.branchname}</p>
+                <p><b>Booking For:</b> {selectedAppointment.bookingFor}</p>
+              </CCardBody>
+            </CCard>
+          </CCol>
+
+        </CRow>
+
+      </CCardBody>
+    </CCard>
+  )}
+</CTabPane>
 
 
 
@@ -534,36 +542,7 @@ const PatientManagement = () => {
         </CModalBody>
       </CModal>
 
-      <CModal visible={showModal} onClose={() => setViewModal(false)}>
-        <CModalHeader>
-          <h5>Booking Details</h5>
-        </CModalHeader>
-        <CModalBody>
-          {selectedAppointment && (
-            <div>
 
-              <p><b>Booking ID:</b> {selectedAppointment.bookingId}</p>
-              <p><b>Service:</b> {selectedAppointment.subServiceName}</p>
-              <p><b>Date:</b> {selectedAppointment.serviceDate}</p>
-              <p><b>Time:</b> {selectedAppointment.servicetime}</p>
-              <p><b>Status:</b> {selectedAppointment.status}</p>
-              <p><b>Consultation Type:</b> {selectedAppointment.consultationType}</p>
-              <p><b>Consultation Fee:</b> ₹{selectedAppointment.consultationFee}</p>
-              <p><b>Total Fee:</b> ₹{selectedAppointment.totalFee}</p>
-              <p><b>Free Follow-Ups Left:</b> {selectedAppointment.freeFollowUpsLeft}</p>
-
-
-
-
-            </div>
-          )}
-        </CModalBody>
-        <CModalFooter>
-          {/* <CButton color="secondary" onClick={() => setViewModal(false)}>
-      Close
-    </CButton> */}
-        </CModalFooter>
-      </CModal>
       <CModal visible={viewModal} onClose={() => setViewModal(false)}>
         <CModalHeader style={{ color: 'var(--color-black)', fontSize: '20px', fontWeight: 'bold' }} >Visit Details</CModalHeader>
         <CModalBody>
@@ -713,13 +692,21 @@ const PatientManagement = () => {
         </CModalBody>
       </CModal>
       <br></br>
+      <CTabPane visible={activeKey === 2}>
+
+  {/* 🔥 YOUR APPOINTMENTS TABLE ABOVE */}
+
+  {/* 🔥 BOOKING SUMMARY BELOW TABLE */}
+ 
+
+</CTabPane>
 
       <CTabPane visible={activeKey === 3}>
-        {reportLoading ? (
-          <div className="text-center py-4">
-            <CSpinner color="primary" />
-          </div>
-        ) : report.length > 0 ? (
+       {reportLoading ? (
+  <div className="text-center py-4">
+    <CSpinner color="primary" />
+  </div>
+) : Array.isArray(report) && report.length > 0 ? (
           <>
             <h5 className="mb-6" style={{ color: 'var(--color-black)' }}>
               Reports for {selectedPatient?.fullName} ({selectedPatient?.patientId})

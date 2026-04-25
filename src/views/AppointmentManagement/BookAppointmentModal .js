@@ -870,115 +870,235 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   }
   console.log(onboardToCustomer)
 
+  // const handleSubmit = async () => {
+  //   console.log(selectedBooking)
+  //   const combinedSymptomsDuration = `${bookingDetails.symptomsDuration} ${bookingDetails.unit}`
+  //   const combinedName = `${bookingDetails.title}${bookingDetails.name}`
+  //   console.log('Payload without slot:', combinedSymptomsDuration)
+  //   console.log('Payload without combinedName:', combinedName)
+  //   console.log('Validating bookingDetails...', bookingDetails)
+  //   console.log('Validating bookingDetails...', part)
+
+  //   if (!validate()) { //TODO: Fix validation to show all errors and prevent submission
+  //     showCustomToast('Please fix the errors before submitting.', 'error')
+  //     return
+  //   }
+  //   try {
+  //     setSaveLoading(true)
+  //     // Build payload explicitly, excluding 'slot'
+  //     const { unit, address, slot, ...rest } = bookingDetails
+  //     const finalReason =
+  //       bookingDetails.reasonForVisit === "Others"
+  //         ? otherReason
+  //         : bookingDetails.reasonForVisit;
+
+
+  //     const payloadToSend = {
+  //       ...rest,
+  //       name: combinedName,
+  //       symptomsDuration: combinedSymptomsDuration,
+  //       patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
+  //       attachments: bookingDetails.attachments?.map((f) => f.base64.split(',')[1]) || [],
+  //       partImage: markedImage,
+  //       theraphyAnswers: theraphyQuestions,
+  //       parts: part,
+  //       previousInjuries: bookingDetails.previousInjuries,
+  //       currentMedications: bookingDetails.currentMedications,
+  //       allergies: bookingDetails.allergies,
+  //       occupation: bookingDetails.occupation,
+  //       activityLevels: bookingDetails.activityLevels,
+  //       reasonForVisit: finalReason,
+  //       insuranceProvider: bookingDetails.insuranceProvider,
+  //       policyNumber: bookingDetails.policyNumber,
+  //       listOfConsultationFee: [  //TODO:listOfConsultationFee
+  //         {
+  //           consulationFee: Number(bookingDetails.consultationFee || 0),
+  //         },
+  //       ],
+  //     }
+
+  //     console.log('Payload without slot:', payloadToSend)
+
+  //     const res = await postBooking(payloadToSend)
+
+  //     // If onboarding is enabled, register the patient as a customer
+  //     if (selectedBooking == null && onboardToCustomer) {
+  //       const updatedFormData = {
+  //         fullName: combinedName,
+  //         mobileNumber: bookingDetails.mobileNumber,
+  //         gender: bookingDetails.gender,
+  //         dateOfBirth: bookingDetails.dob,
+
+  //         address: {
+  //           houseNo: address.houseNo,
+  //           street: address.street,
+  //           landmark: address.landmark,
+  //           city: address.city,
+  //           state: address.state,
+  //           country: address.country,
+  //           postalCode: address.postalCode,
+  //         },
+  //         age: bookingDetails.age,
+  //         hospitalId: localStorage.getItem('HospitalId') || '',
+  //         hospitalName: localStorage.getItem('HospitalName') || '',
+  //         branchId: localStorage.getItem('branchId') || '',
+  //       }
+
+  //       // Format DOB to DD-MM-YYYY
+  //       if (updatedFormData.dateOfBirth) {
+  //         const dateObj = new Date(updatedFormData.dateOfBirth)
+  //         if (!isNaN(dateObj)) {
+  //           const day = String(dateObj.getDate()).padStart(2, '0')
+  //           const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+  //           const year = dateObj.getFullYear()
+  //           updatedFormData.dateOfBirth = `${day}-${month}-${year}`
+  //         }
+  //       }
+
+  //       await addCustomer(updatedFormData)
+  //       showCustomToast('Booking & Patient registered successfully!')
+  //     } else {
+  //       showCustomToast('Booking submitted successfully!')
+  //     }
+
+  //     console.log('Booking submitted successfully:', res.data)
+
+  //     // Reset form
+  //     setBookingDetails(initialBookingDetails)
+
+  //     setTimeout(() => {
+  //       navigate('/dashboard')
+  //     }, 1000)
+  //   } catch (err) {
+  //     console.error('Error submitting booking:', err)
+  //     if (err.response?.data?.message) showCustomToast(err.response.data.message, 'error')
+  //     else if (err.message?.includes('timeout'))
+  //       showCustomToast('Request timed out. Please try again.', 'error')
+  //     else showCustomToast('Failed to submit booking. Please try again.', 'error')
+  //   } finally {
+  //     setSaveLoading(false)
+  //   }
+  // }
   const handleSubmit = async () => {
-    console.log(selectedBooking)
+  if (!validate()) {
+    showCustomToast('Please fix the errors before submitting.', 'error')
+    return
+  }
+
+  try {
+    setSaveLoading(true)
+
+    const { unit, address, slot, ...rest } = bookingDetails
+
     const combinedSymptomsDuration = `${bookingDetails.symptomsDuration} ${bookingDetails.unit}`
     const combinedName = `${bookingDetails.title}${bookingDetails.name}`
-    console.log('Payload without slot:', combinedSymptomsDuration)
-    console.log('Payload without combinedName:', combinedName)
-    console.log('Validating bookingDetails...', bookingDetails)
-    console.log('Validating bookingDetails...', part)
 
-    if (!validate()) { //TODO: Fix validation to show all errors and prevent submission
-      showCustomToast('Please fix the errors before submitting.', 'error')
-      return
+    let customerData = null
+
+    // ================= STEP 1: CALL CUSTOMER ONBOARD FIRST =================
+    if (selectedBooking == null && onboardToCustomer) {
+      const updatedFormData = {
+        fullName: combinedName,
+        mobileNumber: bookingDetails.mobileNumber,
+        gender: bookingDetails.gender,
+        dateOfBirth: bookingDetails.dob,
+        age: bookingDetails.age,
+
+        hospitalId: localStorage.getItem('HospitalId') || '',
+        hospitalName: localStorage.getItem('HospitalName') || '',
+        branchId: localStorage.getItem('branchId') || '',
+
+        address: {
+          houseNo: address.houseNo,
+          street: address.street,
+          landmark: address.landmark,
+          city: address.city,
+          state: address.state,
+          country: address.country,
+          postalCode: address.postalCode,
+        },
+      }
+
+      // Format DOB
+      if (updatedFormData.dateOfBirth) {
+        const d = new Date(updatedFormData.dateOfBirth)
+        updatedFormData.dateOfBirth = `${String(d.getDate()).padStart(2, '0')}-${String(
+          d.getMonth() + 1
+        ).padStart(2, '0')}-${d.getFullYear()}`
+      }
+
+      console.log("CUSTOMER PAYLOAD:", updatedFormData)
+
+      const customerRes = await addCustomer(updatedFormData)
+
+      console.log("CUSTOMER RESPONSE:", customerRes)
+
+      // 🔥 IMPORTANT: GET IDs
+      customerData = customerRes?.data?.data
     }
-    try {
-      setSaveLoading(true)
-      // Build payload explicitly, excluding 'slot'
-      const { unit, address, slot, ...rest } = bookingDetails
-      const finalReason =
+
+    // ================= STEP 2: CREATE BOOKING PAYLOAD =================
+    const payloadToSend = {
+      ...rest,
+      name: combinedName,
+      symptomsDuration: combinedSymptomsDuration,
+      patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
+
+      // 🔥 CRITICAL FIX
+      customerId:
+        selectedBooking?.customerId || customerData?.customerId || '',
+
+      patientId:
+        selectedBooking?.patientId || customerData?.patientId || '',
+
+      attachments: bookingDetails.attachments?.map((f) => f.base64.split(',')[1]) || [],
+      partImage: markedImage,
+      theraphyAnswers: theraphyQuestions,
+      parts: part,
+
+      previousInjuries: bookingDetails.previousInjuries,
+      currentMedications: bookingDetails.currentMedications,
+      allergies: bookingDetails.allergies,
+      occupation: bookingDetails.occupation,
+      activityLevels: bookingDetails.activityLevels,
+
+      reasonForVisit:
         bookingDetails.reasonForVisit === "Others"
           ? otherReason
-          : bookingDetails.reasonForVisit;
+          : bookingDetails.reasonForVisit,
 
+      insuranceProvider: bookingDetails.insuranceProvider,
+      policyNumber: bookingDetails.policyNumber,
 
-      const payloadToSend = {
-        ...rest,
-        name: combinedName,
-        symptomsDuration: combinedSymptomsDuration,
-        patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
-        attachments: bookingDetails.attachments?.map((f) => f.base64.split(',')[1]) || [],
-        partImage: markedImage,
-        theraphyAnswers: theraphyQuestions,
-        parts: part,
-        previousInjuries: bookingDetails.previousInjuries,
-        currentMedications: bookingDetails.currentMedications,
-        allergies: bookingDetails.allergies,
-        occupation: bookingDetails.occupation,
-        activityLevels: bookingDetails.activityLevels,
-        reasonForVisit: finalReason,
-        insuranceProvider: bookingDetails.insuranceProvider,
-        policyNumber: bookingDetails.policyNumber,
-        listOfConsultationFee: [  //TODO:listOfConsultationFee
-          {
-            consulationFee: Number(bookingDetails.consultationFee || 0),
-          },
-        ],
-      }
-
-      console.log('Payload without slot:', payloadToSend)
-
-      const res = await postBooking(payloadToSend)
-
-      // If onboarding is enabled, register the patient as a customer
-      if (selectedBooking == null && onboardToCustomer) {
-        const updatedFormData = {
-          fullName: combinedName,
-          mobileNumber: bookingDetails.mobileNumber,
-          gender: bookingDetails.gender,
-          dateOfBirth: bookingDetails.dob,
-
-          address: {
-            houseNo: address.houseNo,
-            street: address.street,
-            landmark: address.landmark,
-            city: address.city,
-            state: address.state,
-            country: address.country,
-            postalCode: address.postalCode,
-          },
-          age: bookingDetails.age,
-          hospitalId: localStorage.getItem('HospitalId') || '',
-          hospitalName: localStorage.getItem('HospitalName') || '',
-          branchId: localStorage.getItem('branchId') || '',
-        }
-
-        // Format DOB to DD-MM-YYYY
-        if (updatedFormData.dateOfBirth) {
-          const dateObj = new Date(updatedFormData.dateOfBirth)
-          if (!isNaN(dateObj)) {
-            const day = String(dateObj.getDate()).padStart(2, '0')
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0')
-            const year = dateObj.getFullYear()
-            updatedFormData.dateOfBirth = `${day}-${month}-${year}`
-          }
-        }
-
-        await addCustomer(updatedFormData)
-        showCustomToast('Booking & Patient registered successfully!')
-      } else {
-        showCustomToast('Booking submitted successfully!')
-      }
-
-      console.log('Booking submitted successfully:', res.data)
-
-      // Reset form
-      setBookingDetails(initialBookingDetails)
-
-      setTimeout(() => {
-        navigate('/dashboard')
-      }, 1000)
-    } catch (err) {
-      console.error('Error submitting booking:', err)
-      if (err.response?.data?.message) showCustomToast(err.response.data.message, 'error')
-      else if (err.message?.includes('timeout'))
-        showCustomToast('Request timed out. Please try again.', 'error')
-      else showCustomToast('Failed to submit booking. Please try again.', 'error')
-    } finally {
-      setSaveLoading(false)
+      listOfConsultationFee: [
+        {
+          consulationFee: Number(bookingDetails.consultationFee || 0),
+        },
+      ],
     }
+
+    console.log("FINAL BOOKING PAYLOAD:", payloadToSend)
+
+    // ================= STEP 3: CALL BOOKING =================
+    const res = await postBooking(payloadToSend)
+
+    console.log("BOOKING RESPONSE:", res)
+
+    showCustomToast('Booking submitted successfully!')
+
+    setBookingDetails(initialBookingDetails)
+
+    setTimeout(() => {
+      navigate('/dashboard')
+    }, 1000)
+
+  } catch (err) {
+    console.error('Error submitting booking:', err)
+    showCustomToast('Failed to submit booking.', 'error')
+  } finally {
+    setSaveLoading(false)
   }
+}
 
   const handleServicesSubmit = () => {
     if (validate()) {
