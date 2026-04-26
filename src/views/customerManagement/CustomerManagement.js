@@ -323,7 +323,7 @@ const CustomerManagement = () => {
                 <CTable hover responsive className="cm-table">
                   <CTableHead>
                     <CTableRow>
-                      {['S.No','Customer ID','Full Name','Mobile','Gender','City','Actions'].map((h) => (
+                      {['S.No','Patient ID','Full Name','Mobile','Gender','City','Actions'].map((h) => (
                         <CTableHeaderCell key={h} className="cm-th">{h}</CTableHeaderCell>
                       ))}
                     </CTableRow>

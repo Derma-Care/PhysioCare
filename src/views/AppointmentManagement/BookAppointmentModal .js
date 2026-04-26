@@ -771,9 +771,19 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                     setBookingDetails((p) => ({ ...p, serviceDate: fd, servicetime: '' }))
                     clearErr('slot')
                   }}
-                  style={{ backgroundColor: isSelected ? 'var(--color-bgcolor)' : 'white', color: isSelected ? '#fff' : 'var(--color-black)', border: '1px solid var(--color-bgcolor)', minWidth: '80px', fontSize: FS }}>
-                  <div style={{ fontSize: FS, fontWeight: '600' }}>{dateObj.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                  <div style={{ fontSize: '11px' }}>{dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</div>
+                  style={{
+                    backgroundColor: isSelected ? 'var(--color-bgcolor)' : 'white',
+                    color: isSelected ? '#fff' : 'var(--color-bgcolor)',       // ✅ blue when unselected
+                    border: '1px solid var(--color-bgcolor)',
+                    minWidth: '80px',
+                    fontSize: FS,
+                  }}>
+                  <div style={{ fontSize: FS, fontWeight: '600', color: isSelected ? '#fff' : 'var(--color-bgcolor)' }}>
+                    {dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </div>
+                  <div style={{ fontSize: '11px', color: isSelected ? '#fff' : 'var(--color-bgcolor)' }}>
+                    {dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                  </div>
                 </CButton>
               )
             })}

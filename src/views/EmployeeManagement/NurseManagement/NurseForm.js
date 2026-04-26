@@ -6,16 +6,11 @@ import {
   CModalBody,
   CModalFooter,
   CForm,
-  CFormInput,
-  CFormSelect,
-  CFormTextarea,
-  CRow,
-  CCol,
 } from '@coreui/react'
 import Select from 'react-select'
 import {
   UserCog, X, User, Briefcase, Clock, FileText,
-  Layers, Save, RotateCcw,
+  Layers, Save,
 } from 'lucide-react'
 
 const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
@@ -206,28 +201,36 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     </div>
   )
 
-  const reactSelectStyles = {
-    control: (base, state) => ({
-      ...base,
-      fontSize: 13,
-      minHeight: 36,
-      borderColor: state.isFocused ? '#185fa5' : '#d0dce9',
-      borderWidth: '0.5px',
-      borderRadius: 8,
-      boxShadow: 'none',
-      '&:hover': { borderColor: '#185fa5' },
-    }),
-    option: (base, state) => ({
-      ...base,
-      fontSize: 13,
-      backgroundColor: state.isSelected ? '#185fa5' : state.isFocused ? '#f0f5fb' : '#fff',
-      color: state.isSelected ? '#fff' : '#374151',
-    }),
-    multiValue:       (base) => ({ ...base, background: '#e6f1fb', borderRadius: 20 }),
-    multiValueLabel:  (base) => ({ ...base, color: '#0c447c', fontSize: 12 }),
-    multiValueRemove: (base) => ({ ...base, color: '#185fa5', ':hover': { background: '#b5d4f4', color: '#0c447c' } }),
-    menu:             (base) => ({ ...base, fontSize: 13, zIndex: 9999 }),
-    placeholder:      (base) => ({ ...base, fontSize: 13, color: '#9ca3af' }),
+  // ── react-select shared props ─────────────────────────────────────────────
+  // KEY FIX: menuPortalTarget + menuPosition="fixed" renders the dropdown
+  // outside the clipping parent (overflow:hidden card / modal scroll container)
+  const selectPortalProps = {
+    menuPortalTarget: document.body,
+    menuPosition: 'fixed',
+    styles: {
+      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+      control: (base, state) => ({
+        ...base,
+        fontSize: 13,
+        minHeight: 36,
+        borderColor: state.isFocused ? '#185fa5' : '#d0dce9',
+        borderWidth: '0.5px',
+        borderRadius: 8,
+        boxShadow: 'none',
+        '&:hover': { borderColor: '#185fa5' },
+      }),
+      option: (base, state) => ({
+        ...base,
+        fontSize: 13,
+        backgroundColor: state.isSelected ? '#185fa5' : state.isFocused ? '#f0f5fb' : '#fff',
+        color: state.isSelected ? '#fff' : '#374151',
+      }),
+      multiValue:       (base) => ({ ...base, background: '#e6f1fb', borderRadius: 20 }),
+      multiValueLabel:  (base) => ({ ...base, color: '#0c447c', fontSize: 12 }),
+      multiValueRemove: (base) => ({ ...base, color: '#185fa5', ':hover': { background: '#b5d4f4', color: '#0c447c' } }),
+      menu:             (base) => ({ ...base, fontSize: 13 }),
+      placeholder:      (base) => ({ ...base, fontSize: 13, color: '#9ca3af' }),
+    },
   }
 
   return (
@@ -445,16 +448,24 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
               <div className="pf-row">
                 <div className="pf-col-half">
                   <Field label="Services" required error={errors.services}>
-                    <Select isMulti styles={reactSelectStyles} options={serviceOptions}
+                    <Select
+                      isMulti
+                      options={serviceOptions}
                       value={serviceOptions.filter(o => formData.services.includes(o.value))}
-                      onChange={(sel) => handleChange('services', sel ? sel.map(s => s.value) : [])} />
+                      onChange={(sel) => handleChange('services', sel ? sel.map(s => s.value) : [])}
+                      {...selectPortalProps}
+                    />
                   </Field>
                 </div>
                 <div className="pf-col-half">
                   <Field label="Specializations" required error={errors.specializations}>
-                    <Select isMulti styles={reactSelectStyles} options={specializationOptions}
+                    <Select
+                      isMulti
+                      options={specializationOptions}
                       value={specializationOptions.filter(o => formData.specializations.includes(o.value))}
-                      onChange={(sel) => handleChange('specializations', sel ? sel.map(s => s.value) : [])} />
+                      onChange={(sel) => handleChange('specializations', sel ? sel.map(s => s.value) : [])}
+                      {...selectPortalProps}
+                    />
                   </Field>
                 </div>
               </div>
@@ -464,16 +475,22 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
               <div className="pf-row">
                 <div className="pf-col-half">
                   <Field label="Start Day" required error={errors.startDay}>
-                    <Select styles={reactSelectStyles} options={dayOptions}
+                    <Select
+                      options={dayOptions}
                       value={dayOptions.find(o => o.value === formData.availability.startDay) || null}
-                      onChange={(sel) => handleNestedChange('availability', 'startDay', sel?.value || '')} />
+                      onChange={(sel) => handleNestedChange('availability', 'startDay', sel?.value || '')}
+                      {...selectPortalProps}
+                    />
                   </Field>
                 </div>
                 <div className="pf-col-half">
                   <Field label="End Day" required error={errors.endDay}>
-                    <Select styles={reactSelectStyles} options={dayOptions}
+                    <Select
+                      options={dayOptions}
                       value={dayOptions.find(o => o.value === formData.availability.endDay) || null}
-                      onChange={(sel) => handleNestedChange('availability', 'endDay', sel?.value || '')} />
+                      onChange={(sel) => handleNestedChange('availability', 'endDay', sel?.value || '')}
+                      {...selectPortalProps}
+                    />
                   </Field>
                 </div>
               </div>
