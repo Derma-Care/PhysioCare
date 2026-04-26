@@ -57,31 +57,31 @@ const SectionHead = ({ icon, text }) => (
 ───────────────────────────────────────────────────────────── */
 const CustomerManagement = () => {
   const navigate = useNavigate()
-  const [customerData, setCustomerData]   = useState([])
-  const [loading, setLoading]             = useState(false)
-  const [delloading, setDelLoading]       = useState(false)
-  const [error, setError]                 = useState(null)
-  const [currentPage, setCurrentPage]     = useState(1)
-  const [rowsPerPage, setRowsPerPage]     = useState(10)
+  const [customerData, setCustomerData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [delloading, setDelLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentMobile, setCurrentMobile] = useState(null)
-  const [isModalVisible, setIsModalVisible]         = useState(false)
+  const [isModalVisible, setIsModalVisible] = useState(false)
   const [customerIdToDelete, setCustomerIdToDelete] = useState(null)
-  const [formErrors, setFormErrors]       = useState({})
-  const { searchQuery }                   = useGlobalSearch()
-  const [isAdding, setIsAdding]           = useState(false)
-  const [isEditing, setIsEditing]         = useState(false)
-  const [saveloading, setSaveLoading]     = useState(false)
-  const [postOffices, setPostOffices]     = useState([])
-  const [selectedPO, setSelectedPO]       = useState(null)
-  const pincodeTimer                      = useRef(null)
+  const [formErrors, setFormErrors] = useState({})
+  const { searchQuery } = useGlobalSearch()
+  const [isAdding, setIsAdding] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [saveloading, setSaveLoading] = useState(false)
+  const [postOffices, setPostOffices] = useState([])
+  const [selectedPO, setSelectedPO] = useState(null)
+  const pincodeTimer = useRef(null)
 
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 
   const emptyForm = {
-    hospitalId:   localStorage.getItem('HospitalId')   || '',
+    hospitalId: localStorage.getItem('HospitalId') || '',
     hospitalName: localStorage.getItem('HospitalName') || '',
-    branchId:     localStorage.getItem('branchId')     || '',
+    branchId: localStorage.getItem('branchId') || '',
     customerId: '', title: '', firstName: '', lastName: '',
     fullName: '', mobileNumber: '', gender: '', email: '',
     dateOfBirth: '', referredBy: '', age: '',
@@ -111,7 +111,7 @@ const CustomerManagement = () => {
     if (value.length === 6) {
       pincodeTimer.current = setTimeout(async () => {
         try {
-          const res  = await fetch(`https://api.postalpincode.in/pincode/${value}`)
+          const res = await fetch(`https://api.postalpincode.in/pincode/${value}`)
           const data = await res.json()
           if (data?.[0]?.Status === 'Success') setPostOffices(data[0].PostOffice || [])
           else setPostOffices([])
@@ -133,6 +133,8 @@ const CustomerManagement = () => {
 
   useEffect(() => { fetchCustomers() }, [fetchCustomers])
 
+  const TITLES = ['Mr.', 'Mrs.', 'Miss.', 'Ms.', 'Mx.', 'Dr.', 'Prof.', 'Rev.', 'Capt.', 'Col.']
+
   const handleEditCustomer = (customer) => {
     let formattedDate = ''
     if (customer.dateOfBirth) {
@@ -145,13 +147,27 @@ const CustomerManagement = () => {
         if (!isNaN(d)) formattedDate = d.toISOString().split('T')[0]
       }
     }
+
     let title = '', firstName = '', lastName = ''
     if (customer.fullName) {
-      const parts = customer.fullName.trim().split(' ')
-      if (parts.length >= 3)       { title = parts[0]; firstName = parts[1]; lastName = parts.slice(2).join(' ') }
-      else if (parts.length === 2) { title = parts[0]; firstName = parts[1] }
-      else                          { firstName = parts[0] }
+      const parts = customer.fullName.trim().split(/\s+/)
+      // ✅ Check first word against known titles (case-insensitive)
+      const firstWord = parts[0]
+      const matchedTitle = TITLES.find(
+        (t) => t.toLowerCase() === firstWord.toLowerCase()
+      )
+      if (matchedTitle) {
+        title = matchedTitle              // use canonical casing e.g. "Mr." not "mr."
+        firstName = parts[1] || ''
+        lastName = parts.slice(2).join(' ')
+      } else {
+        // No title found — entire name goes into firstName + lastName
+        title = ''
+        firstName = parts[0] || ''
+        lastName = parts.slice(1).join(' ')
+      }
     }
+
     setFormData({
       customerId: customer.customerId || '',
       title, firstName, lastName,
@@ -162,16 +178,16 @@ const CustomerManagement = () => {
       dateOfBirth: formattedDate,
       referredBy: customer.referredBy || '',
       age: customer.age || '',
-      hospitalId:   localStorage.getItem('HospitalId')   || '',
+      hospitalId: localStorage.getItem('HospitalId') || '',
       hospitalName: localStorage.getItem('HospitalName') || '',
-      branchId:     localStorage.getItem('branchId')     || '',
+      branchId: localStorage.getItem('branchId') || '',
       address: {
-        houseNo:    customer.address?.houseNo    || '',
-        street:     customer.address?.street     || '',
-        landmark:   customer.address?.landmark   || '',
-        city:       customer.address?.city       || '',
-        state:      customer.address?.state      || '',
-        country:    'India',
+        houseNo: customer.address?.houseNo || '',
+        street: customer.address?.street || '',
+        landmark: customer.address?.landmark || '',
+        city: customer.address?.city || '',
+        state: customer.address?.state || '',
+        country: 'India',
         postalCode: customer.address?.postalCode || '',
       },
     })
@@ -200,22 +216,22 @@ const CustomerManagement = () => {
 
   const validateForm = () => {
     const errs = {}
-    if (!formData.title.trim())                           errs.title        = 'Title is required'
-    if (!formData.firstName.trim())                        errs.firstName    = 'First name is required'
-    if (!/^[1-9]\d{9}$/.test(formData.mobileNumber))      errs.mobileNumber = 'Valid 10-digit number required'
-    if (!emailPattern.test(formData.email))                errs.email        = 'Valid email required'
-    if (!formData.dateOfBirth.trim())                      errs.dateOfBirth  = 'Date of birth required'
+    if (!formData.title.trim()) errs.title = 'Title is required'
+    if (!formData.firstName.trim()) errs.firstName = 'First name is required'
+    if (!/^[1-9]\d{9}$/.test(formData.mobileNumber)) errs.mobileNumber = 'Valid 10-digit number required'
+    if (!emailPattern.test(formData.email)) errs.email = 'Valid email required'
+    if (!formData.dateOfBirth.trim()) errs.dateOfBirth = 'Date of birth required'
     else {
       const d = new Date(formData.dateOfBirth)
       if (isNaN(d) || d > new Date()) errs.dateOfBirth = 'Invalid date of birth'
     }
-    if (!formData.gender)                                  errs.gender       = 'Gender required'
-    if (!formData.address.houseNo?.trim())                 errs.houseNo      = 'House number required'
-    if (!formData.address.street?.trim())                  errs.street       = 'Street required'
-    if (!formData.address.city?.trim())                    errs.city         = 'City required'
-    if (!formData.address.state?.trim())                   errs.state        = 'State required'
-    if (!/^\d{6}$/.test(formData.address.postalCode))      errs.postalCode   = 'Valid 6-digit PIN required'
-    else if (!selectedPO && !formData.address.city?.trim()) errs.postOffice  = 'Select a post office'
+    if (!formData.gender) errs.gender = 'Gender required'
+    if (!formData.address.houseNo?.trim()) errs.houseNo = 'House number required'
+    if (!formData.address.street?.trim()) errs.street = 'Street required'
+    if (!formData.address.city?.trim()) errs.city = 'City required'
+    if (!formData.address.state?.trim()) errs.state = 'State required'
+    if (!/^\d{6}$/.test(formData.address.postalCode)) errs.postalCode = 'Valid 6-digit PIN required'
+    else if (!selectedPO && !formData.address.city?.trim()) errs.postOffice = 'Select a post office'
     setFormErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -228,14 +244,14 @@ const CustomerManagement = () => {
       const updated = {
         ...formData,
         fullName: [formData.title, formData.firstName, formData.lastName].filter(Boolean).join(' '),
-        hospitalId:   localStorage.getItem('HospitalId')   || formData.hospitalId,
+        hospitalId: localStorage.getItem('HospitalId') || formData.hospitalId,
         hospitalName: localStorage.getItem('HospitalName') || formData.hospitalName,
-        branchId:     localStorage.getItem('branchId')     || formData.branchId,
+        branchId: localStorage.getItem('branchId') || formData.branchId,
       }
       if (updated.dateOfBirth) {
         const d = new Date(updated.dateOfBirth)
         if (!isNaN(d)) {
-          updated.dateOfBirth = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`
+          updated.dateOfBirth = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`
         }
       }
       if (isEditing) {
@@ -323,7 +339,7 @@ const CustomerManagement = () => {
                 <CTable hover responsive className="cm-table">
                   <CTableHead>
                     <CTableRow>
-                      {['S.No','Patient ID','Full Name','Mobile','Gender','City','Actions'].map((h) => (
+                      {['S.No', 'Patient ID', 'Full Name', 'Mobile', 'Gender', 'City', 'Actions'].map((h) => (
                         <CTableHeaderCell key={h} className="cm-th">{h}</CTableHeaderCell>
                       ))}
                     </CTableRow>
@@ -344,19 +360,19 @@ const CustomerManagement = () => {
                         </CTableDataCell>
                         <CTableDataCell className="cm-td">{customer?.mobileNumber || '-'}</CTableDataCell>
                         <CTableDataCell className="cm-td">
-                          <span className={`cm-gender-badge ${(customer?.gender||'').toLowerCase()}`}>
+                          <span className={`cm-gender-badge ${(customer?.gender || '').toLowerCase()}`}>
                             {customer?.gender || '-'}
                           </span>
                         </CTableDataCell>
                         <CTableDataCell className="cm-td">{customer?.address?.city || '-'}</CTableDataCell>
                         <CTableDataCell className="cm-td">
                           <div className="cm-actions">
-                            {/* {can('Customer Management', 'read') && (
+                            {can('Customer Management', 'read') && (
                               <button className="cm-action-btn view" title="View"
-                                onClick={() => navigate('/Patient-Management', { state: { patientInfo: customer } })}>
+                                onClick={() => navigate('/patient-management/view', { state: { patientInfo: customer } })}>
                                 <Eye size={15} />
                               </button>
-                            )} */}
+                            )}
                             {can('Customer Management', 'update') && (
                               <button className="cm-action-btn edit" title="Edit"
                                 onClick={() => handleEditCustomer(customer)}>
@@ -411,7 +427,7 @@ const CustomerManagement = () => {
                 <CFormSelect name="title" value={formData.title} onChange={handleInputChange}
                   className={`cm-input${formErrors.title ? ' is-invalid' : ''}`}>
                   <option value="">Select title</option>
-                  {['Mr.','Mrs.','Miss.','Ms.','Mx.','Dr.','Prof.','Rev.','Capt.','Col.'].map(t => (
+                  {['Mr.', 'Mrs.', 'Miss.', 'Ms.', 'Mx.', 'Dr.', 'Prof.', 'Rev.', 'Capt.', 'Col.'].map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </CFormSelect>

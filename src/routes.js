@@ -170,11 +170,18 @@ const routes = [
   { path: '/report-details/:id', name: 'Report Details', element: ReportsDetails },
 
   {
-    path: '/Patient-Management/:customerId',
+    path: '/patient-management/:customerId',
     name: 'Patient View Details',
     element: CustomerViewDetails,
   },
-  { path: '/Patient-Management', name: 'Patient Management', element: CustomerManagement },
+ // Already exists - keep this:
+{ path: '/Patient-Management', name: 'Patient Management', element: CustomerManagement },
+
+// Add this NEW route for the view page:
+{ path: '/patient-management/view', name: 'Patient View', element: PatientManagement },
+
+// Remove or keep this (it's the same path causing confusion):
+// { path: '/patient-management', element: PatientManagement },  ← REMOVE THIS
   { path: '/patient-management', name: 'Patient Management', element: PatientManagement },
 
   // Attendance

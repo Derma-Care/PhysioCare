@@ -43,31 +43,24 @@ const followUpStatus = [
 
 /* ─── Status colour map ──────────────────────────────────────────────── */
 const statusColorMap = {
-  pending:                { bg: '#fff8e1', color: '#92680a', border: '#f0d080' },
-  confirmed:              { bg: '#eaf3de', color: '#3b6d11', border: '#c0dd97' },
-  completed:              { bg: '#eaf3de', color: '#3b6d11', border: '#c0dd97' },
-  'due for investigation':{ bg: '#fcebeb', color: '#a32d2d', border: '#f4b5b5' },
-  'investigation done':   { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
-  'in-progress':          { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
-  'in progress':          { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
-  inprogress:             { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
-  'follow-up needed':     { bg: '#f3f0ff', color: '#5b21b6', border: '#c4b5fd' },
-  'follow up needed':     { bg: '#f3f0ff', color: '#5b21b6', border: '#c4b5fd' },
-  cancelled:              { bg: '#fcebeb', color: '#a32d2d', border: '#f4b5b5' },
-  rescheduled:            { bg: '#fff8e1', color: '#92680a', border: '#f0d080' },
-  drop:                   { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
-  'no reply':             { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
+  pending: { bg: '#fff8e1', color: '#92680a', border: '#f0d080' },
+  confirmed: { bg: '#eaf3de', color: '#3b6d11', border: '#c0dd97' },
+  completed: { bg: '#eaf3de', color: '#3b6d11', border: '#c0dd97' },
+  'due for investigation': { bg: '#fcebeb', color: '#a32d2d', border: '#f4b5b5' },
+  'investigation done': { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
+  'in-progress': { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
+  'in progress': { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
+  inprogress: { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
+  'follow-up needed': { bg: '#f3f0ff', color: '#5b21b6', border: '#c4b5fd' },
+  'follow up needed': { bg: '#f3f0ff', color: '#5b21b6', border: '#c4b5fd' },
+  cancelled: { bg: '#fcebeb', color: '#a32d2d', border: '#f4b5b5' },
+  rescheduled: { bg: '#fff8e1', color: '#92680a', border: '#f0d080' },
+  drop: { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
+  'no reply': { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   HELPERS — defined outside component so they are stable references
-   and can be safely called from useEffect on mount.
-═══════════════════════════════════════════════════════════════════════ */
-
-/** "in-progress" | "In-Progress" | "IN_PROGRESS" | "in progress" → "in progress" */
 const normalizeStatus = (s) => (s || '').toLowerCase().replace(/[-_]/g, ' ').trim()
 
-/** Check row.status / row.followUpStatus / row.followupStatus against target */
 const rowMatchesStatus = (row, target) => {
   const t = normalizeStatus(target)
   return (
@@ -77,10 +70,8 @@ const rowMatchesStatus = (row, target) => {
   )
 }
 
-/** Count rows matching a status (normalised) */
 const countByStatus = (arr, target) => arr.filter(r => rowMatchesStatus(r, target)).length
 
-/** Deduplicate by bookingId — first occurrence wins */
 const dedupeByBookingId = (arr) => {
   const seen = new Set()
   return arr.filter(r => {
@@ -128,34 +119,35 @@ const StatCard = ({ icon, label, value, active, onClick }) => (
 export default function FollowupDashboard() {
   const navigate = useNavigate()
 
-  const [activeCard, setActiveCard]       = useState('today')
-  const [rows, setRows]                   = useState([])
-  const [filter, setFilter]               = useState('All')
-  const [fromDate, setFromDate]           = useState('')
-  const [toDate, setToDate]               = useState('')
-  const [currentPage, setCurrentPage]     = useState(1)
-  const [pageSize, setPageSize]           = useState(10)
-  const [todayCount, setTodayCount]       = useState(0)
-  const [weekCount, setWeekCount]         = useState(0)
-  const [confirmedCount, setConfirmedCount]   = useState(0)
+  const [activeCard, setActiveCard] = useState('today')
+  const [rows, setRows] = useState([])
+  // allRows holds the full unfiltered dataset for the current view (today/week/daterange)
+  const [allRows, setAllRows] = useState([])
+  const [filter, setFilter] = useState('All')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [todayCount, setTodayCount] = useState(0)
+  const [weekCount, setWeekCount] = useState(0)
+  const [confirmedCount, setConfirmedCount] = useState(0)
   const [inProgressCount, setInProgressCount] = useState(0)
-  const [loading, setLoading]             = useState(false)
+  const [loading, setLoading] = useState(false)
   const role = localStorage.getItem('role')
-  const [visible, setVisible]             = useState(false)
+  const [visible, setVisible] = useState(false)
   const [showReasonModal, setShowReasonModal] = useState(false)
-  const [selectedRow, setSelectedRow]     = useState(null)
-  const [selectedStatus, setSelectedStatus]   = useState('')
-  const [reason, setReason]               = useState('')
-  const [newDate, setNewDate]             = useState('')
-  const [newTime, setNewTime]             = useState('')
-  const { searchQuery }                   = useGlobalSearch()
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [selectedStatus, setSelectedStatus] = useState('')
+  const [reason, setReason] = useState('')
+  const [newDate, setNewDate] = useState('')
+  const [newTime, setNewTime] = useState('')
+  const { searchQuery } = useGlobalSearch()
   const [slotsForSelectedDate, setSlotsForSelectedDate] = useState([])
-  const [loadingSlots, setLoadingSlots]   = useState(false)
-  const [showAllSlots, setShowAllSlots]   = useState(false)
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [showAllSlots, setShowAllSlots] = useState(false)
 
   /* ══════════════════════════════════════════════════════════════════
-     INITIAL LOAD — FIX: fetch today + upcoming in parallel so that
-     weekCount is populated immediately on mount (not just on click).
+     INITIAL LOAD
   ══════════════════════════════════════════════════════════════════ */
   useEffect(() => {
     getInitialCounts()
@@ -169,26 +161,22 @@ export default function FollowupDashboard() {
         getUpcomingFollowUps(),
       ])
 
-      const today    = todayRes.status === 200 && Array.isArray(todayRes?.data?.data)
+      const today = todayRes.status === 200 && Array.isArray(todayRes?.data?.data)
         ? todayRes.data.data : []
       const upcoming = upcomingRes.status === 200 && Array.isArray(upcomingRes?.data?.data)
         ? upcomingRes.data.data : []
 
-      // Merged week = today + upcoming, deduplicated (today wins)
       const merged = dedupeByBookingId([...today, ...upcoming])
 
-      // Default view = today's rows
       setRows(today)
+      setAllRows(today)
       setTodayCount(today.length)
-
-      // Week count reflects full merged set
       setWeekCount(merged.length)
-
-      // Confirmed / InProgress counts based on today's data (default view)
       setConfirmedCount(countByStatus(today, 'confirmed'))
       setInProgressCount(countByStatus(today, 'in progress'))
     } catch {
       setRows([])
+      setAllRows([])
     } finally {
       setLoading(false)
     }
@@ -198,8 +186,8 @@ export default function FollowupDashboard() {
   const updatePaymentStatus = async (bookingId, status, row, reason, newDate, newTime) => {
     const payload = { bookingId, followupStatus: status.toLowerCase(), reason }
     if (status === 'Rescheduled') {
-      payload.serviceDate  = newDate
-      payload.servicetime  = newTime
+      payload.serviceDate = newDate
+      payload.servicetime = newTime
     }
     await bookingUpdate(payload)
   }
@@ -246,7 +234,7 @@ export default function FollowupDashboard() {
   })
   const visibleSlots = showAllSlots ? sortedSlots : sortedSlots.slice(0, 12)
 
-  /* ── Today (called when Today card is clicked) ────────────────────── */
+  /* ── Today ────────────────────────────────────────────────────────── */
   const getTodayFollowUps = async () => {
     setLoading(true)
     try {
@@ -254,20 +242,26 @@ export default function FollowupDashboard() {
       if (res.status === 200) {
         const d = Array.isArray(res?.data?.data) ? res.data.data : []
         setRows(d)
+        setAllRows(d)
         setTodayCount(d.length)
         setConfirmedCount(countByStatus(d, 'confirmed'))
         setInProgressCount(countByStatus(d, 'in progress'))
+        return d
       } else {
         setRows([])
+        setAllRows([])
+        return []
       }
     } catch {
       setRows([])
+      setAllRows([])
+      return []
     } finally {
       setLoading(false)
     }
   }
 
-  /* ── 1 Week (merges today + upcoming so today is included) ───────── */
+  /* ── 1 Week ───────────────────────────────────────────────────────── */
   const getUpcomingAppointments = async () => {
     setLoading(true)
     try {
@@ -277,17 +271,21 @@ export default function FollowupDashboard() {
       ])
       const upcoming = upcomingRes.status === 200 && Array.isArray(upcomingRes?.data?.data)
         ? upcomingRes.data.data : []
-      const today    = todayRes.status === 200 && Array.isArray(todayRes?.data?.data)
+      const today = todayRes.status === 200 && Array.isArray(todayRes?.data?.data)
         ? todayRes.data.data : []
 
       const merged = dedupeByBookingId([...today, ...upcoming])
 
       setRows(merged)
+      setAllRows(merged)
       setWeekCount(merged.length)
       setConfirmedCount(countByStatus(merged, 'confirmed'))
       setInProgressCount(countByStatus(merged, 'in progress'))
+      return merged
     } catch {
       setRows([])
+      setAllRows([])
+      return []
     } finally {
       setLoading(false)
     }
@@ -303,9 +301,11 @@ export default function FollowupDashboard() {
         ? res.data.data
         : Array.isArray(res?.data) ? res.data : []
       setRows(d)
+      setAllRows(d)
       setCurrentPage(1)
     } catch {
       setRows([])
+      setAllRows([])
     } finally {
       setLoading(false)
     }
@@ -317,20 +317,20 @@ export default function FollowupDashboard() {
 
   /* ── Filtered + searched list ─────────────────────────────────────── */
   const list = useMemo(() => rows.filter(row => {
-    const matchStatus  = filter === 'All' || rowMatchesStatus(row, filter)
-    const search       = (searchQuery || '').toLowerCase()
-    const matchSearch  = !search ||
-      (row.bookingId           || '').toLowerCase().includes(search) ||
-      (row.name                || '').toLowerCase().includes(search) ||
+    const matchStatus = filter === 'All' || rowMatchesStatus(row, filter)
+    const search = (searchQuery || '').toLowerCase()
+    const matchSearch = !search ||
+      (row.bookingId || '').toLowerCase().includes(search) ||
+      (row.name || '').toLowerCase().includes(search) ||
       (row.patientMobileNumber || '').toLowerCase().includes(search) ||
-      (row.doctorName          || '').toLowerCase().includes(search) ||
-      (row.paymentType         || '').toLowerCase().includes(search) ||
-      (row.visitType           || '').toLowerCase().includes(search) ||
-      (row.status              || '').toLowerCase().includes(search)
+      (row.doctorName || '').toLowerCase().includes(search) ||
+      (row.paymentType || '').toLowerCase().includes(search) ||
+      (row.visitType || '').toLowerCase().includes(search) ||
+      (row.status || '').toLowerCase().includes(search)
     return matchStatus && matchSearch
   }), [rows, filter, searchQuery])
 
-  const startIndex   = (currentPage - 1) * pageSize
+  const startIndex = (currentPage - 1) * pageSize
   const paginatedRows = list.slice(startIndex, startIndex + pageSize)
 
   /* ── Button styles ────────────────────────────────────────────────── */
@@ -341,7 +341,7 @@ export default function FollowupDashboard() {
     whiteSpace: 'nowrap', transition: 'background 0.15s, color 0.15s',
     border: '0.5px solid #d0dce9',
   }
-  const filterBtnActive   = { ...filterBtnBase, backgroundColor: '#185fa5', color: '#fff', border: '0.5px solid #185fa5', boxShadow: '0 2px 8px rgba(24,95,165,0.18)' }
+  const filterBtnActive = { ...filterBtnBase, backgroundColor: '#185fa5', color: '#fff', border: '0.5px solid #185fa5', boxShadow: '0 2px 8px rgba(24,95,165,0.18)' }
   const filterBtnInactive = { ...filterBtnBase, backgroundColor: '#f0f5fb', color: '#374151' }
 
   /* ══════════════════════════════════════════════════════════════════
@@ -359,30 +359,30 @@ export default function FollowupDashboard() {
             <StatCard
               icon="📅" label="Today" value={todayCount}
               active={activeCard === 'today'}
-              onClick={() => {
+              onClick={async () => {
                 setActiveCard('today')
                 setFilter('All')
                 setCurrentPage(1)
-                getTodayFollowUps()
+                await getTodayFollowUps()
               }}
             />
           </CCol>
 
-          {/* 1 Week — FIX: weekCount now shows correct value on load */}
+          {/* 1 Week */}
           <CCol md={3} xs={6}>
             <StatCard
               icon="🗓️" label="1 Week" value={weekCount}
               active={activeCard === 'upcoming'}
-              onClick={() => {
+              onClick={async () => {
                 setActiveCard('upcoming')
                 setFilter('All')
                 setCurrentPage(1)
-                getUpcomingAppointments()
+                await getUpcomingAppointments()
               }}
             />
           </CCol>
 
-          {/* Confirmed */}
+          {/* Confirmed — FIX: filter allRows from current view */}
           <CCol md={3} xs={6}>
             <StatCard
               icon="✅" label="Confirmed" value={confirmedCount}
@@ -391,12 +391,13 @@ export default function FollowupDashboard() {
                 setActiveCard('confirmed')
                 setFilter('Confirmed')
                 setCurrentPage(1)
-                getTodayFollowUps()
+                // Use allRows already in state — no re-fetch needed
+                // rows state stays the same; filter handles display
               }}
             />
           </CCol>
 
-          {/* In Progress */}
+          {/* In Progress — FIX: same approach */}
           <CCol md={3} xs={6}>
             <StatCard
               icon="⏳" label="In Progress" value={inProgressCount}
@@ -405,7 +406,6 @@ export default function FollowupDashboard() {
                 setActiveCard('inprogress')
                 setFilter('In Progress')
                 setCurrentPage(1)
-                getTodayFollowUps()
               }}
             />
           </CCol>
@@ -481,7 +481,7 @@ export default function FollowupDashboard() {
         <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
 
         {/* ── TABLE ─────────────────────────────────────────────────── */}
-        <div className="wd-table-wrapper">
+        <div className="wd-table-wrapper" style={{ overflowX: 'auto' }}>
           <CTable className="wd-table">
             <CTableHead>
               <CTableRow>
@@ -645,7 +645,7 @@ export default function FollowupDashboard() {
                       return d >= new Date().toISOString().split('T')[0]
                     })
                     .map((s, idx) => {
-                      const d        = new Date(s.day || s.date).toISOString().split('T')[0]
+                      const d = new Date(s.day || s.date).toISOString().split('T')[0]
                       const isActive = newDate === d
                       return (
                         <button
@@ -674,7 +674,7 @@ export default function FollowupDashboard() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                     {visibleSlots.map((slotObj, i) => {
                       const isSelected = newTime === slotObj.slot
-                      const isBooked   = slotObj.slotbooked
+                      const isBooked = slotObj.slotbooked
                       return (
                         <div
                           key={i}
@@ -721,12 +721,17 @@ export default function FollowupDashboard() {
           </button>
           <button
             className="wd-btn-primary"
-            onClick={() => {
+            onClick={async () => {
               if (!reason.trim()) { alert('Reason is required'); return }
-              updatePaymentStatus(selectedRow.bookingId, selectedStatus, selectedRow, reason, newDate, newTime)
+              await updatePaymentStatus(selectedRow.bookingId, selectedStatus, selectedRow, reason, newDate, newTime)
               setShowReasonModal(false)
               setReason('')
-              getTodayFollowUps()
+              // Refresh the current active view
+              if (activeCard === 'upcoming') {
+                getUpcomingAppointments()
+              } else {
+                getTodayFollowUps()
+              }
             }}
           >
             Save
@@ -786,11 +791,13 @@ export default function FollowupDashboard() {
         }
         .wd-date-input:focus, .wd-select:focus { border-color: #185fa5; }
         .wd-select { color: #185fa5; min-width: 130px; }
-
-        .wd-table-wrapper {
-          border: 0.5px solid #d0dce9; border-radius: 10px;
-          overflow: hidden; margin-bottom: 12px;
-        }
+.wd-table-wrapper {
+  border: 0.5px solid #d0dce9; border-radius: 10px;
+  overflow-x: auto; overflow-y: hidden; margin-bottom: 12px;
+}
+.wd-table {
+  min-width: 1100px;
+}
         .wd-table { margin-bottom: 0 !important; font-size: 13px; }
 
         .wd-th {

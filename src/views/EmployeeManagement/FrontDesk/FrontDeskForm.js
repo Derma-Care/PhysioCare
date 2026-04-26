@@ -1,17 +1,13 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   CForm,
-  CFormInput,
-  CFormLabel,
   CModal,
   CModalHeader,
   CModalTitle,
   CModalBody,
   CModalFooter,
-  CFormTextarea,
-  CFormSelect,
 } from '@coreui/react'
-import { toast, ToastContainer } from 'react-toastify'
+import { ToastContainer } from 'react-toastify'
 import { actions, features } from '../../../Constant/Features'
 import capitalizeWords from '../../../Utils/capitalizeWords'
 import UserPermissionModal from '../UserPermissionModal'
@@ -19,8 +15,107 @@ import { validateField } from '../../../Utils/Validators'
 import { emailPattern } from '../../../Constant/Constants'
 import FilePreview from '../../../Utils/FilePreview'
 import { showCustomToast } from '../../../Utils/Toaster'
-import { User, Briefcase, MapPin, CreditCard, FileText, ShieldCheck, Eye, Save, X, RotateCcw } from 'lucide-react'
+import {
+  User, Briefcase, MapPin, CreditCard, FileText,
+  ShieldCheck, Save, X, RotateCcw,
+} from 'lucide-react'
 
+/* ─────────────────────────────────────────────────────────────────
+   ⚠️  CRITICAL: emptyForm MUST live outside the component.
+   Defining it inside means a new object reference on every render,
+   which makes useEffect([initialData]) fire on every keystroke
+   → formData resets → only one character survives per keystroke.
+───────────────────────────────────────────────────────────────── */
+const makeEmptyForm = () => ({
+  clinicId: localStorage.getItem('HospitalId'),
+  branchId: localStorage.getItem('branchId'),
+  branchName: localStorage.getItem('branchName'),
+  hospitalName: localStorage.getItem('HospitalName'),
+  createdBy: localStorage.getItem('staffId') || 'admin',
+  fullName: '',
+  dateOfBirth: '',
+  contactNumber: '',
+  qualification: '',
+  governmentId: '',
+  dateOfJoining: '',
+  department: '',
+  emergencyContact: '',
+  profilePicture: '',
+  emailId: '',
+  graduationCertificate: '',
+  computerSkillsProof: '',
+  previousEmploymentHistory: '',
+  role: 'receptionist',
+  gender: '',
+  yearOfExperience: '',
+  vaccinationStatus: '',
+  address: {
+    houseNo: '',
+    street: '',
+    landmark: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: 'India',
+  },
+  bankAccountDetails: {
+    accountNumber: '',
+    accountHolderName: '',
+    ifscCode: '',
+    bankName: '',
+    branchName: '',
+    panCardNumber: '',
+  },
+  permissions: {},
+})
+
+/* ─────────────────────────────────────────────────────────────────
+   Sub-components MUST also live outside FrontDeskForm.
+   Defining them inside creates new component types on every render
+   → React unmounts/remounts → inputs lose focus after one character.
+───────────────────────────────────────────────────────────────── */
+
+const InfoCard = ({ icon: Icon, title, children }) => (
+  <div className="fdf-card">
+    <div className="fdf-card-header">
+      <Icon size={15} />
+      <span>{title}</span>
+    </div>
+    <div className="fdf-card-body">{children}</div>
+  </div>
+)
+
+const InfoRow = ({ label, value }) => (
+  <div className="fdf-info-row">
+    <span className="fdf-info-label">{label}</span>
+    <span className="fdf-info-value">{value || '—'}</span>
+  </div>
+)
+
+const FormSection = ({ icon: Icon, title, children }) => (
+  <div className="fdf-section">
+    <div className="fdf-section-title">
+      <Icon size={14} className="fdf-section-icon" />
+      {title}
+    </div>
+    <div className="fdf-section-body">{children}</div>
+  </div>
+)
+
+const Field = ({ label, required, error, children }) => (
+  <div className="fdf-field">
+    <label className="fdf-label">
+      {label}
+      {required && <span className="fdf-required">*</span>}
+    </label>
+    {children}
+    {error && <span className="fdf-error">{error}</span>}
+  </div>
+)
+
+/* ═══════════════════════════════════════════════════════════════
+   Main Component
+═══════════════════════════════════════════════════════════════ */
 const FrontDeskForm = ({
   visible,
   onClose,
@@ -31,61 +126,50 @@ const FrontDeskForm = ({
   technicians,
   fetchTechs,
 }) => {
-  const emptyPermissions = {}
+  const clinicId = localStorage.getItem('HospitalId')
 
-  const emptyForm = {
-    clinicId: localStorage.getItem('HospitalId'),
-    branchId: localStorage.getItem('branchId'),
-    branchName: localStorage.getItem('branchName'),
-    hospitalName: localStorage.getItem('HospitalName'),
-    createdBy: localStorage.getItem('staffId') || 'admin',
-    fullName: '',
-    dateOfBirth: '',
-    contactNumber: '',
-    qualification: '',
-    governmentId: '',
-    dateOfJoining: '',
-    department: '',
-    emergencyContact: '',
-    profilePicture: '',
-    emailId: '',
-    graduationCertificate: '',
-    computerSkillsProof: '',
-    previousEmploymentHistory: '',
-    role: 'receptionist',
-    gender: '',
-    yearOfExperience: '',
-    vaccinationStatus: '',
-    address: {
-      houseNo: '',
-      street: '',
-      landmark: '',
-      city: '',
-      state: '',
-      postalCode: '',
-      country: 'India',
-    },
-    bankAccountDetails: {
-      accountNumber: '',
-      accountHolderName: '',
-      ifscCode: '',
-      bankName: '',
-      branchName: '',
-      panCardNumber: '',
-    },
-    permissions: emptyPermissions,
-  }
-
-  const [formData, setFormData] = useState(emptyForm)
-  const [clinicId] = useState(localStorage.getItem('HospitalId'))
-  const [showModal, setShowModal] = useState(false)
+  const [formData, setFormData]   = useState(makeEmptyForm)
   const [showPModal, setShowPModal] = useState(false)
+  const [showFileModal, setShowFileModal] = useState(false)
   const [previewFileUrl, setPreviewFileUrl] = useState(null)
-  const [isPreviewPdf, setIsPreviewPdf] = useState(false)
-  const [errors, setErrors] = useState({})
-  const [loading, setLoading] = useState(false)
+  const [isPreviewPdf, setIsPreviewPdf]     = useState(false)
+  const [errors,   setErrors]   = useState({})
+  const [loading,  setLoading]  = useState(false)
   const [ifscLoading, setIfscLoading] = useState(false)
 
+  /* ── Scroll-position lock ──────────────────────────────────────
+     We store the modal body's scrollTop before every state update
+     that does NOT need a scroll reset, then restore it after the
+     re-render via a layout effect. This prevents the body from
+     jumping back to the top on every keystroke.
+  ─────────────────────────────────────────────────────────────── */
+  const bodyRef      = useRef(null)
+  const scrollLock   = useRef(false)
+  const savedScroll  = useRef(0)
+
+  const saveScroll = () => {
+    if (bodyRef.current) savedScroll.current = bodyRef.current.scrollTop
+    scrollLock.current = true
+  }
+
+  useEffect(() => {
+    if (scrollLock.current && bodyRef.current) {
+      bodyRef.current.scrollTop = savedScroll.current
+      scrollLock.current = false
+    }
+  })
+
+  /* ── Populate form when initialData or visible changes ─────── */
+  useEffect(() => {
+    if (visible) {
+      setFormData(initialData ? { ...makeEmptyForm(), ...initialData } : makeEmptyForm())
+      setErrors({})
+      // Reset scroll to top only when the modal is freshly opened
+      if (bodyRef.current) bodyRef.current.scrollTop = 0
+    }
+  }, [visible, initialData])
+
+  /* ── Mandatory field validation ────────────────────────────── */
   const mandatoryFields = [
     'fullName', 'dateOfBirth', 'contactNumber', 'emailId', 'governmentId',
     'dateOfJoining', 'department', 'qualification', 'clinicId', 'profilePicture', 'role',
@@ -96,90 +180,67 @@ const FrontDeskForm = ({
     'bankAccountDetails.ifscCode', 'bankAccountDetails.panCardNumber',
   ]
 
-  function validateMandatoryFields(formData, mandatoryFields) {
-    const missingFields = []
-    for (const field of mandatoryFields) {
-      const keys = field.split('.')
-      let value = formData
-      for (const key of keys) { value = value?.[key] }
-      if (!value || String(value).trim() === '') missingFields.push(field)
+  const validateMandatoryFields = (data, fields) => {
+    const missing = []
+    for (const field of fields) {
+      let value = data
+      for (const key of field.split('.')) value = value?.[key]
+      if (!value || String(value).trim() === '') missing.push(field)
     }
-    return missingFields
+    return missing
   }
 
+  /* ── Permissions ────────────────────────────────────────────── */
   const toggleFeature = (feature) => {
-    setFormData((prev) => {
-      const updated = { ...prev.permissions }
-      if (updated[feature]) delete updated[feature]
-      else updated[feature] = []
-      return { ...prev, permissions: updated }
+    saveScroll()
+    setFormData(prev => {
+      const p = { ...prev.permissions }
+      if (p[feature]) delete p[feature]
+      else p[feature] = []
+      return { ...prev, permissions: p }
     })
   }
 
   const togglePermission = (feature, action) => {
-    setFormData((prev) => {
-      const updated = { ...prev.permissions }
-      if (!updated[feature]) updated[feature] = []
-      if (updated[feature].includes(action))
-        updated[feature] = updated[feature].filter((a) => a !== action)
-      else updated[feature] = [...updated[feature], action]
-      return { ...prev, permissions: updated }
+    saveScroll()
+    setFormData(prev => {
+      const p = { ...prev.permissions }
+      if (!p[feature]) p[feature] = []
+      p[feature] = p[feature].includes(action)
+        ? p[feature].filter(a => a !== action)
+        : [...p[feature], action]
+      return { ...prev, permissions: p }
     })
   }
 
   const toggleAllActions = (feature) => {
-    setFormData((prev) => {
-      const updated = { ...prev.permissions }
-      if (!updated[feature]) updated[feature] = [...actions]
-      else if (updated[feature].length === actions.length) updated[feature] = []
-      else updated[feature] = [...actions]
-      return { ...prev, permissions: updated }
+    saveScroll()
+    setFormData(prev => {
+      const p = { ...prev.permissions }
+      if (!p[feature]) p[feature] = [...actions]
+      else if (p[feature].length === actions.length) p[feature] = []
+      else p[feature] = [...actions]
+      return { ...prev, permissions: p }
     })
   }
 
-  const toBase64 = (file) =>
+  /* ── File helpers ───────────────────────────────────────────── */
+  const toBase64 = file =>
     new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = (error) => reject(error)
+      reader.onload  = () => resolve(reader.result)
+      reader.onerror = reject
     })
-
-  useEffect(() => {
-    if (initialData) {
-      setFormData((prev) => ({
-        ...prev,
-        ...initialData,
-        createdBy: initialData.createdBy || prev.createdBy,
-      }))
-    } else {
-      setFormData(emptyForm)
-    }
-  }, [initialData])
-
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    const error = validateField(field, value, { ...formData, [field]: value }, technicians)
-    setErrors((prev) => ({ ...prev, [field]: error }))
-  }
-
-  const handleNestedChange = (parent, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [parent]: { ...prev[parent], [field]: value },
-    }))
-  }
 
   const handleFileUpload = (e, field) => {
     const file = e.target.files[0]
     if (!file) return
-    if (file.size > 250 * 1024) {
-      showCustomToast('File size must be less than 250KB.', 'error')
-      return
-    }
+    if (file.size > 250 * 1024) { showCustomToast('File size must be less than 250KB.', 'error'); return }
     const reader = new FileReader()
     reader.onloadend = () => {
-      setFormData((prev) => ({
+      saveScroll()
+      setFormData(prev => ({
         ...prev,
         [field]: reader.result,
         [`${field}Name`]: file.name,
@@ -189,61 +250,47 @@ const FrontDeskForm = ({
     reader.readAsDataURL(file)
   }
 
+  /* ── Field change handlers ──────────────────────────────────── */
+  const handleChange = (field, value) => {
+    saveScroll()
+    setFormData(prev => ({ ...prev, [field]: value }))
+    const error = validateField(field, value, { ...formData, [field]: value }, technicians)
+    setErrors(prev => ({ ...prev, [field]: error }))
+  }
+
+  const handleNestedChange = (parent, field, value) => {
+    saveScroll()
+    setFormData(prev => ({ ...prev, [parent]: { ...prev[parent], [field]: value } }))
+  }
+
+  /* ── Form validation ────────────────────────────────────────── */
   const validateForm = () => {
     const missing = validateMandatoryFields(formData, mandatoryFields)
-    if (missing.length > 0) {
-      showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error')
-      return
-    }
+    if (missing.length) { showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error'); return false }
     if (formData.dateOfBirth) {
-      const dob = new Date(formData.dateOfBirth)
+      const dob   = new Date(formData.dateOfBirth)
       const today = new Date()
-      const age = today.getFullYear() - dob.getFullYear()
-      const isBeforeBirthday =
-        today.getMonth() < dob.getMonth() ||
-        (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-      if ((isBeforeBirthday ? age - 1 : age) < 18) {
-        showCustomToast('Technician must be at least 18 years old.', 'error')
-        return
-      }
+      let age = today.getFullYear() - dob.getFullYear()
+      const beforeBirthday = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+      if (beforeBirthday) age--
+      if (age < 18) { showCustomToast('Staff must be at least 18 years old.', 'error'); return false }
     }
-    const mobileRegex = /^[6-9]\d{9}$/
-    if (!mobileRegex.test(formData.contactNumber)) {
-      showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error')
-      return
-    }
-    if (formData.contactNumber === formData.emergencyContact) {
-      showCustomToast('Contact Number and Emergency Contact cannot be the same.', 'error')
-      return
-    }
-    if (!emailPattern.test(formData.emailId)) {
-      showCustomToast('Please enter a valid email address.', 'error')
-      return
-    }
-    const duplicateContact = receptionist?.some(
-      (t) => t.contactNumber === formData.contactNumber && t.id !== formData.id,
-    )
-    if (duplicateContact) { showCustomToast('Contact number already exists!', 'error'); return }
-    const duplicateEmail = receptionist?.some(
-      (t) => t.emailId === formData.emailId && t.id !== formData.id,
-    )
-    if (duplicateEmail) { showCustomToast('Email already exists!', 'error'); return }
+    if (!/^[6-9]\d{9}$/.test(formData.contactNumber)) { showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error'); return false }
+    if (formData.contactNumber === formData.emergencyContact) { showCustomToast('Contact & Emergency Contact cannot be the same.', 'error'); return false }
+    if (!emailPattern.test(formData.emailId)) { showCustomToast('Please enter a valid email address.', 'error'); return false }
+    if (receptionist?.some(t => t.contactNumber === formData.contactNumber && t.id !== formData.id)) { showCustomToast('Contact number already exists!', 'error'); return false }
+    if (receptionist?.some(t => t.emailId === formData.emailId && t.id !== formData.id)) { showCustomToast('Email already exists!', 'error'); return false }
     return true
   }
 
+  /* ── Submit ─────────────────────────────────────────────────── */
   const handleSubmit = async () => {
-    if (Object.keys(formData.permissions).length === 0) {
-      showCustomToast('Please assign at least one user permission before saving.', 'error')
-      return
-    }
+    if (Object.keys(formData.permissions).length === 0) { showCustomToast('Please assign at least one user permission before saving.', 'error'); return }
     if (loading) return
     try {
       setLoading(true)
       const res = await onSave(formData)
-      if (res?.data?.data != null) {
-        onClose()
-        setFormData(emptyForm)
-      }
+      if (res?.data?.data != null) { onClose(); setFormData(makeEmptyForm()) }
     } catch (err) {
       console.error('Submit failed', err)
     } finally {
@@ -252,63 +299,25 @@ const FrontDeskForm = ({
   }
 
   const handleUserPermission = () => {
-    const isValid = validateForm()
-    if (!isValid) return
+    if (!validateForm()) return
     setShowPModal(true)
-  }
-
-  const handleCloseModal = () => {
-    setShowModal(false)
-    setPreviewFileUrl(null)
-    setIsPreviewPdf(false)
   }
 
   const handlePreview = (fileUrl, type) => {
     setPreviewFileUrl(fileUrl)
     setIsPreviewPdf(type?.includes('pdf'))
-    setShowModal(true)
+    setShowFileModal(true)
   }
 
-  // ── View Mode helpers ──
-  const InfoCard = ({ icon: Icon, title, children }) => (
-    <div className="fdf-card">
-      <div className="fdf-card-header">
-        <Icon size={15} className="fdf-card-icon" />
-        <span>{title}</span>
-      </div>
-      <div className="fdf-card-body">{children}</div>
-    </div>
-  )
+  const handleCloseFileModal = () => {
+    setShowFileModal(false)
+    setPreviewFileUrl(null)
+    setIsPreviewPdf(false)
+  }
 
-  const InfoRow = ({ label, value }) => (
-    <div className="fdf-info-row">
-      <span className="fdf-info-label">{label}</span>
-      <span className="fdf-info-value">{value || '—'}</span>
-    </div>
-  )
-
-  // ── Edit Mode helpers ──
-  const FormSection = ({ icon: Icon, title, children }) => (
-    <div className="fdf-section">
-      <div className="fdf-section-title">
-        <Icon size={14} className="fdf-section-icon" />
-        {title}
-      </div>
-      {children}
-    </div>
-  )
-
-  const Field = ({ label, required, error, children }) => (
-    <div className="fdf-field">
-      <label className="fdf-label">
-        {label}
-        {required && <span className="fdf-required">*</span>}
-      </label>
-      {children}
-      {error && <span className="fdf-error">{error}</span>}
-    </div>
-  )
-
+  /* ══════════════════════════════════════════════════════════════
+     RENDER
+  ══════════════════════════════════════════════════════════════ */
   return (
     <>
       <ToastContainer />
@@ -321,11 +330,14 @@ const FrontDeskForm = ({
           </CModalTitle>
         </CModalHeader>
 
-        <CModalBody style={{ padding: '20px', maxHeight: '75vh', overflowY: 'auto' }}>
+        {/* ── Body — attach bodyRef here to control scroll ── */}
+        <CModalBody
+          ref={bodyRef}
+          style={{ padding: '20px', maxHeight: '75vh', overflowY: 'auto' }}
+        >
           {viewMode ? (
             /* ═══════════════ VIEW MODE ═══════════════ */
             <div>
-              {/* Profile Header */}
               <div className="fdf-profile-header">
                 <img
                   src={formData.profilePicture || '/assets/images/default-avatar.png'}
@@ -342,73 +354,56 @@ const FrontDeskForm = ({
 
               <InfoCard icon={User} title="Personal Information">
                 <div className="fdf-grid-3">
-                  <InfoRow label="Full Name" value={formData.fullName} />
-                  <InfoRow label="Email" value={formData.emailId} />
-                  <InfoRow label="Contact" value={formData.contactNumber} />
-                  <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
-                  <InfoRow label="Government ID" value={formData.governmentId} />
-                  <InfoRow label="Gender" value={capitalizeWords(formData.gender)} />
+                  <InfoRow label="Full Name"      value={formData.fullName} />
+                  <InfoRow label="Email"          value={formData.emailId} />
+                  <InfoRow label="Contact"        value={formData.contactNumber} />
+                  <InfoRow label="Date of Birth"  value={formData.dateOfBirth} />
+                  <InfoRow label="Government ID"  value={formData.governmentId} />
+                  <InfoRow label="Gender"         value={capitalizeWords(formData.gender)} />
                 </div>
               </InfoCard>
 
               <InfoCard icon={Briefcase} title="Work Information">
                 <div className="fdf-grid-3">
-                  <InfoRow label="Date of Joining" value={formData.dateOfJoining} />
-                  <InfoRow label="Department" value={formData.department} />
-                  <InfoRow label="Qualification" value={formData.qualification} />
+                  <InfoRow label="Date of Joining"  value={formData.dateOfJoining} />
+                  <InfoRow label="Department"       value={formData.department} />
+                  <InfoRow label="Qualification"    value={formData.qualification} />
                   <InfoRow label="Emergency Contact" value={formData.emergencyContact} />
-                  <InfoRow label="Experience" value={formData.yearOfExperience} />
-                  <InfoRow label="Vaccination" value={formData.vaccinationStatus} />
+                  <InfoRow label="Experience"       value={formData.yearOfExperience} />
+                  <InfoRow label="Vaccination"      value={formData.vaccinationStatus} />
                 </div>
               </InfoCard>
 
               <InfoCard icon={MapPin} title="Address">
                 <p className="fdf-info-value" style={{ margin: 0 }}>
                   {[
-                    formData.address?.houseNo,
-                    formData.address?.street,
-                    formData.address?.landmark,
-                    formData.address?.city,
-                    formData.address?.state,
-                    formData.address?.postalCode,
+                    formData.address?.houseNo, formData.address?.street,
+                    formData.address?.landmark, formData.address?.city,
+                    formData.address?.state, formData.address?.postalCode,
                     formData.address?.country,
-                  ]
-                    .filter(Boolean)
-                    .join(', ')}
+                  ].filter(Boolean).join(', ')}
                 </p>
               </InfoCard>
 
               <InfoCard icon={CreditCard} title="Bank Details">
                 <div className="fdf-grid-3">
-                  <InfoRow label="Account Number" value={formData.bankAccountDetails?.accountNumber} />
-                  <InfoRow label="Account Holder" value={formData.bankAccountDetails?.accountHolderName} />
-                  <InfoRow label="IFSC Code" value={formData.bankAccountDetails?.ifscCode} />
-                  <InfoRow label="Bank Name" value={formData.bankAccountDetails?.bankName} />
-                  <InfoRow label="Branch Name" value={formData.bankAccountDetails?.branchName} />
-                  <InfoRow label="PAN Card" value={formData.bankAccountDetails?.panCardNumber} />
+                  <InfoRow label="Account Number"  value={formData.bankAccountDetails?.accountNumber} />
+                  <InfoRow label="Account Holder"  value={formData.bankAccountDetails?.accountHolderName} />
+                  <InfoRow label="IFSC Code"        value={formData.bankAccountDetails?.ifscCode} />
+                  <InfoRow label="Bank Name"        value={formData.bankAccountDetails?.bankName} />
+                  <InfoRow label="Branch Name"      value={formData.bankAccountDetails?.branchName} />
+                  <InfoRow label="PAN Card"         value={formData.bankAccountDetails?.panCardNumber} />
                 </div>
               </InfoCard>
 
               <InfoCard icon={FileText} title="Documents">
                 <div className="fdf-grid-2">
-                  {formData.graduationCertificate ? (
-                    <FilePreview
-                      label="Graduation Certificate"
-                      type={formData.graduationCertificateType}
-                      data={formData.graduationCertificate}
-                    />
-                  ) : (
-                    <p className="fdf-muted">Not Provided — Graduation Certificate</p>
-                  )}
-                  {formData.computerSkillsProof ? (
-                    <FilePreview
-                      label="Computer Skills Proof"
-                      type={formData.computerSkillsProofType || 'application/pdf'}
-                      data={formData.computerSkillsProof}
-                    />
-                  ) : (
-                    <p className="fdf-muted">Not Provided — Computer Skills Proof</p>
-                  )}
+                  {formData.graduationCertificate
+                    ? <FilePreview label="Graduation Certificate" type={formData.graduationCertificateType} data={formData.graduationCertificate} />
+                    : <p className="fdf-muted">Not Provided — Graduation Certificate</p>}
+                  {formData.computerSkillsProof
+                    ? <FilePreview label="Computer Skills Proof" type={formData.computerSkillsProofType || 'application/pdf'} data={formData.computerSkillsProof} />
+                    : <p className="fdf-muted">Not Provided — Computer Skills Proof</p>}
                 </div>
                 {formData.previousEmploymentHistory && (
                   <div style={{ marginTop: 12 }}>
@@ -417,6 +412,7 @@ const FrontDeskForm = ({
                 )}
               </InfoCard>
             </div>
+
           ) : (
             /* ═══════════════ EDIT MODE ═══════════════ */
             <CForm>
@@ -441,17 +437,13 @@ const FrontDeskForm = ({
                       <input
                         className="fdf-input"
                         value={formData.fullName}
-                        onChange={(e) => handleChange('fullName', e.target.value.replace(/[^A-Za-z\s]/g, ''))}
+                        onChange={e => handleChange('fullName', e.target.value.replace(/[^A-Za-z\s]/g, ''))}
                       />
                     </Field>
                   </div>
                   <div className="fdf-col-third">
                     <Field label="Gender" required>
-                      <select
-                        className="fdf-input"
-                        value={formData.gender}
-                        onChange={(e) => handleChange('gender', e.target.value)}
-                      >
+                      <select className="fdf-input" value={formData.gender} onChange={e => handleChange('gender', e.target.value)}>
                         <option value="">Select Gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
@@ -462,11 +454,10 @@ const FrontDeskForm = ({
                   <div className="fdf-col-third">
                     <Field label="Date of Birth" required>
                       <input
-                        className="fdf-input"
-                        type="date"
+                        className="fdf-input" type="date"
                         value={formData.dateOfBirth}
                         max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                        onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+                        onChange={e => handleChange('dateOfBirth', e.target.value)}
                       />
                     </Field>
                   </div>
@@ -476,16 +467,13 @@ const FrontDeskForm = ({
                   <div className="fdf-col-third">
                     <Field label="Contact Number" required error={errors.contactNumber}>
                       <input
-                        className="fdf-input"
-                        type="text"
-                        maxLength={10}
+                        className="fdf-input" type="text" maxLength={10}
                         value={formData.contactNumber}
-                        onChange={(e) => {
+                        onChange={e => {
                           const v = e.target.value
                           if (/^\d*$/.test(v)) {
                             handleChange('contactNumber', v)
-                            const err = validateField('contactNumber', v, formData, receptionist)
-                            setErrors((p) => ({ ...p, contactNumber: err }))
+                            setErrors(p => ({ ...p, contactNumber: validateField('contactNumber', v, formData, receptionist) }))
                           }
                         }}
                       />
@@ -494,12 +482,11 @@ const FrontDeskForm = ({
                   <div className="fdf-col-third">
                     <Field label="Email" required error={errors.emailId}>
                       <input
-                        className="fdf-input"
-                        type="email"
+                        className="fdf-input" type="email"
                         value={formData.emailId}
-                        onChange={(e) => {
+                        onChange={e => {
                           handleChange('emailId', e.target.value)
-                          setErrors((p) => ({ ...p, emailId: validateField('emailId', e.target.value, formData) }))
+                          setErrors(p => ({ ...p, emailId: validateField('emailId', e.target.value, formData) }))
                         }}
                       />
                     </Field>
@@ -507,13 +494,12 @@ const FrontDeskForm = ({
                   <div className="fdf-col-third">
                     <Field label="Government ID (Aadhaar)" required error={errors.governmentId}>
                       <input
-                        className="fdf-input"
-                        maxLength={12}
+                        className="fdf-input" maxLength={12}
                         value={formData.governmentId}
-                        onChange={(e) => {
+                        onChange={e => {
                           if (/^\d*$/.test(e.target.value)) {
                             handleChange('governmentId', e.target.value)
-                            setErrors((p) => ({ ...p, governmentId: validateField('governmentId', e.target.value, formData) }))
+                            setErrors(p => ({ ...p, governmentId: validateField('governmentId', e.target.value, formData) }))
                           }
                         }}
                       />
@@ -528,13 +514,12 @@ const FrontDeskForm = ({
                   <div className="fdf-col-third">
                     <Field label="Date of Joining" required error={errors.dateOfJoining}>
                       <input
-                        className="fdf-input"
-                        type="date"
+                        className="fdf-input" type="date"
                         value={formData.dateOfJoining}
                         max={new Date().toISOString().split('T')[0]}
-                        onChange={(e) => {
+                        onChange={e => {
                           handleChange('dateOfJoining', e.target.value)
-                          setErrors((p) => ({ ...p, dateOfJoining: validateField('dateOfJoining', e.target.value, formData) }))
+                          setErrors(p => ({ ...p, dateOfJoining: validateField('dateOfJoining', e.target.value, formData) }))
                         }}
                       />
                     </Field>
@@ -544,9 +529,9 @@ const FrontDeskForm = ({
                       <input
                         className="fdf-input"
                         value={formData.department}
-                        onChange={(e) => {
+                        onChange={e => {
                           handleChange('department', e.target.value)
-                          setErrors((p) => ({ ...p, department: validateField('department', e.target.value) }))
+                          setErrors(p => ({ ...p, department: validateField('department', e.target.value) }))
                         }}
                       />
                     </Field>
@@ -556,9 +541,9 @@ const FrontDeskForm = ({
                       <select
                         className="fdf-input"
                         value={formData.vaccinationStatus}
-                        onChange={(e) => {
+                        onChange={e => {
                           handleChange('vaccinationStatus', e.target.value)
-                          setErrors((p) => ({ ...p, vaccinationStatus: e.target.value ? '' : 'Required.' }))
+                          setErrors(p => ({ ...p, vaccinationStatus: e.target.value ? '' : 'Required.' }))
                         }}
                       >
                         <option value="">Select Status</option>
@@ -573,22 +558,17 @@ const FrontDeskForm = ({
                 <div className="fdf-row">
                   <div className="fdf-col-third">
                     <Field label="Qualification" required>
-                      <input
-                        className="fdf-input"
-                        value={formData.qualification}
-                        onChange={(e) => handleChange('qualification', e.target.value)}
-                      />
+                      <input className="fdf-input" value={formData.qualification} onChange={e => handleChange('qualification', e.target.value)} />
                     </Field>
                   </div>
                   <div className="fdf-col-third">
                     <Field label="Years of Experience" required error={errors.yearOfExperience}>
                       <input
-                        className="fdf-input"
-                        type="number"
+                        className="fdf-input" type="number"
                         value={formData.yearOfExperience}
-                        onChange={(e) => {
+                        onChange={e => {
                           handleChange('yearOfExperience', e.target.value)
-                          setErrors((p) => ({ ...p, yearOfExperience: validateField('yearOfExperience', e.target.value) }))
+                          setErrors(p => ({ ...p, yearOfExperience: validateField('yearOfExperience', e.target.value) }))
                         }}
                       />
                     </Field>
@@ -596,13 +576,9 @@ const FrontDeskForm = ({
                   <div className="fdf-col-third">
                     <Field label="Emergency Contact">
                       <input
-                        className="fdf-input"
-                        type="text"
-                        maxLength={10}
+                        className="fdf-input" type="text" maxLength={10}
                         value={formData.emergencyContact}
-                        onChange={(e) => {
-                          if (/^\d*$/.test(e.target.value)) handleChange('emergencyContact', e.target.value)
-                        }}
+                        onChange={e => { if (/^\d*$/.test(e.target.value)) handleChange('emergencyContact', e.target.value) }}
                       />
                     </Field>
                   </div>
@@ -612,7 +588,7 @@ const FrontDeskForm = ({
               {/* Address */}
               <FormSection icon={MapPin} title="Address">
                 <div className="fdf-row">
-                  {Object.keys(formData.address).map((field) => (
+                  {Object.keys(formData.address).map(field => (
                     <div className="fdf-col-third" key={field}>
                       <Field
                         label={field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
@@ -620,11 +596,10 @@ const FrontDeskForm = ({
                         error={errors.address?.[field]}
                       >
                         <input
-                          className="fdf-input"
-                          type="text"
+                          className="fdf-input" type="text"
                           maxLength={field === 'postalCode' ? 6 : undefined}
                           value={formData.address[field]}
-                          onChange={(e) => {
+                          onChange={e => {
                             let value = e.target.value
                             if (field === 'postalCode') {
                               if (/^\d*$/.test(value)) handleNestedChange('address', field, value)
@@ -634,7 +609,7 @@ const FrontDeskForm = ({
                             } else {
                               handleNestedChange('address', field, value)
                             }
-                            setErrors((p) => ({ ...p, address: { ...p.address, [field]: validateField(field, value, formData) } }))
+                            setErrors(p => ({ ...p, address: { ...p.address, [field]: validateField(field, value, formData) } }))
                           }}
                         />
                       </Field>
@@ -646,7 +621,7 @@ const FrontDeskForm = ({
               {/* Bank Details */}
               <FormSection icon={CreditCard} title="Bank Account Details">
                 <div className="fdf-row">
-                  {Object.keys(formData.bankAccountDetails).map((field) => (
+                  {Object.keys(formData.bankAccountDetails).map(field => (
                     <div className="fdf-col-third" key={field}>
                       <Field
                         label={field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
@@ -659,55 +634,58 @@ const FrontDeskForm = ({
                           disabled={ifscLoading && (field === 'bankName' || field === 'branchName')}
                           placeholder={ifscLoading && (field === 'bankName' || field === 'branchName') ? 'Fetching...' : ''}
                           maxLength={
-                            field === 'accountNumber' ? 20
-                              : field === 'panCardNumber' ? 10
-                                : field === 'ifscCode' ? 11
-                                  : field === 'accountHolderName' ? 50
-                                    : undefined
+                            field === 'accountNumber'     ? 20
+                            : field === 'panCardNumber'   ? 10
+                            : field === 'ifscCode'        ? 11
+                            : field === 'accountHolderName' ? 50
+                            : undefined
                           }
-                          onChange={async (e) => {
+                          onChange={async e => {
                             let value = e.target.value
                             let err = ''
+
                             if (field === 'accountHolderName') {
                               if (/^[A-Za-z\s]*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
                               err = !value.trim() ? 'Required.' : !/^[A-Za-z\s]+$/.test(value) ? 'Letters only.' : ''
-                            }
-                            if (field === 'accountNumber') {
+                            } else if (field === 'accountNumber') {
                               if (/^\d*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
                               err = value ? '' : 'Required.'
-                            }
-                            if (field === 'panCardNumber') {
+                            } else if (field === 'panCardNumber') {
                               value = value.toUpperCase()
                               if (/^[A-Z]{0,5}[0-9]{0,4}[A-Z]{0,1}$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
-                              err = value.length === 10 ? (/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? '' : 'Invalid PAN (ABCDE1234F)') : 'PAN must be 10 characters.'
-                            }
-                            if (field === 'ifscCode') {
+                              err = value.length === 10
+                                ? (/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? '' : 'Invalid PAN (ABCDE1234F)')
+                                : 'PAN must be 10 characters.'
+                            } else if (field === 'ifscCode') {
                               value = value.toUpperCase()
                               if (/^[A-Z0-9]*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
                               if (value.length === 11) {
                                 err = /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value) ? '' : 'Invalid IFSC (HDFC0001234)'
                                 if (!err) {
                                   try {
+                                    setIfscLoading(true)
                                     const res = await fetch(`https://ifsc.razorpay.com/${value}`)
                                     if (res.ok) {
                                       const data = await res.json()
-                                      handleNestedChange('bankAccountDetails', 'bankName', data.BANK || '')
+                                      handleNestedChange('bankAccountDetails', 'bankName',   data.BANK   || '')
                                       handleNestedChange('bankAccountDetails', 'branchName', data.BRANCH || '')
                                     }
                                   } catch {
-                                    handleNestedChange('bankAccountDetails', 'bankName', '')
+                                    handleNestedChange('bankAccountDetails', 'bankName',   '')
                                     handleNestedChange('bankAccountDetails', 'branchName', '')
+                                  } finally {
+                                    setIfscLoading(false)
                                   }
                                 }
                               } else {
                                 err = 'IFSC must be 11 characters.'
                               }
-                            }
-                            if (!['accountNumber', 'panCardNumber', 'ifscCode', 'accountHolderName'].includes(field)) {
+                            } else {
                               handleNestedChange('bankAccountDetails', field, value)
                               err = value ? '' : 'Required.'
                             }
-                            setErrors((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, [field]: err } }))
+
+                            setErrors(p => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, [field]: err } }))
                           }}
                         />
                       </Field>
@@ -722,55 +700,39 @@ const FrontDeskForm = ({
                   <div className="fdf-col-third">
                     <Field label="Profile Image" required>
                       <input
-                        className="fdf-input"
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
+                        className="fdf-input" type="file" accept="image/*"
+                        onChange={async e => {
                           const file = e.target.files[0]
-                          if (file) {
-                            const base64 = await toBase64(file)
-                            handleChange('profilePicture', base64)
-                          }
+                          if (file) { const b64 = await toBase64(file); handleChange('profilePicture', b64) }
                         }}
                       />
                     </Field>
                   </div>
                   <div className="fdf-col-third">
                     <Field label="Graduation Certificate">
-                      <input
-                        className="fdf-input"
-                        type="file"
-                        onChange={(e) => handleFileUpload(e, 'graduationCertificate')}
-                      />
+                      <input className="fdf-input" type="file" onChange={e => handleFileUpload(e, 'graduationCertificate')} />
                     </Field>
                   </div>
                   <div className="fdf-col-third">
                     <Field label="Computer Skills Proof">
-                      <input
-                        className="fdf-input"
-                        type="file"
-                        onChange={(e) => handleFileUpload(e, 'computerSkillsProof')}
-                      />
+                      <input className="fdf-input" type="file" onChange={e => handleFileUpload(e, 'computerSkillsProof')} />
                     </Field>
                   </div>
                 </div>
-
                 <Field label="Previous Employment History">
                   <textarea
-                    className="fdf-input fdf-textarea"
-                    rows={3}
+                    className="fdf-input fdf-textarea" rows={3}
                     value={formData.previousEmploymentHistory}
-                    onChange={(e) => handleChange('previousEmploymentHistory', e.target.value)}
+                    onChange={e => handleChange('previousEmploymentHistory', e.target.value)}
                     placeholder="Enter previous employment history..."
                   />
                 </Field>
               </FormSection>
 
-              {/* Permissions Button */}
+              {/* Permissions */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                 <button type="button" className="fdf-perm-btn" onClick={handleUserPermission}>
-                  <ShieldCheck size={14} />
-                  User Permissions
+                  <ShieldCheck size={14} /> User Permissions
                 </button>
               </div>
 
@@ -783,7 +745,7 @@ const FrontDeskForm = ({
                 toggleFeature={toggleFeature}
                 toggleAllActions={toggleAllActions}
                 togglePermission={togglePermission}
-                onSave={() => { setShowPModal(false) }}
+                onSave={() => setShowPModal(false)}
               />
             </CForm>
           )}
@@ -791,39 +753,19 @@ const FrontDeskForm = ({
 
         <CModalFooter style={{ borderTop: '0.5px solid #d0dce9', padding: '12px 20px', gap: 8 }}>
           {viewMode ? (
-            <button className="fdf-btn-cancel" onClick={onClose}>
-              <X size={14} /> Close
-            </button>
+            <button className="fdf-btn-cancel" onClick={onClose}><X size={14} /> Close</button>
           ) : (
             <>
-              <button
-                type="button"
-                className="fdf-btn-cancel"
-                onClick={() => setFormData(emptyForm)}
-              >
+              <button type="button" className="fdf-btn-cancel" onClick={() => { saveScroll(); setFormData(makeEmptyForm()) }}>
                 <RotateCcw size={13} /> Clear
               </button>
-              <button
-                type="button"
-                className="fdf-btn-cancel"
-                onClick={() => { setFormData(emptyForm); onClose() }}
-              >
+              <button type="button" className="fdf-btn-cancel" onClick={() => { setFormData(makeEmptyForm()); onClose() }}>
                 <X size={13} /> Cancel
               </button>
-              <button
-                type="button"
-                className="fdf-btn-save"
-                onClick={handleSubmit}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-1" role="status" />
-                    Saving...
-                  </>
-                ) : (
-                  <><Save size={13} /> Save</>
-                )}
+              <button type="button" className="fdf-btn-save" onClick={handleSubmit} disabled={loading}>
+                {loading
+                  ? <><span className="spinner-border spinner-border-sm me-1" role="status" /> Saving...</>
+                  : <><Save size={13} /> Save</>}
               </button>
             </>
           )}
@@ -831,253 +773,112 @@ const FrontDeskForm = ({
       </CModal>
 
       {/* ── File Preview Modal ── */}
-      <CModal visible={showModal} onClose={handleCloseModal} size="xl">
-        <CModalHeader onClose={handleCloseModal} style={{ borderBottom: '0.5px solid #d0dce9', padding: '16px 20px' }}>
+      <CModal visible={showFileModal} onClose={handleCloseFileModal} size="xl">
+        <CModalHeader onClose={handleCloseFileModal} style={{ borderBottom: '0.5px solid #d0dce9', padding: '16px 20px' }}>
           <CModalTitle style={{ fontSize: 14, fontWeight: 600, color: '#0c447c' }}>
             {isPreviewPdf ? 'PDF Preview' : 'Image Preview'}
           </CModalTitle>
         </CModalHeader>
         <CModalBody className="text-center">
-          {isPreviewPdf ? (
-            <iframe src={previewFileUrl} title="PDF Preview" style={{ width: '100%', height: '80vh', border: 'none' }} />
-          ) : (
-            <img src={previewFileUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8 }} />
-          )}
+          {isPreviewPdf
+            ? <iframe src={previewFileUrl} title="PDF Preview" style={{ width: '100%', height: '80vh', border: 'none' }} />
+            : <img src={previewFileUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8 }} />}
         </CModalBody>
       </CModal>
 
-      {/* ── STYLES ── */}
+      {/* ── Styles ── */}
       <style>{`
-        /* ── View Mode ── */
         .fdf-profile-header {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 16px;
-          background: #f0f5fb;
-          border-radius: 10px;
-          margin-bottom: 14px;
+          display: flex; align-items: center; gap: 16px;
+          padding: 16px; background: #f0f5fb; border-radius: 10px; margin-bottom: 14px;
         }
         .fdf-profile-avatar {
-          width: 72px; height: 72px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 2px solid #b5d4f4;
-          flex-shrink: 0;
+          width: 72px; height: 72px; border-radius: 50%;
+          object-fit: cover; border: 2px solid #b5d4f4; flex-shrink: 0;
         }
-        .fdf-profile-name {
-          font-size: 16px;
-          font-weight: 700;
-          color: #0c447c;
-          margin: 0 0 4px;
-        }
-        .fdf-profile-meta {
-          font-size: 12px;
-          color: #6b7280;
-          margin: 0 0 2px;
-        }
+        .fdf-profile-name { font-size: 16px; font-weight: 700; color: #0c447c; margin: 0 0 4px; }
+        .fdf-profile-meta { font-size: 12px; color: #6b7280; margin: 0 0 2px; }
         .fdf-badge {
-          display: inline-block;
-          background: #185fa5;
-          color: #fff;
-          font-size: 11px;
-          font-weight: 600;
-          padding: 2px 10px;
-          border-radius: 20px;
-          margin-top: 4px;
+          display: inline-block; background: #185fa5; color: #fff;
+          font-size: 11px; font-weight: 600; padding: 2px 10px;
+          border-radius: 20px; margin-top: 4px;
         }
+        .fdf-card { border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+        .fdf-card-header {
+          display: flex; align-items: center; gap: 8px;
+          background: #185fa5; color: #fff !important;
+          font-size: 12px; font-weight: 600; padding: 9px 14px;
+        }
+        .fdf-card-header span, .fdf-card-header svg { color: #fff !important; }
+        .fdf-card-body { padding: 14px; background: #fff; }
+        .fdf-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+        .fdf-grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+        .fdf-info-row { display: flex; flex-direction: column; gap: 2px; }
+        .fdf-info-label { font-size: 11px; font-weight: 600; color: #185fa5; text-transform: uppercase; letter-spacing: 0.3px; }
+        .fdf-info-value { font-size: 13px; color: #374151; font-weight: 500; }
+        .fdf-muted { font-size: 12px; color: #9ca3af; font-style: italic; margin: 0; }
 
-        .fdf-card {
-          border: 0.5px solid #d0dce9;
-          border-radius: 10px;
-          overflow: hidden;
-          margin-bottom: 12px;
-        }
-     .fdf-card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #185fa5;
-  color: #fff;   /* 👈 THIS controls the text color */
-  font-size: 12px;
-  font-weight: 600;
-  padding: 9px 14px;
-}
-  .fdf-card-header,
-.fdf-card-header span,
-.fdf-card-header svg {
-  color: #ffffff !important;
-}
-        .fdf-card-icon { color: #b5d4f4; }
-        .fdf-card-body {
-          padding: 14px;
-          background: #fff;
-        }
-
-        .fdf-grid-3 {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-        }
-        .fdf-grid-2 {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
-        }
-        .fdf-info-row {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        .fdf-info-label {
-          font-size: 11px;
-          font-weight: 600;
-          color: #185fa5;
-          text-transform: uppercase;
-          letter-spacing: 0.3px;
-        }
-        .fdf-info-value {
-          font-size: 13px;
-          color: #374151;
-          font-weight: 500;
-        }
-        .fdf-muted {
-          font-size: 12px;
-          color: #9ca3af;
-          font-style: italic;
-          margin: 0;
-        }
-
-        /* ── Edit Mode ── */
-        .fdf-section {
-          margin-bottom: 18px;
-          border: 0.5px solid #d0dce9;
-          border-radius: 10px;
-          overflow: hidden;
-        }
+        .fdf-section { margin-bottom: 18px; border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; }
         .fdf-section-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: #185fa5;
-          color: #fff;
-          font-size: 12px;
-          font-weight: 600;
-          padding: 9px 14px;
+          display: flex; align-items: center; gap: 8px;
+          background: #185fa5; color: #fff;
+          font-size: 12px; font-weight: 600; padding: 9px 14px;
         }
         .fdf-section-icon { color: #b5d4f4; }
-        .fdf-section > *:not(.fdf-section-title) { padding: 14px; }
-        .fdf-section > .fdf-row { padding: 14px; }
+        .fdf-section-body { padding: 14px; }
 
-        .fdf-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-          margin-bottom: 0;
-        }
+        .fdf-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 0; }
         .fdf-col-third { flex: 1 1 calc(33.333% - 12px); min-width: 160px; }
         .fdf-col-half  { flex: 1 1 calc(50% - 12px); min-width: 140px; }
 
-        .fdf-field {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          margin-bottom: 10px;
-        }
-        .fdf-label {
-          font-size: 11px;
-          font-weight: 600;
-          color: #374151;
-          display: flex;
-          align-items: center;
-          gap: 3px;
-        }
+        .fdf-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+        .fdf-label { font-size: 11px; font-weight: 600; color: #374151; display: flex; align-items: center; gap: 3px; }
         .fdf-required { color: #e24b4a; font-size: 11px; }
         .fdf-error { font-size: 11px; color: #e24b4a; margin-top: 2px; }
 
         .fdf-input {
-          width: 100%;
-          padding: 7px 10px;
-          font-size: 12.5px;
-          color: #374151;
-          background: #fff;
-          border: 0.5px solid #d0dce9;
-          border-radius: 7px;
-          outline: none;
-          transition: border-color 0.15s, box-shadow 0.15s;
-          appearance: none;
-          -webkit-appearance: none;
+          width: 100%; padding: 7px 10px; font-size: 12.5px; color: #374151;
+          background: #fff; border: 0.5px solid #d0dce9; border-radius: 7px;
+          outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+          appearance: none; -webkit-appearance: none;
         }
-        .fdf-input:focus {
-          border-color: #185fa5;
-          box-shadow: 0 0 0 2.5px rgba(24,95,165,0.12);
-        }
-        .fdf-input-disabled {
-          background: #f0f5fb !important;
-          color: #9ca3af !important;
-          cursor: not-allowed;
-        }
+        .fdf-input:focus { border-color: #185fa5; box-shadow: 0 0 0 2.5px rgba(24,95,165,0.12); }
+        .fdf-input-disabled { background: #f0f5fb !important; color: #9ca3af !important; cursor: not-allowed; }
         .fdf-textarea { resize: vertical; min-height: 70px; }
 
-        /* Permissions button */
         .fdf-perm-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: #e6f1fb;
-          color: #185fa5;
-          border: 0.5px solid #b5d4f4;
-          border-radius: 8px;
-          padding: 7px 16px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background 0.15s, filter 0.15s;
+          display: inline-flex; align-items: center; gap: 6px;
+          background: #e6f1fb; color: #185fa5; border: 0.5px solid #b5d4f4;
+          border-radius: 8px; padding: 7px 16px;
+          font-size: 12px; font-weight: 600; cursor: pointer;
+          transition: background 0.15s;
         }
         .fdf-perm-btn:hover { background: #d0e6f7; }
 
-        /* Footer buttons */
         .fdf-btn-cancel {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          background: #fff;
-          color: #374151;
-          border: 0.5px solid #d0dce9;
-          border-radius: 8px;
-          padding: 7px 16px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background 0.15s;
+          display: inline-flex; align-items: center; gap: 5px;
+          background: #fff; color: #374151; border: 0.5px solid #d0dce9;
+          border-radius: 8px; padding: 7px 16px;
+          font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s;
         }
         .fdf-btn-cancel:hover { background: #f3f4f6; }
 
         .fdf-btn-save {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          background: #185fa5;
-          color: #fff;
-          border: none;
-          border-radius: 8px;
-          padding: 7px 18px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: filter 0.15s;
+          display: inline-flex; align-items: center; gap: 5px;
+          background: #185fa5; color: #fff; border: none;
+          border-radius: 8px; padding: 7px 18px;
+          font-size: 12px; font-weight: 600; cursor: pointer; transition: filter 0.15s;
         }
-        .fdf-btn-save:hover  { filter: brightness(0.9); }
+        .fdf-btn-save:hover    { filter: brightness(0.9); }
         .fdf-btn-save:disabled { opacity: 0.65; cursor: not-allowed; }
 
-        /* Scrollbar */
-        .modal-body::-webkit-scrollbar { width: 5px; }
-        .modal-body::-webkit-scrollbar-track { background: #f0f5fb; }
-        .modal-body::-webkit-scrollbar-thumb { background: #b5d4f4; border-radius: 10px; }
+        .modal-body::-webkit-scrollbar       { width: 5px; }
+        .modal-body::-webkit-scrollbar-track  { background: #f0f5fb; }
+        .modal-body::-webkit-scrollbar-thumb  { background: #b5d4f4; border-radius: 10px; }
 
         @media (max-width: 600px) {
           .fdf-col-third, .fdf-col-half { flex: 1 1 100%; }
-          .fdf-grid-3, .fdf-grid-2 { grid-template-columns: 1fr; }
+          .fdf-grid-3, .fdf-grid-2      { grid-template-columns: 1fr; }
         }
       `}</style>
     </>

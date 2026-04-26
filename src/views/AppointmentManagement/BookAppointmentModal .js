@@ -42,46 +42,31 @@ const TABS = [
   { id: 'assessment', label: 'Pain Assessment' },
 ]
 
-// ─── Single font-size token — change here to update everywhere ─────────────────
 const FS = '13px'
 
-// ─── Reusable style factories ─────────────────────────────────────────────────
 const inputStyle = (hasErr) => ({
-  fontSize: FS,
-  height: '34px',
-  padding: '4px 10px',
+  fontSize: FS, height: '34px', padding: '4px 10px',
   borderColor: hasErr ? '#dc3545' : undefined,
 })
 const selectStyle = (hasErr) => ({
-  fontSize: FS,
-  height: '34px',
-  padding: '4px 8px',
+  fontSize: FS, height: '34px', padding: '4px 8px',
   borderColor: hasErr ? '#dc3545' : undefined,
 })
 const textareaStyle = (hasErr) => ({
-  fontSize: FS,
-  padding: '6px 10px',
-  minHeight: '80px',
+  fontSize: FS, padding: '6px 10px', minHeight: '80px',
   borderColor: hasErr ? '#dc3545' : undefined,
 })
 const labelStyle = {
-  color: 'var(--color-bgcolor)',
-  fontSize: '12px',
-  fontWeight: '500',
-  marginBottom: '3px',
-  display: 'block',
+  color: 'var(--color-bgcolor)', fontSize: '12px', fontWeight: '500',
+  marginBottom: '3px', display: 'block',
 }
 const sectionHeadStyle = {
-  fontSize: FS,
-  fontWeight: '600',
+  fontSize: FS, fontWeight: '600',
   borderBottom: '1px solid var(--color-bgcolor)',
-  paddingBottom: '6px',
-  marginBottom: '14px',
-  color: 'var(--color-bgcolor)',
+  paddingBottom: '6px', marginBottom: '14px', color: 'var(--color-bgcolor)',
 }
 const errStyle = { fontSize: '11px', color: '#dc3545', marginTop: '3px', marginBottom: 0 }
 
-// react-select consistent sizing
 const rsStyles = {
   control: (b) => ({ ...b, minHeight: '34px', height: '34px', fontSize: FS }),
   valueContainer: (b) => ({ ...b, padding: '0 8px' }),
@@ -95,7 +80,6 @@ const rsStyles = {
 const activityOptions = ['Sedentary', 'Moderate', 'Active', 'Athlete']
 const reasonOptions = ['Chronic Pain', 'Sports Rehab', 'Neuro Rehab', 'Others']
 
-// Small helper so error messages are one-liners
 const ErrMsg = ({ msg }) => msg ? <p style={errStyle}>{msg}</p> : null
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,7 +88,6 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const { selectedHospital, doctorData } = useHospital()
 
   const [currentTab, setCurrentTab] = useState(0)
-
   const [visitType, setVisitType] = useState('first')
   const [appointmentType] = useState('services')
   const [selectedBooking, setSelectedBooking] = useState(null)
@@ -161,7 +144,10 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     consentFormPdf: '', customerDeviceId: '',
     serviceDate: '', servicetime: '',
     referredByType: '', referredByName: '',
-    address: { houseNo: '', street: '', landmark: '', city: '', state: '', postalCode: '', country: 'India' },
+    address: {
+      houseNo: '', street: '', landmark: '',
+      city: '', state: '', postalCode: '', country: 'India',
+    },
   })
 
   const [bookingDetails, setBookingDetails] = useState(getInitialBookingDetails)
@@ -264,21 +250,14 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       if (name === 'dob' && value) {
         const today = new Date(), dob = new Date(value)
         let age = today.getFullYear() - dob.getFullYear()
-
         if (
           today.getMonth() - dob.getMonth() < 0 ||
           (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
         ) age--
-
         u.age = age >= 1 ? age : 0
-
-        if (age > 120) {
-          setErr('dob', 'Age cannot be more than 120 years')
-        } else if (age < 0) {
-          setErr('dob', 'Invalid DOB')
-        } else {
-          clearErr('dob')
-        }
+        if (age > 120) setErr('dob', 'Age cannot be more than 120 years')
+        else if (age < 0) setErr('dob', 'Invalid DOB')
+        else clearErr('dob')
       }
       if (name === 'age' && value) {
         const d = new Date(); d.setFullYear(new Date().getFullYear() - parseInt(value))
@@ -287,7 +266,6 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       return u
     })
 
-    // clear errors as user types valid values
     setErrors((prev) => {
       const e = { ...prev }
       if (name === 'name') { value?.trim() ? delete e.name : (e.name = 'Name is required') }
@@ -315,7 +293,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           const data = await (await fetch(`https://api.postalpincode.in/pincode/${value}`)).json()
           if (data[0].Status === 'Success') {
             const po = data[0].PostOffice[0]
-            setBookingDetails((p) => ({ ...p, address: { ...p.address, city: po.District, state: po.State, postalCode: value } }))
+            setBookingDetails((p) => ({
+              ...p, address: { ...p.address, city: po.District, state: po.State, postalCode: value },
+            }))
             setPostOffices(data[0].PostOffice)
           }
         } catch { }
@@ -365,11 +345,10 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     setErrors((p) => { const e = { ...p }; delete e.part; delete e.markedImage; return e })
   }
 
-  // ── Per-tab reset — stays on current tab ──────────────────────────────────
+  // ── Per-tab reset ─────────────────────────────────────────────────────────
   const handleTabReset = () => {
     const tabId = visibleTabs[currentTab]?.id
-    setErrors({})   // clear only this tab's errors
-
+    setErrors({})
     if (tabId === 'visit') {
       setVisitType('first')
       setSelectedBooking(null)
@@ -420,7 +399,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     }
   }
 
-  // ── Full reset used on cancel / after submit ───────────────────────────────
+  // ── Full reset ────────────────────────────────────────────────────────────
   const handleFullReset = () => {
     setBookingDetails(getInitialBookingDetails())
     setVisitType('first'); setSelectedBooking(null)
@@ -457,8 +436,12 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     return Object.keys(e).length === 0
   }
 
+  // ── Submit handlers ───────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!validate()) { showCustomToast('Please fix the errors before submitting.', 'error'); return }
+    if (!validate()) {
+      showCustomToast('Please fix the errors before submitting.', 'error')
+      return
+    }
     try {
       setSaveLoading(true)
       const { unit, address, ...rest } = bookingDetails
@@ -471,8 +454,10 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           fullName: combinedName, mobileNumber: bookingDetails.mobileNumber, gender: bookingDetails.gender,
           dateOfBirth: `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`,
           age: bookingDetails.age,
-          hospitalId: localStorage.getItem('HospitalId') || '', hospitalName: localStorage.getItem('HospitalName') || '',
-          branchId: localStorage.getItem('branchId') || '', address,
+          hospitalId: localStorage.getItem('HospitalId') || '',
+          hospitalName: localStorage.getItem('HospitalName') || '',
+          branchId: localStorage.getItem('branchId') || '',
+          address,
         })
         customerData = r?.data?.data
       }
@@ -486,16 +471,25 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         reasonForVisit: bookingDetails.reasonforVisit === 'Others' ? otherReason : bookingDetails.reasonforVisit,
         listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
       })
-      showCustomToast('Booking submitted successfully!')
+
+      // ✅ Correct order: close → reset → toast (toast shows on parent page)
+      onClose()
       handleFullReset()
-      setTimeout(() => navigate('/dashboard'), 1000)
+      showCustomToast('Booking submitted successfully!', 'success')
+
     } catch (err) {
-      console.error(err); showCustomToast('Failed to submit booking.', 'error')
-    } finally { setSaveLoading(false) }
+      console.error(err)
+      showCustomToast('Failed to submit booking.', 'error')
+    } finally {
+      setSaveLoading(false)
+    }
   }
 
   const handleFollowUpSubmit = async () => {
-    if (!selectedBooking) { showCustomToast('Please select a booking!', 'error'); return }
+    if (!selectedBooking) {
+      showCustomToast('Please select a booking!', 'error')
+      return
+    }
     try {
       setSaveLoading(true)
       await followUPBooking({
@@ -506,12 +500,18 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         partImage: markedImage, theraphyAnswers: theraphyQuestions, parts: part,
         listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
       })
-      showCustomToast('Follow-up booking submitted successfully!', 'success')
+
+      // ✅ Correct order: close → reset → toast
+      onClose()
       handleFullReset()
-      setTimeout(() => navigate('/dashboard'), 1000)
+      showCustomToast('Follow-up booking submitted successfully!', 'success')
+
     } catch (err) {
-      console.error(err); showCustomToast('Failed to submit follow-up booking', 'error')
-    } finally { setSaveLoading(false) }
+      console.error(err)
+      showCustomToast('Failed to submit follow-up booking.', 'error')
+    } finally {
+      setSaveLoading(false)
+    }
   }
 
   const goNext = () => setCurrentTab((t) => Math.min(t + 1, visibleTabs.length - 1))
@@ -520,15 +520,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const { minDate, maxDate } = React.useMemo(() => {
     const today = new Date()
     const maxDate = today.toISOString().split('T')[0]
-
     const min = new Date()
     min.setFullYear(today.getFullYear() - 120)
-
-    return {
-      minDate: min.toISOString().split('T')[0],
-      maxDate,
-    }
+    return { minDate: min.toISOString().split('T')[0], maxDate }
   }, [])
+
   // ─────────────────────────────────────────────────────────────────────────
   // TAB CONTENT
   // ─────────────────────────────────────────────────────────────────────────
@@ -542,8 +538,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         <CRow className="mb-3">
           <CCol md={6}>
             <CFormCheck type="radio" label="First Visit" name="visitTypeRadio" value="first"
-              checked={visitType === 'first'}
-              style={{ fontSize: FS }}
+              checked={visitType === 'first'} style={{ fontSize: FS }}
               onChange={() => {
                 setVisitType('first')
                 setBookingDetails((p) => ({ ...p, visitType: 'first' }))
@@ -552,8 +547,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           </CCol>
           <CCol md={6}>
             <CFormCheck type="radio" label="Follow-Up" name="visitTypeRadio" value="followup"
-              checked={visitType === 'followup'}
-              style={{ fontSize: FS }}
+              checked={visitType === 'followup'} style={{ fontSize: FS }}
               onChange={() => {
                 setVisitType('followup')
                 setBookingDetails((p) => ({ ...p, visitType: 'followup' }))
@@ -561,7 +555,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               }} />
           </CCol>
         </CRow>
-        <BookingSearch visitType={visitType} fetchSlots={fetchSlots} onSelectBooking={(b) => setSelectedBooking(b)} />
+        <BookingSearch
+          visitType={visitType}
+          fetchSlots={fetchSlots}
+          onSelectBooking={(b) => setSelectedBooking(b)}
+        />
       </div>
     )
 
@@ -586,17 +584,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             </CCol>
             <CCol md={4}>
               <CFormLabel style={labelStyle}>Date of Birth <span className="text-danger">*</span></CFormLabel>
-              <CFormInput
-                type="date"
-                name="dob"
-                value={bookingDetails.dob || ''}
-                onChange={handleBookingChange}
-                min={minDate}
-                max={maxDate}
+              <CFormInput type="date" name="dob" value={bookingDetails.dob || ''}
+                onChange={handleBookingChange} min={minDate} max={maxDate}
                 onInvalid={(e) => e.target.setCustomValidity('Enter valid DOB (max age 120)')}
                 onInput={(e) => e.target.setCustomValidity('')}
-                style={inputStyle(errors.dob)}
-              />
+                style={inputStyle(errors.dob)} />
               <ErrMsg msg={errors.dob} />
             </CCol>
             <CCol md={2}>
@@ -636,7 +628,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                       handleNestedChange('address', 'postalCode', e.target.value)
                       if (e.target.value.length === 6)
                         fetch(`https://api.postalpincode.in/pincode/${e.target.value}`)
-                          .then((r) => r.json()).then((d) => { if (d[0].Status === 'Success') setPostOffices(d[0].PostOffice) })
+                          .then((r) => r.json())
+                          .then((d) => { if (d[0].Status === 'Success') setPostOffices(d[0].PostOffice) })
                       else setPostOffices([])
                     }} />
                   <ErrMsg msg={errors.address?.postalCode} />
@@ -648,10 +641,15 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                       onChange={(e) => {
                         const po = postOffices.find((p) => p.Name === e.target.value)
                         setSelectedPO(po)
-                        if (po) { handleNestedChange('address', 'city', po.Block || ''); handleNestedChange('address', 'state', po.State || '') }
+                        if (po) {
+                          handleNestedChange('address', 'city', po.Block || '')
+                          handleNestedChange('address', 'state', po.State || '')
+                        }
                       }}>
                       <option value="">-- Select Post Office --</option>
-                      {postOffices.map((po) => <option key={po.Name} value={po.Name}>{po.Name.toUpperCase()}</option>)}
+                      {postOffices.map((po) => (
+                        <option key={po.Name} value={po.Name}>{po.Name.toUpperCase()}</option>
+                      ))}
                     </CFormSelect>
                   </CCol>
                 )}
@@ -669,7 +667,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         ) : (
           <div className="p-3" style={{ background: '#f9f9f9', borderRadius: '8px', border: '1px solid #eee' }}>
             <p style={{ margin: 0, fontWeight: '600', fontSize: FS, color: 'var(--color-bgcolor)' }}>{selectedBooking.name}</p>
-            <p style={{ margin: 0, fontSize: FS, color: '#555' }}>{selectedBooking.mobileNumber} · {selectedBooking.gender} · Age {selectedBooking.age}</p>
+            <p style={{ margin: 0, fontSize: FS, color: '#555' }}>
+              {selectedBooking.mobileNumber} · {selectedBooking.gender} · Age {selectedBooking.age}
+            </p>
             <p style={{ margin: 0, fontSize: '12px', color: '#888' }}>{selectedBooking.patientAddress}</p>
           </div>
         )}
@@ -686,7 +686,10 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             <CFormSelect name="branchId" value={bookingDetails.branchId || ''} style={selectStyle(errors.branchname)}
               onChange={(e) => {
                 const b = branches.find((br) => br.branchId === e.target.value)
-                setBookingDetails((p) => ({ ...p, branchId: b?.branchId || '', branchname: b?.branchName || '', doctorId: '', doctorName: '', consultationFee: 0, servicetime: '', serviceDate: '' }))
+                setBookingDetails((p) => ({
+                  ...p, branchId: b?.branchId || '', branchname: b?.branchName || '',
+                  doctorId: '', doctorName: '', consultationFee: 0, servicetime: '', serviceDate: '',
+                }))
                 setSlotsForSelectedDate([]); setSelectedDate(''); setSelectedSlots([])
                 if (e.target.value) clearErr('branchname')
               }}>
@@ -703,9 +706,13 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               onChange={async (e) => {
                 const id = e.target.value
                 const doc = doctors.find((d) => d.doctorId === id)
-                if (!doc) { setBookingDetails((p) => ({ ...p, doctorId: '', doctorName: '', doctorDeviceId: '', consultationFee: 0 })); return }
+                if (!doc) {
+                  setBookingDetails((p) => ({ ...p, doctorId: '', doctorName: '', doctorDeviceId: '', consultationFee: 0 }))
+                  return
+                }
                 setBookingDetails((p) => ({
-                  ...p, doctorId: doc.doctorId, doctorName: doc.doctorName, doctorDeviceId: doc.doctorDeviceId,
+                  ...p, doctorId: doc.doctorId, doctorName: doc.doctorName,
+                  doctorDeviceId: doc.doctorDeviceId,
                   consultationFee: p.foc === 'FOC' ? 0 : doc.doctorFees.inClinicFee || 0,
                 }))
                 setOriginalConsultationFee(doc.doctorFees.inClinicFee || 0)
@@ -715,7 +722,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               }}>
               <option value="">Select Doctor</option>
               {doctors.map((d) => (
-                <option key={d.doctorId} value={d.doctorId} disabled={!d.doctorAvailabilityStatus}
+                <option key={d.doctorId} value={d.doctorId}
+                  disabled={!d.doctorAvailabilityStatus}
                   style={{ color: d.doctorAvailabilityStatus ? 'inherit' : '#aaa', fontSize: FS }}>
                   {d.doctorName}{!d.doctorAvailabilityStatus ? ' (Not Available)' : ''}
                 </option>
@@ -758,7 +766,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         <div className="d-flex gap-2 flex-wrap mb-3">
           {(slotsForSelectedDate || [])
             .map((s) => s.day || s.date)
-            .filter((d) => { const t = new Date(); t.setHours(0, 0, 0, 0); const dt = new Date(d); dt.setHours(0, 0, 0, 0); return dt >= t })
+            .filter((d) => {
+              const t = new Date(); t.setHours(0, 0, 0, 0)
+              const dt = new Date(d); dt.setHours(0, 0, 0, 0)
+              return dt >= t
+            })
             .sort((a, b) => new Date(a) - new Date(b))
             .map((dateValue, idx) => {
               const dateObj = new Date(dateValue)
@@ -773,10 +785,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                   }}
                   style={{
                     backgroundColor: isSelected ? 'var(--color-bgcolor)' : 'white',
-                    color: isSelected ? '#fff' : 'var(--color-bgcolor)',       // ✅ blue when unselected
+                    color: isSelected ? '#fff' : 'var(--color-bgcolor)',
                     border: '1px solid var(--color-bgcolor)',
-                    minWidth: '80px',
-                    fontSize: FS,
+                    minWidth: '80px', fontSize: FS,
                   }}>
                   <div style={{ fontSize: FS, fontWeight: '600', color: isSelected ? '#fff' : 'var(--color-bgcolor)' }}>
                     {dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -792,41 +803,44 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         <CCard className="mb-3">
           <CCardBody>
             {slotsToShow.length === 0
-              ? <p className="text-center" style={{ color: 'var(--color-bgcolor)', fontSize: FS, margin: 0 }}>No available slots for this date</p>
+              ? <p className="text-center" style={{ color: 'var(--color-bgcolor)', fontSize: FS, margin: 0 }}>
+                  No available slots for this date
+                </p>
               : <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: '6px' }}>
-                  {visibleSlots.map((slotObj, i) => {
-                    const isBooked = slotObj.slotbooked
-                    const isSel = selectedSlots.includes(slotObj.slot)
-                    return (
-                      <div key={i}
-                        onClick={() => {
-                          if (isBooked) return
-                          setSelectedSlots([slotObj.slot])
-                          setBookingDetails((p) => ({ ...p, servicetime: slotObj.slot }))
-                          clearErr('slot')
-                        }}
-                        style={{
-                          padding: '6px 4px', textAlign: 'center', fontSize: '12px',
-                          border: `1px solid ${isBooked ? '#f8d7da' : isSel ? 'var(--color-bgcolor)' : '#ddd'}`,
-                          borderRadius: '5px', cursor: isBooked ? 'not-allowed' : 'pointer',
-                          backgroundColor: isBooked ? '#f8d7da' : isSel ? 'var(--color-bgcolor)' : '#fff',
-                          color: isBooked ? '#842029' : isSel ? '#fff' : 'var(--color-bgcolor)',
-                          fontWeight: isSel ? '600' : '400',
-                        }}>
-                        {slotObj.slot}
-                      </div>
-                    )
-                  })}
-                </div>
-                {sortedSlots.length > 12 && (
-                  <div className="text-center mt-2">
-                    <CButton color="secondary" size="sm" style={{ fontSize: FS }} onClick={() => setShowAllSlots(!showAllSlots)}>
-                      {showAllSlots ? 'Show Less' : 'Show More'}
-                    </CButton>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: '6px' }}>
+                    {visibleSlots.map((slotObj, i) => {
+                      const isBooked = slotObj.slotbooked
+                      const isSel = selectedSlots.includes(slotObj.slot)
+                      return (
+                        <div key={i}
+                          onClick={() => {
+                            if (isBooked) return
+                            setSelectedSlots([slotObj.slot])
+                            setBookingDetails((p) => ({ ...p, servicetime: slotObj.slot }))
+                            clearErr('slot')
+                          }}
+                          style={{
+                            padding: '6px 4px', textAlign: 'center', fontSize: '12px',
+                            border: `1px solid ${isBooked ? '#f8d7da' : isSel ? 'var(--color-bgcolor)' : '#ddd'}`,
+                            borderRadius: '5px', cursor: isBooked ? 'not-allowed' : 'pointer',
+                            backgroundColor: isBooked ? '#f8d7da' : isSel ? 'var(--color-bgcolor)' : '#fff',
+                            color: isBooked ? '#842029' : isSel ? '#fff' : 'var(--color-bgcolor)',
+                            fontWeight: isSel ? '600' : '400',
+                          }}>
+                          {slotObj.slot}
+                        </div>
+                      )
+                    })}
                   </div>
-                )}
-              </>
+                  {sortedSlots.length > 12 && (
+                    <div className="text-center mt-2">
+                      <CButton color="secondary" size="sm" style={{ fontSize: FS }}
+                        onClick={() => setShowAllSlots(!showAllSlots)}>
+                        {showAllSlots ? 'Show Less' : 'Show More'}
+                      </CButton>
+                    </div>
+                  )}
+                </>
             }
           </CCardBody>
         </CCard>
@@ -872,7 +886,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
           {['previousInjuries', 'currentMedications', 'allergies', 'occupation'].map((field) => (
             <CCol md={4} key={field}>
-              <CFormLabel style={labelStyle} className="text-capitalize">{field.replace(/([A-Z])/g, ' $1')}</CFormLabel>
+              <CFormLabel style={labelStyle} className="text-capitalize">
+                {field.replace(/([A-Z])/g, ' $1')}
+              </CFormLabel>
               <CFormInput name={field} value={bookingDetails[field] || ''} onChange={handleBookingChange} style={inputStyle(false)} />
             </CCol>
           ))}
@@ -904,7 +920,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               {activityOptions.map((level) => (
                 <div key={level} className="d-flex align-items-center gap-1">
                   <input type="checkbox" value={level} checked={activityLevels.includes(level)}
-                    onChange={() => setActivityLevels((p) => p.includes(level) ? p.filter((l) => l !== level) : [...p, level])} />
+                    onChange={() => setActivityLevels((p) =>
+                      p.includes(level) ? p.filter((l) => l !== level) : [...p, level]
+                    )} />
                   <label style={{ ...labelStyle, marginBottom: 0 }}>{level}</label>
                 </div>
               ))}
@@ -914,11 +932,13 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           <CCol md={12}><p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Insurance Info</p></CCol>
           <CCol md={6}>
             <CFormLabel style={labelStyle}>Insurance Provider</CFormLabel>
-            <CFormInput name="insuranceProvider" value={bookingDetails.insuranceProvider || ''} onChange={handleBookingChange} style={inputStyle(false)} />
+            <CFormInput name="insuranceProvider" value={bookingDetails.insuranceProvider || ''}
+              onChange={handleBookingChange} style={inputStyle(false)} />
           </CCol>
           <CCol md={6}>
             <CFormLabel style={labelStyle}>Policy Number</CFormLabel>
-            <CFormInput name="policyNumber" value={bookingDetails.policyNumber || ''} onChange={handleBookingChange} style={inputStyle(false)} />
+            <CFormInput name="policyNumber" value={bookingDetails.policyNumber || ''}
+              onChange={handleBookingChange} style={inputStyle(false)} />
           </CCol>
 
           <CCol md={6}>
@@ -932,8 +952,13 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 const processed = await Promise.all(newFiles.map(async (file) => {
                   let f = file
                   if (file.size > 250 * 1024 && file.type.startsWith('image/'))
-                    try { f = await imageCompression(file, { maxSizeMB: 0.25, maxWidthOrHeight: 1920, useWebWorker: true }) } catch { }
-                  const base64 = await new Promise((res, rej) => { const r = new FileReader(); r.readAsDataURL(f); r.onload = () => res(r.result); r.onerror = rej })
+                    try {
+                      f = await imageCompression(file, { maxSizeMB: 0.25, maxWidthOrHeight: 1920, useWebWorker: true })
+                    } catch { }
+                  const base64 = await new Promise((res, rej) => {
+                    const r = new FileReader(); r.readAsDataURL(f)
+                    r.onload = () => res(r.result); r.onerror = rej
+                  })
                   return { name: file.name, base64 }
                 }))
                 setBookingDetails((p) => ({ ...p, attachments: [...(p.attachments || []), ...processed] }))
@@ -941,8 +966,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             {bookingDetails.attachments?.map((file, i) => (
               <div key={i} className="d-flex align-items-center mt-1 gap-2" style={{ fontSize: FS }}>
                 <span>{file.name}</span>
-                <button type="button" style={{ color: 'red', border: 'none', background: 'transparent', cursor: 'pointer', lineHeight: 1 }}
-                  onClick={() => setBookingDetails((p) => ({ ...p, attachments: p.attachments.filter((_, idx) => idx !== i) }))}>×</button>
+                <button type="button"
+                  style={{ color: 'red', border: 'none', background: 'transparent', cursor: 'pointer', lineHeight: 1 }}
+                  onClick={() => setBookingDetails((p) => ({
+                    ...p, attachments: p.attachments.filter((_, idx) => idx !== i),
+                  }))}>×</button>
               </div>
             ))}
           </CCol>
@@ -970,12 +998,22 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           <CCol md={6}>
             <CFormLabel style={labelStyle}>Referred By</CFormLabel>
             <Select styles={rsStyles}
-              value={referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) || (bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)}
-              getOptionLabel={(o) => o.referralId === 'OTHER' ? 'Others' : `${o.fullName} - (${o.address?.street || ''}, ${o.address?.city || ''})`}
+              value={
+                referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) ||
+                (bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)
+              }
+              getOptionLabel={(o) => o.referralId === 'OTHER'
+                ? 'Others'
+                : `${o.fullName} - (${o.address?.street || ''}, ${o.address?.city || ''})`
+              }
               getOptionValue={(o) => o.referralId}
               onChange={(sel) => {
                 const v = sel ? sel.referralId : ''
-                setBookingDetails((p) => ({ ...p, doctorRefCode: v, referredByType: v === 'OTHER' ? '' : p.referredByType, referredByName: v === 'OTHER' ? '' : p.referredByName }))
+                setBookingDetails((p) => ({
+                  ...p, doctorRefCode: v,
+                  referredByType: v === 'OTHER' ? '' : p.referredByType,
+                  referredByName: v === 'OTHER' ? '' : p.referredByName,
+                }))
               }}
               options={[...referDoctor, { referralId: 'OTHER', fullName: 'Others' }]}
               placeholder="Select or search..." isSearchable />
@@ -987,7 +1025,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 <CFormSelect value={bookingDetails.referredByType || ''} style={selectStyle(false)}
                   onChange={(e) => setBookingDetails((p) => ({ ...p, referredByType: e.target.value }))}>
                   <option value="">Select Type</option>
-                  {['Friend', 'Family', 'Facebook', 'Instagram', 'Google', 'Advertisement', 'Other'].map((t) => <option key={t}>{t}</option>)}
+                  {['Friend', 'Family', 'Facebook', 'Instagram', 'Google', 'Advertisement', 'Other'].map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
                 </CFormSelect>
               </CCol>
               <CCol md={6}>
@@ -1045,7 +1085,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
       <COffcanvasBody style={{ display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
 
-        {/* Tab bar */}
+        {/* ── Tab bar ────────────────────────────────────────────────── */}
         <div style={{ borderBottom: '1px solid #eee', backgroundColor: '#fafafa', padding: '0 16px', flexShrink: 0 }}>
           <div style={{ display: 'flex', overflowX: 'auto' }}>
             {visibleTabs.map((tab, idx) => {
@@ -1054,14 +1094,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               return (
                 <button key={tab.id} onClick={() => setCurrentTab(idx)}
                   style={{
-                    padding: '9px 12px',
-                    fontSize: FS,           /* ← same 13px token */
+                    padding: '9px 12px', fontSize: FS,
                     fontWeight: isActive ? '600' : '400',
                     border: 'none',
                     borderBottom: isActive ? '2px solid var(--color-bgcolor)' : '2px solid transparent',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
+                    background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap',
                     color: isActive ? 'var(--color-bgcolor)' : isComplete ? '#555' : '#aaa',
                     display: 'flex', alignItems: 'center', gap: '4px',
                   }}>
@@ -1076,16 +1113,19 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           </div>
           {/* Progress bar */}
           <div style={{ height: '3px', background: '#eee', marginTop: '-2px' }}>
-            <div style={{ height: '100%', width: `${progressPct}%`, background: 'var(--color-bgcolor)', transition: 'width 0.3s ease' }} />
+            <div style={{
+              height: '100%', width: `${progressPct}%`,
+              background: 'var(--color-bgcolor)', transition: 'width 0.3s ease',
+            }} />
           </div>
         </div>
 
-        {/* Content */}
+        {/* ── Content ────────────────────────────────────────────────── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
           {renderTab()}
         </div>
 
-        {/* Footer */}
+        {/* ── Footer ─────────────────────────────────────────────────── */}
         <div style={{
           borderTop: '1px solid #eee', padding: '10px 16px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -1103,10 +1143,13 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               Cancel
             </CButton>
 
-            {/* Reset — ONLY clears current tab, does NOT change tab */}
+            {/* Reset current tab */}
             <CButton size="sm"
               title={`Reset "${visibleTabs[currentTab]?.label}" fields only`}
-              style={{ fontSize: FS, padding: '4px 14px', backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}
+              style={{
+                fontSize: FS, padding: '4px 14px',
+                backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107',
+              }}
               onClick={handleTabReset}>
               🔄 Reset
             </CButton>
@@ -1114,7 +1157,10 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             {/* Back */}
             {currentTab > 0 && (
               <CButton size="sm"
-                style={{ fontSize: FS, padding: '4px 14px', backgroundColor: '#f0f0f0', color: '#555', border: '1px solid #ccc' }}
+                style={{
+                  fontSize: FS, padding: '4px 14px',
+                  backgroundColor: '#f0f0f0', color: '#555', border: '1px solid #ccc',
+                }}
                 onClick={goPrev}>
                 ← Back
               </CButton>
@@ -1123,13 +1169,19 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             {/* Next / Submit */}
             {currentTab < visibleTabs.length - 1 ? (
               <CButton size="sm"
-                style={{ fontSize: FS, padding: '4px 14px', backgroundColor: 'var(--color-bgcolor)', color: '#fff', border: 'none' }}
+                style={{
+                  fontSize: FS, padding: '4px 14px',
+                  backgroundColor: 'var(--color-bgcolor)', color: '#fff', border: 'none',
+                }}
                 onClick={goNext}>
                 Next →
               </CButton>
             ) : (
               <CButton size="sm" disabled={saveloading}
-                style={{ fontSize: FS, padding: '4px 14px', backgroundColor: 'var(--color-bgcolor)', color: '#fff', border: 'none' }}
+                style={{
+                  fontSize: FS, padding: '4px 14px',
+                  backgroundColor: 'var(--color-bgcolor)', color: '#fff', border: 'none',
+                }}
                 onClick={visitType === 'followup' ? handleFollowUpSubmit : handleSubmit}>
                 {saveloading ? 'Submitting…' : '✓ Submit'}
               </CButton>
