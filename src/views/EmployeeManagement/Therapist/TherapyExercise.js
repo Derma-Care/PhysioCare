@@ -34,6 +34,7 @@ import LoadingIndicator from "../../../Utils/loader"
 import { showCustomToast } from "../../../Utils/Toaster"
 import { useHospital } from "../../Usecontext/HospitalContext"
 import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext"
+import Pagination from "../../../Utils/Pagination"
 
 const emptyExercise = {
   name: "",
@@ -106,6 +107,10 @@ export default function ExerciseTable() {
   const [saveConfirmVisible, setSaveConfirmVisible] = useState(false)
   const [isSaveConfirming, setIsSaveConfirming] = useState(false)
 
+  // ── Pagination state ──────────────────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+
   const { searchQuery } = useGlobalSearch()
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
@@ -128,6 +133,7 @@ export default function ExerciseTable() {
       setLoading(true)
       const res = await getTherapyExercise(clinicId, branchId)
       setExercises(res.data || [])
+      setCurrentPage(1)
     } catch {
       showCustomToast("Load failed", "error")
     } finally {
@@ -137,7 +143,10 @@ export default function ExerciseTable() {
 
   useEffect(() => { loadExercises() }, [])
 
-  // ── FILTER ───────────────────────────────────────────
+  // Reset to page 1 when search changes
+  useEffect(() => { setCurrentPage(1) }, [searchQuery])
+
+  // ── FILTER + PAGINATION ──────────────────────────────
   const filteredExercises = exercises.filter((item) => {
     const search = searchQuery.toLowerCase()
     if (!search) return true
@@ -151,6 +160,9 @@ export default function ExerciseTable() {
       (item.repetitions || "").toString().includes(search)
     )
   })
+
+  const totalPages  = Math.ceil(filteredExercises.length / rowsPerPage)
+  const displayData = filteredExercises.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
   // ── VALIDATION ───────────────────────────────────────
   const validate = () => {
@@ -324,9 +336,11 @@ export default function ExerciseTable() {
                 </CTableDataCell>
               </CTableRow>
             ) : (
-              filteredExercises.map((ex, i) => (
+              displayData.map((ex, i) => (
                 <CTableRow key={ex.therapyExercisesId || i} className="ex-tr">
-                  <CTableDataCell className="ex-td ex-td-num">{i + 1}</CTableDataCell>
+                  <CTableDataCell className="ex-td ex-td-num">
+                    {(currentPage - 1) * rowsPerPage + i + 1}
+                  </CTableDataCell>
                   <CTableDataCell className="ex-td">
                     <span className="ex-name">{ex.name}</span>
                   </CTableDataCell>
@@ -373,6 +387,17 @@ export default function ExerciseTable() {
           </CTableBody>
         </CTable>
       </div>
+
+      {/* ── PAGINATION ───────────────────────────────── */}
+      {filteredExercises.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={rowsPerPage}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => { setRowsPerPage(size); setCurrentPage(1) }}
+        />
+      )}
 
       {/* ── ADD / EDIT MODAL ─────────────────────────── */}
       <CModal
@@ -823,7 +848,7 @@ export default function ExerciseTable() {
         .ex-action-btn {
           width: 30px; height: 30px; border-radius: 7px; border: none;
           display: flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: filter 0.12s, transform 0.1s; flex-shrink: 0;
+          cursor: pointer; transition: filter 0.12px, transform 0.1s; flex-shrink: 0;
         }
         .ex-action-btn.view { background: #e6f1fb; color: #185fa5; }
         .ex-action-btn.edit { background: #eaf3de; color: #3b6d11; }

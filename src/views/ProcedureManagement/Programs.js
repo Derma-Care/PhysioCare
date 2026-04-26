@@ -35,6 +35,7 @@ import LoadingIndicator from "../../Utils/loader"
 import { showCustomToast } from "../../Utils/Toaster"
 import { useHospital } from "../Usecontext/HospitalContext"
 import { useGlobalSearch } from "../Usecontext/GlobalSearchContext"
+import Pagination from "../../Utils/Pagination"
 
 /** Strip null / undefined from any value — always returns a real array */
 const safeArray = (val) => (Array.isArray(val) ? val.filter(Boolean) : [])
@@ -45,14 +46,13 @@ const safeArray = (val) => (Array.isArray(val) ? val.filter(Boolean) : [])
  */
 const extractTherapies = (raw) => {
   if (!raw) return []
-  // Common field-name variants from the backend
   const keys = [
-    "therophyData",   // original code
-    "theraphyData",   // typo variant
-    "therapyData",    // clean variant
-    "therophy",       // list-level key
-    "therahy",        // another typo
-    "therapies",      // ideal name
+    "therophyData",
+    "theraphyData",
+    "therapyData",
+    "therophy",
+    "therahy",
+    "therapies",
     "Therapies",
   ]
   for (const key of keys) {
@@ -76,7 +76,11 @@ export default function Programs() {
   const [viewModal, setViewModal]                 = useState(false)
   const [viewLoading, setViewLoading]             = useState(false)
   const [viewError, setViewError]                 = useState(null)
-  const [viewData, setViewData]                   = useState(null)   // { programName, _therapies[] }
+  const [viewData, setViewData]                   = useState(null)
+
+  // ── Pagination state ──────────────────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   const { searchQuery } = useGlobalSearch()
   const { user }        = useHospital()
@@ -98,11 +102,15 @@ export default function Programs() {
     fetchTherapies()
   }, [])
 
+  // Reset to page 1 when search changes
+  useEffect(() => { setCurrentPage(1) }, [searchQuery])
+
   const fetchData = async () => {
     setLoading(true)
     try {
       const res = await getProgramService(clinicId, branchId)
       setList(safeArray(res?.data?.data))
+      setCurrentPage(1)
     } catch (error) {
       console.error("Error fetching programs:", error)
     } finally {
@@ -132,7 +140,6 @@ export default function Programs() {
     try {
       const res = await getProgramServicebyProgramId(id, clinicId, branchId)
 
-      // ── Unwrap: try every common wrapper shape ──
       const raw =
         res?.data?.data ??
         res?.data ??
@@ -141,7 +148,6 @@ export default function Programs() {
 
       if (!raw) throw new Error("No data returned from API")
 
-      // Log the raw response so you can see the real field names in the console
       console.log("VIEW RAW RESPONSE >>>", JSON.stringify(raw, null, 2))
 
       const therapies = extractTherapies(raw)
@@ -243,7 +249,7 @@ export default function Programs() {
     setErrors({})
   }
 
-  // ─── SEARCH FILTER ─────────────────────────────────────────────────────────
+  // ─── SEARCH FILTER + PAGINATION ────────────────────────────────────────────
   const filteredList = list.filter((item) => {
     if (!item) return false
     const search = (searchQuery || "").toLowerCase()
@@ -258,6 +264,9 @@ export default function Programs() {
         .includes(search)
     )
   })
+
+  const totalPages  = Math.ceil(filteredList.length / rowsPerPage)
+  const displayData = filteredList.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
   // ─── react-select styles ───────────────────────────────────────────────────
   const selectStyles = {
@@ -357,9 +366,11 @@ export default function Programs() {
                 </CTableDataCell>
               </CTableRow>
             ) : (
-              filteredList.map((item, index) => (
+              displayData.map((item, index) => (
                 <CTableRow key={item.id || index} className="pg-tr">
-                  <CTableDataCell className="pg-td pg-td-num">{index + 1}</CTableDataCell>
+                  <CTableDataCell className="pg-td pg-td-num">
+                    {(currentPage - 1) * rowsPerPage + index + 1}
+                  </CTableDataCell>
 
                   <CTableDataCell className="pg-td">
                     <span className="pg-program-name">{item.programName}</span>
@@ -409,6 +420,17 @@ export default function Programs() {
           </CTableBody>
         </CTable>
       </div>
+
+      {/* ── PAGINATION ───────────────────────────────────────────────────── */}
+      {filteredList.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={rowsPerPage}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => { setRowsPerPage(size); setCurrentPage(1) }}
+        />
+      )}
 
       {/* ── ADD / EDIT MODAL ─────────────────────────────────────────────── */}
       <CModal
@@ -542,7 +564,7 @@ export default function Programs() {
 
           {/* ── Data ── */}
           {!viewLoading && !viewError && viewData && (() => {
-            const therapies = viewData._therapies   // already a safe array
+            const therapies = viewData._therapies
             return (
               <>
                 {/* Summary cards */}

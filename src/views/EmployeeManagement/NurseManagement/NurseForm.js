@@ -13,6 +13,94 @@ import {
   Layers, Save,
 } from 'lucide-react'
 
+/* ─────────────────────────────────────────────────────────────
+   ⚠️  CRITICAL: These helpers MUST live outside PhysioForm.
+   Defining them inside causes React to treat them as NEW
+   component types on every render → inputs unmount/remount
+   on every keystroke → focus is lost after one character.
+───────────────────────────────────────────────────────────── */
+
+const ChipSection = ({ label, items = [], onAdd, isView }) => {
+  const [input, setInput] = useState('')
+
+  const handleAdd = () => {
+    const t = input.trim().toLowerCase()
+    if (t && !items.includes(t)) { onAdd([...items, t]); setInput('') }
+  }
+
+  const handleRemove = (i) => onAdd(items.filter((_, idx) => idx !== i))
+
+  return (
+    <div>
+      {!isView && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <input
+            type="text"
+            className="pf-input"
+            placeholder={`Add ${label}`}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd() } }}
+          />
+          <button type="button" className="pf-chip-add-btn" onClick={handleAdd}>Add</button>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {items.length
+          ? items.map((item, i) => (
+              <span key={i} className="pf-chip">
+                {item}
+                {!isView && (
+                  <button type="button" className="pf-chip-remove" onClick={() => handleRemove(i)}>
+                    <X size={11} />
+                  </button>
+                )}
+              </span>
+            ))
+          : <span style={{ color: '#9ca3af', fontSize: 12 }}>No {label} added</span>}
+      </div>
+    </div>
+  )
+}
+
+const InfoCard = ({ icon: Icon, title, children }) => (
+  <div className="pf-card">
+    <div className="pf-card-header">
+      <Icon size={14} className="pf-card-icon" />{title}
+    </div>
+    <div className="pf-card-body">{children}</div>
+  </div>
+)
+
+const InfoRow = ({ label, value }) => (
+  <div className="pf-info-row">
+    <span className="pf-info-label">{label}</span>
+    <span className="pf-info-value">{value || '—'}</span>
+  </div>
+)
+
+const FormSection = ({ icon: Icon, title, children }) => (
+  <div className="pf-section">
+    <div className="pf-section-title">
+      <Icon size={14} className="pf-section-icon" />{title}
+    </div>
+    <div className="pf-section-body">{children}</div>
+  </div>
+)
+
+const Field = ({ label, error, required, children }) => (
+  <div className="pf-field">
+    <label className="pf-label">
+      {label}{required && <span className="pf-required">*</span>}
+    </label>
+    {children}
+    {error && <span className="pf-error">{error}</span>}
+  </div>
+)
+
+/* ─────────────────────────────────────────────────────────────
+   Main Component
+───────────────────────────────────────────────────────────── */
 const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   const isView = viewMode
 
@@ -123,87 +211,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     onSave({ ...formData, availability: { days: selectedDays, startTime, endTime } })
   }
 
-  // ── Chip Section ──────────────────────────────────────────────────────────
-  const ChipSection = ({ label, items = [], onAdd }) => {
-    const [input, setInput] = useState('')
-    const handleAdd = () => {
-      const t = input.trim().toLowerCase()
-      if (t && !items.includes(t)) { onAdd([...items, t]); setInput('') }
-    }
-    const handleRemove = (i) => onAdd(items.filter((_, idx) => idx !== i))
-    return (
-      <div>
-        {!isView && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input
-              type="text"
-              className="pf-input"
-              placeholder={`Add ${label}`}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd() } }}
-            />
-            <button type="button" className="pf-chip-add-btn" onClick={handleAdd}>Add</button>
-          </div>
-        )}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {items.length
-            ? items.map((item, i) => (
-                <span key={i} className="pf-chip">
-                  {item}
-                  {!isView && (
-                    <button type="button" className="pf-chip-remove" onClick={() => handleRemove(i)}>
-                      <X size={11} />
-                    </button>
-                  )}
-                </span>
-              ))
-            : <span style={{ color: '#9ca3af', fontSize: 12 }}>No {label} added</span>}
-        </div>
-      </div>
-    )
-  }
-
-  // ── View helpers ──────────────────────────────────────────────────────────
-  const InfoCard = ({ icon: Icon, title, children }) => (
-    <div className="pf-card">
-      <div className="pf-card-header">
-        <Icon size={14} className="pf-card-icon" />{title}
-      </div>
-      <div className="pf-card-body">{children}</div>
-    </div>
-  )
-
-  const InfoRow = ({ label, value }) => (
-    <div className="pf-info-row">
-      <span className="pf-info-label">{label}</span>
-      <span className="pf-info-value">{value || '—'}</span>
-    </div>
-  )
-
-  // ── Edit helpers ──────────────────────────────────────────────────────────
-  const FormSection = ({ icon: Icon, title, children }) => (
-    <div className="pf-section">
-      <div className="pf-section-title">
-        <Icon size={14} className="pf-section-icon" />{title}
-      </div>
-      <div className="pf-section-body">{children}</div>
-    </div>
-  )
-
-  const Field = ({ label, error, required, children }) => (
-    <div className="pf-field">
-      <label className="pf-label">
-        {label}{required && <span className="pf-required">*</span>}
-      </label>
-      {children}
-      {error && <span className="pf-error">{error}</span>}
-    </div>
-  )
-
   // ── react-select shared props ─────────────────────────────────────────────
-  // KEY FIX: menuPortalTarget + menuPosition="fixed" renders the dropdown
-  // outside the clipping parent (overflow:hidden card / modal scroll container)
   const selectPortalProps = {
     menuPortalTarget: document.body,
     menuPosition: 'fixed',
@@ -258,7 +266,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         {/* ═══════════════ VIEW MODE ═══════════════ */}
         {isView ? (
           <>
-            {/* Profile header */}
             <div className="pf-profile-header">
               <img
                 src={
@@ -525,24 +532,37 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
               <div className="pf-row">
                 <div className="pf-col-full">
                   <Field label="Treatment Types" required error={errors.treatmentTypes}>
-                    <ChipSection label="Treatment Type" items={formData.treatmentTypes}
-                      onAdd={(val) => handleChange('treatmentTypes', val)} />
+                    {/* Pass isView as a prop — ChipSection is now OUTSIDE this component */}
+                    <ChipSection
+                      label="Treatment Type"
+                      items={formData.treatmentTypes}
+                      onAdd={(val) => handleChange('treatmentTypes', val)}
+                      isView={isView}
+                    />
                   </Field>
                 </div>
               </div>
               <div className="pf-row">
                 <div className="pf-col-full">
                   <Field label="Area of Expertise" required error={errors.expertiseAreas}>
-                    <ChipSection label="Area of Expertise" items={formData.expertiseAreas}
-                      onAdd={(val) => handleChange('expertiseAreas', val)} />
+                    <ChipSection
+                      label="Area of Expertise"
+                      items={formData.expertiseAreas}
+                      onAdd={(val) => handleChange('expertiseAreas', val)}
+                      isView={isView}
+                    />
                   </Field>
                 </div>
               </div>
               <div className="pf-row">
                 <div className="pf-col-full">
                   <Field label="Languages" required error={errors.languages}>
-                    <ChipSection label="Languages" items={formData.languages}
-                      onAdd={(val) => handleChange('languages', val)} />
+                    <ChipSection
+                      label="Languages"
+                      items={formData.languages}
+                      onAdd={(val) => handleChange('languages', val)}
+                      isView={isView}
+                    />
                   </Field>
                 </div>
               </div>
@@ -589,7 +609,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
 
       {/* ── Styles ── */}
       <style>{`
-        /* ── Profile header ── */
         .pf-profile-header {
           display: flex; align-items: center; gap: 16px;
           padding: 16px; background: #f0f5fb; border-radius: 10px; margin-bottom: 14px;
@@ -605,8 +624,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           font-size: 11px; font-weight: 600; padding: 2px 10px;
           border-radius: 20px; margin-top: 2px;
         }
-
-        /* ── View cards (blue header bars) ── */
         .pf-card { border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
         .pf-card-header {
           display: flex; align-items: center; gap: 8px;
@@ -615,7 +632,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         }
         .pf-card-icon { color: #b5d4f4; }
         .pf-card-body  { padding: 14px; background: #fff; }
-
         .pf-inner-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 24px; }
         .pf-info-row   { display: flex; flex-direction: column; gap: 2px; }
         .pf-info-label {
@@ -623,8 +639,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           text-transform: uppercase; letter-spacing: 0.3px;
         }
         .pf-info-value { font-size: 13px; color: #374151; font-weight: 500; }
-
-        /* ── Edit sections (blue header bars) ── */
         .pf-section { margin-bottom: 18px; border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; }
         .pf-section-title {
           display: flex; align-items: center; gap: 8px;
@@ -633,14 +647,10 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         }
         .pf-section-icon { color: #b5d4f4; }
         .pf-section-body { padding: 14px; }
-
-        /* ── Layout helpers ── */
         .pf-row      { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 0; }
         .pf-col-third { flex: 1 1 calc(33.333% - 12px); min-width: 150px; }
         .pf-col-half  { flex: 1 1 calc(50% - 12px);     min-width: 140px; }
         .pf-col-full  { flex: 1 1 100%; }
-
-        /* ── Field ── */
         .pf-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
         .pf-label {
           font-size: 11px; font-weight: 600; color: #374151;
@@ -648,8 +658,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         }
         .pf-required { color: #e24b4a; font-size: 11px; }
         .pf-error    { font-size: 11px; color: #e24b4a; }
-
-        /* ── Inputs ── */
         .pf-input {
           width: 100%; padding: 7px 10px; font-size: 12.5px; color: #374151;
           background: #fff; border: 0.5px solid #d0dce9; border-radius: 7px;
@@ -664,8 +672,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           background: #f0f5fb !important; color: #9ca3af !important; cursor: not-allowed;
         }
         .pf-textarea { resize: vertical; min-height: 70px; }
-
-        /* ── Chips ── */
         .pf-chip {
           display: inline-flex; align-items: center; gap: 5px;
           background: #e6f1fb; color: #0c447c;
@@ -685,8 +691,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           white-space: nowrap; transition: filter 0.15s;
         }
         .pf-chip-add-btn:hover { filter: brightness(0.9); }
-
-        /* ── Footer buttons ── */
         .pf-btn-cancel {
           display: inline-flex; align-items: center; gap: 5px;
           background: #fff; color: #374151; border: 0.5px solid #d0dce9;
@@ -695,7 +699,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           transition: background 0.15s;
         }
         .pf-btn-cancel:hover { background: #f3f4f6; }
-
         .pf-btn-save {
           display: inline-flex; align-items: center; gap: 5px;
           background: #185fa5; color: #fff; border: none;
@@ -705,7 +708,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         }
         .pf-btn-save:hover   { filter: brightness(0.9); }
         .pf-btn-save:disabled { opacity: 0.65; cursor: not-allowed; }
-
         @media (max-width: 600px) {
           .pf-col-third, .pf-col-half { flex: 1 1 100%; }
           .pf-inner-grid { grid-template-columns: 1fr; }
