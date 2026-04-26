@@ -1127,7 +1127,7 @@ const DoctorDetailsPage = () => {
             <ConfirmationModal
               isVisible={showModal}
               title="Delete Doctor"
-              message="Are you sure you want to delete this doctor? This action cannot be undone."
+              message="This doctor has active appointments. Deleting will impact patient schedules."
               confirmText={delloading ? <><span className="spinner-border spinner-border-sm me-1" style={{ width: '12px', height: '12px' }} />Deleting...</> : 'Yes, Delete'}
               cancelText="Cancel"
               confirmColor="danger"

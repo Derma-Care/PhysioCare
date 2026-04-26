@@ -6,16 +6,13 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
-  CModalFooter,
 } from '@coreui/react'
-import { Edit2, Eye, Trash2, UserCog, AlertTriangle } from 'lucide-react'
+import { Edit2, Eye, Trash2, UserCog } from 'lucide-react'
 import PhysioForm from './NurseForm'
 import { getAllPhysios, addPhysio, updatePhysio, deletePhysio } from './NurseAPI'
 import { useHospital } from '../../Usecontext/HospitalContext'
+import ConfirmationModal from '../../../components/ConfirmationModal'
+
 
 const PhysioManagement = () => {
   const [physios, setPhysios] = useState([])
@@ -24,6 +21,7 @@ const PhysioManagement = () => {
   const [viewMode, setViewMode] = useState(false)
   const [deleteModalVisible, setDeleteModalVisible] = useState(false)
   const [physioToDelete, setPhysioToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const hospitalId = localStorage.getItem('HospitalId')
   const branchId = localStorage.getItem('branchId')
@@ -61,12 +59,15 @@ const PhysioManagement = () => {
 
   const confirmDelete = async () => {
     try {
+      setIsDeleting(true)
       await deletePhysio(physioToDelete.therapistId)
       setDeleteModalVisible(false)
       setPhysioToDelete(null)
       fetchPhysios()
     } catch (error) {
       console.error('Delete failed:', error)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -87,7 +88,10 @@ const PhysioManagement = () => {
         </div>
 
         {can('Therapist', 'create') && (
-          <button className="pm-add-btn" onClick={() => { setSelectedPhysio(null); setModalVisible(true) }}>
+          <button
+            className="pm-add-btn"
+            onClick={() => { setSelectedPhysio(null); setModalVisible(true) }}
+          >
             + Add Therapist
           </button>
         )}
@@ -151,7 +155,11 @@ const PhysioManagement = () => {
                         <button
                           className="pm-action-btn pm-view-btn"
                           title="View"
-                          onClick={() => { setSelectedPhysio(p); setViewMode(true); setModalVisible(true) }}
+                          onClick={() => {
+                            setSelectedPhysio(p)
+                            setViewMode(true)
+                            setModalVisible(true)
+                          }}
                         >
                           <Eye size={14} />
                         </button>
@@ -160,7 +168,11 @@ const PhysioManagement = () => {
                         <button
                           className="pm-action-btn pm-edit-btn"
                           title="Edit"
-                          onClick={() => { setSelectedPhysio(p); setViewMode(false); setModalVisible(true) }}
+                          onClick={() => {
+                            setSelectedPhysio(p)
+                            setViewMode(false)
+                            setModalVisible(true)
+                          }}
                         >
                           <Edit2 size={14} />
                         </button>
@@ -169,7 +181,10 @@ const PhysioManagement = () => {
                         <button
                           className="pm-action-btn pm-delete-btn"
                           title="Delete"
-                          onClick={() => { setPhysioToDelete(p); setDeleteModalVisible(true) }}
+                          onClick={() => {
+                            setPhysioToDelete(p)
+                            setDeleteModalVisible(true)
+                          }}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -192,36 +207,28 @@ const PhysioManagement = () => {
         viewMode={viewMode}
       />
 
-      {/* ── Delete Confirm Modal ── */}
-      <CModal visible={deleteModalVisible} onClose={() => setDeleteModalVisible(false)} alignment="center">
-        <CModalHeader style={{ borderBottom: '0.5px solid #d0dce9', padding: '16px 20px' }}>
-          <CModalTitle style={{ fontSize: 15, fontWeight: 600, color: '#0c447c', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertTriangle size={18} color="#e24b4a" />
-            Confirm Delete
-          </CModalTitle>
-        </CModalHeader>
-
-        <CModalBody style={{ padding: '20px', fontSize: 13, color: '#374151' }}>
-          Are you sure you want to delete{' '}
-          <strong style={{ color: '#0c447c' }}>{physioToDelete?.fullName}</strong>?
-          <br />
-          <span style={{ color: '#9ca3af', fontSize: 12, marginTop: 6, display: 'block' }}>
-            This action cannot be undone.
-          </span>
-        </CModalBody>
-
-        <CModalFooter style={{ borderTop: '0.5px solid #d0dce9', padding: '12px 20px', gap: 8 }}>
-          <button
-            className="pm-modal-cancel"
-            onClick={() => setDeleteModalVisible(false)}
-          >
-            Cancel
-          </button>
-          <button className="pm-modal-delete" onClick={confirmDelete}>
-            Delete
-          </button>
-        </CModalFooter>
-      </CModal>
+      {/* ── Delete Confirmation Modal ── */}
+      <ConfirmationModal
+        isVisible={deleteModalVisible}
+        title="Delete Therapist"
+        message={
+          <>
+           This therapist is assigned to sessions. Removing will affect treatment plans.
+          </>
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmColor="danger"
+        cancelColor="secondary"
+        isLoading={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          if (!isDeleting) {
+            setDeleteModalVisible(false)
+            setPhysioToDelete(null)
+          }
+        }}
+      />
 
       {/* ── STYLES ── */}
       <style>{`
@@ -352,33 +359,6 @@ const PhysioManagement = () => {
           font-size: 14px;
         }
         .pm-empty-icon { color: #d0dce9; }
-
-        /* Modal buttons */
-        .pm-modal-cancel {
-          background: #fff;
-          color: #374151;
-          border: 0.5px solid #d0dce9;
-          border-radius: 8px;
-          padding: 7px 18px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background 0.15s;
-        }
-        .pm-modal-cancel:hover { background: #f3f4f6; }
-
-        .pm-modal-delete {
-          background: #a32d2d;
-          color: #fff;
-          border: none;
-          border-radius: 8px;
-          padding: 7px 18px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: filter 0.15s;
-        }
-        .pm-modal-delete:hover { filter: brightness(0.9); }
       `}</style>
     </>
   )

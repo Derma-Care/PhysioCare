@@ -19,7 +19,7 @@ import {
   CCol,
   CImage,
 } from "@coreui/react"
-import { Edit2, Eye, Trash2, Dumbbell, PlusCircle } from "lucide-react"
+import { Edit2, Eye, Trash2, Dumbbell, PlusCircle, AlertTriangle } from "lucide-react"
 import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 
@@ -51,6 +51,38 @@ const emptyExercise = {
   discountPercentage: "",
 }
 
+/* ─── Impact Warning Banner ─────────────────────────────────────────── */
+const ImpactWarning = ({ message }) => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "10px",
+      background: "#fffbeb",
+      border: "1px solid #fcd34d",
+      borderRadius: "8px",
+      padding: "10px 14px",
+      marginBottom: "18px",
+    }}
+  >
+    <AlertTriangle
+      size={16}
+      style={{ color: "#d97706", flexShrink: 0, marginTop: "1px" }}
+    />
+    <p
+      style={{
+        margin: 0,
+        fontSize: "12px",
+        fontWeight: "500",
+        color: "#92400e",
+        lineHeight: "1.5",
+      }}
+    >
+      {message}
+    </p>
+  </div>
+)
+
 export default function ExerciseTable() {
   const clinicId = localStorage.getItem("HospitalId")
   const branchId = localStorage.getItem("branchId")
@@ -59,7 +91,6 @@ export default function ExerciseTable() {
   const [form, setForm] = useState(emptyExercise)
   const [modal, setModal] = useState(false)
   const [editId, setEditId] = useState(null)
-  const [editIndex, setEditIndex] = useState(null)
   const [loading, setLoading] = useState(false)
   const [saveLoading, setSaveLoading] = useState(false)
   const [errors, setErrors] = useState({})
@@ -71,9 +102,25 @@ export default function ExerciseTable() {
   const [exerciseIdToDelete, setExerciseIdToDelete] = useState(null)
   const [delloading, setDelLoading] = useState(false)
 
+  /* ── Save confirmation modal states ── */
+  const [saveConfirmVisible, setSaveConfirmVisible] = useState(false)
+  const [isSaveConfirming, setIsSaveConfirming] = useState(false)
+
   const { searchQuery } = useGlobalSearch()
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
+
+  /* ── Pricing change detector ─────────────────────────────────────── */
+  const [originalForm, setOriginalForm] = useState(null)
+  const hasPricingChanged =
+    editId &&
+    originalForm &&
+    (
+      form.pricePerSession !== originalForm.pricePerSession ||
+      form.gst !== originalForm.gst ||
+      form.otherTax !== originalForm.otherTax ||
+      form.discountPercentage !== originalForm.discountPercentage
+    )
 
   // ── LOAD ─────────────────────────────────────────────
   const loadExercises = async () => {
@@ -124,11 +171,17 @@ export default function ExerciseTable() {
     return Object.keys(err).length === 0
   }
 
-  // ── SAVE ─────────────────────────────────────────────
-  const handleSave = async () => {
+  // ── SAVE — validate then open confirm modal ───────────
+  const handleSave = () => {
     if (!validate()) return
+    setSaveConfirmVisible(true)
+  }
+
+  // ── CONFIRMED SAVE ────────────────────────────────────
+  const handleConfirmedSave = async () => {
     const payload = { ...form, clinicId, branchId }
     try {
+      setIsSaveConfirming(true)
       setSaveLoading(true)
       if (editId !== null) {
         await updateTherapyExercise(editId, payload)
@@ -137,12 +190,14 @@ export default function ExerciseTable() {
         await createTherapyExercise(payload)
         showCustomToast("Exercise added successfully!", { position: "top-right" }, "success")
       }
+      setSaveConfirmVisible(false)
       resetForm()
       loadExercises()
     } catch {
       showCustomToast("Something went wrong!", { position: "top-right" }, "error")
     } finally {
       setSaveLoading(false)
+      setIsSaveConfirming(false)
     }
   }
 
@@ -150,7 +205,9 @@ export default function ExerciseTable() {
   const handleEdit = (item) => {
     let videoUrl = item.video || ""
     if (videoUrl && !videoUrl.startsWith("http")) videoUrl = "https://" + videoUrl
-    setForm({ ...item, video: videoUrl, imagePreview: item.image })
+    const prefilled = { ...item, video: videoUrl, imagePreview: item.image }
+    setForm(prefilled)
+    setOriginalForm(prefilled)
     setEditId(item.therapyExercisesId)
     setModal(true)
     setErrors({})
@@ -194,6 +251,7 @@ export default function ExerciseTable() {
   // ── RESET ────────────────────────────────────────────
   const resetForm = () => {
     setForm(emptyExercise)
+    setOriginalForm(null)
     setEditId(null)
     setModal(false)
     setErrors({})
@@ -207,6 +265,11 @@ export default function ExerciseTable() {
   ).toFixed(2)
 
   if (loading) return <LoadingIndicator message="Loading exercises..." />
+
+  /* ── Confirm modal message ───────────────────────────────────────── */
+  const saveConfirmMessage = editId
+    ? <>Are you sure you want to update <strong>{form.name}</strong>? Changes may affect therapies and programs using this exercise.</>
+    : <>Are you sure you want to save <strong>{form.name}</strong> as a new exercise?</>
 
   return (
     <>
@@ -264,31 +327,23 @@ export default function ExerciseTable() {
               filteredExercises.map((ex, i) => (
                 <CTableRow key={ex.therapyExercisesId || i} className="ex-tr">
                   <CTableDataCell className="ex-td ex-td-num">{i + 1}</CTableDataCell>
-
                   <CTableDataCell className="ex-td">
                     <span className="ex-name">{ex.name}</span>
                   </CTableDataCell>
-
                   <CTableDataCell className="ex-td">
                     <span className="ex-badge-blue">{ex.sets || "—"}</span>
                   </CTableDataCell>
-
                   <CTableDataCell className="ex-td">
                     <span className="ex-badge-blue">{ex.repetitions || "—"}</span>
                   </CTableDataCell>
-
                   <CTableDataCell className="ex-td">{ex.frequency || "—"}</CTableDataCell>
-
                   <CTableDataCell className="ex-td">
                     <span className="ex-count-badge">{ex.discountPercentage || 0}%</span>
                   </CTableDataCell>
-
                   <CTableDataCell className="ex-td">₹{ex.discountAmount || 0}</CTableDataCell>
-
                   <CTableDataCell className="ex-td">
                     <span className="ex-price">₹{ex.pricePerSession}</span>
                   </CTableDataCell>
-
                   <CTableDataCell className="ex-td">
                     <div className="ex-actions">
                       {can("Exercise Management", "read") && (
@@ -336,6 +391,17 @@ export default function ExerciseTable() {
 
         <CModalBody className="ex-modal-body">
           <CForm>
+
+            {/* ── Exercise impact warning (always shown in edit mode) ── */}
+            {editId && (
+              <ImpactWarning message="Changes to this exercise may impact therapies and programs using it. Please review before saving." />
+            )}
+
+            {/* ── Pricing impact warning (only when pricing fields changed) ── */}
+            {hasPricingChanged && (
+              <ImpactWarning message="Changes to pricing may affect existing packages and billing. Please review before saving." />
+            )}
+
             <CRow className="g-3">
               {/* Name */}
               <CCol md={6}>
@@ -364,7 +430,7 @@ export default function ExerciseTable() {
                 </div>
               </CCol>
 
-              {/* Session (disabled) */}
+              {/* Session */}
               <CCol md={4}>
                 <div className="ex-field">
                   <CFormLabel className="ex-label">Session</CFormLabel>
@@ -519,7 +585,12 @@ export default function ExerciseTable() {
               <button type="button" className="ex-btn-secondary" onClick={resetForm}>
                 Cancel
               </button>
-              <button type="button" className="ex-btn-primary" onClick={handleSave} disabled={saveLoading}>
+              <button
+                type="button"
+                className="ex-btn-primary"
+                onClick={handleSave}
+                disabled={saveLoading}
+              >
                 {saveLoading ? (
                   <>
                     <span className="spinner-border spinner-border-sm me-2" />
@@ -548,7 +619,6 @@ export default function ExerciseTable() {
         <CModalBody className="ex-modal-body ex-view-body">
           {viewData ? (
             <>
-              {/* Image */}
               {viewData.image && (
                 <div style={{ textAlign: "center", marginBottom: 16 }}>
                   <CImage
@@ -560,7 +630,6 @@ export default function ExerciseTable() {
                 </div>
               )}
 
-              {/* Summary cards */}
               <div className="ex-summary-grid">
                 <div className="ex-summary-card">
                   <span className="ex-summary-label">Name</span>
@@ -588,7 +657,6 @@ export default function ExerciseTable() {
                 </div>
               </div>
 
-              {/* Pricing section */}
               <div className="ex-section-label">Pricing</div>
               <div className="ex-summary-grid">
                 <div className="ex-summary-card">
@@ -617,11 +685,9 @@ export default function ExerciseTable() {
                 </div>
               </div>
 
-              {/* Notes */}
               <div className="ex-section-label">Notes</div>
               <div className="ex-notes-box">{viewData.notes || "—"}</div>
 
-              {/* Video */}
               <div className="ex-section-label" style={{ marginTop: 12 }}>Video</div>
               <div style={{ marginBottom: 16 }}>
                 {viewData.video ? (
@@ -648,29 +714,47 @@ export default function ExerciseTable() {
         </CModalBody>
       </CModal>
 
+      {/* ── SAVE / UPDATE CONFIRMATION ───────────────── */}
+      <ConfirmationModal
+        isVisible={saveConfirmVisible}
+        title={editId ? "Update Exercise" : "Save Exercise"}
+        message={saveConfirmMessage}
+        confirmText={editId ? "Yes, Update" : "Yes, Save"}
+        cancelText="Cancel"
+        confirmColor="primary"
+        isLoading={isSaveConfirming}
+        onConfirm={handleConfirmedSave}
+        onCancel={() => {
+          if (!isSaveConfirming) setSaveConfirmVisible(false)
+        }}
+      />
+
       {/* ── DELETE CONFIRMATION ──────────────────────── */}
       <ConfirmationModal
         isVisible={isDeleteModalVisible}
         title="Delete Exercise"
-        message="Are you sure you want to delete this exercise? This action cannot be undone."
-        confirmText={
-          delloading ? (
-            <>
-              <span className="spinner-border spinner-border-sm me-2 text-white" />
-              Deleting...
-            </>
-          ) : "Yes, Delete"
-        }
+        message="This exercise is linked to therapies, programs, and packages. Deleting it will affect those records. Do you want to continue?"
+        confirmText={delloading ? (
+          <>
+            <span className="spinner-border spinner-border-sm me-2 text-white" />
+            Deleting...
+          </>
+        ) : "Yes, Delete"}
         cancelText="Cancel"
         confirmColor="danger"
         cancelColor="secondary"
+        isLoading={delloading}
         onConfirm={confirmDelete}
-        onCancel={() => { setIsDeleteModalVisible(false); setExerciseIdToDelete(null) }}
+        onCancel={() => {
+          if (!delloading) {
+            setIsDeleteModalVisible(false)
+            setExerciseIdToDelete(null)
+          }
+        }}
       />
 
       {/* ── STYLES ───────────────────────────────────── */}
       <style>{`
-        /* ── Page Header ─────────────────────── */
         .ex-page-header {
           display: flex;
           align-items: center;
@@ -687,121 +771,59 @@ export default function ExerciseTable() {
           gap: 12px;
         }
         .ex-page-icon {
-          width: 42px;
-          height: 42px;
+          width: 42px; height: 42px;
           border-radius: 10px;
           background: #e6f1fb;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #185fa5;
-          flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          color: #185fa5; flex-shrink: 0;
         }
-        .ex-page-title {
-          font-size: 17px;
-          font-weight: 600;
-          color: #0c447c;
-          margin: 0;
-        }
-        .ex-page-sub {
-          font-size: 12px;
-          color: #6b7280;
-          margin: 0;
-        }
+        .ex-page-title { font-size: 17px; font-weight: 600; color: #0c447c; margin: 0; }
+        .ex-page-sub   { font-size: 12px; color: #6b7280; margin: 0; }
         .ex-add-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          background: #185fa5;
-          color: #fff;
-          border: none;
-          border-radius: 8px;
-          padding: 9px 18px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(24, 95, 165, 0.2);
+          display: inline-flex; align-items: center; gap: 7px;
+          background: #185fa5; color: #fff; border: none;
+          border-radius: 8px; padding: 9px 18px;
+          font-size: 13px; font-weight: 600; cursor: pointer;
+          box-shadow: 0 2px 8px rgba(24,95,165,0.2);
           transition: background 0.15s, transform 0.1s;
         }
         .ex-add-btn:hover  { background: #0c447c; }
         .ex-add-btn:active { transform: scale(0.97); }
 
-        /* ── Table ──────────────────────────── */
         .ex-table-wrapper {
-          border: 0.5px solid #d0dce9;
-          border-radius: 10px;
-          overflow: hidden;
-          overflow-x: auto;
-          margin-bottom: 12px;
+          border: 0.5px solid #d0dce9; border-radius: 10px;
+          overflow: hidden; overflow-x: auto; margin-bottom: 12px;
         }
         .ex-table { margin-bottom: 0 !important; font-size: 13px; }
         .ex-th {
-          background: #185fa5 !important;
-          color: #fff !important;
-          font-size: 12px !important;
-          font-weight: 600 !important;
-          padding: 11px 14px !important;
-          white-space: nowrap;
-          border: none !important;
+          background: #185fa5 !important; color: #fff !important;
+          font-size: 12px !important; font-weight: 600 !important;
+          padding: 11px 14px !important; white-space: nowrap; border: none !important;
         }
         .ex-tr { transition: background 0.12s; }
         .ex-tr:hover { background: #f0f5fb !important; }
         .ex-td {
-          padding: 11px 14px !important;
-          vertical-align: middle !important;
-          font-size: 13px;
-          color: #374151;
-          border-bottom: 0.5px solid #eef2f7 !important;
-          border-top: none !important;
+          padding: 11px 14px !important; vertical-align: middle !important;
+          font-size: 13px; color: #374151;
+          border-bottom: 0.5px solid #eef2f7 !important; border-top: none !important;
         }
         .ex-td-num { color: #9ca3af; font-size: 12px; }
-
-        /* ── Name / badges ───────────────── */
-        .ex-name {
-          font-weight: 600;
-          font-size: 13px;
-          color: #0c447c;
-        }
+        .ex-name   { font-weight: 600; font-size: 13px; color: #0c447c; }
         .ex-count-badge {
-          background: #eaf3de;
-          color: #3b6d11;
-          border: 0.5px solid #c0dd97;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 600;
-          padding: 2px 10px;
+          background: #eaf3de; color: #3b6d11; border: 0.5px solid #c0dd97;
+          border-radius: 20px; font-size: 11px; font-weight: 600; padding: 2px 10px;
         }
         .ex-badge-blue {
-          background: #e6f1fb;
-          color: #185fa5;
-          border: 0.5px solid #b5d4f4;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 600;
-          padding: 2px 10px;
+          background: #e6f1fb; color: #185fa5; border: 0.5px solid #b5d4f4;
+          border-radius: 20px; font-size: 11px; font-weight: 600; padding: 2px 10px;
         }
-        .ex-price {
-          color: #374151;
-          font-weight: 600;
-        }
+        .ex-price { color: #374151; font-weight: 600; }
 
-        /* ── Action buttons ─────────────── */
-        .ex-actions {
-          display: flex;
-          gap: 6px;
-          align-items: center;
-        }
+        .ex-actions { display: flex; gap: 6px; align-items: center; }
         .ex-action-btn {
-          width: 30px;
-          height: 30px;
-          border-radius: 7px;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: filter 0.12s, transform 0.1s;
-          flex-shrink: 0;
+          width: 30px; height: 30px; border-radius: 7px; border: none;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; transition: filter 0.12s, transform 0.1s; flex-shrink: 0;
         }
         .ex-action-btn.view { background: #e6f1fb; color: #185fa5; }
         .ex-action-btn.edit { background: #eaf3de; color: #3b6d11; }
@@ -809,195 +831,94 @@ export default function ExerciseTable() {
         .ex-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
         .ex-action-btn:active { transform: scale(0.94); }
 
-        /* ── Empty state ─────────────────── */
         .ex-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 10px;
-          padding: 40px 0;
-          color: #9ca3af;
-          font-size: 14px;
+          display: flex; flex-direction: column; align-items: center;
+          gap: 10px; padding: 40px 0; color: #9ca3af; font-size: 14px;
         }
         .ex-empty-icon { color: #d0dce9; }
 
-        /* ── Modal shared ─────────────────── */
         .ex-custom-modal .modal-content {
-          border: 0.5px solid #d0dce9 !important;
-          border-radius: 12px !important;
-          overflow: hidden;
+          border: 0.5px solid #d0dce9 !important; border-radius: 12px !important; overflow: hidden;
         }
         .ex-modal-header {
-          background: #185fa5 !important;
-          border-bottom: none !important;
-          padding: 16px 20px !important;
+          background: #185fa5 !important; border-bottom: none !important; padding: 16px 20px !important;
         }
-        .ex-modal-title {
-          font-size: 15px !important;
-          font-weight: 700 !important;
-          color: #fff !important;
-        }
-        .ex-custom-modal .btn-close {
-          filter: brightness(0) invert(1);
-          opacity: 0.8;
-        }
-        .ex-modal-body {
-          background: #f7fafd !important;
-          padding: 20px !important;
-        }
-        .ex-view-body {
-          max-height: 78vh;
-          overflow-y: auto;
-        }
+        .ex-modal-title { font-size: 15px !important; font-weight: 700 !important; color: #fff !important; }
+        .ex-custom-modal .btn-close { filter: brightness(0) invert(1); opacity: 0.8; }
+        .ex-modal-body  { background: #f7fafd !important; padding: 20px !important; }
+        .ex-view-body   { max-height: 78vh; overflow-y: auto; }
 
-        /* ── Form fields ──────────────────── */
-        .ex-field {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          margin-bottom: 4px;
-        }
-        .ex-label {
-          font-size: 12px;
-          font-weight: 500;
-          color: #374151;
-          margin-bottom: 2px;
-        }
-        .ex-req { color: #e24b4a; }
-        .ex-err-msg {
-          font-size: 11px;
-          color: #a32d2d !important;
-          margin-top: 2px;
-          min-height: 16px;
-        }
+        .ex-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+        .ex-label { font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 2px; }
+        .ex-req   { color: #e24b4a; }
+        .ex-err-msg { font-size: 11px; color: #a32d2d !important; margin-top: 2px; min-height: 16px; }
         .ex-input {
-          height: 36px;
-          font-size: 13px !important;
-          border: 0.5px solid #ced4da !important;
-          border-radius: 7px !important;
+          height: 36px; font-size: 13px !important;
+          border: 0.5px solid #ced4da !important; border-radius: 7px !important;
           transition: border-color 0.15s, box-shadow 0.15s !important;
         }
         .ex-input:focus {
           border-color: #185fa5 !important;
-          box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.15) !important;
+          box-shadow: 0 0 0 2px rgba(24,95,165,0.15) !important;
         }
         .ex-input.is-invalid { border-color: #e24b4a !important; }
 
-        /* ── Modal footer ─────────────────── */
         .ex-modal-footer {
-          display: flex;
-          justify-content: flex-end;
-          gap: 8px;
-          margin-top: 18px;
-          padding-top: 14px;
-          border-top: 0.5px solid #d0dce9;
+          display: flex; justify-content: flex-end; gap: 8px;
+          margin-top: 18px; padding-top: 14px; border-top: 0.5px solid #d0dce9;
         }
         .ex-btn-primary {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: #185fa5;
-          color: #fff;
-          border: none;
-          border-radius: 8px;
-          padding: 9px 22px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
+          display: inline-flex; align-items: center; gap: 6px;
+          background: #185fa5; color: #fff; border: none; border-radius: 8px;
+          padding: 9px 22px; font-size: 13px; font-weight: 600; cursor: pointer;
+          box-shadow: 0 2px 8px rgba(24,95,165,0.2);
           transition: background 0.15s, transform 0.1s;
-          box-shadow: 0 2px 8px rgba(24, 95, 165, 0.2);
         }
         .ex-btn-primary:hover:not(:disabled)  { background: #0c447c; }
         .ex-btn-primary:active:not(:disabled) { transform: scale(0.97); }
         .ex-btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
         .ex-btn-secondary {
-          background: #fff;
-          color: #374151;
-          border: 0.5px solid #d0dce9;
-          border-radius: 8px;
-          padding: 9px 18px;
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: background 0.15s;
+          background: #fff; color: #374151;
+          border: 0.5px solid #d0dce9; border-radius: 8px;
+          padding: 9px 18px; font-size: 13px; font-weight: 500;
+          cursor: pointer; transition: background 0.15s;
         }
         .ex-btn-secondary:hover { background: #f0f5fb; }
 
-        /* ── View modal — summary grid ────── */
         .ex-summary-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 10px;
-          margin-bottom: 16px;
+          display: grid; grid-template-columns: repeat(3, 1fr);
+          gap: 10px; margin-bottom: 16px;
         }
-        @media (max-width: 600px) {
-          .ex-summary-grid { grid-template-columns: 1fr 1fr; }
-        }
+        @media (max-width: 600px) { .ex-summary-grid { grid-template-columns: 1fr 1fr; } }
         .ex-summary-card {
-          background: #fff;
-          border: 0.5px solid #d0dce9;
-          border-radius: 10px;
-          padding: 10px 12px;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
+          background: #fff; border: 0.5px solid #d0dce9;
+          border-radius: 10px; padding: 10px 12px;
+          display: flex; flex-direction: column; gap: 4px;
         }
         .ex-summary-label {
-          font-size: 10px;
-          font-weight: 600;
-          color: #6b7280;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
+          font-size: 10px; font-weight: 600; color: #6b7280;
+          text-transform: uppercase; letter-spacing: 0.04em;
         }
-        .ex-summary-value {
-          font-size: 14px;
-          font-weight: 700;
-          color: #0c447c;
-        }
+        .ex-summary-value { font-size: 14px; font-weight: 700; color: #0c447c; }
         .ex-id-pill {
-          background: #e6f1fb;
-          color: #185fa5;
-          border: 0.5px solid #b5d4f4;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 600;
-          padding: 2px 10px;
-          display: inline-block;
+          background: #e6f1fb; color: #185fa5; border: 0.5px solid #b5d4f4;
+          border-radius: 20px; font-size: 11px; font-weight: 600;
+          padding: 2px 10px; display: inline-block;
         }
-
-        /* ── Section label ────────────────── */
         .ex-section-label {
-          font-size: 11px;
-          font-weight: 600;
-          color: #6b7280;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: 8px;
+          font-size: 11px; font-weight: 600; color: #6b7280;
+          text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
         }
-
-        /* ── Notes box ───────────────────── */
         .ex-notes-box {
-          background: #fff;
-          border: 0.5px solid #d0dce9;
-          border-radius: 8px;
-          padding: 10px 14px;
-          font-size: 13px;
-          color: #374151;
-          margin-bottom: 4px;
-          min-height: 40px;
+          background: #fff; border: 0.5px solid #d0dce9; border-radius: 8px;
+          padding: 10px 14px; font-size: 13px; color: #374151;
+          margin-bottom: 4px; min-height: 40px;
         }
-
-        /* ── Video link ───────────────────── */
         .ex-video-link {
-          color: #185fa5;
-          font-weight: 500;
-          text-decoration: none;
-          font-size: 13px;
+          color: #185fa5; font-weight: 500;
+          text-decoration: none; font-size: 13px;
         }
-        .ex-video-link:hover {
-          text-decoration: underline;
-          color: #0c447c;
-        }
+        .ex-video-link:hover { text-decoration: underline; color: #0c447c; }
       `}</style>
     </>
   )

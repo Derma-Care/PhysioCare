@@ -9,13 +9,19 @@ import {
   CFormSelect,
 } from '@coreui/react'
 import { GetSubServices_ByClinicId } from '../ProcedureManagement/ProcedureManagementAPI'
-import Select from "react-select"
+import Select from 'react-select'
 import { showCustomToast } from '../../Utils/Toaster'
-import { cilPlus, cilTrash } from "@coreui/icons"
-import CIcon from "@coreui/icons-react"
+import { cilPlus, cilTrash } from '@coreui/icons'
+import CIcon from '@coreui/icons-react'
+import ConfirmationModal from '../../components/ConfirmationModal'
 
-const TreatmentPackageForm = ({ data, onSave,therapyOptions,onCancel  }) => {
+
+const TreatmentPackageForm = ({ data, onSave, therapyOptions, onCancel }) => {
   const [therapiesOptions, setTherapyOptions] = useState([])
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false)
+  const [pendingPayload, setPendingPayload] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
+
   const [form, setForm] = useState({
     name: '',
     price: '',
@@ -23,41 +29,40 @@ const TreatmentPackageForm = ({ data, onSave,therapyOptions,onCancel  }) => {
     gst: '',
     otherTaxes: '',
     paymentType: 'FULL_PAYMENT',
-     partialPercentage: '',
+    partialPercentage: '',
     offerStartDate: '',
     offerEndDate: '',
     description: '',
     therapies: [
-      { name: '', sessions: '', sessionDuration: '', validity: '' }
-    ]
+      { name: '', sessions: '', sessionDuration: '', validity: '' },
+    ],
   })
 
+  /* ── Validation ─────────────────────────────────────────────────── */
   const validateTherapy = (therapy) => {
-  if (!therapy.name) return "Select therapy"
-  if (!therapy.sessions) return "Enter sessions"
-  if (!therapy.sessionDuration) return "Enter duration"
-  if (!therapy.validity) return "Enter validity"
-  return null
-}
-const validateTherapies = () => {
-  if (!form.therapies || form.therapies.length === 0) {
-    alert("Add at least one therapy")
-    return false
+    if (!therapy.name) return 'Select therapy'
+    if (!therapy.sessions) return 'Enter sessions'
+    if (!therapy.sessionDuration) return 'Enter duration'
+    if (!therapy.validity) return 'Enter validity'
+    return null
   }
 
-  for (let i = 0; i < form.therapies.length; i++) {
-    const t = form.therapies[i]
-
-    if (!t.name || !t.sessions || !t.sessionDuration || !t.validity) {
-      alert(`Fill all fields in row ${i + 1}`)
+  const validateTherapies = () => {
+    if (!form.therapies || form.therapies.length === 0) {
+      alert('Add at least one therapy')
       return false
     }
+    for (let i = 0; i < form.therapies.length; i++) {
+      const t = form.therapies[i]
+      if (!t.name || !t.sessions || !t.sessionDuration || !t.validity) {
+        alert(`Fill all fields in row ${i + 1}`)
+        return false
+      }
+    }
+    return true
   }
 
-  return true
-}
-
-  // ✅ EDIT MODE
+  /* ── Edit mode prefill ──────────────────────────────────────────── */
   useEffect(() => {
     if (data) {
       setForm({
@@ -67,17 +72,18 @@ const validateTherapies = () => {
         gst: data.gst || '',
         otherTaxes: data.otherTaxes || '',
         paymentType: data.paymentType || 'FULL_PAYMENT',
+        partialPercentage: data.partialPaymentPercentage || '',
         offerStartDate: data.offerStartDate || '',
         offerEndDate: data.offerEndDate || '',
         description: data.description || '',
         therapies: data.therapies || [
-          { name: '', sessions: '', sessionDuration: '', validity: '' }
-        ]
+          { name: '', sessions: '', sessionDuration: '', validity: '' },
+        ],
       })
     }
   }, [data])
-  
 
+  /* ── Handlers ───────────────────────────────────────────────────── */
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
@@ -88,113 +94,98 @@ const validateTherapies = () => {
     setForm({ ...form, therapies: updated })
   }
 
-const addTherapy = () => {
-  const lastTherapy = form.therapies[form.therapies.length - 1]
-
-  const error = validateTherapy(lastTherapy)
-
-  if (error) {
-    showCustomToast(error) // 👉 you can replace with toast later
-    return
-  }
-
-  setForm({
-    ...form,
-    therapies: [
-      ...form.therapies,
-      { name: "", sessions: "", sessionDuration: "", validity: "" },
-    ],
-  })
-}
-const removeTherapy = (index) => {
-  const updated = form.therapies.filter((_, i) => i !== index)
-
-  // 👉 Always keep at least one row
-  if (updated.length === 0) {
-    updated.push({
-      name: "",
-      sessions: "",
-      sessionDuration: "",
-      validity: "",
+  const addTherapy = () => {
+    const lastTherapy = form.therapies[form.therapies.length - 1]
+    const error = validateTherapy(lastTherapy)
+    if (error) { showCustomToast(error); return }
+    setForm({
+      ...form,
+      therapies: [
+        ...form.therapies,
+        { name: '', sessions: '', sessionDuration: '', validity: '' },
+      ],
     })
   }
 
-  setForm({ ...form, therapies: updated })
-}
-
-const handleSubmit = () => {
-  if (!validateTherapies()) return
-  if (form.paymentType === "PARTIAL_PAYMENT" && !form.partialPercentage) {
-  showCustomToast("Enter partial payment percentage")
-  return
-}
-
-  const payload = {
-    packageName: form.name,
-    packagePrice: Number(form.price),
-    discount: Number(form.discount),
-    gst: Number(form.gst),
-    otherTaxes: Number(form.otherTaxes),
-    paymentType: form.paymentType,
-    offerStartDate: form.offerStartDate,
-    offerEndDate: form.offerEndDate,
-    description: form.description,
-    partialPaymentPercentage: Number(form.partialPercentage),
-
-    therapies: form.therapies.map((t) => ({
-      name: t.name,
-      sessions: Number(t.sessions),
-      sessionDuration: t.sessionDuration,
-      validity: Number(t.validity),
-    })),
+  const removeTherapy = (index) => {
+    const updated = form.therapies.filter((_, i) => i !== index)
+    if (updated.length === 0) {
+      updated.push({ name: '', sessions: '', sessionDuration: '', validity: '' })
+    }
+    setForm({ ...form, therapies: updated })
   }
 
-  onSave(payload)
-}
+  /* ── Submit: validate → build payload → open confirm modal ─────── */
+  const handleSubmit = () => {
+    if (!validateTherapies()) return
+    if (form.paymentType === 'PARTIAL_PAYMENT' && !form.partialPercentage) {
+      showCustomToast('Enter partial payment percentage')
+      return
+    }
 
-const getTherapyOptions = async () => {
-  try {
-    const hospitalId = localStorage.getItem('HospitalId')
+    const payload = {
+      packageName: form.name,
+      packagePrice: Number(form.price),
+      discount: Number(form.discount),
+      gst: Number(form.gst),
+      otherTaxes: Number(form.otherTaxes),
+      paymentType: form.paymentType,
+      offerStartDate: form.offerStartDate,
+      offerEndDate: form.offerEndDate,
+      description: form.description,
+      partialPaymentPercentage: Number(form.partialPercentage),
+      therapies: form.therapies.map((t) => ({
+        name: t.name,
+        sessions: Number(t.sessions),
+        sessionDuration: t.sessionDuration,
+        validity: Number(t.validity),
+      })),
+    }
 
-    const res = await GetSubServices_ByClinicId(hospitalId)
-
-    console.log("API Response:", res)
-
-    const subServiceData = res || []   // ✅ CORRECT
-
-    const options = subServiceData.map((service) => ({
-      label: service.subServiceName,
-      value: service.subServiceId,
-    }))
-
-    console.log("OPTIONS:", options)
-
-    setTherapyOptions(options)
-  } catch (err) {
-    console.error("Error fetching therapies:", err)
-    setTherapyOptions([])
+    setPendingPayload(payload)
+    setConfirmModalVisible(true)
   }
-}
-useEffect(() => {
-  getTherapyOptions()
-}, [])
 
+  /* ── Confirmed: call onSave ─────────────────────────────────────── */
+  const handleConfirmedSave = async () => {
+    try {
+      setIsSaving(true)
+      await onSave(pendingPayload)
+      setConfirmModalVisible(false)
+      setPendingPayload(null)
+    } catch (err) {
+      console.error('Save failed:', err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  /* ── Fetch therapy options ──────────────────────────────────────── */
+  const getTherapyOptions = async () => {
+    try {
+      const hospitalId = localStorage.getItem('HospitalId')
+      const res = await GetSubServices_ByClinicId(hospitalId)
+      const subServiceData = res || []
+      setTherapyOptions(
+        subServiceData.map((service) => ({
+          label: service.subServiceName,
+          value: service.subServiceId,
+        }))
+      )
+    } catch (err) {
+      console.error('Error fetching therapies:', err)
+      setTherapyOptions([])
+    }
+  }
+
+  useEffect(() => { getTherapyOptions() }, [])
+
+  /* ── Render ─────────────────────────────────────────────────────── */
   return (
     <>
-      {/* ================= BASIC INFO ================= */}
-   
-
-    
-       
-   
-
-    
-
-      {/* ================= PRICING ================= */}
-   
-
+      {/* ── Basic Info + Pricing ── */}
       <CRow className="mb-3">
-         <CCol md={4}>
+        <CCol md={4}>
           <CFormLabel>Program Name <span className="text-danger">*</span></CFormLabel>
           <CFormInput name="name" value={form.name} onChange={handleChange} />
         </CCol>
@@ -202,18 +193,17 @@ useEffect(() => {
           <CFormLabel>Price <span className="text-danger">*</span></CFormLabel>
           <CFormInput type="number" name="price" value={form.price} onChange={handleChange} />
         </CCol>
-
         <CCol md={4}>
           <CFormLabel>Discount (%)</CFormLabel>
           <CFormInput type="number" name="discount" value={form.discount} onChange={handleChange} />
         </CCol>
-        </CRow>
- <CRow className="mb-3">
+      </CRow>
+
+      <CRow className="mb-3">
         <CCol md={4}>
           <CFormLabel>GST (%)</CFormLabel>
           <CFormInput type="number" name="gst" value={form.gst} onChange={handleChange} />
         </CCol>
-
         <CCol md={4}>
           <CFormLabel>Other Taxes (%)</CFormLabel>
           <CFormInput type="number" name="otherTaxes" value={form.otherTaxes} onChange={handleChange} />
@@ -225,174 +215,142 @@ useEffect(() => {
             <option value="PARTIAL_PAYMENT">Partial Payment</option>
           </CFormSelect>
         </CCol>
-        {form.paymentType === "PARTIAL_PAYMENT" && (
-  <CCol md={4}>
-    <CFormLabel>
-      Partial Payment (%) <span className="text-danger">*</span>
-    </CFormLabel>
-    <CFormInput
-      type="number"
-      name="partialPercentage"
-      value={form.partialPercentage}
-      onChange={handleChange}
-    />
-  </CCol>
-)}
+        {form.paymentType === 'PARTIAL_PAYMENT' && (
+          <CCol md={4} className="mt-3">
+            <CFormLabel>Partial Payment (%) <span className="text-danger">*</span></CFormLabel>
+            <CFormInput
+              type="number"
+              name="partialPercentage"
+              value={form.partialPercentage}
+              onChange={handleChange}
+            />
+          </CCol>
+        )}
       </CRow>
 
-    
-  
- 
-
-      {/* ================= OFFER ================= */}
-     
-
+      {/* ── Offer dates + Description ── */}
       <CRow className="mb-3">
         <CCol md={6}>
           <CFormLabel>Offer Start Date</CFormLabel>
           <CFormInput type="date" name="offerStartDate" value={form.offerStartDate} onChange={handleChange} />
         </CCol>
-
         <CCol md={6}>
           <CFormLabel>Offer End Date</CFormLabel>
           <CFormInput type="date" name="offerEndDate" value={form.offerEndDate} onChange={handleChange} />
         </CCol>
-         <CCol className="mt-3">
+        <CCol className="mt-3">
           <CFormLabel>Description</CFormLabel>
-      <CFormTextarea
-        name="description"
-        value={form.description}
-        onChange={handleChange}
-        className="mb-3"
-      />
-         </CCol>
+          <CFormTextarea name="description" value={form.description} onChange={handleChange} className="mb-3" />
+        </CCol>
       </CRow>
 
-      {/* ================= THERAPIES ================= */}
+      {/* ── Therapies ── */}
       <h5 className="mb-3">Therapies</h5>
 
-{form.therapies.map((t, i) => (
-  <div
-    key={i}
-    style={{
-      border: "1px solid #edf2f7",
-      borderRadius: "12px",
-      padding: "12px",
-      marginBottom: "12px",
-      background: "#ffffff",
-    }}
-  >
-    <CRow className="align-items-end">
+      {form.therapies.map((t, i) => (
+        <div
+          key={i}
+          style={{
+            border: '1px solid #edf2f7',
+            borderRadius: '12px',
+            padding: '12px',
+            marginBottom: '12px',
+            background: '#ffffff',
+          }}
+        >
+          <CRow className="align-items-end">
+            <CCol md={4}>
+              <CFormLabel>Therapy Name</CFormLabel>
+              <Select
+                options={therapiesOptions.map((opt) => ({
+                  ...opt,
+                  isDisabled: form.therapies.some(
+                    (th, idx) => th.name === opt.label && idx !== i
+                  ),
+                }))}
+                value={therapiesOptions.find((opt) => opt.label === t.name)}
+                onChange={(selected) => handleTherapyChange(i, 'name', selected?.label || '')}
+                placeholder="Search Therapy..."
+              />
+            </CCol>
+            <CCol md={2}>
+              <CFormLabel>Sessions</CFormLabel>
+              <CFormInput
+                type="number"
+                value={t.sessions}
+                onChange={(e) => handleTherapyChange(i, 'sessions', e.target.value)}
+              />
+            </CCol>
+            <CCol md={2}>
+              <CFormLabel>Duration</CFormLabel>
+              <CFormInput
+                value={t.sessionDuration}
+                onChange={(e) => handleTherapyChange(i, 'sessionDuration', e.target.value)}
+              />
+            </CCol>
+            <CCol md={2}>
+              <CFormLabel>Validity</CFormLabel>
+              <CFormInput
+                type="number"
+                value={t.validity}
+                onChange={(e) => handleTherapyChange(i, 'validity', e.target.value)}
+              />
+            </CCol>
+            <CCol md={2} className="d-flex justify-content-end">
+              {i === form.therapies.length - 1 ? (
+                <CButton
+                  onClick={addTherapy}
+                  style={{ backgroundColor: '#0d6efd', color: '#fff', borderRadius: '8px', padding: '6px 10px' }}
+                >
+                  <CIcon icon={cilPlus} />
+                </CButton>
+              ) : (
+                <CButton
+                  onClick={() => removeTherapy(i)}
+                  style={{ backgroundColor: '#dc3545', color: '#fff', borderRadius: '8px', padding: '6px 10px' }}
+                >
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              )}
+            </CCol>
+          </CRow>
+        </div>
+      ))}
 
-      {/* 🔍 Dropdown */}
-      <CCol md={4}>
-        <CFormLabel>Therapy Name</CFormLabel>
-       <Select
-  options={therapiesOptions.map(opt => ({
-    ...opt,
-    isDisabled: form.therapies.some(
-      (t, index) => t.name === opt.label && index !== i
-    ),
-  }))}
-  value={therapiesOptions.find(opt => opt.label === t.name)}
-  onChange={(selected) =>
-    handleTherapyChange(i, "name", selected?.label || "")
-  }
-  placeholder="Search Therapy..."
-/>
-      </CCol>
+      {/* ── Footer Buttons ── */}
+      <div className="text-end d-flex justify-content-end gap-2 mt-2">
+        <CButton color="secondary" onClick={onCancel}>
+          Cancel
+        </CButton>
+        <CButton
+          onClick={handleSubmit}
+          style={{ backgroundColor: 'var(--color-bgcolor)', color: '#ffffff' }}
+        >
+          {data ? 'Update' : 'Save'}
+        </CButton>
+      </div>
 
-      {/* Inputs */}
-      <CCol md={2}>
-        <CFormLabel>Sessions</CFormLabel>
-        <CFormInput
-          type="number"
-          value={t.sessions}
-          onChange={(e) =>
-            handleTherapyChange(i, "sessions", e.target.value)
+      {/* ── Confirmation Modal ── */}
+      <ConfirmationModal
+        isVisible={confirmModalVisible}
+        title={data ? 'Update Package' : 'Save Package'}
+        message={
+          data
+            ? <>Are you sure you want to update <strong>{form.name}</strong>?</>
+            : <>Are you sure you want to save <strong>{form.name}</strong> as a new package?</>
+        }
+        confirmText={data ? 'Yes, Update' : 'Yes, Save'}
+        cancelText="Cancel"
+        confirmColor="primary"
+        isLoading={isSaving}
+        onConfirm={handleConfirmedSave}
+        onCancel={() => {
+          if (!isSaving) {
+            setConfirmModalVisible(false)
+            setPendingPayload(null)
           }
-        />
-      </CCol>
-
-      <CCol md={2}>
-        <CFormLabel>Duration</CFormLabel>
-        <CFormInput
-          value={t.sessionDuration}
-          onChange={(e) =>
-            handleTherapyChange(i, "sessionDuration", e.target.value)
-          }
-        />
-      </CCol>
-
-      <CCol md={2}>
-        <CFormLabel>Validity</CFormLabel>
-        <CFormInput
-          type="number"
-          value={t.validity}
-          onChange={(e) =>
-            handleTherapyChange(i, "validity", e.target.value)
-          }
-        />
-      </CCol>
-
-      {/* ➕ / ❌ Buttons */}
-<CCol md={2} className="d-flex justify-content-end">
-
-  {/* 👉 Show ADD only on last row */}
-  {i === form.therapies.length - 1 ? (
-    <CButton
-      onClick={addTherapy}
-      style={{
-        backgroundColor: "#0d6efd",
-        color: "#fff",
-        borderRadius: "8px",
-        padding: "6px 10px",
-      }}
-    >
-      <CIcon icon={cilPlus} />
-    </CButton>
-  ) : (
-    <CButton
-      onClick={() => removeTherapy(i)}
-      style={{
-        backgroundColor: "#dc3545",
-        color: "#fff",
-        borderRadius: "8px",
-        padding: "6px 10px",
-      }}
-    >
-      <CIcon icon={cilTrash} />
-    </CButton>
-  )}
-
-</CCol>
-
-    </CRow>
-  </div>
-))}
-
-  
-
-      {/* ================= SUBMIT ================= */}
-    <div className="text-end d-flex justify-content-end gap-2">
-  
-  {/* Cancel Button */}
-     <CButton color="secondary"  onClick={onCancel}>
-              Cancel
-            </CButton>
-
-  {/* Save / Update Button */}
-  <CButton
-    onClick={handleSubmit}
-    style={{
-      backgroundColor: 'var(--color-bgcolor)',
-      color: 'var(--color-black)',
-    }}
-  >
-    {data ? 'Update' : 'Save'}
-  </CButton>
-
-</div>
+        }}
+      />
     </>
   )
 }

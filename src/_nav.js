@@ -54,7 +54,7 @@ export const getNavigation = (permissions = {}) => {
     {
       component: CNavItem,
       name: 'Patient Management',
-      to: '/customer-management',
+      to: '/Patient-Management',
       as: NavLink,
       icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
     },

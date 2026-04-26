@@ -41,24 +41,57 @@ const followUpStatus = [
   'Rescheduled', 'Drop', 'No Reply', 'Completed',
 ]
 
-/* ─── Status colour map (pm-* pill style) ────────────────────────────── */
+/* ─── Status colour map ──────────────────────────────────────────────── */
 const statusColorMap = {
-  pending:               { bg: '#fff8e1', color: '#92680a', border: '#f0d080' },
-  confirmed:             { bg: '#eaf3de', color: '#3b6d11', border: '#c0dd97' },
-  completed:             { bg: '#eaf3de', color: '#3b6d11', border: '#c0dd97' },
+  pending:                { bg: '#fff8e1', color: '#92680a', border: '#f0d080' },
+  confirmed:              { bg: '#eaf3de', color: '#3b6d11', border: '#c0dd97' },
+  completed:              { bg: '#eaf3de', color: '#3b6d11', border: '#c0dd97' },
   'due for investigation':{ bg: '#fcebeb', color: '#a32d2d', border: '#f4b5b5' },
-  'investigation done':  { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
-  'in-progress':         { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
-  'in progress':         { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
-  'follow-up needed':    { bg: '#f3f0ff', color: '#5b21b6', border: '#c4b5fd' },
-  cancelled:             { bg: '#fcebeb', color: '#a32d2d', border: '#f4b5b5' },
-  rescheduled:           { bg: '#fff8e1', color: '#92680a', border: '#f0d080' },
-  drop:                  { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
-  'no reply':            { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
+  'investigation done':   { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
+  'in-progress':          { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
+  'in progress':          { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
+  inprogress:             { bg: '#e6f1fb', color: '#185fa5', border: '#b5d4f4' },
+  'follow-up needed':     { bg: '#f3f0ff', color: '#5b21b6', border: '#c4b5fd' },
+  'follow up needed':     { bg: '#f3f0ff', color: '#5b21b6', border: '#c4b5fd' },
+  cancelled:              { bg: '#fcebeb', color: '#a32d2d', border: '#f4b5b5' },
+  rescheduled:            { bg: '#fff8e1', color: '#92680a', border: '#f0d080' },
+  drop:                   { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
+  'no reply':             { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HELPERS — defined outside component so they are stable references
+   and can be safely called from useEffect on mount.
+═══════════════════════════════════════════════════════════════════════ */
+
+/** "in-progress" | "In-Progress" | "IN_PROGRESS" | "in progress" → "in progress" */
+const normalizeStatus = (s) => (s || '').toLowerCase().replace(/[-_]/g, ' ').trim()
+
+/** Check row.status / row.followUpStatus / row.followupStatus against target */
+const rowMatchesStatus = (row, target) => {
+  const t = normalizeStatus(target)
+  return (
+    normalizeStatus(row.status) === t ||
+    normalizeStatus(row.followUpStatus) === t ||
+    normalizeStatus(row.followupStatus) === t
+  )
+}
+
+/** Count rows matching a status (normalised) */
+const countByStatus = (arr, target) => arr.filter(r => rowMatchesStatus(r, target)).length
+
+/** Deduplicate by bookingId — first occurrence wins */
+const dedupeByBookingId = (arr) => {
+  const seen = new Set()
+  return arr.filter(r => {
+    if (seen.has(r.bookingId)) return false
+    seen.add(r.bookingId)
+    return true
+  })
 }
 
 const getStatusStyle = (status) =>
-  statusColorMap[(status || '').trim().toLowerCase()] ||
+  statusColorMap[normalizeStatus(status)] ||
   { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' }
 
 /* ─── Stat card ──────────────────────────────────────────────────────── */
@@ -70,7 +103,13 @@ const StatCard = ({ icon, label, value, active, onClick }) => (
   >
     <CCardBody className="d-flex align-items-center justify-content-between py-3 px-3">
       <div className="d-flex align-items-center gap-3">
-        <div className="wd-stat-icon" style={{ background: active ? '#185fa5' : '#e6f1fb', color: active ? '#fff' : '#185fa5' }}>
+        <div
+          className="wd-stat-icon"
+          style={{
+            background: active ? '#185fa5' : '#e6f1fb',
+            color: active ? '#fff' : '#185fa5',
+          }}
+        >
           {icon}
         </div>
         <div>
@@ -89,35 +128,79 @@ const StatCard = ({ icon, label, value, active, onClick }) => (
 export default function FollowupDashboard() {
   const navigate = useNavigate()
 
-  const [activeCard, setActiveCard] = useState('today')
-  const [rows, setRows] = useState([])
-  const [filter, setFilter] = useState('All')
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [todayCount, setTodayCount] = useState(0)
-  const [weekCount, setWeekCount] = useState(0)
-  const [confirmedCount, setConfirmedCount] = useState(0)
+  const [activeCard, setActiveCard]       = useState('today')
+  const [rows, setRows]                   = useState([])
+  const [filter, setFilter]               = useState('All')
+  const [fromDate, setFromDate]           = useState('')
+  const [toDate, setToDate]               = useState('')
+  const [currentPage, setCurrentPage]     = useState(1)
+  const [pageSize, setPageSize]           = useState(10)
+  const [todayCount, setTodayCount]       = useState(0)
+  const [weekCount, setWeekCount]         = useState(0)
+  const [confirmedCount, setConfirmedCount]   = useState(0)
   const [inProgressCount, setInProgressCount] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading]             = useState(false)
   const role = localStorage.getItem('role')
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible]             = useState(false)
   const [showReasonModal, setShowReasonModal] = useState(false)
-  const [selectedRow, setSelectedRow] = useState(null)
-  const [selectedStatus, setSelectedStatus] = useState('')
-  const [reason, setReason] = useState('')
-  const [newDate, setNewDate] = useState('')
-  const [newTime, setNewTime] = useState('')
-  const { searchQuery } = useGlobalSearch()
+  const [selectedRow, setSelectedRow]     = useState(null)
+  const [selectedStatus, setSelectedStatus]   = useState('')
+  const [reason, setReason]               = useState('')
+  const [newDate, setNewDate]             = useState('')
+  const [newTime, setNewTime]             = useState('')
+  const { searchQuery }                   = useGlobalSearch()
   const [slotsForSelectedDate, setSlotsForSelectedDate] = useState([])
-  const [loadingSlots, setLoadingSlots] = useState(false)
-  const [showAllSlots, setShowAllSlots] = useState(false)
+  const [loadingSlots, setLoadingSlots]   = useState(false)
+  const [showAllSlots, setShowAllSlots]   = useState(false)
+
+  /* ══════════════════════════════════════════════════════════════════
+     INITIAL LOAD — FIX: fetch today + upcoming in parallel so that
+     weekCount is populated immediately on mount (not just on click).
+  ══════════════════════════════════════════════════════════════════ */
+  useEffect(() => {
+    getInitialCounts()
+  }, [])
+
+  const getInitialCounts = async () => {
+    setLoading(true)
+    try {
+      const [todayRes, upcomingRes] = await Promise.all([
+        getBookingsTodayFollowUps(),
+        getUpcomingFollowUps(),
+      ])
+
+      const today    = todayRes.status === 200 && Array.isArray(todayRes?.data?.data)
+        ? todayRes.data.data : []
+      const upcoming = upcomingRes.status === 200 && Array.isArray(upcomingRes?.data?.data)
+        ? upcomingRes.data.data : []
+
+      // Merged week = today + upcoming, deduplicated (today wins)
+      const merged = dedupeByBookingId([...today, ...upcoming])
+
+      // Default view = today's rows
+      setRows(today)
+      setTodayCount(today.length)
+
+      // Week count reflects full merged set
+      setWeekCount(merged.length)
+
+      // Confirmed / InProgress counts based on today's data (default view)
+      setConfirmedCount(countByStatus(today, 'confirmed'))
+      setInProgressCount(countByStatus(today, 'in progress'))
+    } catch {
+      setRows([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   /* ── API calls ────────────────────────────────────────────────────── */
   const updatePaymentStatus = async (bookingId, status, row, reason, newDate, newTime) => {
     const payload = { bookingId, followupStatus: status.toLowerCase(), reason }
-    if (status === 'Rescheduled') { payload.serviceDate = newDate; payload.servicetime = newTime }
+    if (status === 'Rescheduled') {
+      payload.serviceDate  = newDate
+      payload.servicetime  = newTime
+    }
     await bookingUpdate(payload)
   }
 
@@ -125,12 +208,18 @@ export default function FollowupDashboard() {
     try {
       setLoadingSlots(true)
       const hospitalId = localStorage.getItem('HospitalId')
-      const response = await axios.get(`${BASE_URL}/getDoctorSlots/${hospitalId}/${branchId}/${doctorId}`)
+      const response = await axios.get(
+        `${BASE_URL}/getDoctorSlots/${hospitalId}/${branchId}/${doctorId}`
+      )
       setSlotsForSelectedDate(response.data.success ? response.data.data || [] : [])
-    } catch { setSlotsForSelectedDate([]) }
-    finally { setLoadingSlots(false) }
+    } catch {
+      setSlotsForSelectedDate([])
+    } finally {
+      setLoadingSlots(false)
+    }
   }
 
+  /* ── Slot helpers ─────────────────────────────────────────────────── */
   const now = new Date()
   const slotsToShow = (slotsForSelectedDate || [])
     .filter(s => new Date(s.day || s.date).toDateString() === new Date(newDate).toDateString())
@@ -144,88 +233,107 @@ export default function FollowupDashboard() {
       slotDate.setHours(hours, minutes, 0, 0)
       return new Date(newDate).toDateString() !== now.toDateString() || slotDate > now
     })
+
   const sortedSlots = slotsToShow.sort((a, b) => {
     const parseTime = s => {
-      const [t, m] = s.slot.split(' '); let [h, min] = t.split(':').map(Number)
-      if (m === 'PM' && h !== 12) h += 12; if (m === 'AM' && h === 12) h = 0
+      const [t, m] = s.slot.split(' ')
+      let [h, min] = t.split(':').map(Number)
+      if (m === 'PM' && h !== 12) h += 12
+      if (m === 'AM' && h === 12) h = 0
       return h * 60 + min
     }
     return parseTime(a) - parseTime(b)
   })
   const visibleSlots = showAllSlots ? sortedSlots : sortedSlots.slice(0, 12)
 
-  const submitReasonUpdate = async () => {
-    try {
-      const payload = { bookingId: selectedRow?.bookingId, followupStatus: selectedStatus.toLowerCase(), reason }
-      if (selectedStatus === 'Rescheduled') { payload.serviceDate = newDate; payload.servicetime = newTime }
-      await bookingUpdate(payload)
-      setShowReasonModal(false)
-      getTodayFollowUps()
-    } catch (err) { console.error(err) }
-  }
-
-  useEffect(() => { getTodayFollowUps() }, [])
-
+  /* ── Today (called when Today card is clicked) ────────────────────── */
   const getTodayFollowUps = async () => {
     setLoading(true)
     try {
       const res = await getBookingsTodayFollowUps()
       if (res.status === 200) {
         const d = Array.isArray(res?.data?.data) ? res.data.data : []
-        setRows(d); setTodayCount(d.length)
-        setConfirmedCount(d.filter(x => (x.status || '').toLowerCase() === 'confirmed').length)
-        setInProgressCount(d.filter(x => (x.status || '').toLowerCase() === 'in progress').length)
-      } else setRows([])
-    } catch { setRows([]) }
-    finally { setLoading(false) }
+        setRows(d)
+        setTodayCount(d.length)
+        setConfirmedCount(countByStatus(d, 'confirmed'))
+        setInProgressCount(countByStatus(d, 'in progress'))
+      } else {
+        setRows([])
+      }
+    } catch {
+      setRows([])
+    } finally {
+      setLoading(false)
+    }
   }
 
+  /* ── 1 Week (merges today + upcoming so today is included) ───────── */
   const getUpcomingAppointments = async () => {
     setLoading(true)
     try {
-      const res = await getUpcomingFollowUps()
-      if (res.status === 200) {
-        const d = Array.isArray(res?.data?.data) ? res.data.data : []
-        setRows(d); setWeekCount(d.length)
-        setConfirmedCount(d.filter(x => (x.status || '').toLowerCase() === 'confirmed').length)
-        setInProgressCount(d.filter(x => (x.status || '').toLowerCase() === 'in progress').length)
-      } else setRows([])
-    } catch { setRows([]) }
-    finally { setLoading(false) }
+      const [upcomingRes, todayRes] = await Promise.all([
+        getUpcomingFollowUps(),
+        getBookingsTodayFollowUps(),
+      ])
+      const upcoming = upcomingRes.status === 200 && Array.isArray(upcomingRes?.data?.data)
+        ? upcomingRes.data.data : []
+      const today    = todayRes.status === 200 && Array.isArray(todayRes?.data?.data)
+        ? todayRes.data.data : []
+
+      const merged = dedupeByBookingId([...today, ...upcoming])
+
+      setRows(merged)
+      setWeekCount(merged.length)
+      setConfirmedCount(countByStatus(merged, 'confirmed'))
+      setInProgressCount(countByStatus(merged, 'in progress'))
+    } catch {
+      setRows([])
+    } finally {
+      setLoading(false)
+    }
   }
 
+  /* ── Date range ───────────────────────────────────────────────────── */
   const getDateRangeAppointments = async () => {
     if (!fromDate || !toDate) return
     setLoading(true)
     try {
       const res = await getDateRangeFollowUps(fromDate, toDate)
-      const d = Array.isArray(res?.data?.data) ? res.data.data : Array.isArray(res?.data) ? res.data : []
-      setRows(d); setCurrentPage(1)
-    } catch { setRows([]) }
-    finally { setLoading(false) }
+      const d = Array.isArray(res?.data?.data)
+        ? res.data.data
+        : Array.isArray(res?.data) ? res.data : []
+      setRows(d)
+      setCurrentPage(1)
+    } catch {
+      setRows([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  useEffect(() => { if (fromDate && toDate) getDateRangeAppointments() }, [fromDate, toDate])
+  useEffect(() => {
+    if (fromDate && toDate) getDateRangeAppointments()
+  }, [fromDate, toDate])
 
+  /* ── Filtered + searched list ─────────────────────────────────────── */
   const list = useMemo(() => rows.filter(row => {
-    const matchStatus = filter === 'All' ||
-      (row.followUpStatus || '').toLowerCase() === filter.toLowerCase() ||
-      (row.status || '').toLowerCase() === filter.toLowerCase()
-    const search = searchQuery.toLowerCase()
-    const matchSearch = !search ||
-      (row.bookingId || '').toLowerCase().includes(search) ||
-      (row.name || '').toLowerCase().includes(search) ||
+    const matchStatus  = filter === 'All' || rowMatchesStatus(row, filter)
+    const search       = (searchQuery || '').toLowerCase()
+    const matchSearch  = !search ||
+      (row.bookingId           || '').toLowerCase().includes(search) ||
+      (row.name                || '').toLowerCase().includes(search) ||
       (row.patientMobileNumber || '').toLowerCase().includes(search) ||
-      (row.doctorName || '').toLowerCase().includes(search) ||
-      (row.paymentType || '').toLowerCase().includes(search) ||
-      (row.visitType || '').toLowerCase().includes(search) ||
-      (row.status || '').toLowerCase().includes(search)
+      (row.doctorName          || '').toLowerCase().includes(search) ||
+      (row.paymentType         || '').toLowerCase().includes(search) ||
+      (row.visitType           || '').toLowerCase().includes(search) ||
+      (row.status              || '').toLowerCase().includes(search)
     return matchStatus && matchSearch
   }), [rows, filter, searchQuery])
 
-  const startIndex = (currentPage - 1) * pageSize
+  const startIndex   = (currentPage - 1) * pageSize
   const paginatedRows = list.slice(startIndex, startIndex + pageSize)
 
+  /* ── Button styles ────────────────────────────────────────────────── */
   const filterBtnBase = {
     fontSize: '12px', fontWeight: '500', padding: '5px 13px',
     borderRadius: '6px', cursor: 'pointer', lineHeight: '1.5',
@@ -233,42 +341,81 @@ export default function FollowupDashboard() {
     whiteSpace: 'nowrap', transition: 'background 0.15s, color 0.15s',
     border: '0.5px solid #d0dce9',
   }
-  const filterBtnActive = {
-    ...filterBtnBase, backgroundColor: '#185fa5', color: '#fff',
-    border: '0.5px solid #185fa5', boxShadow: '0 2px 8px rgba(24,95,165,0.18)',
-  }
+  const filterBtnActive   = { ...filterBtnBase, backgroundColor: '#185fa5', color: '#fff', border: '0.5px solid #185fa5', boxShadow: '0 2px 8px rgba(24,95,165,0.18)' }
   const filterBtnInactive = { ...filterBtnBase, backgroundColor: '#f0f5fb', color: '#374151' }
 
-  /* ── Render ───────────────────────────────────────────────────────── */
+  /* ══════════════════════════════════════════════════════════════════
+     RENDER
+  ══════════════════════════════════════════════════════════════════ */
   return (
     <>
       <CContainer fluid className="px-3 py-3">
 
-        {/* ── STAT CARDS ────────────────────────────────────────────────── */}
+        {/* ── STAT CARDS ────────────────────────────────────────────── */}
         <CRow className="mb-4 g-3">
+
+          {/* Today */}
           <CCol md={3} xs={6}>
-            <StatCard icon="📅" label="Today" value={todayCount} active={activeCard === 'today'}
-              onClick={() => { setActiveCard('today'); getTodayFollowUps(); setCurrentPage(1) }} />
+            <StatCard
+              icon="📅" label="Today" value={todayCount}
+              active={activeCard === 'today'}
+              onClick={() => {
+                setActiveCard('today')
+                setFilter('All')
+                setCurrentPage(1)
+                getTodayFollowUps()
+              }}
+            />
           </CCol>
+
+          {/* 1 Week — FIX: weekCount now shows correct value on load */}
           <CCol md={3} xs={6}>
-            <StatCard icon="🗓️" label="1 Week" value={weekCount} active={activeCard === 'upcoming'}
-              onClick={() => { setActiveCard('upcoming'); getUpcomingAppointments(); setCurrentPage(1) }} />
+            <StatCard
+              icon="🗓️" label="1 Week" value={weekCount}
+              active={activeCard === 'upcoming'}
+              onClick={() => {
+                setActiveCard('upcoming')
+                setFilter('All')
+                setCurrentPage(1)
+                getUpcomingAppointments()
+              }}
+            />
           </CCol>
+
+          {/* Confirmed */}
           <CCol md={3} xs={6}>
-            <StatCard icon="✅" label="Confirmed" value={confirmedCount} active={activeCard === 'confirmed'}
-              onClick={() => { setActiveCard('confirmed'); setFilter('Confirmed'); setCurrentPage(1) }} />
+            <StatCard
+              icon="✅" label="Confirmed" value={confirmedCount}
+              active={activeCard === 'confirmed'}
+              onClick={() => {
+                setActiveCard('confirmed')
+                setFilter('Confirmed')
+                setCurrentPage(1)
+                getTodayFollowUps()
+              }}
+            />
           </CCol>
+
+          {/* In Progress */}
           <CCol md={3} xs={6}>
-            <StatCard icon="⏳" label="In Progress" value={inProgressCount} active={activeCard === 'inprogress'}
-              onClick={() => { setActiveCard('inprogress'); setFilter('In Progress'); setCurrentPage(1) }} />
+            <StatCard
+              icon="⏳" label="In Progress" value={inProgressCount}
+              active={activeCard === 'inprogress'}
+              onClick={() => {
+                setActiveCard('inprogress')
+                setFilter('In Progress')
+                setCurrentPage(1)
+                getTodayFollowUps()
+              }}
+            />
           </CCol>
+
         </CRow>
 
-        {/* ── PAGE HEADER ───────────────────────────────────────────────── */}
+        {/* ── PAGE HEADER ───────────────────────────────────────────── */}
         <div className="wd-page-header">
           <div className="wd-page-title-group">
             <div className="wd-page-icon">
-              {/* Follow-up icon */}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="23 4 23 10 17 10" />
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
@@ -282,7 +429,6 @@ export default function FollowupDashboard() {
 
           {/* Right controls */}
           <div className="wd-header-right">
-            {/* Quick status pills */}
             {['All', 'Pending', 'Confirmed', 'Completed'].map(s => (
               <button
                 key={s}
@@ -295,32 +441,37 @@ export default function FollowupDashboard() {
 
             <div className="wd-divider" />
 
-            {/* From date */}
             <div className="wd-date-group">
               <label className="wd-date-label">From</label>
-              <input type="date" value={fromDate} className="wd-date-input"
-                onChange={e => { setFromDate(e.target.value); setCurrentPage(1) }} />
+              <input
+                type="date" value={fromDate} className="wd-date-input"
+                onChange={e => { setFromDate(e.target.value); setCurrentPage(1) }}
+              />
             </div>
 
-            {/* To date */}
             <div className="wd-date-group">
               <label className="wd-date-label">To</label>
-              <input type="date" value={toDate} className="wd-date-input"
-                onChange={e => { setToDate(e.target.value); setCurrentPage(1) }} />
+              <input
+                type="date" value={toDate} className="wd-date-input"
+                onChange={e => { setToDate(e.target.value); setCurrentPage(1) }}
+              />
             </div>
 
-            {/* Full status dropdown */}
             <div className="wd-date-group">
               <label className="wd-date-label">Status</label>
-              <select value={filter} className="wd-select"
-                onChange={e => { setFilter(e.target.value); setCurrentPage(1) }}>
+              <select
+                value={filter} className="wd-select"
+                onChange={e => { setFilter(e.target.value); setCurrentPage(1) }}
+              >
                 {followUpStatus.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
 
-            {/* Book button */}
             {(role === 'admin' || role === 'receptionist') && (
-              <button style={{ ...filterBtnActive, alignSelf: 'flex-end' }} onClick={() => setVisible(true)}>
+              <button
+                style={{ ...filterBtnActive, alignSelf: 'flex-end' }}
+                onClick={() => setVisible(true)}
+              >
                 + Book Appointment
               </button>
             )}
@@ -329,7 +480,7 @@ export default function FollowupDashboard() {
 
         <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
 
-        {/* ── TABLE ─────────────────────────────────────────────────────── */}
+        {/* ── TABLE ─────────────────────────────────────────────────── */}
         <div className="wd-table-wrapper">
           <CTable className="wd-table">
             <CTableHead>
@@ -362,9 +513,9 @@ export default function FollowupDashboard() {
               ) : (
                 paginatedRows.map((row, index) => {
                   const st = getStatusStyle(row.status)
-                  const fu = getStatusStyle(row.followUpStatus || row.followupStatus)
                   return (
                     <CTableRow key={row.bookingId} className="wd-tr">
+
                       <CTableDataCell className="wd-td wd-td-num">
                         {(currentPage - 1) * pageSize + index + 1}
                       </CTableDataCell>
@@ -387,7 +538,10 @@ export default function FollowupDashboard() {
 
                       {/* Appointment status pill */}
                       <CTableDataCell className="wd-td">
-                        <span className="wd-status-badge" style={{ background: st.bg, color: st.color, border: `0.5px solid ${st.border}` }}>
+                        <span
+                          className="wd-status-badge"
+                          style={{ background: st.bg, color: st.color, border: `0.5px solid ${st.border}` }}
+                        >
                           {row.status}
                         </span>
                       </CTableDataCell>
@@ -400,7 +554,8 @@ export default function FollowupDashboard() {
                           onChange={e => {
                             const value = e.target.value
                             if (value === 'Rescheduled' || value === 'Cancelled') {
-                              setSelectedRow(row); setSelectedStatus(value)
+                              setSelectedRow(row)
+                              setSelectedStatus(value)
                               if (value === 'Rescheduled') fetchSlots(row.doctorId, row.branchId)
                               setShowReasonModal(true)
                             } else {
@@ -408,7 +563,9 @@ export default function FollowupDashboard() {
                             }
                           }}
                         >
-                          {followUpStatus.slice(1).map(s => <option key={s} value={s}>{s}</option>)}
+                          {followUpStatus.slice(1).map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
                         </select>
                       </CTableDataCell>
 
@@ -425,6 +582,7 @@ export default function FollowupDashboard() {
                           </svg>
                         </button>
                       </CTableDataCell>
+
                     </CTableRow>
                   )
                 })
@@ -433,7 +591,7 @@ export default function FollowupDashboard() {
           </CTable>
         </div>
 
-        {/* ── PAGINATION ─────────────────────────────────────────────────── */}
+        {/* ── PAGINATION ────────────────────────────────────────────── */}
         {!loading && list.length > 0 && (
           <Pagination
             currentPage={currentPage}
@@ -445,8 +603,13 @@ export default function FollowupDashboard() {
         )}
       </CContainer>
 
-      {/* ── REASON / RESCHEDULE MODAL ──────────────────────────────────── */}
-      <CModal visible={showReasonModal} onClose={() => { setShowReasonModal(false); setReason('') }} alignment="center" className="wd-custom-modal">
+      {/* ── REASON / RESCHEDULE MODAL ─────────────────────────────────── */}
+      <CModal
+        visible={showReasonModal}
+        onClose={() => { setShowReasonModal(false); setReason('') }}
+        alignment="center"
+        className="wd-custom-modal"
+      >
         <CModalHeader className="wd-modal-header">
           <CModalTitle className="wd-modal-title">
             {selectedStatus === 'Rescheduled' ? 'Reschedule Appointment' : 'Cancel Appointment'}
@@ -469,7 +632,9 @@ export default function FollowupDashboard() {
           {/* Reschedule extras */}
           {selectedStatus === 'Rescheduled' && (
             <>
-              <label className="wd-label" style={{ marginBottom: '8px', display: 'block' }}>Select Date</label>
+              <label className="wd-label" style={{ marginBottom: '8px', display: 'block' }}>
+                Select Date
+              </label>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
                 {loadingSlots ? (
                   <span style={{ fontSize: '12px', color: '#6b7280' }}>Loading slots…</span>
@@ -480,7 +645,7 @@ export default function FollowupDashboard() {
                       return d >= new Date().toISOString().split('T')[0]
                     })
                     .map((s, idx) => {
-                      const d = new Date(s.day || s.date).toISOString().split('T')[0]
+                      const d        = new Date(s.day || s.date).toISOString().split('T')[0]
                       const isActive = newDate === d
                       return (
                         <button
@@ -503,11 +668,13 @@ export default function FollowupDashboard() {
 
               {newDate && (
                 <>
-                  <label className="wd-label" style={{ marginBottom: '8px', display: 'block' }}>Select Time</label>
+                  <label className="wd-label" style={{ marginBottom: '8px', display: 'block' }}>
+                    Select Time
+                  </label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                     {visibleSlots.map((slotObj, i) => {
                       const isSelected = newTime === slotObj.slot
-                      const isBooked = slotObj.slotbooked
+                      const isBooked   = slotObj.slotbooked
                       return (
                         <div
                           key={i}
@@ -557,7 +724,8 @@ export default function FollowupDashboard() {
             onClick={() => {
               if (!reason.trim()) { alert('Reason is required'); return }
               updatePaymentStatus(selectedRow.bookingId, selectedStatus, selectedRow, reason, newDate, newTime)
-              setShowReasonModal(false); setReason('')
+              setShowReasonModal(false)
+              setReason('')
               getTodayFollowUps()
             }}
           >
@@ -566,12 +734,10 @@ export default function FollowupDashboard() {
         </CModalFooter>
       </CModal>
 
-      {/* ── STYLES ───────────────────────────────────────────────────────── */}
+      {/* ── STYLES ────────────────────────────────────────────────────── */}
       <style>{`
-        /* ── Stat cards ──────────────────────────────── */
         .wd-stat-card {
-          cursor: pointer;
-          border-radius: 10px !important;
+          cursor: pointer; border-radius: 10px !important;
           box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
           transition: transform 0.15s, box-shadow 0.15s !important;
           min-height: 80px;
@@ -591,7 +757,6 @@ export default function FollowupDashboard() {
         }
         .wd-stat-value { font-size: 22px; font-weight: 700; color: #0c447c; line-height: 1.1; }
 
-        /* ── Page header ─────────────────────────────── */
         .wd-page-header {
           display: flex; align-items: flex-start; justify-content: space-between;
           flex-wrap: wrap; gap: 10px; margin-bottom: 18px;
@@ -606,13 +771,9 @@ export default function FollowupDashboard() {
         .wd-page-title { font-size: 17px; font-weight: 600; color: #0c447c; margin: 0; }
         .wd-page-sub   { font-size: 12px; color: #6b7280; margin: 0; }
 
-        /* ── Header right cluster ────────────────────── */
-        .wd-header-right {
-          display: flex; align-items: flex-end; gap: 6px; flex-wrap: wrap;
-        }
+        .wd-header-right { display: flex; align-items: flex-end; gap: 6px; flex-wrap: wrap; }
         .wd-divider { width: 1px; height: 22px; background: #d0dce9; margin: 0 4px; align-self: center; }
 
-        /* ── Date inputs / select in header ──────────── */
         .wd-date-group { display: flex; flex-direction: column; gap: 3px; }
         .wd-date-label {
           font-size: 10px; font-weight: 600; color: #6b7280;
@@ -620,21 +781,18 @@ export default function FollowupDashboard() {
         }
         .wd-date-input, .wd-select {
           font-size: 12px; padding: 5px 10px; border-radius: 6px;
-          border: 0.5px solid #d0dce9; color: #374151;
-          background: #fff; outline: none; cursor: pointer;
-          transition: border-color 0.15s;
+          border: 0.5px solid #d0dce9; color: #374151; background: #fff;
+          outline: none; cursor: pointer; transition: border-color 0.15s;
         }
         .wd-date-input:focus, .wd-select:focus { border-color: #185fa5; }
         .wd-select { color: #185fa5; min-width: 130px; }
 
-        /* ── Table wrapper ───────────────────────────── */
         .wd-table-wrapper {
           border: 0.5px solid #d0dce9; border-radius: 10px;
           overflow: hidden; margin-bottom: 12px;
         }
         .wd-table { margin-bottom: 0 !important; font-size: 13px; }
 
-        /* ── Table header ────────────────────────────── */
         .wd-th {
           background: #185fa5 !important; color: #fff !important;
           font-size: 12px !important; font-weight: 600 !important;
@@ -642,7 +800,6 @@ export default function FollowupDashboard() {
           border: none !important; vertical-align: middle !important;
         }
 
-        /* ── Table rows ──────────────────────────────── */
         .wd-tr { transition: background 0.12s; }
         .wd-tr:hover { background: #f0f5fb !important; }
         .wd-td {
@@ -652,52 +809,43 @@ export default function FollowupDashboard() {
         }
         .wd-td-num { color: #9ca3af; font-size: 12px; }
 
-        /* ── Booking ID chip ─────────────────────────── */
         .wd-booking-id {
           background: #e6f1fb; color: #185fa5; border: 0.5px solid #b5d4f4;
           border-radius: 20px; font-size: 11px; font-weight: 600;
           padding: 2px 9px; white-space: nowrap;
         }
-
-        /* ── Patient name ────────────────────────────── */
         .wd-name { font-weight: 600; color: #0c447c; font-size: 13px; }
 
-        /* ── Status pill ─────────────────────────────── */
         .wd-status-badge {
           border-radius: 20px; font-size: 11px; font-weight: 600;
           padding: 3px 10px; white-space: nowrap; display: inline-block;
         }
 
-        /* ── Follow-up status dropdown ───────────────── */
         .wd-fu-select {
           font-size: 11px; padding: 4px 8px; border-radius: 6px;
           border: 0.5px solid #d0dce9; color: #185fa5;
           background: #f0f5fb; cursor: pointer; outline: none;
-          min-width: 130px; font-weight: 500;
-          transition: border-color 0.15s;
+          min-width: 130px; font-weight: 500; transition: border-color 0.15s;
         }
         .wd-fu-select:focus { border-color: #185fa5; }
 
-        /* ── Action button ───────────────────────────── */
         .wd-actions { display: flex; gap: 6px; align-items: center; }
         .wd-action-btn {
           width: 30px; height: 30px; border-radius: 7px; border: none;
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; transition: filter 0.12s, transform 0.1s; flex-shrink: 0;
         }
-        .wd-action-btn.view  { background: #e6f1fb; color: #185fa5; }
-        .wd-action-btn.edit  { background: #eaf3de; color: #3b6d11; }
+        .wd-action-btn.view { background: #e6f1fb; color: #185fa5; }
+        .wd-action-btn.edit { background: #eaf3de; color: #3b6d11; }
         .wd-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
         .wd-action-btn:active { transform: scale(0.94); }
 
-        /* ── Empty state ─────────────────────────────── */
         .wd-empty {
           display: flex; flex-direction: column; align-items: center;
           gap: 10px; padding: 40px 0; color: #9ca3af; font-size: 14px;
         }
         .wd-empty-icon { color: #d0dce9; }
 
-        /* ── Modal ───────────────────────────────────── */
         .wd-custom-modal .modal-content {
           border: 0.5px solid #d0dce9 !important;
           border-radius: 12px !important; overflow: hidden;
@@ -711,11 +859,9 @@ export default function FollowupDashboard() {
         .wd-modal-body { background: #f7fafd !important; padding: 20px !important; }
         .wd-modal-footer {
           border-top: 0.5px solid #d0dce9 !important; padding: 12px 20px !important;
-          gap: 8px; display: flex; justify-content: flex-end;
-          background: #f7fafd !important;
+          gap: 8px; display: flex; justify-content: flex-end; background: #f7fafd !important;
         }
 
-        /* ── Modal form fields ───────────────────────── */
         .wd-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
         .wd-label { font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 2px; }
         .wd-req { color: #e24b4a; }
@@ -730,7 +876,6 @@ export default function FollowupDashboard() {
           box-shadow: 0 0 0 2px rgba(24,95,165,0.15) !important;
         }
 
-        /* ── Modal buttons ───────────────────────────── */
         .wd-btn-primary {
           display: inline-flex; align-items: center; gap: 6px;
           background: #185fa5; color: #fff; border: none; border-radius: 8px;

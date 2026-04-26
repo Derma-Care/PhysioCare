@@ -29,6 +29,32 @@ import { emailPattern } from '../../Constant/Constants'
 import { showCustomToast } from '../../Utils/Toaster'
 import Pagination from '../../Utils/Pagination'
 
+/* ─────────────────────────────────────────────────────────────
+   ⚠️  CRITICAL: These helpers MUST live outside the component.
+   Defining them inside causes React to treat them as new
+   component types on every render → inputs unmount → focus lost.
+───────────────────────────────────────────────────────────── */
+const Field = ({ label, required, error, children }) => (
+  <div className="cm-field">
+    <label className="cm-label">
+      {label}{required && <span className="cm-req">*</span>}
+    </label>
+    {children}
+    {error && <div className="cm-error">{error}</div>}
+  </div>
+)
+
+const SectionHead = ({ icon, text }) => (
+  <div className="cm-section-head">
+    <span className="cm-section-bar" />
+    <span className="cm-section-icon">{icon}</span>
+    <span className="cm-section-title">{text}</span>
+  </div>
+)
+
+/* ─────────────────────────────────────────────────────────────
+   Main Component
+───────────────────────────────────────────────────────────── */
 const CustomerManagement = () => {
   const navigate = useNavigate()
   const [customerData, setCustomerData]   = useState([])
@@ -38,7 +64,7 @@ const CustomerManagement = () => {
   const [currentPage, setCurrentPage]     = useState(1)
   const [rowsPerPage, setRowsPerPage]     = useState(10)
   const [currentMobile, setCurrentMobile] = useState(null)
-  const [isModalVisible, setIsModalVisible]   = useState(false)
+  const [isModalVisible, setIsModalVisible]         = useState(false)
   const [customerIdToDelete, setCustomerIdToDelete] = useState(null)
   const [formErrors, setFormErrors]       = useState({})
   const { searchQuery }                   = useGlobalSearch()
@@ -122,9 +148,9 @@ const CustomerManagement = () => {
     let title = '', firstName = '', lastName = ''
     if (customer.fullName) {
       const parts = customer.fullName.trim().split(' ')
-      if (parts.length >= 3)      { title = parts[0]; firstName = parts[1]; lastName = parts.slice(2).join(' ') }
+      if (parts.length >= 3)       { title = parts[0]; firstName = parts[1]; lastName = parts.slice(2).join(' ') }
       else if (parts.length === 2) { title = parts[0]; firstName = parts[1] }
-      else                         { firstName = parts[0] }
+      else                          { firstName = parts[0] }
     }
     setFormData({
       customerId: customer.customerId || '',
@@ -174,22 +200,22 @@ const CustomerManagement = () => {
 
   const validateForm = () => {
     const errs = {}
-    if (!formData.title.trim())                           errs.title         = 'Title is required'
-    if (!formData.firstName.trim())                        errs.firstName     = 'First name is required'
-    if (!/^[1-9]\d{9}$/.test(formData.mobileNumber))      errs.mobileNumber  = 'Valid 10-digit number required'
-    if (!emailPattern.test(formData.email))                errs.email         = 'Valid email required'
-    if (!formData.dateOfBirth.trim())                      errs.dateOfBirth   = 'Date of birth required'
+    if (!formData.title.trim())                           errs.title        = 'Title is required'
+    if (!formData.firstName.trim())                        errs.firstName    = 'First name is required'
+    if (!/^[1-9]\d{9}$/.test(formData.mobileNumber))      errs.mobileNumber = 'Valid 10-digit number required'
+    if (!emailPattern.test(formData.email))                errs.email        = 'Valid email required'
+    if (!formData.dateOfBirth.trim())                      errs.dateOfBirth  = 'Date of birth required'
     else {
       const d = new Date(formData.dateOfBirth)
       if (isNaN(d) || d > new Date()) errs.dateOfBirth = 'Invalid date of birth'
     }
-    if (!formData.gender)                                  errs.gender        = 'Gender required'
-    if (!formData.address.houseNo?.trim())                 errs.houseNo       = 'House number required'
-    if (!formData.address.street?.trim())                  errs.street        = 'Street required'
-    if (!formData.address.city?.trim())                    errs.city          = 'City required'
-    if (!formData.address.state?.trim())                   errs.state         = 'State required'
-    if (!/^\d{6}$/.test(formData.address.postalCode))      errs.postalCode    = 'Valid 6-digit PIN required'
-    else if (!selectedPO && !formData.address.city?.trim()) errs.postOffice   = 'Select a post office'
+    if (!formData.gender)                                  errs.gender       = 'Gender required'
+    if (!formData.address.houseNo?.trim())                 errs.houseNo      = 'House number required'
+    if (!formData.address.street?.trim())                  errs.street       = 'Street required'
+    if (!formData.address.city?.trim())                    errs.city         = 'City required'
+    if (!formData.address.state?.trim())                   errs.state        = 'State required'
+    if (!/^\d{6}$/.test(formData.address.postalCode))      errs.postalCode   = 'Valid 6-digit PIN required'
+    else if (!selectedPO && !formData.address.city?.trim()) errs.postOffice  = 'Select a post office'
     setFormErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -248,32 +274,13 @@ const CustomerManagement = () => {
 
   const displayData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
-  /* ─── Field helper ─────────────────────────────── */
-  const Field = ({ label, required, error, children }) => (
-    <div className="cm-field">
-      <label className="cm-label">{label}{required && <span className="cm-req">*</span>}</label>
-      {children}
-      {error && <div className="cm-error">{error}</div>}
-    </div>
-  )
-
-  /* ─── Section heading ───────────────────────────── */
-  const SectionHead = ({ icon, text }) => (
-    <div className="cm-section-head">
-      <span className="cm-section-bar" />
-      <span className="cm-section-icon">{icon}</span>
-      <span className="cm-section-title">{text}</span>
-    </div>
-  )
-
-  /* ─── Render ──────────────────────────────────────── */
   return (
     <div className="cm-wrapper">
       <ToastContainer />
       <ConfirmationModal
         isVisible={isModalVisible}
-        title="Delete Customer"
-        message="Are you sure you want to delete this customer? This action cannot be undone."
+        title="Delete Patient"
+        message="Are you sure you want to delete this patient? This action cannot be undone."
         isLoading={delloading}
         confirmText="Yes, Delete"
         cancelText="Cancel"
@@ -283,27 +290,24 @@ const CustomerManagement = () => {
         onCancel={() => { setIsModalVisible(false); setCustomerIdToDelete(null) }}
       />
 
-      {/* ── LIST VIEW ─────────────────────────────────── */}
+      {/* ── LIST VIEW ── */}
       {!isAdding ? (
         <>
-          {/* Page header */}
           <div className="cm-page-header">
             <div className="cm-page-title-group">
               <div className="cm-page-icon"><Users size={20} /></div>
               <div>
-                <h4 className="cm-page-title">Customer Management</h4>
-                <p className="cm-page-sub">{filteredData.length} customer{filteredData.length !== 1 ? 's' : ''} found</p>
+                <h4 className="cm-page-title">Patient Management</h4>
+                <p className="cm-page-sub">{filteredData.length} Patient{filteredData.length !== 1 ? 's' : ''} found</p>
               </div>
             </div>
             {can('Customer Management', 'create') && (
               <button className="cm-add-btn" onClick={() => { setIsAdding(true); resetForm() }}>
-                <UserPlus size={15} />
-                Add New Customer
+                <UserPlus size={15} /> Add New Patient
               </button>
             )}
           </div>
 
-          {/* Table area */}
           {loading ? (
             <div className="cm-center"><LoadingIndicator message="Loading customers..." /></div>
           ) : error ? (
@@ -335,7 +339,6 @@ const CustomerManagement = () => {
                         </CTableDataCell>
                         <CTableDataCell className="cm-td cm-td-name">
                           <div className="cm-name-cell">
-                           
                             <span>{customer?.fullName || '-'}</span>
                           </div>
                         </CTableDataCell>
@@ -348,12 +351,12 @@ const CustomerManagement = () => {
                         <CTableDataCell className="cm-td">{customer?.address?.city || '-'}</CTableDataCell>
                         <CTableDataCell className="cm-td">
                           <div className="cm-actions">
-                            {can('Customer Management', 'read') && (
+                            {/* {can('Customer Management', 'read') && (
                               <button className="cm-action-btn view" title="View"
-                                onClick={() => navigate('/patient-management', { state: { patientInfo: customer } })}>
+                                onClick={() => navigate('/Patient-Management', { state: { patientInfo: customer } })}>
                                 <Eye size={15} />
                               </button>
-                            )}
+                            )} */}
                             {can('Customer Management', 'update') && (
                               <button className="cm-action-btn edit" title="Edit"
                                 onClick={() => handleEditCustomer(customer)}>
@@ -386,15 +389,14 @@ const CustomerManagement = () => {
           )}
         </>
       ) : (
-        /* ── FORM VIEW ─────────────────────────────────── */
+        /* ── FORM VIEW ── */
         <div className="cm-form-wrapper">
-          {/* Form header */}
           <div className="cm-form-header">
             <div className="cm-form-header-left">
               <div className="cm-form-icon"><UserPlus size={18} /></div>
               <div>
-                <h4 className="cm-form-title">{isEditing ? 'Edit Customer' : 'Add New Customer'}</h4>
-                <p className="cm-form-sub">{isEditing ? 'Update customer information' : 'Fill in the details below'}</p>
+                <h4 className="cm-form-title">{isEditing ? 'Edit Patient' : 'Add New Patient'}</h4>
+                <p className="cm-form-sub">{isEditing ? 'Update patient information' : 'Fill in the details below'}</p>
               </div>
             </div>
             <button className="cm-cancel-top-btn" onClick={handleCancel}>✕ Cancel</button>
@@ -402,30 +404,41 @@ const CustomerManagement = () => {
 
           <CForm onSubmit={handleFormSubmit} className="cm-form">
 
-            {/* Section 1: Personal Info */}
+            {/* Section 1 – Personal Info */}
             <SectionHead icon="👤" text="Personal Information" />
             <div className="cm-grid cm-grid-4">
               <Field label="Title" required error={formErrors.title}>
                 <CFormSelect name="title" value={formData.title} onChange={handleInputChange}
                   className={`cm-input${formErrors.title ? ' is-invalid' : ''}`}>
                   <option value="">Select title</option>
-                  {['Mr.','Mrs.','Miss.','Ms.','Mx.','Dr.','Prof.','Rev.','Capt.','Col.'].map(t=>(
+                  {['Mr.','Mrs.','Miss.','Ms.','Mx.','Dr.','Prof.','Rev.','Capt.','Col.'].map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </CFormSelect>
               </Field>
 
               <Field label="First Name" required error={formErrors.firstName}>
-                <CFormInput name="firstName" value={formData.firstName}
+                <CFormInput
+                  name="firstName"
+                  value={formData.firstName}
                   className={`cm-input${formErrors.firstName ? ' is-invalid' : ''}`}
-                  onChange={(e) => handleInputChange({ target: { name:'firstName', value: e.target.value.replace(/[^A-Za-z\s]/g,'') } })}
-                  placeholder="First name" />
+                  onChange={(e) =>
+                    handleInputChange({ target: { name: 'firstName', value: e.target.value.replace(/[^A-Za-z\s]/g, '') } })
+                  }
+                  placeholder="First name"
+                />
               </Field>
 
               <Field label="Last Name">
-                <CFormInput name="lastName" value={formData.lastName} className="cm-input"
-                  onChange={(e) => handleInputChange({ target: { name:'lastName', value: e.target.value.replace(/[^A-Za-z\s]/g,'') } })}
-                  placeholder="Last name" />
+                <CFormInput
+                  name="lastName"
+                  value={formData.lastName}
+                  className="cm-input"
+                  onChange={(e) =>
+                    handleInputChange({ target: { name: 'lastName', value: e.target.value.replace(/[^A-Za-z\s]/g, '') } })
+                  }
+                  placeholder="Last name"
+                />
               </Field>
 
               <Field label="Gender" required error={formErrors.gender}>
@@ -439,7 +452,10 @@ const CustomerManagement = () => {
               </Field>
 
               <Field label="Date of Birth" required error={formErrors.dateOfBirth}>
-                <CFormInput type="date" name="dateOfBirth" value={formData.dateOfBirth}
+                <CFormInput
+                  type="date"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth}
                   className={`cm-input${formErrors.dateOfBirth ? ' is-invalid' : ''}`}
                   max={new Date().toISOString().split('T')[0]}
                   onChange={(e) => {
@@ -448,8 +464,11 @@ const CustomerManagement = () => {
                     if (!isNaN(dob)) {
                       const age = Math.abs(new Date(Date.now() - dob).getUTCFullYear() - 1970)
                       setFormData((p) => ({ ...p, age: age.toString() }))
-                    } else setFormData((p) => ({ ...p, age: '' }))
-                  }} />
+                    } else {
+                      setFormData((p) => ({ ...p, age: '' }))
+                    }
+                  }}
+                />
               </Field>
 
               <Field label="Age">
@@ -457,46 +476,63 @@ const CustomerManagement = () => {
               </Field>
 
               <Field label="Email" required error={formErrors.email}>
-                <CFormInput type="email" name="email" value={formData.email}
+                <CFormInput
+                  type="email"
+                  name="email"
+                  value={formData.email}
                   className={`cm-input${formErrors.email ? ' is-invalid' : ''}`}
-                  onChange={handleInputChange} placeholder="email@example.com" />
+                  onChange={handleInputChange}
+                  placeholder="email@example.com"
+                />
               </Field>
 
               <Field label="Mobile Number" required error={formErrors.mobileNumber}>
-                <CFormInput name="mobileNumber" value={formData.mobileNumber} maxLength={10}
+                <CFormInput
+                  name="mobileNumber"
+                  value={formData.mobileNumber}
+                  maxLength={10}
                   className={`cm-input${formErrors.mobileNumber ? ' is-invalid' : ''}`}
                   onChange={(e) => { if (/^[0-9]*$/.test(e.target.value)) handleInputChange(e) }}
-                  onPaste={(e) => e.preventDefault()} placeholder="10-digit number" />
+                  onPaste={(e) => e.preventDefault()}
+                  placeholder="10-digit number"
+                />
               </Field>
             </div>
 
             <div className="cm-divider" />
 
-            {/* Section 2: Address */}
+            {/* Section 2 – Address */}
             <SectionHead icon="📍" text="Address Details" />
             <div className="cm-grid cm-grid-4">
               <Field label="House / Bldg / Apt" required error={formErrors.houseNo}>
-                <CFormInput value={formData.address.houseNo}
+                <CFormInput
+                  value={formData.address.houseNo}
                   className={`cm-input${formErrors.houseNo ? ' is-invalid' : ''}`}
-                  onChange={(e) => handleNestedChange('address','houseNo',e.target.value)}
-                  placeholder="Flat / House no." />
+                  onChange={(e) => handleNestedChange('address', 'houseNo', e.target.value)}
+                  placeholder="Flat / House no."
+                />
               </Field>
 
               <Field label="Postal Code" required error={formErrors.postalCode}>
-                <CFormInput value={formData.address.postalCode} maxLength={6}
+                <CFormInput
+                  value={formData.address.postalCode}
+                  maxLength={6}
                   className={`cm-input${formErrors.postalCode ? ' is-invalid' : ''}`}
-                  onChange={(e) => handlePincodeChange(e.target.value)} placeholder="6-digit PIN" />
+                  onChange={(e) => handlePincodeChange(e.target.value)}
+                  placeholder="6-digit PIN"
+                />
               </Field>
 
               <Field label="Post Office" required error={formErrors.postOffice}>
-                <CFormSelect className="cm-input"
+                <CFormSelect
+                  className="cm-input"
                   value={selectedPO?.Name || formData.address.city || ''}
                   onChange={(e) => {
                     const po = postOffices.find((p) => p.Name === e.target.value)
                     setSelectedPO(po)
                     if (po) {
-                      handleNestedChange('address','city',po.Name || '')
-                      handleNestedChange('address','state',po.State || '')
+                      handleNestedChange('address', 'city', po.Name || '')
+                      handleNestedChange('address', 'state', po.State || '')
                     }
                   }}>
                   <option value="">-- Select Post Office --</option>
@@ -505,52 +541,78 @@ const CustomerManagement = () => {
               </Field>
 
               <Field label="Landmark">
-                <CFormInput value={formData.address.landmark} className="cm-input"
-                  onChange={(e) => handleNestedChange('address','landmark',e.target.value)}
-                  placeholder="Nearby landmark" />
+                <CFormInput
+                  value={formData.address.landmark}
+                  className="cm-input"
+                  onChange={(e) => handleNestedChange('address', 'landmark', e.target.value)}
+                  placeholder="Nearby landmark"
+                />
               </Field>
 
               <Field label="Street / Road / Lane" required error={formErrors.street}>
-                <CFormInput value={formData.address.street}
+                <CFormInput
+                  value={formData.address.street}
                   className={`cm-input${formErrors.street ? ' is-invalid' : ''}`}
-                  onChange={(e) => handleNestedChange('address','street',e.target.value)}
-                  placeholder="Street name" />
+                  onChange={(e) => handleNestedChange('address', 'street', e.target.value)}
+                  placeholder="Street name"
+                />
               </Field>
 
               <Field label="Village / Town / City" required error={formErrors.city}>
-                <CFormInput value={formData.address.city}
+                <CFormInput
+                  value={formData.address.city}
                   className={`cm-input${formErrors.city ? ' is-invalid' : ''}`}
-                  onChange={(e) => { if (/^[a-zA-Z\s]*$/.test(e.target.value)) handleNestedChange('address','city',e.target.value) }}
-                  placeholder="City" />
+                  onChange={(e) => {
+                    if (/^[a-zA-Z\s]*$/.test(e.target.value))
+                      handleNestedChange('address', 'city', e.target.value)
+                  }}
+                  placeholder="City"
+                />
               </Field>
 
               <Field label="State" required error={formErrors.state}>
-                <CFormInput value={formData.address.state}
+                <CFormInput
+                  value={formData.address.state}
                   className={`cm-input${formErrors.state ? ' is-invalid' : ''}`}
-                  onChange={(e) => { if (/^[a-zA-Z\s]*$/.test(e.target.value)) handleNestedChange('address','state',e.target.value) }}
-                  placeholder="State" />
+                  onChange={(e) => {
+                    if (/^[a-zA-Z\s]*$/.test(e.target.value))
+                      handleNestedChange('address', 'state', e.target.value)
+                  }}
+                  placeholder="State"
+                />
               </Field>
 
               <Field label="Country">
-                <CFormInput value={formData.address.country} className="cm-input"
-                  onChange={(e) => { if (/^[a-zA-Z\s]*$/.test(e.target.value)) handleNestedChange('address','country',e.target.value) }}
-                  placeholder="Country" />
+                <CFormInput
+                  value={formData.address.country}
+                  className="cm-input"
+                  onChange={(e) => {
+                    if (/^[a-zA-Z\s]*$/.test(e.target.value))
+                      handleNestedChange('address', 'country', e.target.value)
+                  }}
+                  placeholder="Country"
+                />
               </Field>
             </div>
 
             <div className="cm-divider" />
 
-            {/* Section 3: Other */}
+            {/* Section 3 – Other */}
             <SectionHead icon="🔗" text="Other Details" />
             <div className="cm-grid cm-grid-4">
               <Field label="Referral Code (optional)" error={formErrors.referredBy}>
-                <CFormInput name="referredBy" value={formData.referredBy}
+                <CFormInput
+                  name="referredBy"
+                  value={formData.referredBy}
                   className={`cm-input${formErrors.referredBy ? ' is-invalid' : ''}`}
-                  onChange={handleInputChange} placeholder="Enter referral code" disabled={isEditing} />
+                  onChange={handleInputChange}
+                  placeholder="Enter referral code"
+                  disabled={isEditing}
+                />
               </Field>
             </div>
 
-            {/* Footer actions */}
+            {/* Footer */}
             <div className="cm-form-footer">
               <button type="button" className="cm-btn-secondary" onClick={handleCancel}>Cancel</button>
               <button type="button" className="cm-btn-secondary" onClick={resetForm}>Reset</button>
@@ -558,18 +620,17 @@ const CustomerManagement = () => {
                 {saveloading && <span className="spinner-border spinner-border-sm me-2" />}
                 {saveloading
                   ? (isEditing ? 'Updating...' : 'Saving...')
-                  : (isEditing ? 'Update Customer' : 'Save Customer')}
+                  : (isEditing ? 'Update Patient' : 'Save Patient')}
               </button>
             </div>
           </CForm>
         </div>
       )}
 
-      {/* ─── Styles ─────────────────────────────────────── */}
+      {/* ─── Styles ─── */}
       <style>{`
         .cm-wrapper { padding: 2px 0; font-family: inherit; }
 
-        /* ── Page header ─────────────────────── */
         .cm-page-header {
           display: flex; align-items: center; justify-content: space-between;
           flex-wrap: wrap; gap: 12px; margin-bottom: 18px;
@@ -595,7 +656,6 @@ const CustomerManagement = () => {
         .cm-add-btn:hover  { background: #0c447c; }
         .cm-add-btn:active { transform: scale(0.98); }
 
-        /* ── Table ──────────────────────────── */
         .cm-table-wrapper {
           border: 0.5px solid #d0dce9; border-radius: 10px;
           overflow: hidden; margin-bottom: 12px;
@@ -608,7 +668,11 @@ const CustomerManagement = () => {
         }
         .cm-tr { transition: background 0.12s; }
         .cm-tr:hover { background: #f0f5fb !important; }
-        .cm-td { padding: 11px 14px !important; vertical-align: middle !important; font-size: 13px; color: #374151; border-bottom: 0.5px solid #eef2f7 !important; border-top: none !important; }
+        .cm-td {
+          padding: 11px 14px !important; vertical-align: middle !important;
+          font-size: 13px; color: #374151;
+          border-bottom: 0.5px solid #eef2f7 !important; border-top: none !important;
+        }
         .cm-td-num { color: #9ca3af; font-size: 12px; }
 
         .cm-id-pill {
@@ -617,19 +681,9 @@ const CustomerManagement = () => {
           padding: 2px 8px; border-radius: 20px;
           border: 0.5px solid #b5d4f4; white-space: nowrap;
         }
-
         .cm-name-cell { display: flex; align-items: center; gap: 9px; }
-        .cm-avatar {
-          width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-          background: #e6f1fb; color: #0c447c;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 11px; font-weight: 700; border: 1.5px solid #b5d4f4;
-        }
 
-        .cm-gender-badge {
-          font-size: 11px; font-weight: 500;
-          padding: 2px 8px; border-radius: 20px;
-        }
+        .cm-gender-badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
         .cm-gender-badge.male   { background: #e6f1fb; color: #185fa5; border: 0.5px solid #b5d4f4; }
         .cm-gender-badge.female { background: #fbeaf0; color: #993556; border: 0.5px solid #f4c0d1; }
         .cm-gender-badge.others { background: #f1efe8; color: #5f5e5a; border: 0.5px solid #d3d1c7; }
@@ -638,8 +692,7 @@ const CustomerManagement = () => {
         .cm-action-btn {
           width: 30px; height: 30px; border-radius: 7px; border: none;
           display: flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: background 0.12s, transform 0.1s;
-          flex-shrink: 0;
+          cursor: pointer; transition: background 0.12s, transform 0.1s; flex-shrink: 0;
         }
         .cm-action-btn.view   { background: #e6f1fb; color: #185fa5; }
         .cm-action-btn.edit   { background: #eaf3de; color: #3b6d11; }
@@ -647,23 +700,18 @@ const CustomerManagement = () => {
         .cm-action-btn:hover  { filter: brightness(0.92); transform: scale(1.07); }
         .cm-action-btn:active { transform: scale(0.95); }
 
-        /* ── Empty / Error ───────────────────── */
         .cm-center {
           display: flex; flex-direction: column;
-          justify-content: center; align-items: center;
-          min-height: 40vh; gap: 12px;
+          justify-content: center; align-items: center; min-height: 40vh; gap: 12px;
         }
         .cm-empty      { color: #9ca3af; font-size: 15px; }
         .cm-empty-icon { color: #d0dce9; }
         .cm-error-msg  { color: #a32d2d; font-size: 14px; }
 
-        /* ── Form wrapper ───────────────────── */
         .cm-form-wrapper {
           background: #fff; border: 0.5px solid #d0dce9;
           border-radius: 12px; overflow: hidden;
         }
-
-        /* ── Form header ────────────────────── */
         .cm-form-header {
           display: flex; align-items: center; justify-content: space-between;
           padding: 16px 22px; background: #185fa5; flex-wrap: wrap; gap: 12px;
@@ -678,68 +726,59 @@ const CustomerManagement = () => {
         .cm-form-title { font-size: 16px; font-weight: 600; color: #fff; margin: 0; }
         .cm-form-sub   { font-size: 12px; color: rgba(255,255,255,0.75); margin: 0; }
         .cm-cancel-top-btn {
-          background: rgba(255,255,255,0.15); color: #fff; border: 0.5px solid rgba(255,255,255,0.30);
-          border-radius: 7px; padding: 6px 14px; font-size: 12px; font-weight: 500;
-          cursor: pointer; transition: background 0.15s;
+          background: rgba(255,255,255,0.15); color: #fff;
+          border: 0.5px solid rgba(255,255,255,0.30);
+          border-radius: 7px; padding: 6px 14px;
+          font-size: 12px; font-weight: 500; cursor: pointer;
+          transition: background 0.15s;
         }
         .cm-cancel-top-btn:hover { background: rgba(255,255,255,0.25); }
 
-        /* ── Form body ──────────────────────── */
         .cm-form { padding: 20px 22px; background: #f7fafd; }
 
-        /* Section head */
         .cm-section-head {
           display: flex; align-items: center; gap: 8px;
           margin-bottom: 14px; margin-top: 4px;
         }
-        .cm-section-bar { width: 3px; height: 18px; background: #185fa5; border-radius: 2px; flex-shrink: 0; }
-        .cm-section-icon { font-size: 15px; }
+        .cm-section-bar   { width: 3px; height: 18px; background: #185fa5; border-radius: 2px; flex-shrink: 0; }
+        .cm-section-icon  { font-size: 15px; }
         .cm-section-title { font-size: 13px; font-weight: 600; color: #0c447c; }
 
         .cm-divider { border: none; border-top: 0.5px solid #d0dce9; margin: 18px 0 16px; }
 
-        /* Grid */
-        .cm-grid { display: grid; gap: 14px; margin-bottom: 4px; }
+        .cm-grid   { display: grid; gap: 14px; margin-bottom: 4px; }
         .cm-grid-4 { grid-template-columns: repeat(4, 1fr); }
         @media (max-width: 900px) { .cm-grid-4 { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 520px) { .cm-grid-4 { grid-template-columns: 1fr; } }
 
-        /* Field */
         .cm-field { display: flex; flex-direction: column; gap: 4px; }
         .cm-label { font-size: 12px; font-weight: 500; color: #374151; }
-        .cm-req { color: #e24b4a; margin-left: 2px; }
+        .cm-req   { color: #e24b4a; margin-left: 2px; }
         .cm-error { font-size: 11px; color: #a32d2d; margin-top: 1px; }
 
-        /* Inputs */
         .cm-input {
           width: 100%; height: 36px; padding: 0 10px;
           border: 0.5px solid #ced4da; border-radius: 7px;
           font-size: 13px; color: #374151; background: #fff;
-          transition: border-color 0.15s, box-shadow 0.15s;
-          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s; outline: none;
         }
-        .cm-input:focus {
-          border-color: #185fa5;
-          box-shadow: 0 0 0 2px rgba(24,95,165,0.15);
-        }
+        .cm-input:focus { border-color: #185fa5; box-shadow: 0 0 0 2px rgba(24,95,165,0.15); }
         .cm-input.is-invalid { border-color: #e24b4a !important; }
         .cm-input-readonly { background: #f0f5fb !important; color: #6b7280 !important; cursor: not-allowed; }
         select.cm-input { height: 36px; }
         textarea.cm-input { height: auto; padding: 8px 10px; }
 
-        /* Footer */
         .cm-form-footer {
           display: flex; justify-content: flex-end; gap: 8px;
-          margin-top: 20px; padding-top: 16px;
-          border-top: 0.5px solid #d0dce9;
+          margin-top: 20px; padding-top: 16px; border-top: 0.5px solid #d0dce9;
         }
         .cm-btn-primary {
           display: inline-flex; align-items: center;
           background: #185fa5; color: #fff; border: none;
           border-radius: 8px; padding: 9px 22px;
           font-size: 13px; font-weight: 600; cursor: pointer;
-          transition: background 0.15s, transform 0.1s;
           box-shadow: 0 2px 8px rgba(24,95,165,0.20);
+          transition: background 0.15s, transform 0.1s;
         }
         .cm-btn-primary:hover:not(:disabled)  { background: #0c447c; }
         .cm-btn-primary:active:not(:disabled)  { transform: scale(0.98); }

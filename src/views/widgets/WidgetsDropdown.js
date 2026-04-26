@@ -410,7 +410,7 @@ const WidgetsDropdown = (props) => {
             <div className="wd-divider" />
 
             {/* Search Patients */}
-            <button className="wd-nav-btn" onClick={() => navigate('/customer-management')}>
+            <button className="wd-nav-btn" onClick={() => navigate('/Patient-Management')}>
               <span className="wd-count-badge">{totalPatientsCount}</span>
               Search Patients
               <CIcon icon={cilArrowRight} style={{ width: '13px', height: '13px' }} />

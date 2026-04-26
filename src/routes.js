@@ -170,11 +170,11 @@ const routes = [
   { path: '/report-details/:id', name: 'Report Details', element: ReportsDetails },
 
   {
-    path: '/customer-management/:customerId',
-    name: 'Customer View Details',
+    path: '/Patient-Management/:customerId',
+    name: 'Patient View Details',
     element: CustomerViewDetails,
   },
-  { path: '/customer-management', name: 'Customer Management', element: CustomerManagement },
+  { path: '/Patient-Management', name: 'Patient Management', element: CustomerManagement },
   { path: '/patient-management', name: 'Patient Management', element: PatientManagement },
 
   // Attendance

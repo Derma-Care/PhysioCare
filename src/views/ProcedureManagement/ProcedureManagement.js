@@ -36,6 +36,58 @@ import { showCustomToast } from "../../Utils/Toaster"
 import { useHospital } from "../Usecontext/HospitalContext"
 import { useGlobalSearch } from "../Usecontext/GlobalSearchContext"
 
+// ─── Safe image renderer ─────────────────────────────────────────────────────
+const SafeImage = ({ src, alt, width = 44, height = 44 }) => {
+  const [imgSrc, setImgSrc] = useState(null)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    if (!src) return
+    try {
+      // If already a data URL or http URL, use directly
+      if (src.startsWith("data:") || src.startsWith("http")) {
+        setImgSrc(src)
+      } else {
+        // Try treating as raw base64
+        setImgSrc(`data:image/jpeg;base64,${src}`)
+      }
+    } catch (e) {
+      setError(true)
+    }
+  }, [src])
+
+  if (!src || error) return <span className="tm-no-media">—</span>
+  return (
+    <img
+      src={imgSrc}
+      width={width}
+      height={height}
+      style={{ objectFit: "cover", borderRadius: "6px", border: "0.5px solid #d0dce9" }}
+      alt={alt}
+      onError={() => setError(true)}
+    />
+  )
+}
+
+// ─── Safe video link renderer ─────────────────────────────────────────────────
+const SafeVideoLink = ({ src }) => {
+  if (!src) return <span className="tm-no-media">—</span>
+  let href = src
+  try {
+    // If not a URL, try to decode base64 → URL
+    if (!src.startsWith("http") && !src.startsWith("data:")) {
+      href = atob(src)
+    }
+  } catch (e) {
+    href = src
+  }
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="tm-video-link">
+      ▶ View
+    </a>
+  )
+}
+
 export default function TherapyManagement() {
   const [list, setList] = useState([])
   const [exerciseOptions, setExerciseOptions] = useState([])
@@ -47,9 +99,9 @@ export default function TherapyManagement() {
   const [viewModal, setViewModal] = useState(false)
   const [viewLoading, setViewLoading] = useState(false)
   const [viewTherapy, setViewTherapy] = useState(null)
+  const [viewError, setViewError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [saveLoading, setSaveLoading] = useState(false)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const { searchQuery } = useGlobalSearch()
   const { user } = useHospital()
@@ -77,7 +129,7 @@ export default function TherapyManagement() {
       const res = await getTherapiesService(clinicId, branchId)
       setList(res?.data?.data || [])
     } catch (error) {
-      console.log("fetchData error", error)
+      console.error("fetchData error", error)
     } finally {
       setLoading(false)
     }
@@ -93,18 +145,32 @@ export default function TherapyManagement() {
       }))
       setExerciseOptions(options)
     } catch (err) {
-      console.log("fetchExercises error", err)
+      console.error("fetchExercises error", err)
     }
   }
 
+  // ---------------- VIEW ----------------
   const handleView = async (id) => {
+    setViewTherapy(null)
+    setViewError(null)
+    setViewModal(true)
+    setViewLoading(true)
     try {
-      setViewModal(true)
-      setViewLoading(true)
       const res = await getTherapiesServicebytherapyId(id, clinicId, branchId)
-      setViewTherapy(res?.data?.data)
+      // Support multiple response shapes:
+      //   res.data.data   (most common)
+      //   res.data        (flat)
+      //   res             (raw)
+      const data =
+        res?.data?.data ||
+        res?.data ||
+        res ||
+        null
+      if (!data) throw new Error("No data returned from API")
+      setViewTherapy(data)
     } catch (err) {
-      console.log("view error", err)
+      console.error("view error", err)
+      setViewError(err?.response?.data?.message || err?.message || "Failed to load therapy details")
     } finally {
       setViewLoading(false)
     }
@@ -185,7 +251,7 @@ export default function TherapyManagement() {
   }
 
   const filteredList = list.filter((item) => {
-    const search = searchQuery.toLowerCase()
+    const search = (searchQuery || "").toLowerCase()
     if (!search) return true
     return (
       (item.id || "").toString().toLowerCase().includes(search) ||
@@ -228,11 +294,7 @@ export default function TherapyManagement() {
     option: (base, state) => ({
       ...base,
       fontSize: "13px",
-      backgroundColor: state.isSelected
-        ? "#185fa5"
-        : state.isFocused
-        ? "#e6f1fb"
-        : "transparent",
+      backgroundColor: state.isSelected ? "#185fa5" : state.isFocused ? "#e6f1fb" : "transparent",
       color: state.isSelected ? "#fff" : "#374151",
     }),
     placeholder: (base) => ({ ...base, fontSize: "13px", color: "#9ca3af" }),
@@ -246,7 +308,16 @@ export default function TherapyManagement() {
     menuList: (base) => ({ ...base, maxHeight: 200, overflowY: "auto" }),
   }
 
-  // ─── Loading state ──────────────────────────────
+  // ─── Exercises from view response (handle both array and map shapes) ─────
+  const getExerciseList = (therapy) => {
+    if (!therapy) return []
+    if (Array.isArray(therapy.exercises)) return therapy.exercises
+    if (therapy.exercises && typeof therapy.exercises === "object") {
+      return Object.values(therapy.exercises)
+    }
+    return []
+  }
+
   if (loading) return <LoadingIndicator />
 
   return (
@@ -300,15 +371,12 @@ export default function TherapyManagement() {
               filteredList.map((item, index) => (
                 <CTableRow key={item.id} className="tm-tr">
                   <CTableDataCell className="tm-td tm-td-num">{index + 1}</CTableDataCell>
-
                   <CTableDataCell className="tm-td">
                     <span className="tm-therapy-name">{item.therapyName}</span>
                   </CTableDataCell>
-
                   <CTableDataCell className="tm-td">
                     <span className="tm-count-badge">{item.noExerciseIdCount} exercises</span>
                   </CTableDataCell>
-
                   <CTableDataCell className="tm-td">
                     <div className="tm-actions">
                       {can("Therapy Management", "read") && (
@@ -394,12 +462,10 @@ export default function TherapyManagement() {
                     styles={selectStyles}
                     placeholder="Search and select exercises..."
                     value={form.exercises}
-                    onFocus={() => setDropdownOpen(true)}
-                    onBlur={() => setDropdownOpen(false)}
                     onChange={(val) =>
                       setForm({
                         ...form,
-                        exercises: val,
+                        exercises: val || [],
                         exercisesIds: val ? val.map((v) => String(v.value)) : [],
                       })
                     }
@@ -413,7 +479,12 @@ export default function TherapyManagement() {
               <button type="button" className="tm-btn-secondary" onClick={resetForm}>
                 Cancel
               </button>
-              <button type="button" className="tm-btn-primary" onClick={handleSave} disabled={saveLoading}>
+              <button
+                type="button"
+                className="tm-btn-primary"
+                onClick={handleSave}
+                disabled={saveLoading}
+              >
                 {saveLoading ? (
                   <>
                     <span className="spinner-border spinner-border-sm me-2" />
@@ -433,7 +504,11 @@ export default function TherapyManagement() {
       {/* ── VIEW MODAL ───────────────────────────────── */}
       <CModal
         visible={viewModal}
-        onClose={() => setViewModal(false)}
+        onClose={() => {
+          setViewModal(false)
+          setViewTherapy(null)
+          setViewError(null)
+        }}
         size="xl"
         backdrop="static"
         alignment="center"
@@ -444,108 +519,143 @@ export default function TherapyManagement() {
         </CModalHeader>
 
         <CModalBody className="tm-modal-body tm-view-body">
-          {viewLoading ? (
-            <LoadingIndicator message="Loading therapy details..." />
-          ) : viewTherapy ? (
+          {/* ── Loading ── */}
+          {viewLoading && (
+            <div className="tm-view-state">
+              <div className="tm-spinner" />
+              <p>Loading therapy details...</p>
+            </div>
+          )}
+
+          {/* ── Error ── */}
+          {!viewLoading && viewError && (
+            <div className="tm-view-state tm-view-error">
+              <Stethoscope size={36} />
+              <p>{viewError}</p>
+              <button
+                className="tm-btn-secondary"
+                onClick={() => setViewModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          )}
+
+          {/* ── Data ── */}
+          {!viewLoading && !viewError && viewTherapy && (
             <>
               {/* Summary cards */}
               <div className="tm-summary-grid">
                 <div className="tm-summary-card">
                   <span className="tm-summary-label">Therapy Name</span>
-                  <span className="tm-summary-value">{viewTherapy.therapyName}</span>
+                  <span className="tm-summary-value">{viewTherapy.therapyName || "—"}</span>
                 </div>
                 <div className="tm-summary-card">
                   <span className="tm-summary-label">Therapy ID</span>
-                  <span className="tm-summary-value tm-id-pill">{viewTherapy.id}</span>
+                  <span className="tm-summary-value tm-id-pill">
+                    {viewTherapy.id || viewTherapy.therapyId || "—"}
+                  </span>
                 </div>
                 <div className="tm-summary-card">
                   <span className="tm-summary-label">No. of Exercises</span>
-                  <span className="tm-summary-value">{viewTherapy.noExerciseIdCount}</span>
+                  <span className="tm-summary-value">
+                    {viewTherapy.noExerciseIdCount ??
+                      getExerciseList(viewTherapy).length ??
+                      "—"}
+                  </span>
                 </div>
               </div>
 
               {/* Exercise table */}
               <div className="tm-section-label">Exercises</div>
-              <div className="tm-ex-table-wrap">
-                <CTable bordered responsive className="tm-ex-table">
-                  <CTableHead>
-                    <CTableRow>
-                      <CTableHeaderCell className="tm-ex-th">#</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">Name</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">Image</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">Video</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">Session</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">Frequency</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">Sets</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">Reps</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">Price</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">GST</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">Other Tax</CTableHeaderCell>
-                      <CTableHeaderCell className="tm-ex-th">Total</CTableHeaderCell>
-                    </CTableRow>
-                  </CTableHead>
-                  <CTableBody>
-                    {(viewTherapy.exercises || []).map((ex, i) => (
-                      <CTableRow key={ex.id} className="tm-ex-tr">
-                        <CTableDataCell className="tm-ex-td tm-td-num">{i + 1}</CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">
-                          <span className="tm-ex-name">{ex.name}</span>
-                        </CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">
-                          {ex.image ? (
-                            <img
-                              src={atob(ex.image)}
-                              width={44}
-                              height={44}
-                              style={{ objectFit: "cover", borderRadius: "6px", border: "0.5px solid #d0dce9" }}
-                              alt={ex.name}
-                            />
-                          ) : (
-                            <span className="tm-no-media">—</span>
-                          )}
-                        </CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">
-                          {ex.video ? (
-                            <a
-                              href={atob(ex.video)}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="tm-video-link"
-                            >
-                              ▶ View
-                            </a>
-                          ) : (
-                            <span className="tm-no-media">—</span>
-                          )}
-                        </CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">{ex.session || "—"}</CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">{ex.frequency || "—"}</CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">{ex.sets || "—"}</CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">{ex.repetitions || "—"}</CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">
-                          <span className="tm-price">₹{ex.pricePerSession}</span>
-                        </CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">{ex.gst}%</CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">{ex.otherTax}%</CTableDataCell>
-                        <CTableDataCell className="tm-ex-td">
-                          <span className="tm-total-price">₹{ex.totalPrice}</span>
-                        </CTableDataCell>
+
+              {getExerciseList(viewTherapy).length === 0 ? (
+                <div className="tm-empty">
+                  <Stethoscope size={32} className="tm-empty-icon" />
+                  <p>No exercises linked to this therapy</p>
+                </div>
+              ) : (
+                <div className="tm-ex-table-wrap">
+                  <CTable bordered responsive className="tm-ex-table">
+                    <CTableHead>
+                      <CTableRow>
+                        <CTableHeaderCell className="tm-ex-th">#</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Name</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Image</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Video</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Session</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Frequency</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Sets</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Reps</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Price</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">GST</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Other Tax</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Total</CTableHeaderCell>
                       </CTableRow>
-                    ))}
-                  </CTableBody>
-                </CTable>
-              </div>
+                    </CTableHead>
+                    <CTableBody>
+                      {getExerciseList(viewTherapy).map((ex, i) => (
+                        <CTableRow key={ex.id || ex.exerciseId || i} className="tm-ex-tr">
+                          <CTableDataCell className="tm-ex-td tm-td-num">{i + 1}</CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">
+                            <span className="tm-ex-name">{ex.name || "—"}</span>
+                          </CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">
+                            <SafeImage src={ex.image} alt={ex.name} />
+                          </CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">
+                            <SafeVideoLink src={ex.video} />
+                          </CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">{ex.session || "—"}</CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">{ex.frequency || "—"}</CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">{ex.sets || "—"}</CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">{ex.repetitions || "—"}</CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">
+                            <span className="tm-price">
+                              {ex.pricePerSession != null ? `₹${ex.pricePerSession}` : "—"}
+                            </span>
+                          </CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">
+                            {ex.gst != null ? `${ex.gst}%` : "—"}
+                          </CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">
+                            {ex.otherTax != null ? `${ex.otherTax}%` : "—"}
+                          </CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">
+                            <span className="tm-total-price">
+                              {ex.totalPrice != null ? `₹${ex.totalPrice}` : "—"}
+                            </span>
+                          </CTableDataCell>
+                        </CTableRow>
+                      ))}
+                    </CTableBody>
+                  </CTable>
+                </div>
+              )}
 
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
-                <button className="tm-btn-secondary" onClick={() => setViewModal(false)}>
+                <button
+                  className="tm-btn-secondary"
+                  onClick={() => {
+                    setViewModal(false)
+                    setViewTherapy(null)
+                    setViewError(null)
+                  }}
+                >
                   Close
                 </button>
               </div>
             </>
-          ) : (
-            <div className="tm-empty">
+          )}
+
+          {/* ── No data (API returned empty) ── */}
+          {!viewLoading && !viewError && !viewTherapy && (
+            <div className="tm-view-state">
               <Stethoscope size={40} className="tm-empty-icon" />
               <p>No data available</p>
+              <button className="tm-btn-secondary" onClick={() => setViewModal(false)}>
+                Close
+              </button>
             </div>
           )}
         </CModalBody>
@@ -555,7 +665,7 @@ export default function TherapyManagement() {
       <ConfirmationModal
         isVisible={isModalVisible}
         title="Delete Therapy"
-        message="Are you sure you want to delete this therapy? This action cannot be undone."
+        message="This therapy is linked to programs and packages. Deleting it will affect those records. Do you want to continue?"
         confirmText={
           delloading ? (
             <>
@@ -659,15 +769,7 @@ export default function TherapyManagement() {
           border-top: none !important;
         }
         .tm-td-num { color: #9ca3af; font-size: 12px; }
-
-        /* ── Therapy name ────────────────── */
-        .tm-therapy-name {
-          font-weight: 600;
-          font-size: 13px;
-          color: #0c447c;
-        }
-
-        /* ── Count badge ─────────────────── */
+        .tm-therapy-name { font-weight: 600; font-size: 13px; color: #0c447c; }
         .tm-count-badge {
           background: #eaf3de;
           color: #3b6d11;
@@ -677,16 +779,9 @@ export default function TherapyManagement() {
           font-weight: 600;
           padding: 2px 10px;
         }
-
-        /* ── Action buttons ─────────────── */
-        .tm-actions {
-          display: flex;
-          gap: 6px;
-          align-items: center;
-        }
+        .tm-actions { display: flex; gap: 6px; align-items: center; }
         .tm-action-btn {
-          width: 30px;
-          height: 30px;
+          width: 30px; height: 30px;
           border-radius: 7px;
           border: none;
           display: flex;
@@ -702,7 +797,7 @@ export default function TherapyManagement() {
         .tm-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
         .tm-action-btn:active { transform: scale(0.94); }
 
-        /* ── Empty state ─────────────────── */
+        /* ── Empty ── */
         .tm-empty {
           display: flex;
           flex-direction: column;
@@ -713,6 +808,26 @@ export default function TherapyManagement() {
           font-size: 14px;
         }
         .tm-empty-icon { color: #d0dce9; }
+
+        /* ── View state (loading / error / empty) ── */
+        .tm-view-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 14px;
+          padding: 48px 0;
+          color: #9ca3af;
+          font-size: 14px;
+        }
+        .tm-view-error { color: #a32d2d; }
+        .tm-spinner {
+          width: 36px; height: 36px;
+          border: 3px solid #e6f1fb;
+          border-top-color: #185fa5;
+          border-radius: 50%;
+          animation: tm-spin 0.7s linear infinite;
+        }
+        @keyframes tm-spin { to { transform: rotate(360deg); } }
 
         /* ── Modal shared ─────────────────── */
         .tm-custom-modal .modal-content {
@@ -738,30 +853,13 @@ export default function TherapyManagement() {
           background: #f7fafd !important;
           padding: 20px !important;
         }
-        .tm-view-body {
-          max-height: 78vh;
-          overflow-y: auto;
-        }
+        .tm-view-body { max-height: 78vh; overflow-y: auto; }
 
         /* ── Form fields ──────────────────── */
-        .tm-field {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          margin-bottom: 14px;
-        }
-        .tm-label {
-          font-size: 12px;
-          font-weight: 500;
-          color: #374151;
-          margin-bottom: 2px;
-        }
+        .tm-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+        .tm-label { font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 2px; }
         .tm-req { color: #e24b4a; }
-        .tm-err-msg {
-          font-size: 11px;
-          color: #a32d2d !important;
-          margin-top: 2px;
-        }
+        .tm-err-msg { font-size: 11px; color: #a32d2d !important; margin-top: 2px; }
         .tm-input {
           height: 36px;
           font-size: 13px !important;
@@ -815,16 +913,14 @@ export default function TherapyManagement() {
         }
         .tm-btn-secondary:hover { background: #f0f5fb; }
 
-        /* ── View modal — summary cards ────── */
+        /* ── Summary cards ── */
         .tm-summary-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 12px;
           margin-bottom: 18px;
         }
-        @media (max-width: 600px) {
-          .tm-summary-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 600px) { .tm-summary-grid { grid-template-columns: 1fr; } }
         .tm-summary-card {
           background: #fff;
           border: 0.5px solid #d0dce9;
@@ -841,11 +937,7 @@ export default function TherapyManagement() {
           text-transform: uppercase;
           letter-spacing: 0.04em;
         }
-        .tm-summary-value {
-          font-size: 14px;
-          font-weight: 700;
-          color: #0c447c;
-        }
+        .tm-summary-value { font-size: 14px; font-weight: 700; color: #0c447c; }
         .tm-id-pill {
           background: #e6f1fb;
           color: #185fa5;
@@ -856,8 +948,6 @@ export default function TherapyManagement() {
           padding: 2px 10px;
           display: inline-block;
         }
-
-        /* ── View modal — section label ────── */
         .tm-section-label {
           font-size: 11px;
           font-weight: 600;
@@ -867,7 +957,7 @@ export default function TherapyManagement() {
           margin-bottom: 8px;
         }
 
-        /* ── Exercise table ───────────────── */
+        /* ── Exercise table ─── */
         .tm-ex-table-wrap {
           border: 0.5px solid #d0dce9;
           border-radius: 10px;
@@ -893,8 +983,8 @@ export default function TherapyManagement() {
           border-color: #eef2f7 !important;
           color: #374151;
         }
-        .tm-ex-name { font-weight: 600; color: #0c447c; }
-        .tm-no-media { color: #9ca3af; }
+        .tm-ex-name    { font-weight: 600; color: #0c447c; }
+        .tm-no-media   { color: #9ca3af; }
         .tm-video-link {
           color: #185fa5;
           font-weight: 500;
@@ -902,11 +992,8 @@ export default function TherapyManagement() {
           font-size: 12px;
         }
         .tm-video-link:hover { text-decoration: underline; color: #0c447c; }
-        .tm-price { color: #374151; font-weight: 500; }
-        .tm-total-price {
-          color: #3b6d11;
-          font-weight: 700;
-        }
+        .tm-price       { color: #374151; font-weight: 500; }
+        .tm-total-price { color: #3b6d11; font-weight: 700; }
       `}</style>
     </>
   )
