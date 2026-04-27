@@ -20,6 +20,19 @@ import {
    on every keystroke → focus is lost after one character.
 ───────────────────────────────────────────────────────────── */
 
+const DAY_ORDER = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
+
+/* ── Derive startDay/endDay from a days array ── */
+const getDayRange = (days = []) => {
+  if (!days || days.length === 0) return { startDay: '', endDay: '' }
+  const indices = days.map(d => DAY_ORDER.indexOf(d)).filter(i => i !== -1).sort((a, b) => a - b)
+  if (indices.length === 0) return { startDay: '', endDay: '' }
+  return {
+    startDay: DAY_ORDER[indices[0]],
+    endDay:   DAY_ORDER[indices[indices.length - 1]],
+  }
+}
+
 const ChipSection = ({ label, items = [], onAdd, isView }) => {
   const [input, setInput] = useState('')
 
@@ -140,6 +153,54 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   const [formData, setFormData] = useState(emptyForm)
   const [errors,   setErrors]   = useState({})
 
+  /* ── Populate form on open ── */
+  useEffect(() => {
+    if (!visible) return
+
+    if (initialData) {
+      const avail = initialData.availability || {}
+
+      // If startDay/endDay already exist (e.g. already stored separately) use them;
+      // otherwise derive them from the days array.
+      let startDay = avail.startDay || ''
+      let endDay   = avail.endDay   || ''
+
+      if ((!startDay || !endDay) && avail.days?.length) {
+        const derived = getDayRange(avail.days)
+        startDay = startDay || derived.startDay
+        endDay   = endDay   || derived.endDay
+      }
+
+      setFormData({
+        ...emptyForm,
+        ...initialData,
+        // ensure arrays are never undefined
+        services:        initialData.services        || [],
+        specializations: initialData.specializations || [],
+        expertiseAreas:  initialData.expertiseAreas  || [],
+        treatmentTypes:  initialData.treatmentTypes  || [],
+        languages:       initialData.languages       || [],
+        documents: {
+          licenseCertificate: '',
+          degreeCertificate:  '',
+          profilePhoto:       '',
+          ...(initialData.documents || {}),
+        },
+        availability: {
+          days:      avail.days      || [],
+          startTime: avail.startTime || '',
+          endTime:   avail.endTime   || '',
+          startDay,
+          endDay,
+        },
+      })
+    } else {
+      setFormData(emptyForm)
+    }
+
+    setErrors({})
+  }, [initialData, visible])
+
   const validateForm = () => {
     const e = {}
     if (!formData.fullName?.trim()) e.fullName = 'Full name is required'
@@ -170,11 +231,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     return Object.keys(e).length === 0
   }
 
-  useEffect(() => {
-    setFormData(initialData ? { ...emptyForm, ...initialData } : emptyForm)
-    setErrors({})
-  }, [initialData, visible])
-
   const handleChange       = (field, value) => setFormData(prev => ({ ...prev, [field]: value }))
   const handleNestedChange = (parent, field, value) =>
     setFormData(prev => ({ ...prev, [parent]: { ...prev[parent], [field]: value } }))
@@ -202,13 +258,26 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
 
   const handleSubmit = () => {
     if (!validateForm()) return
+
     const { startDay, endDay, startTime, endTime } = formData.availability
-    const dayOrder = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
-    const si = dayOrder.indexOf(startDay), ei = dayOrder.indexOf(endDay)
+
+    // Build the days array from startDay → endDay range
+    const si = DAY_ORDER.indexOf(startDay)
+    const ei = DAY_ORDER.indexOf(endDay)
     const selectedDays = si <= ei
-      ? dayOrder.slice(si, ei + 1)
-      : [...dayOrder.slice(si), ...dayOrder.slice(0, ei + 1)]
-    onSave({ ...formData, availability: { days: selectedDays, startTime, endTime } })
+      ? DAY_ORDER.slice(si, ei + 1)
+      : [...DAY_ORDER.slice(si), ...DAY_ORDER.slice(0, ei + 1)]
+
+    onSave({
+      ...formData,
+      availability: {
+        days: selectedDays,
+        startTime,
+        endTime,
+        startDay,
+        endDay,
+      },
+    })
   }
 
   // ── react-select shared props ─────────────────────────────────────────────
@@ -355,7 +424,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           </>
 
         ) : (
-        /* ═══════════════ EDIT MODE ═══════════════ */
+        /* ═══════════════ EDIT / ADD MODE ═══════════════ */
           <CForm>
 
             <FormSection icon={UserCog} title="System Info">
@@ -458,7 +527,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                     <Select
                       isMulti
                       options={serviceOptions}
-                      value={serviceOptions.filter(o => formData.services.includes(o.value))}
+                      value={serviceOptions.filter(o => (formData.services || []).includes(o.value))}
                       onChange={(sel) => handleChange('services', sel ? sel.map(s => s.value) : [])}
                       {...selectPortalProps}
                     />
@@ -469,7 +538,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                     <Select
                       isMulti
                       options={specializationOptions}
-                      value={specializationOptions.filter(o => formData.specializations.includes(o.value))}
+                      value={specializationOptions.filter(o => (formData.specializations || []).includes(o.value))}
                       onChange={(sel) => handleChange('specializations', sel ? sel.map(s => s.value) : [])}
                       {...selectPortalProps}
                     />
@@ -484,8 +553,9 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                   <Field label="Start Day" required error={errors.startDay}>
                     <Select
                       options={dayOptions}
-                      value={dayOptions.find(o => o.value === formData.availability.startDay) || null}
+                      value={dayOptions.find(o => o.value === formData.availability?.startDay) || null}
                       onChange={(sel) => handleNestedChange('availability', 'startDay', sel?.value || '')}
+                      placeholder="Select start day"
                       {...selectPortalProps}
                     />
                   </Field>
@@ -494,8 +564,9 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                   <Field label="End Day" required error={errors.endDay}>
                     <Select
                       options={dayOptions}
-                      value={dayOptions.find(o => o.value === formData.availability.endDay) || null}
+                      value={dayOptions.find(o => o.value === formData.availability?.endDay) || null}
                       onChange={(sel) => handleNestedChange('availability', 'endDay', sel?.value || '')}
+                      placeholder="Select end day"
                       {...selectPortalProps}
                     />
                   </Field>
@@ -505,14 +576,14 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                 <div className="pf-col-half">
                   <Field label="Start Time" required error={errors.startTime}>
                     <input type="time" className="pf-input"
-                      value={formData.availability.startTime}
+                      value={formData.availability?.startTime || ''}
                       onChange={(e) => handleNestedChange('availability', 'startTime', e.target.value)} />
                   </Field>
                 </div>
                 <div className="pf-col-half">
                   <Field label="End Time" required error={errors.endTime}>
                     <input type="time" className="pf-input"
-                      value={formData.availability.endTime}
+                      value={formData.availability?.endTime || ''}
                       onChange={(e) => handleNestedChange('availability', 'endTime', e.target.value)} />
                   </Field>
                 </div>
@@ -532,7 +603,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
               <div className="pf-row">
                 <div className="pf-col-full">
                   <Field label="Treatment Types" required error={errors.treatmentTypes}>
-                    {/* Pass isView as a prop — ChipSection is now OUTSIDE this component */}
                     <ChipSection
                       label="Treatment Type"
                       items={formData.treatmentTypes}

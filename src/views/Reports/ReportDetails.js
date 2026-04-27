@@ -170,23 +170,66 @@ const ReportDetails = () => {
   }
 
   const handleUploadSubmit = async () => {
-    if (!newReport.reportName || !newReport.reportDate || !newReport.reportStatus || !newReport.reportType || !newReport.reportFile) {
-      showCustomToast('Please fill all required fields and upload a file.', 'error'); return
+    // ✅ Required field validation
+    if (
+      !newReport.reportName ||
+      !newReport.reportDate ||
+      !newReport.reportStatus ||
+      !newReport.reportType ||
+      !newReport.reportFile
+    ) {
+      showCustomToast('Please fill all required fields and upload a file.', 'error');
+      return;
     }
+
+    // ✅ 🚫 Prevent future dates
+    const selectedDate = new Date(newReport.reportDate);
+    const today = new Date();
+
+    // remove time part for accurate comparison
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate > today) {
+      showCustomToast('Future dates are not allowed.', 'error');
+      return;
+    }
+
     try {
-      setLoading(true)
+      setLoading(true);
+
       const payload = {
         customerId: appointmentInfo?.item.customerId,
-        reportsList: [{ ...newReport, patientId, reportFile: newReport.reportFile }],
-      }
-      const response = await SaveReportsData(payload)
-      setUploadModal(false)
-      showCustomToast('Report uploaded successfully!', 'success')
-      fetchReportDetails()
-      setNewReport({ reportName: '', reportDate: '', reportStatus: '', reportType: '', reportFile: null, bookingId: appointmentInfo?.bookingId || '' })
-    } catch (err) { console.error('Error uploading report:', err) }
-    finally { setLoading(false) }
-  }
+        reportsList: [
+          {
+            ...newReport,
+            patientId,
+            reportFile: newReport.reportFile,
+          },
+        ],
+      };
+
+      await SaveReportsData(payload);
+
+      setUploadModal(false);
+      showCustomToast('Report uploaded successfully!', 'success');
+      fetchReportDetails();
+
+      // ✅ Reset form
+      setNewReport({
+        reportName: '',
+        reportDate: '',
+        reportStatus: '',
+        reportType: '',
+        reportFile: null,
+        bookingId: appointmentInfo?.bookingId || '',
+      });
+
+    } catch (err) {
+      console.error('Error uploading report:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDeleteReport = async (reportId) => {
     try {
@@ -480,8 +523,9 @@ const ReportDetails = () => {
 
             <div className="rd-upload-field">
               <label className="rd-upload-label">Report Date <span className="rd-required">*</span></label>
-              <input className="rd-upload-input" type="date" value={newReport.reportDate} min={todayISO}
-                onChange={(e) => setNewReport({ ...newReport, reportDate: e.target.value })} />
+              <input className="rd-upload-input" type="date"
+                value={newReport.reportDate}
+                max={todayISO} />
             </div>
 
             <div className="rd-upload-field">

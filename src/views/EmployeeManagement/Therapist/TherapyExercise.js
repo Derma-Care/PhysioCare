@@ -52,6 +52,26 @@ const emptyExercise = {
   discountPercentage: "",
 }
 
+/* ─── Decode video URL (handles Base64-encoded URLs from backend) ────── */
+const decodeVideoUrl = (url) => {
+  if (!url) return ""
+  try {
+    // If it already starts with http/https, just return it
+    if (url.startsWith("http://") || url.startsWith("https://")) return url
+    // If it starts with www, prepend https://
+    if (url.startsWith("www.")) return "https://" + url
+    // Try to decode as Base64
+    const decoded = atob(url)
+    if (decoded.startsWith("http://") || decoded.startsWith("https://")) return decoded
+    if (decoded.startsWith("www.")) return "https://" + decoded
+    // Fallback: prepend https://
+    return "https://" + url
+  } catch {
+    // atob failed — not Base64, just prepend https://
+    return "https://" + url
+  }
+}
+
 /* ─── Impact Warning Banner ─────────────────────────────────────────── */
 const ImpactWarning = ({ message }) => (
   <div
@@ -215,8 +235,7 @@ export default function ExerciseTable() {
 
   // ── EDIT ─────────────────────────────────────────────
   const handleEdit = (item) => {
-    let videoUrl = item.video || ""
-    if (videoUrl && !videoUrl.startsWith("http")) videoUrl = "https://" + videoUrl
+    const videoUrl = decodeVideoUrl(item.video)
     const prefilled = { ...item, video: videoUrl, imagePreview: item.image }
     setForm(prefilled)
     setOriginalForm(prefilled)
@@ -227,7 +246,7 @@ export default function ExerciseTable() {
 
   // ── VIEW ─────────────────────────────────────────────
   const handleView = (ex) => {
-    setViewData(ex)
+    setViewData({ ...ex, video: decodeVideoUrl(ex.video) })
     setViewModal(true)
   }
 
@@ -716,7 +735,12 @@ export default function ExerciseTable() {
               <div className="ex-section-label" style={{ marginTop: 12 }}>Video</div>
               <div style={{ marginBottom: 16 }}>
                 {viewData.video ? (
-                  <a href={viewData.video} target="_blank" rel="noreferrer" className="ex-video-link">
+                  <a
+                    href={viewData.video}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ex-video-link"
+                  >
                     ▶ Watch Video
                   </a>
                 ) : (
