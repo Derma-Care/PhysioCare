@@ -19,7 +19,7 @@ const themeOptions = {
 }
 
 const ThemeSelector = () => {
-  const [selectedTheme, setSelectedTheme] = useState('classic')
+  const [selectedTheme, setSelectedTheme] = useState('default')
 
   // Load saved theme from localStorage on first render
   useEffect(() => {
@@ -28,7 +28,7 @@ const ThemeSelector = () => {
       applyTheme(savedTheme)
       setSelectedTheme(savedTheme)
     } else {
-      applyTheme('classic') // default theme
+      applyTheme('default') // default theme
     }
   }, [])
 
