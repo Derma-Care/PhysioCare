@@ -263,8 +263,7 @@ const Login = () => {
                     Welcome to CCMS
                   </h2>
                   <p className="lead mb-4" style={{ opacity: 0.95, color: COLORS.primary }}>
-                    Manage CCMS operations seamlessly — appointments, records, billing &
-                    more.
+                    Manage Clinic Management and operations Seamlessly
                   </p>
 
                   <div className="d-flex justify-content-center gap-3 flex-wrap">

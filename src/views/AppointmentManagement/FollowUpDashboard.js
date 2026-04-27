@@ -121,7 +121,6 @@ export default function FollowupDashboard() {
 
   const [activeCard, setActiveCard] = useState('today')
   const [rows, setRows] = useState([])
-  // allRows holds the full unfiltered dataset for the current view (today/week/daterange)
   const [allRows, setAllRows] = useState([])
   const [filter, setFilter] = useState('All')
   const [fromDate, setFromDate] = useState('')
@@ -342,7 +341,6 @@ export default function FollowupDashboard() {
     border: '0.5px solid #d0dce9',
   }
   const filterBtnActive = { ...filterBtnBase, backgroundColor: '#185fa5', color: '#fff', border: '0.5px solid #185fa5', boxShadow: '0 2px 8px rgba(24,95,165,0.18)' }
-  const filterBtnInactive = { ...filterBtnBase, backgroundColor: '#f0f5fb', color: '#374151' }
 
   /* ══════════════════════════════════════════════════════════════════
      RENDER
@@ -354,7 +352,6 @@ export default function FollowupDashboard() {
         {/* ── STAT CARDS ────────────────────────────────────────────── */}
         <CRow className="mb-4 g-3">
 
-          {/* Today */}
           <CCol md={3} xs={6}>
             <StatCard
               icon="📅" label="Today" value={todayCount}
@@ -368,7 +365,6 @@ export default function FollowupDashboard() {
             />
           </CCol>
 
-          {/* 1 Week */}
           <CCol md={3} xs={6}>
             <StatCard
               icon="🗓️" label="1 Week" value={weekCount}
@@ -382,7 +378,6 @@ export default function FollowupDashboard() {
             />
           </CCol>
 
-          {/* Confirmed — FIX: filter allRows from current view */}
           <CCol md={3} xs={6}>
             <StatCard
               icon="✅" label="Confirmed" value={confirmedCount}
@@ -391,13 +386,10 @@ export default function FollowupDashboard() {
                 setActiveCard('confirmed')
                 setFilter('Confirmed')
                 setCurrentPage(1)
-                // Use allRows already in state — no re-fetch needed
-                // rows state stays the same; filter handles display
               }}
             />
           </CCol>
 
-          {/* In Progress — FIX: same approach */}
           <CCol md={3} xs={6}>
             <StatCard
               icon="⏳" label="In Progress" value={inProgressCount}
@@ -427,19 +419,8 @@ export default function FollowupDashboard() {
             </div>
           </div>
 
-          {/* Right controls */}
+          {/* Right controls — only date pickers, status dropdown, and book button */}
           <div className="wd-header-right">
-            {['All', 'Pending', 'Confirmed', 'Completed'].map(s => (
-              <button
-                key={s}
-                style={filter === s ? filterBtnActive : filterBtnInactive}
-                onClick={() => { setFilter(s); setCurrentPage(1) }}
-              >
-                {s}
-              </button>
-            ))}
-
-            <div className="wd-divider" />
 
             <div className="wd-date-group">
               <label className="wd-date-label">From</label>
@@ -536,7 +517,6 @@ export default function FollowupDashboard() {
                       <CTableDataCell className="wd-td">{row.paymentType}</CTableDataCell>
                       <CTableDataCell className="wd-td">{capitalizeWords(row.visitType)}</CTableDataCell>
 
-                      {/* Appointment status pill */}
                       <CTableDataCell className="wd-td">
                         <span
                           className="wd-status-badge"
@@ -546,7 +526,6 @@ export default function FollowupDashboard() {
                         </span>
                       </CTableDataCell>
 
-                      {/* Follow-up status dropdown */}
                       <CTableDataCell className="wd-td">
                         <select
                           className="wd-fu-select"
@@ -569,7 +548,6 @@ export default function FollowupDashboard() {
                         </select>
                       </CTableDataCell>
 
-                      {/* View action */}
                       <CTableDataCell className="wd-td">
                         <button
                           className="wd-action-btn view"
@@ -617,7 +595,6 @@ export default function FollowupDashboard() {
         </CModalHeader>
 
         <CModalBody className="wd-modal-body">
-          {/* Reason */}
           <div className="wd-field">
             <label className="wd-label">Reason <span className="wd-req">*</span></label>
             <textarea
@@ -629,7 +606,6 @@ export default function FollowupDashboard() {
             />
           </div>
 
-          {/* Reschedule extras */}
           {selectedStatus === 'Rescheduled' && (
             <>
               <label className="wd-label" style={{ marginBottom: '8px', display: 'block' }}>
@@ -726,7 +702,6 @@ export default function FollowupDashboard() {
               await updatePaymentStatus(selectedRow.bookingId, selectedStatus, selectedRow, reason, newDate, newTime)
               setShowReasonModal(false)
               setReason('')
-              // Refresh the current active view
               if (activeCard === 'upcoming') {
                 getUpcomingAppointments()
               } else {
@@ -777,7 +752,6 @@ export default function FollowupDashboard() {
         .wd-page-sub   { font-size: 12px; color: #6b7280; margin: 0; }
 
         .wd-header-right { display: flex; align-items: flex-end; gap: 6px; flex-wrap: wrap; }
-        .wd-divider { width: 1px; height: 22px; background: #d0dce9; margin: 0 4px; align-self: center; }
 
         .wd-date-group { display: flex; flex-direction: column; gap: 3px; }
         .wd-date-label {
@@ -791,14 +765,12 @@ export default function FollowupDashboard() {
         }
         .wd-date-input:focus, .wd-select:focus { border-color: #185fa5; }
         .wd-select { color: #185fa5; min-width: 130px; }
-.wd-table-wrapper {
-  border: 0.5px solid #d0dce9; border-radius: 10px;
-  overflow-x: auto; overflow-y: hidden; margin-bottom: 12px;
-}
-.wd-table {
-  min-width: 1100px;
-}
-        .wd-table { margin-bottom: 0 !important; font-size: 13px; }
+
+        .wd-table-wrapper {
+          border: 0.5px solid #d0dce9; border-radius: 10px;
+          overflow-x: auto; overflow-y: hidden; margin-bottom: 12px;
+        }
+        .wd-table { min-width: 1100px; margin-bottom: 0 !important; font-size: 13px; }
 
         .wd-th {
           background: #185fa5 !important; color: #fff !important;
@@ -836,14 +808,12 @@ export default function FollowupDashboard() {
         }
         .wd-fu-select:focus { border-color: #185fa5; }
 
-        .wd-actions { display: flex; gap: 6px; align-items: center; }
         .wd-action-btn {
           width: 30px; height: 30px; border-radius: 7px; border: none;
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; transition: filter 0.12s, transform 0.1s; flex-shrink: 0;
         }
         .wd-action-btn.view { background: #e6f1fb; color: #185fa5; }
-        .wd-action-btn.edit { background: #eaf3de; color: #3b6d11; }
         .wd-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
         .wd-action-btn:active { transform: scale(0.94); }
 
