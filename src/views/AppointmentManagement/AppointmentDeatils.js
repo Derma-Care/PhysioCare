@@ -39,7 +39,7 @@ import PhysioConsentForm from './PhysioConsentForm'
 const tokens = {
   primary: 'var(--color-bgcolor)',
   white: '#ffffff',
-  black: '#1e293b',        // hard-coded dark slate — never inherits theme white
+  black: '#1e293b',
   surface: '#f8fafc',
   border: '#e2e8f0',
   muted: '#64748b',
@@ -234,31 +234,36 @@ const AppointmentDetails = () => {
     bmi: /^\d{1,2}(?:\.\d{1,2})?$/,
   }
 
+  const errorMap = {
+    height: 'Height must be a number between 10 and 999 cm',
+    weight: 'Weight must be a number between 1 and 999 kg',
+    bloodPressure: 'Blood Pressure must be in format: 120/80',
+    temperature: 'Temperature must be a valid number (e.g., 98.6)',
+    bmi: 'BMI must be a valid number (e.g., 24.5)',
+  }
+
+  // ── FIX: onChange only updates state, no validation ──
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    const errorMap = {
-      height: 'Height must be a number between 10 and 999 cm',
-      weight: 'Weight must be a number between 1 and 999 kg',
-      bloodPressure: 'Blood Pressure must be in format: 120/80',
-      temperature: 'Temperature must be a valid number (e.g., 98.6)',
-      bmi: 'BMI must be a valid number (e.g., 24.5)',
+  }
+
+  // ── FIX: validation only fires when user leaves the field ──
+  const handleBlur = (e) => {
+    const { name, value } = e.target
+    if (!value) {
+      // Clear error if field is empty (let submit handle required check)
+      setValidationErrors(prev => ({ ...prev, [name]: '' }))
+      return
     }
     setValidationErrors(prev => ({
       ...prev,
-      [name]: !regexRules[name].test(value) ? errorMap[name] : '',
+      [name]: !regexRules[name]?.test(value) ? errorMap[name] : '',
     }))
   }
 
   const validateVitals = () => {
     const errors = {}
-    const errorMap = {
-      height: 'Height must be a number between 10 and 999 cm',
-      weight: 'Weight must be a number between 1 and 999 kg',
-      bloodPressure: 'Blood Pressure must be in format: 120/80',
-      temperature: 'Temperature must be a valid number (e.g., 98.6)',
-      bmi: 'BMI must be a valid number (e.g., 24.5)',
-    }
     Object.keys(formData).forEach(field => {
       if (!regexRules[field]?.test(formData[field])) errors[field] = errorMap[field]
     })
@@ -280,6 +285,7 @@ const AppointmentDetails = () => {
       showCustomToast('Vitals added successfully!', 'success')
       setShowModal(false)
       setFormData({ height: '', weight: '', bloodPressure: '', temperature: '', bmi: '' })
+      setValidationErrors({})
       fetchVitals()
     } catch (error) {
       showCustomToast('Failed to add vitals', 'error')
@@ -366,7 +372,7 @@ const AppointmentDetails = () => {
     </button>
   )
 
-  /* ── form field ── */
+  /* ── form field ── FIX: added onBlur prop ── */
   const Field = ({ label, name, placeholder }) => (
     <div style={{ marginBottom: '14px' }}>
       <label style={{ fontSize: '12px', fontWeight: '600', color: tokens.muted, display: 'block', marginBottom: '4px' }}>
@@ -377,6 +383,7 @@ const AppointmentDetails = () => {
         placeholder={placeholder}
         value={formData[name]}
         onChange={handleChange}
+        onBlur={handleBlur}
         invalid={!!validationErrors[name]}
         style={{ fontSize: '13px', borderRadius: tokens.radiusSm }}
       />
@@ -421,7 +428,11 @@ const AppointmentDetails = () => {
           <StatusBadge status={normalizedStatus} />
 
           {showConfirmed && !vitals && (
-            <ActionBtn onClick={() => { setFormData({ height: '', weight: '', bloodPressure: '', temperature: '', bmi: '' }); setShowModal(true) }}>
+            <ActionBtn onClick={() => {
+              setFormData({ height: '', weight: '', bloodPressure: '', temperature: '', bmi: '' })
+              setValidationErrors({})
+              setShowModal(true)
+            }}>
               <Activity size={13} /> Add Vitals
             </ActionBtn>
           )}
@@ -597,7 +608,14 @@ const AppointmentDetails = () => {
       </div>
 
       {/* ── ADD VITALS MODAL ──────────────────────────── */}
-      <CModal visible={showModal} onClose={() => setShowModal(false)} backdrop="static">
+      <CModal
+        visible={showModal}
+        onClose={() => {
+          setShowModal(false)
+          setValidationErrors({})
+        }}
+        backdrop="static"
+      >
         <CModalHeader style={{ borderBottom: '1px solid #e2e8f0', padding: '16px 20px' }}>
           <CModalTitle style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
             <Activity size={16} style={{ marginRight: '8px', color: 'var(--color-bgcolor)', verticalAlign: 'middle' }} />
@@ -607,29 +625,37 @@ const AppointmentDetails = () => {
 
         <CModalBody style={{ padding: '20px' }}>
           <CForm>
-            <Field label="Height (cm)"          name="height"       placeholder="e.g. 170" />
-            <Field label="Weight (kg)"          name="weight"       placeholder="e.g. 65" />
-            <Field label="Blood Pressure"       name="bloodPressure" placeholder="e.g. 120/80" />
-            <Field label="Temperature (°F / °C)" name="temperature" placeholder="e.g. 98.6" />
+            <Field label="Height (cm)"           name="height"        placeholder="e.g. 170" />
+            <Field label="Weight (kg)"           name="weight"        placeholder="e.g. 65" />
+            <Field label="Blood Pressure"        name="bloodPressure" placeholder="e.g. 120/80" />
+            <Field label="Temperature (°F / °C)" name="temperature"   placeholder="e.g. 98.6" />
             <div style={{ marginBottom: '14px' }}>
-              <label style={{ fontSize: '12px', fontWeight: '600', color: tokens.muted, display: 'block', marginBottom: '4px' }}>BMI (auto-calculated)</label>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: tokens.muted, display: 'block', marginBottom: '4px' }}>
+                BMI (auto-calculated)
+              </label>
               <CFormInput
                 name="bmi"
                 value={formData.bmi}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder="e.g. 22.5"
                 invalid={!!validationErrors.bmi}
                 style={{ fontSize: '13px', borderRadius: tokens.radiusSm, backgroundColor: '#f8fafc' }}
                 readOnly={!!(formData.height && formData.weight)}
               />
-              {validationErrors.bmi && <small style={{ color: tokens.danger, fontSize: '11px' }}>{validationErrors.bmi}</small>}
+              {validationErrors.bmi && (
+                <small style={{ color: tokens.danger, fontSize: '11px' }}>{validationErrors.bmi}</small>
+              )}
             </div>
           </CForm>
         </CModalBody>
 
         <CModalFooter style={{ borderTop: `1px solid ${tokens.border}`, padding: '12px 20px', gap: '8px' }}>
           <button
-            onClick={() => setShowModal(false)}
+            onClick={() => {
+              setShowModal(false)
+              setValidationErrors({})
+            }}
             style={{
               padding: '6px 16px', borderRadius: tokens.radiusSm, fontSize: '13px',
               fontWeight: '600', cursor: 'pointer', border: `1px solid ${tokens.border}`,
