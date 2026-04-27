@@ -38,7 +38,7 @@ import { BASE_URL } from '../../baseUrl'
 const followUpStatus = [
   'All', 'Pending', 'Confirmed', 'Due for Investigation',
   'Investigation Done', 'Follow-up Needed', 'Cancelled',
-  'Rescheduled', 'Drop', 'No Reply', 'Completed',
+  'Rescheduled', 'Drop', 'No Reply', 'Completed','Follow-up Pending'
 ]
 
 /* ─── Status colour map ──────────────────────────────────────────────── */

@@ -362,7 +362,7 @@ const DoctorManagement = () => {
         <label className="dm-label">{label}</label>
         <div className="chip-input-row">
           <CFormInput
-          className="dm-chip-input"
+            className="dm-chip-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
@@ -537,6 +537,7 @@ const DoctorManagement = () => {
             <CCol md={6}>
               <label className="dm-label">Doctor Name <span className="req">*</span></label>
               <CFormInput
+                className="dm-input"
                 value={form.doctorName}
                 onChange={(e) => {
                   let v = e.target.value.replace(/[0-9]/g, '')
@@ -552,6 +553,7 @@ const DoctorManagement = () => {
             <CCol md={6}>
               <label className="dm-label">License Number <span className="req">*</span></label>
               <CFormInput
+                className="dm-input"
                 value={form.doctorLicence}
                 onChange={(e) => {
                   const v = e.target.value.replace(/[^A-Za-z0-9\s/.-]/g, '')
@@ -567,7 +569,7 @@ const DoctorManagement = () => {
             <CCol md={6}>
               <label className="dm-label">Gender <span className="req">*</span></label>
               <CFormSelect
-                className={`dm-select ${formErrors.gender ? 'is-invalid' : ''}`}
+                className={`dm-select-native ${formErrors.gender ? 'is-invalid' : ''}`}
                 value={form.gender}
                 onChange={(e) => {
                   setForm((p) => ({ ...p, gender: e.target.value }))
@@ -584,6 +586,7 @@ const DoctorManagement = () => {
             <CCol md={6}>
               <label className="dm-label">Experience (years) <span className="req">*</span></label>
               <CFormInput
+                className="dm-input"
                 type="number"
                 value={form.experience}
                 onChange={(e) => {
@@ -600,6 +603,7 @@ const DoctorManagement = () => {
             <CCol md={6}>
               <label className="dm-label">Qualification <span className="req">*</span></label>
               <CFormInput
+                className="dm-input"
                 value={form.qualification}
                 onChange={(e) => {
                   const v = e.target.value.replace(/[0-9]/g, '')
@@ -614,6 +618,7 @@ const DoctorManagement = () => {
             <CCol md={6}>
               <label className="dm-label">Specialization <span className="req">*</span></label>
               <CFormInput
+                className="dm-input"
                 value={form.specialization}
                 onChange={(e) => {
                   const v = e.target.value.replace(/[0-9]/g, '')
@@ -628,6 +633,7 @@ const DoctorManagement = () => {
             <CCol md={6}>
               <label className="dm-label">Monthly Paid Leaves</label>
               <CFormInput
+                className="dm-input"
                 type="number"
                 value={monthlyLeaves}
                 onChange={(e) => setMonthlyLeaves(e.target.value)}
@@ -639,7 +645,6 @@ const DoctorManagement = () => {
               <label className="dm-label">
                 Profile Picture <span className="req">*</span>
               </label>
-
               <div className="dm-upload-box">
                 <CFormInput
                   type="file"
@@ -648,17 +653,14 @@ const DoctorManagement = () => {
                   onChange={(e) => {
                     const file = e.target.files[0]
                     if (!file) return
-
                     if (!['image/jpeg', 'image/png'].includes(file.type)) {
                       setFormErrors((p) => ({ ...p, doctorPicture: 'Only JPG/PNG allowed' }))
                       return
                     }
-
                     if (file.size > 2 * 1024 * 1024) {
                       setFormErrors((p) => ({ ...p, doctorPicture: 'Max 2 MB' }))
                       return
                     }
-
                     const r = new FileReader()
                     r.onloadend = () => {
                       setForm((p) => ({ ...p, doctorPicture: r.result }))
@@ -667,31 +669,28 @@ const DoctorManagement = () => {
                     r.readAsDataURL(file)
                   }}
                 />
-
-                {/* Preview */}
                 {form.doctorPicture && (
                   <div className="dm-image-preview">
                     <img src={form.doctorPicture} alt="Preview" />
                   </div>
                 )}
               </div>
-
               <Err field="doctorPicture" />
             </CCol>
             <CCol md={12}>
               <label className="dm-label">Profile Description <span className="req">*</span></label>
-             <CFormTextarea
-  className="dm-textarea"
-  rows={3}
-  value={form.profileDescription}
-  onChange={(e) => {
-    const v = e.target.value.replace(/[0-9]/g, '')
-    setForm((p) => ({ ...p, profileDescription: v }))
-    if (v.trim().length >= 10) clearFieldError('profileDescription')
-  }}
-  invalid={!!formErrors.profileDescription}
-  placeholder="Brief professional summary..."
-/>
+              <CFormTextarea
+                className="dm-textarea"
+                rows={3}
+                value={form.profileDescription}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[0-9]/g, '')
+                  setForm((p) => ({ ...p, profileDescription: v }))
+                  if (v.trim().length >= 10) clearFieldError('profileDescription')
+                }}
+                invalid={!!formErrors.profileDescription}
+                placeholder="Brief professional summary..."
+              />
               <Err field="profileDescription" />
             </CCol>
           </CRow>
@@ -705,7 +704,7 @@ const DoctorManagement = () => {
               <CCol md={6} key={field}>
                 <label className="dm-label">{lbl} <span className="req">*</span></label>
                 <CFormSelect
-                className="dm-select"
+                  className="dm-select-native"
                   value={field === 'startDay' ? startDay : endDay}
                   onChange={(e) => {
                     availableDays(e.target.value, type)
@@ -722,7 +721,7 @@ const DoctorManagement = () => {
               <CCol md={6} key={field}>
                 <label className="dm-label">{lbl} <span className="req">*</span></label>
                 <CFormSelect
-                className="dm-select"
+                  className="dm-select-native"
                   value={field === 'startTime' ? startTime : endTime}
                   onChange={(e) => {
                     handleTimeChange(e.target.value, type)
@@ -763,6 +762,7 @@ const DoctorManagement = () => {
               <CCol md={6}>
                 <label className="dm-label">In-Clinic Fee (₹) <span className="req">*</span></label>
                 <CFormInput
+                  className="dm-input"
                   type="number"
                   value={form.doctorFees.inClinicFee}
                   onChange={(e) => {
@@ -778,6 +778,7 @@ const DoctorManagement = () => {
               <CCol md={6}>
                 <label className="dm-label">Online Fee (₹) <span className="req">*</span></label>
                 <CFormInput
+                  className="dm-input"
                   type="number"
                   value={form.doctorFees.vedioConsultationFee}
                   onChange={(e) => {
@@ -792,6 +793,7 @@ const DoctorManagement = () => {
             <CCol md={6}>
               <label className="dm-label">Contact Number <span className="req">*</span></label>
               <CFormInput
+                className="dm-input"
                 type="tel"
                 maxLength={10}
                 value={form.doctorMobileNumber}
@@ -809,6 +811,7 @@ const DoctorManagement = () => {
             <CCol md={6}>
               <label className="dm-label">Email Address <span className="req">*</span></label>
               <CFormInput
+                className="dm-input"
                 type="email"
                 value={form.doctorEmail}
                 onChange={(e) => {
@@ -830,6 +833,7 @@ const DoctorManagement = () => {
             <CCol md={6}>
               <label className="dm-label">Association / Membership</label>
               <CFormInput
+                className="dm-input"
                 value={form.associationsOrMemberships}
                 onChange={(e) => setForm((p) => ({ ...p, associationsOrMemberships: e.target.value.replace(/[0-9]/g, '') }))}
                 placeholder="e.g. IMA Member"
@@ -920,34 +924,25 @@ const DoctorManagement = () => {
 
         /* Top bar */
         .dm-top-bar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
-       .dm-add-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #185fa5;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 9px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  box-shadow: 0 2px 8px rgba(24,95,165,0.20);
-}
-
-.dm-add-btn span,
-.dm-add-btn svg {
-  color: #ffffff;
-}
-
-.dm-add-btn:hover {
-  background: #0c447c;
-}
-
-.dm-add-btn:active {
-  transform: scale(0.98);
-}
+        .dm-add-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: #185fa5;
+          color: #ffffff;
+          border: none;
+          border-radius: 8px;
+          padding: 9px 20px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.15s, transform 0.1s;
+          box-shadow: 0 2px 8px rgba(24,95,165,0.20);
+        }
+        .dm-add-btn span,
+        .dm-add-btn svg { color: #ffffff; }
+        .dm-add-btn:hover { background: #0c447c; }
+        .dm-add-btn:active { transform: scale(0.98); }
 
         /* Empty state */
         .dm-center { display: flex; justify-content: center; align-items: center; min-height: 40vh; }
@@ -984,11 +979,49 @@ const DoctorManagement = () => {
 
         /* Labels */
         .dm-label { font-size: 13px; font-weight: 500; color: #374151; display: block; margin-bottom: 4px; }
-        .dm-label + input::placeholder {
-  font-size: 12px; /* 👈 reduce size */
-}
         .req { color: #e24b4a; margin-left: 2px; }
         .dm-error { font-size: 12px; color: #a32d2d; margin-top: 3px; }
+
+        /* ── ALL text inputs: unified 13px ───────────── */
+        .dm-input,
+        .dm-modal-body input[type="text"],
+        .dm-modal-body input[type="number"],
+        .dm-modal-body input[type="email"],
+        .dm-modal-body input[type="tel"],
+        .dm-modal-body input[type="file"] {
+          font-size: 13px !important;
+          color: #374151 !important;
+        }
+        .dm-input::placeholder,
+        .dm-modal-body input::placeholder {
+          font-size: 12px !important;
+          color: #9ca3af !important;
+        }
+
+        /* Native selects (CFormSelect) */
+        .dm-select-native,
+        .dm-modal-body select {
+          font-size: 13px !important;
+          color: #374151 !important;
+          border: 1px solid #ced4da;
+          border-radius: 6px;
+          min-height: 36px;
+          padding: 4px 10px;
+        }
+        .dm-select-native option {
+          color: #374151 !important;
+          font-size: 13px !important;
+        }
+
+        /* Textarea */
+        .dm-textarea {
+          font-size: 13px !important;
+          color: #374151 !important;
+        }
+        .dm-textarea::placeholder {
+          font-size: 12px !important;
+          color: #9ca3af !important;
+        }
 
         /* Buttons */
         .dm-btn-primary {
@@ -1039,6 +1072,10 @@ const DoctorManagement = () => {
         }
         .chip-remove:hover { color: #a32d2d; }
 
+        /* Chip input */
+        .dm-chip-input { font-size: 13px !important; color: #374151 !important; }
+        .dm-chip-input::placeholder { font-size: 12px !important; color: #9ca3af !important; }
+
         /* Signature */
         .dm-signature-row { display: flex; gap: 16px; align-items: flex-start; margin-top: 14px; }
         .dm-file-input-row {
@@ -1055,62 +1092,110 @@ const DoctorManagement = () => {
         }
         .dm-sig-placeholder { font-size: 11px; color: #b5d4f4; }
 
-        /* React-select override */
-        .dm-select {
-  font-size: 13px; /* 👈 reduces selected text size */
-  color: #6b7280;  /* default light gray */
-}
+        /* File upload box */
+        .dm-upload-box { display: flex; flex-direction: column; gap: 10px; }
+        .dm-file-input { padding: 6px; font-size: 13px !important; }
+        .dm-image-preview img {
+          width: 80px; height: 80px; object-fit: cover;
+          border-radius: 50%; border: 2px solid #e5e7eb;
+        }
+
+        /* ══════════════════════════════════════════════
+           REACT-SELECT OVERRIDES — ALL FIXED
+        ══════════════════════════════════════════════ */
+
+        /* Control box */
         .dm-select__control {
           border: 1px solid #ced4da !important;
           border-radius: 6px !important;
           min-height: 36px !important;
           font-size: 13px !important;
+          background: #fff !important;
         }
         .dm-select__control--is-focused {
           border-color: #185fa5 !important;
           box-shadow: 0 0 0 2px rgba(24,95,165,0.15) !important;
         }
-        .dm-select__multi-value { background: #e6f1fb !important; border-radius: 4px !important; }
-        .dm-select__multi-value__label { color: #0c447c !important; font-size: 12px !important; }
-        .dm-select__multi-value__remove:hover { background: #b5d4f4 !important; color: #0c447c !important; }
-        .dm-select__option--is-focused  { background: #e6f1fb !important; }
-        .dm-select__option--is-selected { background: #185fa5 !important; }
-        .dm-upload-box {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
 
-/* Style input */
-.dm-file-input {
-  padding: 6px;
-  font-size: 13px;
-}
+        /* Placeholder */
+        .dm-select__placeholder {
+          font-size: 12px !important;
+          color: #9ca3af !important;
+        }
 
-/* Preview image */
-.dm-image-preview img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 50%; /* 👈 circular profile */
-  border: 2px solid #e5e7eb;
-}
-  .dm-textarea::placeholder {
-  font-size: 12px;   /* 👈 smaller placeholder */
-  color: #9ca3af;    /* optional: softer gray */
-}
+        /* Typed input text */
+        .dm-select__input-container,
+        .dm-select__input {
+          font-size: 13px !important;
+          color: #374151 !important;
+        }
 
-.dm-textarea {
-  font-size: 14px;   /* actual typing text */
-}
-  .dm-chip-input::placeholder {
-  font-size: 12px;   /* 👈 smaller */
-  color: #9ca3af;    /* optional light grey */
-}
+        /* Single value */
+        .dm-select__single-value {
+          font-size: 13px !important;
+          color: #374151 !important;
+        }
 
-.dm-chip-input {
-  font-size: 14px;   /* actual typed text */
-}
+        /* Multi-value tags */
+        .dm-select__multi-value {
+          background: #e6f1fb !important;
+          border-radius: 4px !important;
+        }
+        .dm-select__multi-value__label {
+          color: #0c447c !important;
+          font-size: 12px !important;
+        }
+        .dm-select__multi-value__remove:hover {
+          background: #b5d4f4 !important;
+          color: #0c447c !important;
+        }
+
+        /* Dropdown menu */
+        .dm-select__menu {
+          border: 1px solid #d0dce9 !important;
+          border-radius: 6px !important;
+          box-shadow: 0 4px 16px rgba(24,95,165,0.12) !important;
+          z-index: 9999 !important;
+        }
+        .dm-select__menu-list {
+          padding: 4px !important;
+        }
+
+        /* Dropdown options — THE KEY FIX */
+        .dm-select__option {
+          font-size: 13px !important;
+          color: #374151 !important;          /* dark readable text — was invisible */
+          background: transparent !important;
+          border-radius: 4px !important;
+          padding: 7px 10px !important;
+          cursor: pointer !important;
+        }
+        .dm-select__option--is-focused {
+          background: #e6f1fb !important;     /* light blue hover */
+          color: #0c447c !important;           /* dark blue on hover */
+        }
+        .dm-select__option--is-selected {
+          background: #185fa5 !important;     /* brand blue when selected */
+          color: #ffffff !important;           /* white text when selected */
+        }
+        .dm-select__option--is-selected.dm-select__option--is-focused {
+          background: #0c447c !important;     /* darker on selected+hover */
+          color: #ffffff !important;
+        }
+
+        /* No-options message */
+        .dm-select__no-options-message,
+        .dm-select__no-options {
+          font-size: 13px !important;
+          color: #9ca3af !important;
+        }
+
+        /* Indicator icons */
+        .dm-select__indicator-separator { background: #d0dce9 !important; }
+        .dm-select__dropdown-indicator { color: #6b7280 !important; }
+        .dm-select__dropdown-indicator:hover { color: #185fa5 !important; }
+        .dm-select__clear-indicator { color: #6b7280 !important; }
+        .dm-select__clear-indicator:hover { color: #a32d2d !important; }
       `}</style>
     </div>
   )
