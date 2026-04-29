@@ -94,10 +94,10 @@ const handleSaveAnswers = (data) => {
   console.log(answerData)
   // ✅ SEND TO PARENT
  const sendToParent = async () => {
-    if (selected.length === 0) {
-    showCustomToast("Please select at least one body part");
-    return;
-  }
+  //   if (selected.length === 0) {
+  //   showCustomToast("Please select at least one body part");
+  //   return;
+  // }
   setLoading(true)
 
   const canvas = document.createElement("canvas")

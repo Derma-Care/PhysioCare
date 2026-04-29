@@ -183,7 +183,15 @@ export default function ExerciseTable() {
   })
 
   const totalPages  = Math.ceil(filteredExercises.length / rowsPerPage)
-  const displayData = filteredExercises.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+  // ✅ SORT BY DATE MODIFIED (DEFAULT)
+// ✅ SORT BY NAME (ASCENDING)
+const sortedExercises = [...filteredExercises].sort((a, b) => {
+  return (a.name || "").localeCompare(b.name || "");
+});
+ const displayData = sortedExercises.slice(
+  (currentPage - 1) * rowsPerPage,
+  currentPage * rowsPerPage
+);
 
   // ── VALIDATION ───────────────────────────────────────
   const validate = () => {

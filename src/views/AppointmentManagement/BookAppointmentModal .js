@@ -429,7 +429,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     if (!bookingDetails.doctorId) e.doctorName = 'Select doctor'
     if (!bookingDetails.servicetime) e.slot = 'Select slot'
     if (!bookingDetails.paymentType) e.paymentType = 'Select payment type'
-    if (!part || part.length === 0) e.part = 'Select body part'
+    // if (!part || part.length === 0) e.part = 'Select body part'
     if (!markedImage) e.markedImage = 'Mark image required'
     if (!bookingDetails.address?.postalCode) e.address = { postalCode: 'Postal code required' }
     setErrors(e)
@@ -1054,7 +1054,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               style={{ display: 'block', borderRadius: '6px', border: '1px solid #ddd' }} />
           </div>
         )}
-        <ErrMsg msg={errors.markedImage} />
+        {/* <ErrMsg msg={errors.markedImage} /> */}
         {(!selectedBooking || !selectedBooking.customerId) && (
           <div className="form-check mt-3">
             <input className="form-check-input" type="checkbox" id="onboardCheckbox"

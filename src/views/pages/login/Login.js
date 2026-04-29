@@ -263,7 +263,7 @@ const Login = () => {
                     Welcome to CCMS
                   </h2>
                   <p className="lead mb-4" style={{ opacity: 0.95, color: COLORS.primary }}>
-                    Manage Clinic Management and operations Seamlessly
+                   Chiselon Clinic Management System
                   </p>
 
                   <div className="d-flex justify-content-center gap-3 flex-wrap">
@@ -271,10 +271,13 @@ const Login = () => {
                       HIPAA-ready
                     </span> */}
                     <span className="badge" style={{ color: COLORS.primary }}>
-                      e-Prescriptions
+                      AI Enablement
                     </span>
                     <span className="badge" style={{ color: COLORS.primary }}>
-                      Smart Booking
+                      Security
+                    </span>
+                     <span className="badge" style={{ color: COLORS.primary }}>
+                      Analytics
                     </span>
                   </div>
                 </div>
@@ -371,6 +374,23 @@ const Login = () => {
                             onChange={(e) => setPassword(e.target.value)}
                           />
                         </CInputGroup>
+                        <div
+                          className="d-flex justify-content-between mt-2"
+                          style={{ color: COLORS.primary }}
+                        >
+                          <a
+                            style={{ color: COLORS.primary }}
+                            href="#"
+                            className="text-decoration-none derma-link"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              setShowResetModal(true)
+                            }}
+                          >
+                            Reset password?
+                          </a>
+                        </div>
+                        
 
                         <CButton
                           type="submit"
