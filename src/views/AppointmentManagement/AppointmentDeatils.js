@@ -184,7 +184,7 @@ const AppointmentDetails = () => {
     return s === 'in-progress' ? 'active' : s
   })()
 
-  const showConfirmed           = normalizedStatus === 'confirmed'
+  const showConfirmed           = ['completed', 'active'].includes(normalizedStatus)
   const showCompletedOrActive   = ['completed', 'active'].includes(normalizedStatus)
   const showVitalsCard          = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
   const showPayment             = ['active'].includes(normalizedStatus)

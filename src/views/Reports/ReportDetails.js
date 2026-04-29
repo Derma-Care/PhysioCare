@@ -39,11 +39,20 @@ const ReportDetails = () => {
   const navigate = useNavigate()
 
   const [recommendedTests, setRecommendedTests] = useState([])
-  const getISODate = (date) => date.toISOString().split('T')[0]
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(5)
-  const today = new Date()
-  const todayISO = getISODate(today)
+ const getTodayLocal = () => {
+  const today = new Date();
+
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const todayISO = getTodayLocal();
+
 
   const [report, setReport] = useState([])
   const [showModal, setShowModal] = useState(false)
@@ -183,16 +192,16 @@ const ReportDetails = () => {
     }
 
     // ✅ 🚫 Prevent future dates
-    const selectedDate = new Date(newReport.reportDate);
-    const today = new Date();
+    // const selectedDate = new Date(newReport.reportDate);
+    // const today = new Date();
 
-    // remove time part for accurate comparison
-    today.setHours(0, 0, 0, 0);
+    // // remove time part for accurate comparison
+    // today.setHours(0, 0, 0, 0);
 
-    if (selectedDate > today) {
-      showCustomToast('Future dates are not allowed.', 'error');
-      return;
-    }
+    // if (selectedDate > today) {
+    //   showCustomToast('Future dates are not allowed.', 'error');
+    //   return;
+    // }
 
     try {
       setLoading(true);
@@ -523,9 +532,15 @@ const ReportDetails = () => {
 
             <div className="rd-upload-field">
               <label className="rd-upload-label">Report Date <span className="rd-required">*</span></label>
-              <input className="rd-upload-input" type="date"
-                value={newReport.reportDate}
-                max={todayISO} />
+             <input
+  className="rd-upload-input"
+  type="date"
+  value={newReport.reportDate}
+  max={todayISO}
+  onChange={(e) =>
+    setNewReport({ ...newReport, reportDate: e.target.value })
+  }
+/>
             </div>
 
             <div className="rd-upload-field">

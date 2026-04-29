@@ -11,6 +11,9 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CInputGroup,
+  CFormInput ,
+  CButton,
   CModal,
   CModalHeader,
   CModalTitle,
@@ -21,6 +24,7 @@ import CIcon from '@coreui/icons-react'
 import { cilArrowRight } from '@coreui/icons'
 import { useNavigate } from 'react-router-dom'
 import Pagination from '../../Utils/Pagination'
+import { Search } from "lucide-react";
 import {
   getBookingsTodayFollowUps,
   getUpcomingFollowUps,
@@ -140,7 +144,7 @@ export default function FollowupDashboard() {
   const [reason, setReason] = useState('')
   const [newDate, setNewDate] = useState('')
   const [newTime, setNewTime] = useState('')
-  const { searchQuery } = useGlobalSearch()
+  const { searchQuery,setSearchQuery } = useGlobalSearch()
   const [slotsForSelectedDate, setSlotsForSelectedDate] = useState([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [showAllSlots, setShowAllSlots] = useState(false)
@@ -438,6 +442,7 @@ export default function FollowupDashboard() {
               />
             </div>
 
+
             <div className="wd-date-group">
               <label className="wd-date-label">Status</label>
               <select
@@ -460,9 +465,39 @@ export default function FollowupDashboard() {
         </div>
 
         <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
+          <CInputGroup   style={{ maxWidth: "300px" }} className="mb-3">
+  
+  {/* Input */}
+  <CFormInput
+    placeholder="Search..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+  />
+
+  {/* Search Button */}
+  <CButton
+    // style={{
+    //   backgroundColor: "var(--color-bgcolor)",
+    //   color: "#fff",
+    //   border: "none"
+    // }}
+    onClick={() => {
+      setSelectedServiceTypes([]);
+      setSelectedConsultationTypes([]);
+      setFilterTypes([]);
+      setStatusFilters([]);
+      // You can trigger search logic here if needed
+    }}
+  >
+    {/* <Search size={16} /> */}
+  </CButton>
+
+</CInputGroup>
 
         {/* ── TABLE ─────────────────────────────────────────────────── */}
         <div className="wd-table-wrapper" style={{ overflowX: 'auto' }}>
+  
+          
           <CTable className="wd-table">
             <CTableHead>
               <CTableRow>

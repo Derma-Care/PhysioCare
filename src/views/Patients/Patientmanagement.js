@@ -11,11 +11,15 @@ import {
   User, CalendarDays, FileText, ClipboardList,
   Stethoscope, CreditCard, RefreshCw, AlertCircle, Activity, MapPin, Eye, Clock,
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 const TAB_KEYS = { INFO: 1, APPOINTMENTS: 2, REPORTS: 3, HISTORY: 4 }
 
+
 const PatientManagement = () => {
   const location = useLocation()
+const navigate = useNavigate()
+
   const patientInfo = location.state?.patientInfo
 
   const [activeKey, setActiveKey] = useState(1)
@@ -214,71 +218,67 @@ const PatientManagement = () => {
         )}
 
         {/* ── Tab 2: Appointments ── */}
-        {activeKey === TAB_KEYS.APPOINTMENTS && (
-          loading ? (
-            <div className="pm2-center"><CSpinner color="primary" /></div>
-          ) : selectedAppointment ? (
-            <div>
-              {appointments.length > 1 && (
-                <div style={{ marginBottom: 14 }}>
-                  <label className="pm2-select-label">Select Appointment</label>
-                  <select
-                    className="pm2-select"
-                    value={selectedAppointment.bookingId}
-                    onChange={(e) => {
-                      const found = appointments.find((a) => a.bookingId === e.target.value)
-                      if (found) setSelectedAppointment(found)
-                    }}
-                  >
-                    {appointments.map((a, i) => (
-                      <option key={i} value={a.bookingId}>
-                        {a.bookingId} — {a.serviceDate}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div className="pm2-grid-2">
-                <InfoCard icon={CalendarDays} title="Booking Info">
-                  <InfoRow label="Booking ID" value={selectedAppointment.bookingId} />
-                  <InfoRow label="Date" value={selectedAppointment.serviceDate} />
-                  <InfoRow label="Time" value={selectedAppointment.servicetime} />
-                  <InfoRow label="Doctor" value={selectedAppointment.doctorName} />
-                  <InfoRow label="Visit Type" value={selectedAppointment.visitType} />
-                </InfoCard>
+     {activeKey === TAB_KEYS.APPOINTMENTS && (
+  loading ? (
+    <div className="pm2-center">
+      <CSpinner color="primary" />
+    </div>
+  ) : appointments.length > 0 ? (
 
-                <InfoCard icon={Activity} title="Medical Info">
-                  <InfoRow label="Problem" value={selectedAppointment.problem} />
-                  <InfoRow label="Symptoms Duration" value={selectedAppointment.symptomsDuration} />
-                  <InfoRow label="Consultation Type" value={selectedAppointment.consultationType} />
-                </InfoCard>
+    <CTable className="pm-table">
+      <CTableHead className="pm-thead">
+        <CTableRow>
+          <CTableHeaderCell>Booking ID</CTableHeaderCell>
+          <CTableHeaderCell>Date</CTableHeaderCell>
+          <CTableHeaderCell>Doctor</CTableHeaderCell>
+          <CTableHeaderCell>Visit Type</CTableHeaderCell>
+          <CTableHeaderCell>Action</CTableHeaderCell>
+        </CTableRow>
+      </CTableHead>
 
-                <InfoCard icon={CreditCard} title="Payment Info">
-                  <InfoRow label="Consultation Fee" value={selectedAppointment.consultationFee ? `₹${selectedAppointment.consultationFee}` : null} />
-                  <InfoRow label="Total Fee" value={selectedAppointment.totalFee ? `₹${selectedAppointment.totalFee}` : null} />
-                  <InfoRow label="Payment Type" value={selectedAppointment.paymentType} />
-                </InfoCard>
+      <CTableBody>
+        {appointments.map((appt, index) => (
+          <CTableRow key={index}>
 
-                <InfoCard icon={RefreshCw} title="Follow-Up">
-                  <InfoRow label="Free Follow-Ups Left" value={selectedAppointment.freeFollowUpsLeft} />
-                  <InfoRow label="Follow-Up Status" value={selectedAppointment.followupStatus} />
-                  <InfoRow label="Consultation Expiry" value={selectedAppointment.consultationExpiration} />
-                </InfoCard>
+            <CTableDataCell className="pm-bold">
+              {appt.bookingId}
+            </CTableDataCell>
 
-                <InfoCard icon={Stethoscope} title="Additional Info">
-                  <InfoRow label="Clinic" value={selectedAppointment.clinicName} />
-                  <InfoRow label="Branch" value={selectedAppointment.branchname} />
-                  <InfoRow label="Booking For" value={selectedAppointment.bookingFor} />
-                </InfoCard>
-              </div>
-            </div>
-          ) : (
-            <div className="pm2-empty">
-              <CalendarDays size={36} className="pm2-empty-icon" />
-              <p>No appointments found.</p>
-            </div>
-          )
-        )}
+            <CTableDataCell>
+              {appt.serviceDate}
+            </CTableDataCell>
+
+            <CTableDataCell>
+              {appt.doctorName}
+            </CTableDataCell>
+
+            <CTableDataCell>
+              <span className="pm-tag">{appt.visitType}</span>
+            </CTableDataCell>
+
+           <button
+  className="pm-action-btn view"
+  title="View"
+  onClick={() =>
+    navigate(`/appointment-details/${appt.bookingId}`, {
+      state: { appointment: appt }
+    })
+  }
+>
+  <Eye size={14} />
+</button>
+
+          </CTableRow>
+        ))}
+      </CTableBody>
+    </CTable>
+
+  ) : (
+    <div className="pm2-empty">
+      No appointments found.
+    </div>
+  )
+)}
 
         {/* ── Tab 3: Reports ── */}
         {activeKey === TAB_KEYS.REPORTS && (
@@ -565,183 +565,438 @@ const PatientManagement = () => {
       </CModal>
 
       {/* ── STYLES ── */}
-      <style>{`
-        /* Page header */
-        .pm2-page-header {
-          display: flex; align-items: center; justify-content: space-between;
-          flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
-          padding-bottom: 14px; border-bottom: 0.5px solid #d0dce9;
-        }
-        .pm2-title-group { display: flex; align-items: center; gap: 12px; }
-        .pm2-page-icon {
-          width: 42px; height: 42px; border-radius: 10px;
-          background: #e6f1fb; display: flex; align-items: center;
-          justify-content: center; color: #185fa5; flex-shrink: 0;
-        }
-        .pm2-page-title { font-size: 17px; font-weight: 600; color: #0c447c; margin: 0; }
-        .pm2-page-sub   { font-size: 12px; color: #6b7280; margin: 0; }
+        <style>{`
+          /* Page header */
+          .pm2-page-header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
+            padding-bottom: 14px; border-bottom: 0.5px solid #d0dce9;
+          }
+          .pm2-title-group { display: flex; align-items: center; gap: 12px; }
+          .pm2-page-icon {
+            width: 42px; height: 42px; border-radius: 10px;
+            background: #e6f1fb; display: flex; align-items: center;
+            justify-content: center; color: #185fa5; flex-shrink: 0;
+          }
+          .pm2-page-title { font-size: 17px; font-weight: 600; color: #0c447c; margin: 0; }
+          .pm2-page-sub   { font-size: 12px; color: #6b7280; margin: 0; }
 
-        /* Tab bar */
-        .pm2-tab-bar {
-          display: flex; gap: 4px; border-bottom: 0.5px solid #d0dce9;
-          margin-bottom: 18px; overflow-x: auto;
-        }
-        .pm2-tab-btn {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 9px 16px; font-size: 12px; font-weight: 600;
-          color: #6b7280; background: transparent; border: none;
-          border-bottom: 2px solid transparent; cursor: pointer;
-          transition: color 0.15s, border-color 0.15s; white-space: nowrap;
-        }
-        .pm2-tab-btn:hover { color: #185fa5; }
-        .pm2-tab-active { color: #185fa5 !important; border-bottom-color: #185fa5 !important; }
+          /* Tab bar */
+          .pm2-tab-bar {
+            display: flex; gap: 4px; border-bottom: 0.5px solid #d0dce9;
+            margin-bottom: 18px; overflow-x: auto;
+          }
+          .pm2-tab-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 16px; font-size: 12px; font-weight: 600;
+            color: #6b7280; background: transparent; border: none;
+            border-bottom: 2px solid transparent; cursor: pointer;
+            transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+          }
+          .pm2-tab-btn:hover { color: #185fa5; }
+          .pm2-tab-active { color: #185fa5 !important; border-bottom-color: #185fa5 !important; }
 
-        /* Profile header */
-        .pm2-profile-header {
-          display: flex; align-items: center; gap: 16px;
-          padding: 16px; background: #f0f5fb; border-radius: 10px; margin-bottom: 16px;
-        }
-        .pm2-profile-avatar-wrap {
-          width: 64px; height: 64px; border-radius: 50%;
-          background: #e6f1fb; border: 2px solid #b5d4f4;
-          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-        }
-        .pm2-profile-name { font-size: 16px; font-weight: 700; color: #0c447c; margin: 0 0 4px; }
-        .pm2-profile-meta { font-size: 12px; color: #6b7280; margin: 0 0 2px; }
-        .pm2-badge {
-          display: inline-block; background: #185fa5; color: #fff;
-          font-size: 11px; font-weight: 600; padding: 2px 10px;
-          border-radius: 20px; margin-top: 4px;
-        }
+          /* Profile header */
+          .pm2-profile-header {
+            display: flex; align-items: center; gap: 16px;
+            padding: 16px; background: #f0f5fb; border-radius: 10px; margin-bottom: 16px;
+          }
+          .pm2-profile-avatar-wrap {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: #e6f1fb; border: 2px solid #b5d4f4;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+          }
+          .pm2-profile-name { font-size: 16px; font-weight: 700; color: #0c447c; margin: 0 0 4px; }
+          .pm2-profile-meta { font-size: 12px; color: #6b7280; margin: 0 0 2px; }
+          .pm2-badge {
+            display: inline-block; background: #185fa5; color: #fff;
+            font-size: 11px; font-weight: 600; padding: 2px 10px;
+            border-radius: 20px; margin-top: 4px;
+          }
 
-        /* Info cards — same as FrontDeskForm */
-        .pm2-info-card { border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
-        .pm2-info-card-header {
-          display: flex; align-items: center; gap: 8px;
-          background: #185fa5; color: #fff;
-          font-size: 12px; font-weight: 600; padding: 9px 14px;
-        }
-        .pm2-header-icon { color: #b5d4f4; }
-        .pm2-info-card-body { padding: 12px 14px; background: #fff; }
+          /* Info cards — same as FrontDeskForm */
+          .pm2-info-card { border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+          .pm2-info-card-header {
+            display: flex; align-items: center; gap: 8px;
+            background: #185fa5; color: #fff;
+            font-size: 12px; font-weight: 600; padding: 9px 14px;
+          }
+          .pm2-header-icon { color: #b5d4f4; }
+          .pm2-info-card-body { padding: 12px 14px; background: #fff; }
 
-        /* Grid layouts */
-        .pm2-grid-2      { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .pm2-inner-grid  { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; }
-        .pm2-inner-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 16px; }
+          /* Grid layouts */
+          .pm2-grid-2      { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+          .pm2-inner-grid  { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; }
+          .pm2-inner-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 16px; }
 
-        /* Info rows */
-        .pm2-info-row { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
-        .pm2-info-row:last-child { margin-bottom: 0; }
-        .pm2-info-label {
-          font-size: 11px; font-weight: 700; color: #185fa5;
-          text-transform: none; letter-spacing: 0; white-space: nowrap;
-        }
-        .pm2-info-value { font-size: 13px; color: #374151; font-weight: 500; }
+          /* Info rows */
+          .pm2-info-row { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+          .pm2-info-row:last-child { margin-bottom: 0; }
+          .pm2-info-label {
+            font-size: 11px; font-weight: 700; color: #185fa5;
+            text-transform: none; letter-spacing: 0; white-space: nowrap;
+          }
+          .pm2-info-value { font-size: 13px; color: #374151; font-weight: 500; }
 
-        /* Status pill */
-        .pm2-status-pill {
-          font-size: 11px; font-weight: 600; color: #fff;
-          padding: 3px 10px; border-radius: 20px;
-        }
+          /* Status pill */
+          .pm2-status-pill {
+            font-size: 11px; font-weight: 600; color: #fff;
+            padding: 3px 10px; border-radius: 20px;
+          }
 
-        /* Appointment selector */
-        .pm2-select-label { font-size: 11px; font-weight: 700; color: #374151; display: block; margin-bottom: 4px; }
-        .pm2-select {
-          width: 100%; max-width: 360px; padding: 7px 10px;
-          font-size: 12.5px; color: #374151; background: #fff;
-          border: 0.5px solid #d0dce9; border-radius: 7px; outline: none;
-          appearance: none; -webkit-appearance: none;
-        }
-        .pm2-select:focus { border-color: #185fa5; box-shadow: 0 0 0 2.5px rgba(24,95,165,0.12); }
+          /* Appointment selector */
+          .pm2-select-label { font-size: 11px; font-weight: 700; color: #374151; display: block; margin-bottom: 4px; }
+          .pm2-select {
+            width: 100%; max-width: 360px; padding: 7px 10px;
+            font-size: 12.5px; color: #374151; background: #fff;
+            border: 0.5px solid #d0dce9; border-radius: 7px; outline: none;
+            appearance: none; -webkit-appearance: none;
+          }
+          .pm2-select:focus { border-color: #185fa5; box-shadow: 0 0 0 2.5px rgba(24,95,165,0.12); }
 
-        /* File button */
-        .pm2-file-btn {
-          display: inline-flex; align-items: center; gap: 5px;
-          background: #e6f1fb; color: #185fa5;
-          border: 0.5px solid #b5d4f4; border-radius: 6px;
-          padding: 4px 12px; font-size: 12px; font-weight: 600;
-          cursor: pointer; margin-right: 6px; margin-bottom: 4px; transition: background 0.15s;
-        }
-        .pm2-file-btn:hover { background: #d0e6f7; }
+          /* File button */
+          .pm2-file-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: #e6f1fb; color: #185fa5;
+            border: 0.5px solid #b5d4f4; border-radius: 6px;
+            padding: 4px 12px; font-size: 12px; font-weight: 600;
+            cursor: pointer; margin-right: 6px; margin-bottom: 4px; transition: background 0.15s;
+          }
+          .pm2-file-btn:hover { background: #d0e6f7; }
+          .pm2-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+    .rp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+    .rp-table thead {
+    background-color: var(--color-bgcolor);
+  }
+    .pm-tag {
+  background: #e6f1fb;
+  color: #185fa5;
+  border: 0.5px solid #b5d4f4;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
+/* TABLE */
+.pm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: inherit;
+}
+.pm-action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
 
-        /* View details button */
-        .pm2-view-detail-btn {
-          display: inline-flex; align-items: center; gap: 5px;
-          background: #185fa5; color: #fff; border: none;
-          padding: 6px 14px; border-radius: 7px;
-          font-size: 12px; font-weight: 600;
-          cursor: pointer; transition: filter 0.15s;
-        }
-        .pm2-view-detail-btn:hover { filter: brightness(0.9); }
+/* View (Blue) */
+.pm-action-btn.view {
+  background: #e6f1fb;
+  color: #185fa5;
+}
 
-        /* Mini section title inside card body */
-        .pm2-mini-section-title {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 11px; font-weight: 700; color: #185fa5;
-          margin-bottom: 10px;
-        }
+/* Hover */
+.pm-action-btn:hover {
+  transform: scale(1.08);
+  filter: brightness(0.95);
+}
 
-        /* Table */
-        .pm2-table-wrapper {
-          border: 0.5px solid #d0dce9; border-radius: 10px;
-          overflow: hidden; overflow-x: auto; margin-bottom: 12px;
-        }
-        .pm2-table { margin-bottom: 0 !important; font-size: 13px; }
-        .pm2-th {
-          background: #185fa5 !important; color: #fff !important;
-          font-size: 12px !important; font-weight: 600 !important;
-          padding: 10px 14px !important; white-space: nowrap; border: none !important;
-        }
-        .pm2-tr:hover { background: #f0f5fb !important; }
-        .pm2-td {
-          padding: 10px 14px !important; vertical-align: middle !important;
-          font-size: 13px; color: #374151;
-          border-bottom: 0.5px solid #eef2f7 !important; border-top: none !important;
-        }
-        .pm2-muted { color: #6b7280; }
-        .pm2-bold  { font-weight: 600; color: #0c447c; }
+/* HEADER */
+.pm-thead th {
+  font-size: 12px;
+  font-weight: 500;           /* reduce bold */
+  padding: 6px 10px;          /* compact */
+  background: var(--color-bgcolor);
+  color: #fff;
+  text-transform: none;       /* IMPORTANT */
+  letter-spacing: normal;
+}
 
-        /* Tag chip */
-        .pm2-tag {
-          display: inline-block; background: #e6f1fb; color: #0c447c;
-          border: 0.5px solid #b5d4f4; border-radius: 20px;
-          padding: 3px 10px; font-size: 12px; font-weight: 500;
-        }
+/* ROW */
+.pm-table tr {
+  height: 32px;               /* reduce row height */
+}
 
-        /* Modal sections */
-        .pm2-modal-section {
-          border: 0.5px solid #d0dce9; border-radius: 10px;
-          overflow: hidden; margin-bottom: 12px;
-        }
-        .pm2-modal-section-title {
-          display: flex; align-items: center; gap: 8px;
-          background: #185fa5; color: #fff;
-          font-size: 12px; font-weight: 600; padding: 9px 14px;
-        }
-        .pm2-modal-grid {
-          display: grid; grid-template-columns: repeat(2, 1fr);
-          gap: 10px; padding: 12px 14px; background: #fff;
-        }
-        .pm2-muted-text { font-size: 13px; color: #9ca3af; padding: 8px 14px; }
+/* CELL */
+.pm-table td {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #374151;
+}
 
-        /* Empty / center */
-        .pm2-empty {
-          display: flex; flex-direction: column; align-items: center;
-          gap: 10px; padding: 48px 0; color: #9ca3af; font-size: 14px;
-        }
-        .pm2-empty-icon { color: #d0dce9; }
-        .pm2-center { display: flex; align-items: center; justify-content: center; min-height: 180px; }
+/* BOOKING ID */
+.pm-bold {
+  font-weight: 600;
+  color: var(--color-bgcolor);
+}
 
-        /* Scrollbar */
-        .modal-body::-webkit-scrollbar { width: 5px; }
-        .modal-body::-webkit-scrollbar-track { background: #f0f5fb; }
-        .modal-body::-webkit-scrollbar-thumb { background: #b5d4f4; border-radius: 10px; }
+/* TAG */
+.pm-tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.05);
+}
 
-        @media (max-width: 640px) {
-          .pm2-grid-2, .pm2-inner-grid, .pm2-inner-grid-3, .pm2-modal-grid { grid-template-columns: 1fr; }
-          .pm2-tab-btn { padding: 8px 10px; font-size: 11px; }
-        }
-      `}</style>
+/* BUTTON */
+.pm-action-btn {
+  padding: 3px 8px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+
+  .rp-table th {
+    text-align: left;
+    padding: 12px 14px;
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+    .rp-table tbody tr {
+    border-bottom: 1px solid #eee;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .rp-table tbody tr:hover {
+    background-color: #f9f9f9;
+  }
+    .rp-table td {
+    padding: 12px 14px;
+    color: #333;
+    font-weight: 500;
+  }
+    .pm2-view-btn {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    background-color: #185fa5;
+    color: #fff;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .pm2-view-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+    .rp-table td b {
+    color: var(--color-bgcolor);
+  }
+    .pm2-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+  }
+    .pm2-empty {
+    text-align: center;
+    padding: 40px 0;
+    color: #777;
+    font-size: 14px;
+  }
+    .rp-table tbody tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+
+          /* View details button */
+          .pm2-view-detail-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: #185fa5; color: #fff; border: none;
+            padding: 6px 14px; border-radius: 7px;
+            font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: filter 0.15s;
+          }
+          .pm2-view-detail-btn:hover { filter: brightness(0.9); }
+
+          /* Mini section title inside card body */
+          .pm2-mini-section-title {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; font-weight: 700; color: #185fa5;
+            margin-bottom: 10px;
+          }
+
+          /* Table */
+          .pm2-table-wrapper {
+            border: 0.5px solid #d0dce9; border-radius: 10px;
+            overflow: hidden; overflow-x: auto; margin-bottom: 12px;
+          }
+          .pm2-table { margin-bottom: 0 !important; font-size: 13px; }
+          .pm2-th {
+            background: #185fa5 !important; color: #fff !important;
+            font-size: 12px !important; font-weight: 600 !important;
+            padding: 10px 14px !important; white-space: nowrap; border: none !important;
+          }
+          .pm2-tr:hover { background: #f0f5fb !important; }
+          .pm2-td {
+            padding: 10px 14px !important; vertical-align: middle !important;
+            font-size: 13px; color: #374151;
+            border-bottom: 0.5px solid #eef2f7 !important; border-top: none !important;
+          }
+          .pm2-muted { color: #6b7280; }
+          .pm2-bold  { font-weight: 600; color: #0c447c; }
+
+          /* Tag chip */
+          .pm2-tag {
+            display: inline-block; background: #e6f1fb; color: #0c447c;
+            border: 0.5px solid #b5d4f4; border-radius: 20px;
+            padding: 3px 10px; font-size: 12px; font-weight: 500;
+          }
+
+          /* Modal sections */
+          .pm2-modal-section {
+            border: 0.5px solid #d0dce9; border-radius: 10px;
+            overflow: hidden; margin-bottom: 12px;
+          }
+          .pm2-modal-section-title {
+            display: flex; align-items: center; gap: 8px;
+            background: #185fa5; color: #fff;
+            font-size: 12px; font-weight: 600; padding: 9px 14px;
+          }
+          .pm2-modal-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 10px; padding: 12px 14px; background: #fff;
+          }
+          .pm2-muted-text { font-size: 13px; color: #9ca3af; padding: 8px 14px; }
+
+          /* Empty / center */
+          .pm2-empty {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 10px; padding: 48px 0; color: #9ca3af; font-size: 14px;
+          }
+          .pm2-empty-icon { color: #d0dce9; }
+          .pm2-center { display: flex; align-items: center; justify-content: center; min-height: 180px; }
+
+          /* Scrollbar */
+          .modal-body::-webkit-scrollbar { width: 5px; }
+          .modal-body::-webkit-scrollbar-track { background: #f0f5fb; }
+          .modal-body::-webkit-scrollbar-thumb { background: #b5d4f4; border-radius: 10px; }
+
+          @media (max-width: 640px) {
+            .pm2-grid-2, .pm2-inner-grid, .pm2-inner-grid-3, .pm2-modal-grid { grid-template-columns: 1fr; }
+            .pm2-tab-btn { padding: 8px 10px; font-size: 11px; }
+          }
+
+
+          /* Card Container */
+  .pm2-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    overflow: hidden;
+  }
+
+  .pm2-card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid #eee;
+    font-weight: 600;
+  }
+
+  /* Table */
+  .pm2-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .pm2-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  /* Header */
+  .pm2-table thead {
+    background: #f8fafc;
+  }
+
+  .pm2-table th {
+    padding: 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    color: #6c757d;
+    border-bottom: 1px solid #eee;
+  }
+
+  /* Body */
+  .pm2-table td {
+    padding: 12px;
+    font-size: 14px;
+    border-bottom: 1px solid #f1f1f1;
+  }
+
+  /* Zebra Rows */
+  .pm2-table tbody tr:nth-child(even) {
+    background: #fcfcfc;
+  }
+
+  /* Hover Effect */
+  .pm2-table tbody tr:hover {
+    background: #f1f7ff;
+    transition: 0.2s;
+  }
+
+  /* Badges */
+  .badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .badge-info {
+    background: #e7f1ff;
+    color: #0d6efd;
+  }
+
+  .badge-success {
+    background: #e6f9f0;
+    color: #198754;
+  }
+
+  .badge-warning {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .badge-danger {
+    background: #fdecea;
+    color: #dc3545;
+  }
+
+  /* Button */
+  .pm2-btn-view {
+    background: #0d6efd;
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .pm2-btn-view:hover {
+    background: #0b5ed7;
+  }
+        `}</style>
     </div>
   )
 }

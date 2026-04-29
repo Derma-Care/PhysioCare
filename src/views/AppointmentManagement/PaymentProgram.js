@@ -158,6 +158,8 @@ export default function ProgramPayment() {
       fetchTherapySessions();
     }
   }, [bookingId, patientId, clinicId, branchId]);
+  // ✅ REPLACE fetchTherapySessions() FULL FUNCTION
+
   const fetchTherapySessions = async () => {
     try {
       const res = await fetch(
@@ -165,60 +167,184 @@ export default function ProgramPayment() {
       );
 
       const data = await res.json();
-      console.log("API RESPONSE:", data);
-      console.log("SERVICE TYPES:", getServiceTypes());
-      console.log("SELECTED TYPE:", selectedType);
-      setPackageId(data?.data?.[0]?.packageId || "");
-      setSelectedfullExercise(data?.data?.therapySessions || []);
-      // Set packageId from API response
-
       const apiResponse = data?.data || [];
 
+      if (!apiResponse.length) {
+        setApiData([]);
+        return;
+      }
 
-      setApiData(apiResponse);
-      setBackendServiceType(apiResponse?.[0]?.serviceType || "")
+      const type =
+        apiResponse?.[0]?.serviceType?.toLowerCase() || "";
 
-      setDoctorName(apiResponse?.[0]?.doctorName || "");
-      setTherapistId(apiResponse?.[0]?.therapistId || "");
-      setTherapistName(apiResponse?.[0]?.therapistName || "");
+      let normalized = [];
 
-      // ✅ ADD THIS LINE (CRITICAL FIX)
-      setTherapistRecordId(apiResponse?.[0]?.therapistRecordId || "");
+      /* ==================================================
+         PACKAGE
+      ================================================== */
+      if (type === "package") {
+        normalized = apiResponse;
+      }
 
+      /* ==================================================
+         PROGRAM
+      ================================================== */
+      else if (type === "program") {
+        const item = apiResponse[0];
 
+        normalized = [
+          {
+            ...item,
+            therapySessions: [
+              {
+                programId: item.programId,
+                programName: item.programName,
+                totalPrice: item.totalPrice,
+                therapyData: item.therapyData || [],
+              },
+            ],
+          },
+        ];
+      }
+
+      /* ==================================================
+         THERAPY  (multiple therapies root array)
+      ================================================== */
+      else if (type === "therapy") {
+        const first = apiResponse[0];
+
+        normalized = [
+          {
+            ...first,
+            totalPrice: apiResponse.reduce(
+              (sum, item) => sum + Number(item.totalPrice || 0),
+              0
+            ),
+
+            therapySessions: [
+              {
+                programId: "THERAPY_PROGRAM",
+                programName: "Therapies",
+                totalPrice: apiResponse.reduce(
+                  (sum, item) =>
+                    sum + Number(item.totalPrice || 0),
+                  0
+                ),
+
+                therapyData: apiResponse.map((item) => ({
+                  therapyId: item.therapyId,
+                  therapyName: item.therapyName,
+                  totalPrice: item.totalPrice,
+                  exercises: item.exercises || [],
+                })),
+              },
+            ],
+          },
+        ];
+      }
+
+      /* ==================================================
+         EXERCISE (multiple exercise root array)
+      ================================================== */
+      else if (type === "exercise") {
+        const first = apiResponse[0];
+
+        normalized = [
+          {
+            ...first,
+            totalPrice: apiResponse.reduce(
+              (sum, item) => sum + Number(item.totalPrice || 0),
+              0
+            ),
+
+            therapySessions: [
+              {
+                programId: "EXERCISE_PROGRAM",
+                programName: "Exercises",
+
+                therapyData: [
+                  {
+                    therapyId: "EXERCISE_THERAPY",
+                    therapyName: "Exercises",
+
+                    totalPrice: apiResponse.reduce(
+                      (sum, item) =>
+                        sum + Number(item.totalPrice || 0),
+                      0
+                    ),
+
+                    exercises: apiResponse.flatMap(
+                      (item) => item.exercises || []
+                    ),
+                  },
+                ],
+              },
+            ],
+          },
+        ];
+      }
+
+      console.log("NORMALIZED:", normalized);
+
+      setApiData(normalized);
+      setBackendServiceType(type);
+
+      setPackageId(normalized?.[0]?.packageId || "");
+      setDoctorName(normalized?.[0]?.doctorName || "");
+      setTherapistId(normalized?.[0]?.therapistId || "");
+      setTherapistName(normalized?.[0]?.therapistName || "");
+      setTherapistRecordId(
+        normalized?.[0]?.therapistRecordId || ""
+      );
     } catch (error) {
       console.error("API Error:", error);
     }
   };
   console.log(packageId)
+  // ✅ REPLACE default selectedType useEffect
+
   useEffect(() => {
     if (apiData?.length && !selectedType) {
-      setSelectedType("package"); // 🔥 MUST
+      setSelectedType(
+        apiData?.[0]?.serviceType?.toLowerCase()
+      );
     }
   }, [apiData]);
+  // ✅ REPLACE getServiceTypes()
+
   const getServiceTypes = () => {
-    const types = new Set();
+    const type =
+      apiData?.[0]?.serviceType?.toLowerCase() || "";
 
-    (apiData || []).forEach(item => {
-      if (item.therapySessions?.length) types.add("program");
+    const typesMap = {
+      package: [
+        "package",
+        "program",
+        "therapy",
+        "exercise",
+        "session",
+      ],
 
-      item.therapySessions?.forEach(program => {
-        if (program.therapyData?.length) types.add("therapy");
+      program: [
+        "program",
+        "therapy",
+        "exercise",
+        "session",
+      ],
 
-        program.therapyData?.forEach(therapy => {
-          if (therapy.exercises?.length) types.add("exercise");
+      therapy: [
+        "therapy",
+        "exercise",
+        "session",
+      ],
 
-          therapy.exercises?.forEach(ex => {
-            if (ex.noOfSessions) types.add("session");
-          });
-        });
-      });
-    });
+      exercise: [
+        "exercise",
+        "session",
+      ],
+    };
 
-    // ✅ ALWAYS FIRST
-    const orderedTypes = ["package", ...types];
-
-    return [...new Set(orderedTypes)];
+    return typesMap[type] || [];
   };
   const getOptionsByType = () => {
     const root =
@@ -376,20 +502,19 @@ export default function ProgramPayment() {
 
 
   // 🔥 FORMAT TABLE
+  // ✅ REPLACE formatTherapyTable()
+
   const formatTherapyTable = (data = []) => {
     const rows = [];
 
     if (!Array.isArray(data)) return rows;
 
     data.forEach((item) => {
-      console.log("ITEM:", item); // 👈 DEBUG
-
       (item.therapySessions || []).forEach((program) => {
-        console.log("PROGRAM:", program); // 👈 DEBUG
-
         (program.therapyData || []).forEach((therapy) => {
           (therapy.exercises || []).forEach((exercise) => {
-            const count = exercise.noOfSessions || 1;
+            const count =
+              Number(exercise.noOfSessions || 0) || 1;
 
             for (let i = 1; i <= count; i++) {
               rows.push({
@@ -481,24 +606,26 @@ export default function ProgramPayment() {
 
   // 🔥 SELECT VALUE
 
+  // ✅ OPTIONAL handleTypeChange()
+
   const handleTypeChange = (type) => {
     setSelectedType(type);
     setSelectedValue([]);
 
-    setSelectedProgram(null);
-    setSelectedTherapy(null);
-    setSelectedExercise(null);
+    let amount = 0;
 
-    // 🔥 PACKAGE PRICE LOGIC
+    const root = apiData?.[0];
+
+    if (!root) return;
+
     if (type === "package") {
-      const packagePrice = apiData?.[0]?.total || 0;
-
-      setPaymentAmount(packagePrice);
-      setFinalAmount(packagePrice);
-    } else {
-      setPaymentAmount(0);
-      setFinalAmount(0);
+      amount = Number(
+        root.total || root.totalPrice || 0
+      );
     }
+
+    setPaymentAmount(amount);
+    setFinalAmount(amount);
   };
   const checkAllSessionsPaid = (data) => {
     const programs =
@@ -645,74 +772,25 @@ export default function ProgramPayment() {
     if (!apiData?.length) return;
 
     const root = apiData[0];
-    const type = (root.serviceType || selectedType || "").toLowerCase();
+    const type =
+      (root.serviceType || "").toLowerCase();
 
-    let amount = 0;
+    setSelectedType(type);
 
+    // reset first
+    setSelectedValue([]);
+    setPaymentAmount(0);
+    setFinalAmount(0);
+
+    // only package show by default
     if (type === "package") {
-      amount = Number(root.total || root.totalPrice || 0);
-      setSelectedType("package");
-    }
-
-    else if (type === "program") {
-      const firstProgram = root.therapySessions?.[0];
-      amount = Number(firstProgram?.totalPrice || 0);
-      setSelectedType("program");
-
-      if (firstProgram) {
-        setSelectedValue([
-          {
-            label: firstProgram.programName,
-            value: firstProgram.programId,
-            price: amount,
-          },
-        ]);
-      }
-    }
-
-    else if (type === "therapy") {
-      const firstTherapy =
-        root.therapySessions?.[0]?.therapyData?.[0];
-
-      amount = Number(firstTherapy?.totalPrice || 0);
-      setSelectedType("therapy");
-
-      if (firstTherapy) {
-        setSelectedValue([
-          {
-            label: firstTherapy.therapyName,
-            value: firstTherapy.therapyId,
-            price: amount,
-          },
-        ]);
-      }
-    }
-
-    else if (type === "exercise") {
-      const firstExercise =
-        root.therapySessions?.[0]?.therapyData?.[0]?.exercises?.[0];
-
-      amount = Number(
-        firstExercise?.totalSessionCost ||
-        firstExercise?.pricePerSession ||
-        0
+      const amount = Number(
+        root.total || root.totalPrice || 0
       );
 
-      setSelectedType("exercise");
-
-      if (firstExercise) {
-        setSelectedValue([
-          {
-            label: firstExercise.exerciseName,
-            value: firstExercise.exerciseId,
-            price: amount,
-          },
-        ]);
-      }
+      setPaymentAmount(amount);
+      setFinalAmount(amount);
     }
-
-    setPaymentAmount(amount);
-    setFinalAmount(amount);
   }, [apiData]);
 
   const createPayloadData = {
@@ -939,11 +1017,11 @@ export default function ProgramPayment() {
       console.error(err);
     }
   };
-  useEffect(() => {
-    if (apiData?.length && !selectedType) {
-      setSelectedType("package"); // 🔥 default
-    }
-  }, [apiData]);
+  // useEffect(() => {
+  //   if (apiData?.length && !selectedType) {
+  //     setSelectedType("package"); // 🔥 default
+  //   }
+  // }, [apiData]);
   useEffect(() => {
     const total = Number(paymentAmount || 0);
     const discountVal = Number(discountAmount || 0);

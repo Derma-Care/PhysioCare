@@ -52,6 +52,7 @@ const emptyExercise = {
   discountPercentage: "",
 }
 
+
 /* ─── Decode video URL (handles Base64-encoded URLs from backend) ────── */
 const decodeVideoUrl = (url) => {
   if (!url) return ""
@@ -605,7 +606,7 @@ export default function ExerciseTable() {
               </CCol>
 
               {/* Image upload */}
-              <CCol md={12}>
+              {/* <CCol md={12}>
                 <div className="ex-field">
                   <CFormLabel className="ex-label">Image</CFormLabel>
                   <CFormInput
@@ -622,7 +623,7 @@ export default function ExerciseTable() {
                     />
                   )}
                 </div>
-              </CCol>
+              </CCol> */}
             </CRow>
 
             <div className="ex-modal-footer">
@@ -663,7 +664,7 @@ export default function ExerciseTable() {
         <CModalBody className="ex-modal-body ex-view-body">
           {viewData ? (
             <>
-              {viewData.image && (
+              {/* {viewData.image && (
                 <div style={{ textAlign: "center", marginBottom: 16 }}>
                   <CImage
                     src={viewData.image}
@@ -672,7 +673,7 @@ export default function ExerciseTable() {
                     style={{ objectFit: "cover", borderRadius: 10, border: "0.5px solid #d0dce9" }}
                   />
                 </div>
-              )}
+              )} */}
 
               <div className="ex-summary-grid">
                 <div className="ex-summary-card">
