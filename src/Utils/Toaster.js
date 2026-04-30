@@ -13,6 +13,7 @@ import React from 'react'
 import { toast } from 'react-toastify'
 import '../views/Style/CustomToast.css' // optional for extra styles
 import { useHospital } from '../views/Usecontext/HospitalContext'
+import { COLORS } from '../Constant/Themes'
 
 const CustomToast = ({ message, type = 'success' }) => {
   const { fetchHospital, selectedHospital } = useHospital()
@@ -42,11 +43,19 @@ export const showCustomToast = (message, type = 'success') => {
     position: 'top-right',
     autoClose: 3000,
     hideProgressBar: false,
-     toastId: `custom-${message}`,
+    toastId: `custom-${message}`,
     closeOnClick: true,
     pauseOnHover: true,
     draggable: true,
     progress: undefined,
+    style: {
+      backgroundColor: COLORS.primary,
+      color: 'white',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      padding: '10px 15px',
+      borderRadius: '8px',
+    },
     closeButton: (
       <span style={{ color: 'white', fontWeight: 'bold', fontSize: '18px', marginRight: '10px' }}>
         ×

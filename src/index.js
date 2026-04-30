@@ -23,6 +23,7 @@ import BodyAssessment from './views/AppointmentManagement/BodyAssessment'
 import TherapistDashboard from './views/EmployeeManagement/Therapist/TherapistDashboard'
 import TherapyExercisesForm from './views/EmployeeManagement/Therapist/TherapyExercise'
 import ExerciseTable from './views/EmployeeManagement/Therapist/TherapyExercise'
+import { COLORS } from './Constant/Themes'
 function Root() {
   // attach interceptors once when app mounts
   // useEffect(() => {
@@ -48,8 +49,7 @@ function Root() {
                   limit={3}
                   theme="dark" // base dark theme
                   toastStyle={{
-                    backgroundColor: 'var(--color-black)',
-
+                    backgroundColor: COLORS.primary,
                     color: 'white',
                   }}
                 />

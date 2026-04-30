@@ -29,6 +29,32 @@ const BookingSearch = ({
   const [modalVisible, setModalVisible] = useState(false)
 
   // 🧠 Common API handler
+  const formatAddress = (address) => {
+    if (!address) return "";
+
+    const {
+      houseNo,
+      street,
+      landmark,
+      city,
+      state,
+      country,
+      postalCode,
+    } = address;
+
+    return [
+      houseNo,
+      street,
+      landmark,
+      city,
+      state,
+      country,
+      postalCode,
+    ]
+      .filter(Boolean) // remove null/undefined
+      .join(", ");
+  };
+
   const fetchBookings = async (apiFunc, searchValue) => {
     const query = searchValue?.trim();
     if (!query) return;
@@ -36,13 +62,18 @@ const BookingSearch = ({
     setLoading(true);
     try {
       const res = await apiFunc(query);
-
       const apiData = res?.data?.data;
 
-      // ✅ FIX HERE
-      setBookingData(Array.isArray(apiData) ? apiData : [apiData]);
+      const formattedData = (Array.isArray(apiData) ? apiData : [apiData]).map(
+        (item) => ({
+          ...item,
+          patientAddress: formatAddress(item.patientAddress), // ✅ convert to string
+        })
+      );
 
-      console.log("Final bookingData:", apiData);
+      setBookingData(formattedData);
+
+      console.log("Final bookingData:", formattedData);
     } catch (err) {
       console.error("Error fetching bookings:", err);
       setBookingData([]);

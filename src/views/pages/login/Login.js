@@ -263,7 +263,7 @@ const Login = () => {
                     Welcome to CCMS
                   </h2>
                   <p className="lead mb-4" style={{ opacity: 0.95, color: COLORS.primary }}>
-                   Chiselon Clinic Management System
+                    Chiselon Clinic Management System
                   </p>
 
                   <div className="d-flex justify-content-center gap-3 flex-wrap">
@@ -276,7 +276,7 @@ const Login = () => {
                     <span className="badge" style={{ color: COLORS.primary }}>
                       Security
                     </span>
-                     <span className="badge" style={{ color: COLORS.primary }}>
+                    <span className="badge" style={{ color: COLORS.primary }}>
                       Analytics
                     </span>
                   </div>
@@ -294,59 +294,32 @@ const Login = () => {
                       Please choose your workspace to continue
                     </p>
 
-                    {/* Tabs */}
-                    <CNav variant="pills" className="justify-content-center gap-2 mb-4">
-                      <CNavItem>
-                        <CNavLink
-                          active={activeTab === 'clinic'}
-                          onClick={() => {
-                            setActiveTab('clinic')
-                            setRole('admin')
-                          }}
-                          style={{
-                            backgroundColor: activeTab === 'clinic' ? COLORS.primary : COLORS.white,
-                            color: activeTab === 'clinic' ? COLORS.white : COLORS.primary,
-                            border: `1px solid ${COLORS.primary}`,
-                            borderRadius: '8px',
-                            fontWeight: '500',
-                            padding: '8px 16px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Admin
-                        </CNavLink>
-                      </CNavItem>
-
-                      <CNavItem>
-                        <CNavLink
-                          active={activeTab === 'doctor'}
-                          onClick={() => {
-                            setActiveTab('doctor')
-                            setRole('receptionist')
-                          }}
-                          style={{
-                            backgroundColor: activeTab === 'doctor' ? COLORS.primary : COLORS.white,
-                            color: activeTab === 'doctor' ? COLORS.white : COLORS.primary,
-                            border: `1px solid ${COLORS.primary}`,
-                            borderRadius: '8px',
-                            fontWeight: '500',
-                            padding: '8px 16px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Receptionist
-                        </CNavLink>
-                      </CNavItem>
-                    </CNav>
 
                     {/* Error message */}
                     {errorMessage && (
                       <div className="alert alert-danger text-center py-2 mb-3">{errorMessage}</div>
                     )}
-                    <h6 className='text-center'>{role === "admin" ? "Admin Login" : "Receptionist Login"}</h6>
+                    {/* <h6 className='text-center'>{role === "admin" ? "Admin Login" : "Receptionist Login"}</h6> */}
                     {/* CLINIC TAB */}
                     {(activeTab === 'clinic' || activeTab === 'doctor') && (
                       <CForm onSubmit={handleClinicLogin} noValidate>
+                        <CFormSelect
+                          value={activeTab}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            setActiveTab(value)
+
+                            if (value === "clinic") {
+                              setRole("admin")
+                            } else if (value === "doctor") {
+                              setRole("receptionist")
+                            }
+                          }}
+                          className="mb-3" style={{ color: COLORS.primary }}
+                        >
+                          <option value="clinic">Admin</option>
+                          <option value="doctor">Receptionist</option>
+                        </CFormSelect>
                         <CInputGroup className="mb-2">
                           <CInputGroupText>
                             <CIcon icon={cilUser} />
@@ -390,7 +363,7 @@ const Login = () => {
                             Reset password?
                           </a>
                         </div>
-                        
+
 
                         <CButton
                           type="submit"

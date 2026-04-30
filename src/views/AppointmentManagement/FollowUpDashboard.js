@@ -12,7 +12,7 @@ import {
   CTableBody,
   CTableDataCell,
   CInputGroup,
-  CFormInput ,
+  CFormInput,
   CButton,
   CModal,
   CModalHeader,
@@ -21,10 +21,10 @@ import {
   CModalFooter,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilArrowRight } from '@coreui/icons'
+import { cilArrowRight, cilChevronBottom, cilChevronTop } from '@coreui/icons'
 import { useNavigate } from 'react-router-dom'
 import Pagination from '../../Utils/Pagination'
-import { Search } from "lucide-react";
+import { Eye, Search } from "lucide-react";
 import {
   getBookingsTodayFollowUps,
   getUpcomingFollowUps,
@@ -42,7 +42,7 @@ import { BASE_URL } from '../../baseUrl'
 const followUpStatus = [
   'All', 'Pending', 'Confirmed', 'Due for Investigation',
   'Investigation Done', 'Follow-up Needed', 'Cancelled',
-  'Rescheduled', 'Drop', 'No Reply', 'Completed','Follow-up Pending'
+  'Rescheduled', 'Drop', 'No Reply', 'Completed', 'Follow-up Pending'
 ]
 
 /* ─── Status colour map ──────────────────────────────────────────────── */
@@ -144,11 +144,11 @@ export default function FollowupDashboard() {
   const [reason, setReason] = useState('')
   const [newDate, setNewDate] = useState('')
   const [newTime, setNewTime] = useState('')
-  const { searchQuery,setSearchQuery } = useGlobalSearch()
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
   const [slotsForSelectedDate, setSlotsForSelectedDate] = useState([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [showAllSlots, setShowAllSlots] = useState(false)
-
+  const [expandedRow, setExpandedRow] = useState(null)
   /* ══════════════════════════════════════════════════════════════════
      INITIAL LOAD
   ══════════════════════════════════════════════════════════════════ */
@@ -186,13 +186,47 @@ export default function FollowupDashboard() {
   }
 
   /* ── API calls ────────────────────────────────────────────────────── */
-  const updatePaymentStatus = async (bookingId, status, row, reason, newDate, newTime) => {
-    const payload = { bookingId, followupStatus: status.toLowerCase(), reason }
-    if (status === 'Rescheduled') {
-      payload.serviceDate = newDate
-      payload.servicetime = newTime
+  const updatePaymentStatus = async (
+    bookingId,
+    status,
+    row,
+    reason,
+    newDate,
+    newTime
+  ) => {
+    try {
+      setLoading(true)
+
+      const payload = {
+        bookingId,
+        followupStatus: status.toLowerCase(),
+        reason,
+      }
+
+      if (status === "Rescheduled") {
+        payload.serviceDate = newDate
+        payload.servicetime = newTime
+      }
+
+      await bookingUpdate(payload)
+
+      // ✅ refresh current tab data
+      if (activeCard === "upcoming") {
+        await getUpcomingAppointments()
+      } else if (activeCard === "confirmed") {
+        const data = await getTodayFollowUps()
+        setRows(data.filter((r) => rowMatchesStatus(r, "confirmed")))
+      } else if (activeCard === "inprogress") {
+        const data = await getTodayFollowUps()
+        setRows(data.filter((r) => rowMatchesStatus(r, "in progress")))
+      } else {
+        await getTodayFollowUps()
+      }
+    } catch (error) {
+      console.error("Update failed:", error)
+    } finally {
+      setLoading(false)
     }
-    await bookingUpdate(payload)
   }
 
   const fetchSlots = async (doctorId, branchId) => {
@@ -465,39 +499,39 @@ export default function FollowupDashboard() {
         </div>
 
         <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
-          <CInputGroup   style={{ maxWidth: "300px" }} className="mb-3">
-  
-  {/* Input */}
-  <CFormInput
-    placeholder="Search..."
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-  />
+        <CInputGroup style={{ maxWidth: "300px" }} className="mb-3">
 
-  {/* Search Button */}
-  <CButton
-    // style={{
-    //   backgroundColor: "var(--color-bgcolor)",
-    //   color: "#fff",
-    //   border: "none"
-    // }}
-    onClick={() => {
-      setSelectedServiceTypes([]);
-      setSelectedConsultationTypes([]);
-      setFilterTypes([]);
-      setStatusFilters([]);
-      // You can trigger search logic here if needed
-    }}
-  >
-    {/* <Search size={16} /> */}
-  </CButton>
+          {/* Input */}
+          <CFormInput
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
 
-</CInputGroup>
+          {/* Search Button */}
+          <CButton
+            // style={{
+            //   backgroundColor: "var(--color-bgcolor)",
+            //   color: "#fff",
+            //   border: "none"
+            // }}
+            onClick={() => {
+              setSelectedServiceTypes([]);
+              setSelectedConsultationTypes([]);
+              setFilterTypes([]);
+              setStatusFilters([]);
+              // You can trigger search logic here if needed
+            }}
+          >
+            {/* <Search size={16} /> */}
+          </CButton>
+
+        </CInputGroup>
 
         {/* ── TABLE ─────────────────────────────────────────────────── */}
         <div className="wd-table-wrapper" style={{ overflowX: 'auto' }}>
-  
-          
+
+
           <CTable className="wd-table">
             <CTableHead>
               <CTableRow>
@@ -506,6 +540,8 @@ export default function FollowupDashboard() {
                 ))}
               </CTableRow>
             </CTableHead>
+
+
 
             <CTableBody>
               {loading ? (
@@ -518,10 +554,6 @@ export default function FollowupDashboard() {
                 <CTableRow>
                   <CTableDataCell colSpan={12} className="wd-td">
                     <div className="wd-empty">
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="wd-empty-icon">
-                        <polyline points="23 4 23 10 17 10" />
-                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                      </svg>
                       <p>No appointments found</p>
                     </div>
                   </CTableDataCell>
@@ -529,74 +561,174 @@ export default function FollowupDashboard() {
               ) : (
                 paginatedRows.map((row, index) => {
                   const st = getStatusStyle(row.status)
+                  const isExpanded = expandedRow === row.bookingId
+
                   return (
-                    <CTableRow key={row.bookingId} className="wd-tr">
+                    <React.Fragment key={row.bookingId}>
+                      {/* Main Row */}
+                      <CTableRow className="wd-tr">
+                        <CTableDataCell className="wd-td wd-td-num">
+                          {(currentPage - 1) * pageSize + index + 1}
+                        </CTableDataCell>
 
-                      <CTableDataCell className="wd-td wd-td-num">
-                        {(currentPage - 1) * pageSize + index + 1}
-                      </CTableDataCell>
+                        <CTableDataCell className="wd-td">
+                          <span className="wd-booking-id">{row.bookingId}</span>
+                        </CTableDataCell>
 
-                      <CTableDataCell className="wd-td">
-                        <span className="wd-booking-id">{row.bookingId}</span>
-                      </CTableDataCell>
+                        <CTableDataCell className="wd-td">{row.serviceDate}</CTableDataCell>
+                        <CTableDataCell className="wd-td">{row.servicetime}</CTableDataCell>
 
-                      <CTableDataCell className="wd-td">{row.serviceDate}</CTableDataCell>
-                      <CTableDataCell className="wd-td">{row.servicetime}</CTableDataCell>
+                        <CTableDataCell className="wd-td">
+                          <span className="wd-name">{row.name}</span>
+                        </CTableDataCell>
 
-                      <CTableDataCell className="wd-td">
-                        <span className="wd-name">{row.name}</span>
-                      </CTableDataCell>
+                        <CTableDataCell className="wd-td">
+                          {row.patientMobileNumber}
+                        </CTableDataCell>
 
-                      <CTableDataCell className="wd-td">{row.patientMobileNumber}</CTableDataCell>
-                      <CTableDataCell className="wd-td">{row.doctorName}</CTableDataCell>
-                      <CTableDataCell className="wd-td">{row.paymentType}</CTableDataCell>
-                      <CTableDataCell className="wd-td">{capitalizeWords(row.visitType)}</CTableDataCell>
+                        <CTableDataCell className="wd-td">{row.doctorName}</CTableDataCell>
 
-                      <CTableDataCell className="wd-td">
-                        <span
-                          className="wd-status-badge"
-                          style={{ background: st.bg, color: st.color, border: `0.5px solid ${st.border}` }}
-                        >
-                          {row.status}
-                        </span>
-                      </CTableDataCell>
+                        <CTableDataCell className="wd-td">{row.paymentType}</CTableDataCell>
 
-                      <CTableDataCell className="wd-td">
-                        <select
-                          className="wd-fu-select"
-                          value={capitalizeWords(row.followUpStatus || row.followupStatus || '')}
-                          onChange={e => {
-                            const value = e.target.value
-                            if (value === 'Rescheduled' || value === 'Cancelled') {
-                              setSelectedRow(row)
-                              setSelectedStatus(value)
-                              if (value === 'Rescheduled') fetchSlots(row.doctorId, row.branchId)
-                              setShowReasonModal(true)
-                            } else {
-                              updatePaymentStatus(row.bookingId, value, row)
-                            }
-                          }}
-                        >
-                          {followUpStatus.slice(1).map(s => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
-                      </CTableDataCell>
+                        <CTableDataCell className="wd-td">
+                          {capitalizeWords(row.visitType)}
+                        </CTableDataCell>
 
-                      <CTableDataCell className="wd-td">
-                        <button
-                          className="wd-action-btn view"
-                          onClick={() => navigate(`/appointment-details/${row.bookingId}`, { state: { appointment: row } })}
-                          title="View"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
-                        </button>
-                      </CTableDataCell>
+                        {/* Status */}
+                        <CTableDataCell className="wd-td">
+                          <span
+                            className="wd-status-badge"
+                            style={{
+                              background: st.bg,
+                              color: st.color,
+                              border: `0.5px solid ${st.border}`,
+                            }}
+                          >
+                            {row.status}
+                          </span>
+                        </CTableDataCell>
 
-                    </CTableRow>
+                        {/* Update Dropdown */}
+                        <CTableDataCell className="wd-td">
+                          <select
+                            className="wd-fu-select"
+                            value={capitalizeWords(
+                              row.followUpStatus || row.followupStatus || ''
+                            )}
+                            onChange={(e) => {
+                              const value = e.target.value
+
+                              if (value === 'Rescheduled' || value === 'Cancelled') {
+                                setSelectedRow(row)
+                                setSelectedStatus(value)
+
+                                if (value === 'Rescheduled') {
+                                  fetchSlots(row.doctorId, row.branchId)
+                                }
+
+                                setShowReasonModal(true)
+                              } else {
+                                updatePaymentStatus(row.bookingId, value, row)
+                              }
+                            }}
+                          >
+                            {followUpStatus.slice(1).map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                        </CTableDataCell>
+
+                        {/* Action */}
+                        <CTableDataCell className="wd-td">
+                          <div style={{ display: 'flex', gap: '6px' }}>
+
+                            {/* View Button */}
+                            <button
+                              className="wd-action-btn view"
+                              onClick={() =>
+                                navigate(`/appointment-details/${row.bookingId}`, {
+                                  state: { appointment: row },
+                                })
+                              }
+                              title="View"
+                            >
+                              <Eye size="sm" />
+                            </button>
+
+                            {/* Session Button */}
+                            {(row.visitType?.toLowerCase() === 'session' ||
+                              row.session?.length > 0) && (
+                                <button
+                                  className="wd-action-btn view"
+                                  onClick={() =>
+                                    setExpandedRow(
+                                      isExpanded ? null : row.bookingId
+                                    )
+                                  }
+                                  title="Session"
+                                >
+                                  <CIcon
+                                    icon={isExpanded ? cilChevronTop : cilChevronBottom}
+                                    size="sm"
+                                  />
+                                </button>
+                              )}
+                          </div>
+                        </CTableDataCell>
+                      </CTableRow>
+
+                      {/* Accordion Row */}
+                      {isExpanded && row.session?.length > 0 && (
+                        <CTableRow>
+                          <CTableDataCell colSpan={12} className="wd-td">
+                            <div
+                              style={{
+                                background: '#f8fafc',
+                                padding: '12px',
+                                borderRadius: '8px',
+                              }}
+                            >
+                              <h6
+                                style={{
+                                  marginBottom: '10px',
+                                  color: '#185fa5',
+                                  fontWeight: '600',
+                                }}
+                              >
+                                Session Details
+                              </h6>
+
+                              <CTable small bordered className='pink-table'>
+                                <CTableHead>
+                                  <CTableRow>
+                                    <CTableHeaderCell>Session Id</CTableHeaderCell>
+                                    <CTableHeaderCell>Date</CTableHeaderCell>
+                                    <CTableHeaderCell>Status</CTableHeaderCell>
+                                    <CTableHeaderCell>Payment</CTableHeaderCell>
+                                  </CTableRow>
+                                </CTableHead>
+
+                                <CTableBody>
+                                  {row.session.map((item, i) => (
+                                    <CTableRow key={i}>
+
+                                      <CTableDataCell>{item.sessionId}</CTableDataCell>
+                                      <CTableDataCell>{item.date}</CTableDataCell>
+                                      <CTableDataCell>{item.status}</CTableDataCell>
+                                      <CTableDataCell>
+                                        {item.paymentStatus}
+                                      </CTableDataCell>
+                                    </CTableRow>
+                                  ))}
+                                </CTableBody>
+                              </CTable>
+                            </div>
+                          </CTableDataCell>
+                        </CTableRow>
+                      )}
+                    </React.Fragment>
                   )
                 })
               )}

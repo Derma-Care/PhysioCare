@@ -107,7 +107,7 @@ const DoctorManagement = () => {
     profileDescription: '',
     doctorSignature: null,
     doctorSignatureFileName: null,
-    doctorFees: { inClinicFee: '', vedioConsultationFee: '' },
+    doctorFees: { inClinicFee: '' },
     focusAreas: [],
     languages: [],
     highlights: [],
@@ -230,9 +230,9 @@ const DoctorManagement = () => {
       return h * 60 + m
     }
 
-    if (!newService.categoryId?.length) errs.categoryId = 'Select at least one category'
-    if (!selectedServices.length) errs.serviceId = 'Select at least one service'
-    if (!selectedSubService.length) errs.subServiceName = 'Select at least one procedure'
+    // if (!newService.categoryId?.length) errs.categoryId = 'Select at least one category'
+    // if (!selectedServices.length) errs.serviceId = 'Select at least one service'
+    // if (!selectedSubService.length) errs.subServiceName = 'Select at least one procedure'
     if (!form.doctorName.trim()) errs.doctorName = 'Doctor name is required'
     if (!form.doctorLicence.trim()) errs.doctorLicence = 'License number is required'
     if (!/^[6789]\d{9}$/.test(form.doctorMobileNumber)) errs.doctorMobileNumber = 'Enter valid 10-digit number starting with 6-9'
@@ -242,7 +242,7 @@ const DoctorManagement = () => {
     if (!form.specialization.trim()) errs.specialization = 'Specialization is required'
     if (!form.profileDescription.trim()) errs.profileDescription = 'Profile description is required'
     if (enabledTypes.inClinic && (!form.doctorFees.inClinicFee || Number(form.doctorFees.inClinicFee) <= 0)) errs.inClinicFee = 'Enter valid in-clinic fee'
-    if (enabledTypes.online && (!form.doctorFees.vedioConsultationFee || Number(form.doctorFees.vedioConsultationFee) <= 0)) errs.vedioConsultationFee = 'Enter valid video fee'
+    // if (enabledTypes.online && (!form.doctorFees.vedioConsultationFee || Number(form.doctorFees.vedioConsultationFee) <= 0)) errs.vedioConsultationFee = 'Enter valid video fee'
     if (!form.doctorPicture) errs.doctorPicture = 'Profile picture is required'
     if (!form.doctorSignature) errs.doctorSignature = 'Doctor signature is required'
     if (!startDay) errs.startDay = 'Start day required'
@@ -289,9 +289,9 @@ const DoctorManagement = () => {
         doctorMobileNumber: form.doctorMobileNumber,
         doctorEmail: form.doctorEmail,
         doctorLicence: form.doctorLicence,
-        category: categoryOptions.filter((c) => newService.categoryId.includes(c.value)).map((c) => ({ categoryId: c.value, categoryName: c.label })),
-        service: selectedServices.map((s) => ({ serviceId: s.serviceId, serviceName: s.serviceName })),
-        subServices: selectedSubServiceObjects,
+        // category: categoryOptions.filter((c) => newService.categoryId.includes(c.value)).map((c) => ({ categoryId: c.value, categoryName: c.label })),
+        // service: selectedServices.map((s) => ({ serviceId: s.serviceId, serviceName: s.serviceName })),
+        // subServices: selectedSubServiceObjects,
         gender: form.gender,
         experience: form.experience,
         qualification: form.qualification,
@@ -304,12 +304,12 @@ const DoctorManagement = () => {
         focusAreas: form.focusAreas,
         languages: form.languages,
         highlights: form.highlights,
-        doctorFees: { inClinicFee: form.doctorFees.inClinicFee, vedioConsultationFee: form.doctorFees.vedioConsultationFee },
-        consultation: {
-          serviceAndTreatments: form.availableConsultations.includes('Services & Treatments') ? 3 : 0,
-          inClinic: form.availableConsultations.includes('In-Clinic') ? 1 : 0,
-          videoOrOnline: form.availableConsultations.includes('Video/Online') ? 2 : 0,
-        },
+        doctorFees: { inClinicFee: form.doctorFees.inClinicFee },
+        // consultation: {
+        //   serviceAndTreatments: form.availableConsultations.includes('Services & Treatments') ? 3 : 0,
+        //   inClinic: form.availableConsultations.includes('In-Clinic') ? 1 : 0,
+        //   videoOrOnline: form.availableConsultations.includes('Video/Online') ? 2 : 0,
+        // },
       }
 
       const response = await http.post(`/addDoctor`, payload, { headers: { 'Content-Type': 'application/json' } })
@@ -463,9 +463,9 @@ const DoctorManagement = () => {
         )}
 
       {/* ─── Modal ──────────────────────────────── */}
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} size="lg" backdrop="static">
+      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} size="lg" backdrop="static" className='custom-modal'>
         <CModalHeader className="dm-modal-header">
-          <div className="dm-modal-title-row">
+          <div closeButton className="dm-modal-title-row" >
             <div className="dm-modal-icon">
               <FontAwesomeIcon icon={faUserDoctor} />
             </div>
@@ -476,8 +476,8 @@ const DoctorManagement = () => {
         <CModalBody className="dm-modal-body">
 
           {/* Section 1: Category / Service */}
-          <SectionHeading text="Category & Service" />
-          <CRow className="g-3 mb-2">
+          {/* <SectionHeading text="Category & Service" /> */}
+          {/* <CRow className="g-3 mb-2">
             <CCol md={6}>
               <label className="dm-label">Category Name <span className="req">*</span></label>
               <Select
@@ -527,7 +527,7 @@ const DoctorManagement = () => {
               />
               <Err field="subServiceName" />
             </CCol>
-          </CRow>
+          </CRow> */}
 
           <div className="dm-divider" />
 
@@ -742,7 +742,7 @@ const DoctorManagement = () => {
 
           {/* Section 4: Consultation & Contact */}
           <SectionHeading text="Consultations & Contact" />
-          <div className="dm-consult-types">
+          {/* <div className="dm-consult-types">
             <strong className="dm-label">Consultation Type</strong>
             <div className="dm-check-row">
               {[
@@ -756,25 +756,25 @@ const DoctorManagement = () => {
                 </label>
               ))}
             </div>
-          </div>
+          </div> */}
           <CRow className="g-3 mb-2">
-            {enabledTypes.inClinic && (
-              <CCol md={6}>
-                <label className="dm-label">In-Clinic Fee (₹) <span className="req">*</span></label>
-                <CFormInput
-                  className="dm-input"
-                  type="number"
-                  value={form.doctorFees.inClinicFee}
-                  onChange={(e) => {
-                    setForm((p) => ({ ...p, doctorFees: { ...p.doctorFees, inClinicFee: e.target.value } }))
-                    if (Number(e.target.value) > 0) clearFieldError('inClinicFee')
-                  }}
-                  placeholder="Amount in ₹"
-                />
-                <Err field="inClinicFee" />
-              </CCol>
-            )}
-            {enabledTypes.online && (
+
+            <CCol md={6}>
+              <label className="dm-label">Consulation Fee (₹) <span className="req">*</span></label>
+              <CFormInput
+                className="dm-input"
+                type="number"
+                value={form.doctorFees.inClinicFee}
+                onChange={(e) => {
+                  setForm((p) => ({ ...p, doctorFees: { ...p.doctorFees, inClinicFee: e.target.value } }))
+                  if (Number(e.target.value) > 0) clearFieldError('inClinicFee')
+                }}
+                placeholder="Amount in ₹"
+              />
+              <Err field="inClinicFee" />
+            </CCol>
+
+            {/* {enabledTypes.online && (
               <CCol md={6}>
                 <label className="dm-label">Online Fee (₹) <span className="req">*</span></label>
                 <CFormInput
@@ -789,7 +789,7 @@ const DoctorManagement = () => {
                 />
                 <Err field="vedioConsultationFee" />
               </CCol>
-            )}
+            )} */}
             <CCol md={6}>
               <label className="dm-label">Contact Number <span className="req">*</span></label>
               <CFormInput
@@ -997,6 +997,10 @@ const DoctorManagement = () => {
           font-size: 12px !important;
           color: #9ca3af !important;
         }
+          .dm-modal-header .btn-close {
+  filter: brightness(0) invert(1);
+  opacity: 1;
+}
 
         /* Native selects (CFormSelect) */
         .dm-select-native,

@@ -12,6 +12,7 @@ import {
   UserCog, X, User, Briefcase, Clock, FileText,
   Layers, Save,
 } from 'lucide-react'
+import { emailPattern } from '../../../Constant/Constants'
 
 /* ─────────────────────────────────────────────────────────────
    ⚠️  CRITICAL: These helpers MUST live outside PhysioForm.
@@ -20,7 +21,7 @@ import {
    on every keystroke → focus is lost after one character.
 ───────────────────────────────────────────────────────────── */
 
-const DAY_ORDER = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
+const DAY_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
 /* ── Derive startDay/endDay from a days array ── */
 const getDayRange = (days = []) => {
@@ -29,7 +30,7 @@ const getDayRange = (days = []) => {
   if (indices.length === 0) return { startDay: '', endDay: '' }
   return {
     startDay: DAY_ORDER[indices[0]],
-    endDay:   DAY_ORDER[indices[indices.length - 1]],
+    endDay: DAY_ORDER[indices[indices.length - 1]],
   }
 }
 
@@ -61,15 +62,15 @@ const ChipSection = ({ label, items = [], onAdd, isView }) => {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {items.length
           ? items.map((item, i) => (
-              <span key={i} className="pf-chip">
-                {item}
-                {!isView && (
-                  <button type="button" className="pf-chip-remove" onClick={() => handleRemove(i)}>
-                    <X size={11} />
-                  </button>
-                )}
-              </span>
-            ))
+            <span key={i} className="pf-chip">
+              {item}
+              {!isView && (
+                <button type="button" className="pf-chip-remove" onClick={() => handleRemove(i)}>
+                  <X size={11} />
+                </button>
+              )}
+            </span>
+          ))
           : <span style={{ color: '#9ca3af', fontSize: 12 }}>No {label} added</span>}
       </div>
     </div>
@@ -118,22 +119,22 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   const isView = viewMode
 
   const serviceOptions = [
-    { value: 'home',   label: 'Home'   },
+    { value: 'home', label: 'Home' },
     { value: 'clinic', label: 'Clinic' },
   ]
   const specializationOptions = [
-    { value: 'orthopedic',   label: 'Orthopedic'   },
-    { value: 'neurological', label: 'Neurological'  },
-    { value: 'sports',       label: 'Sports'        },
+    { value: 'orthopedic', label: 'Orthopedic' },
+    { value: 'neurological', label: 'Neurological' },
+    { value: 'sports', label: 'Sports' },
   ]
   const dayOptions = [
-    { value: 'monday',    label: 'Mon' },
-    { value: 'tuesday',   label: 'Tue' },
+    { value: 'monday', label: 'Mon' },
+    { value: 'tuesday', label: 'Tue' },
     { value: 'wednesday', label: 'Wed' },
-    { value: 'thursday',  label: 'Thu' },
-    { value: 'friday',    label: 'Fri' },
-    { value: 'saturday',  label: 'Sat' },
-    { value: 'sunday',    label: 'Sun' },
+    { value: 'thursday', label: 'Thu' },
+    { value: 'friday', label: 'Fri' },
+    { value: 'saturday', label: 'Sat' },
+    { value: 'sunday', label: 'Sun' },
   ]
 
   const emptyForm = {
@@ -151,8 +152,8 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   }
 
   const [formData, setFormData] = useState(emptyForm)
-  const [errors,   setErrors]   = useState({})
-
+  const [errors, setErrors] = useState({})
+  const [saving, setSaving] = useState(false)
   /* ── Populate form on open ── */
   useEffect(() => {
     if (!visible) return
@@ -163,33 +164,33 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
       // If startDay/endDay already exist (e.g. already stored separately) use them;
       // otherwise derive them from the days array.
       let startDay = avail.startDay || ''
-      let endDay   = avail.endDay   || ''
+      let endDay = avail.endDay || ''
 
       if ((!startDay || !endDay) && avail.days?.length) {
         const derived = getDayRange(avail.days)
         startDay = startDay || derived.startDay
-        endDay   = endDay   || derived.endDay
+        endDay = endDay || derived.endDay
       }
 
       setFormData({
         ...emptyForm,
         ...initialData,
         // ensure arrays are never undefined
-        services:        initialData.services        || [],
+        services: initialData.services || [],
         specializations: initialData.specializations || [],
-        expertiseAreas:  initialData.expertiseAreas  || [],
-        treatmentTypes:  initialData.treatmentTypes  || [],
-        languages:       initialData.languages       || [],
+        expertiseAreas: initialData.expertiseAreas || [],
+        treatmentTypes: initialData.treatmentTypes || [],
+        languages: initialData.languages || [],
         documents: {
           licenseCertificate: '',
-          degreeCertificate:  '',
-          profilePhoto:       '',
+          degreeCertificate: '',
+          profilePhoto: '',
           ...(initialData.documents || {}),
         },
         availability: {
-          days:      avail.days      || [],
+          days: avail.days || [],
           startTime: avail.startTime || '',
-          endTime:   avail.endTime   || '',
+          endTime: avail.endTime || '',
           startDay,
           endDay,
         },
@@ -212,29 +213,69 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
       const maxDate = new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())
       if (new Date(formData.dateOfBirth) > maxDate) e.dateOfBirth = 'Age must be at least 18 years'
     }
-    if (!formData.qualification)      e.qualification      = 'Select qualification'
-    if (!formData.yearsOfExperience)  e.yearsOfExperience  = 'Enter experience'
-    if (!formData.physioType)         e.physioType         = 'Select physio type'
-    if (!formData.services?.length)      e.services         = 'Select at least one service'
+    // ✅ Email validation
+    if (!formData.emailId?.trim()) {
+      e.emailId = "Email is required"
+    } else if (!emailPattern.test(formData.emailId.trim())) {
+      e.emailId = "Enter valid email address"
+    }
+    if (!formData.qualification) e.qualification = 'Select qualification'
+    if (!formData.yearsOfExperience) e.yearsOfExperience = 'Enter experience'
+    if (!formData.physioType) e.physioType = 'Select physio type'
+    if (!formData.services?.length) e.services = 'Select at least one service'
     if (!formData.specializations?.length) e.specializations = 'Select specialization'
     const a = formData.availability || {}
-    if (!a.startDay)  e.startDay  = 'Select start day'
-    if (!a.endDay)    e.endDay    = 'Select end day'
+    if (!a.startDay) e.startDay = 'Select start day'
+    if (!a.endDay) e.endDay = 'Select end day'
     if (!a.startTime) e.startTime = 'Select start time'
-    if (!a.endTime)   e.endTime   = 'Select end time'
+    if (!a.endTime) e.endTime = 'Select end time'
     if (a.startTime && a.endTime && a.startTime >= a.endTime) e.endTime = 'End time must be after start time'
-    if (!formData.bio?.trim())             e.bio           = 'Enter profile description'
-    if (!formData.treatmentTypes?.length)  e.treatmentTypes = 'Add treatment type'
-    if (!formData.expertiseAreas?.length)  e.expertiseAreas = 'Add expertise'
-    if (!formData.languages?.length)       e.languages      = 'Add language'
+    if (!formData.bio?.trim()) e.bio = 'Enter profile description'
+    // if (!formData.treatmentTypes?.length) e.treatmentTypes = 'Add treatment type'
+    // if (!formData.expertiseAreas?.length) e.expertiseAreas = 'Add expertise'
+    if (!formData.languages?.length) e.languages = 'Add language'
+    // ✅ Documents validation
+    if (!formData.documents?.licenseCertificate) {
+      e.licenseCertificate = "License certificate is required"
+    }
+
+    if (!formData.documents?.degreeCertificate) {
+      e.degreeCertificate = "Degree certificate is required"
+    }
+
+    if (!formData.documents?.profilePhoto) {
+      e.profilePhoto = "Profile photo is required"
+    }
     setErrors(e)
     return Object.keys(e).length === 0
   }
 
-  const handleChange       = (field, value) => setFormData(prev => ({ ...prev, [field]: value }))
-  const handleNestedChange = (parent, field, value) =>
-    setFormData(prev => ({ ...prev, [parent]: { ...prev[parent], [field]: value } }))
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
 
+    setErrors((prev) => ({
+      ...prev,
+      [field]: "",
+    }))
+  }
+
+  const handleNestedChange = (parent, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [parent]: {
+        ...prev[parent],
+        [field]: value,
+      },
+    }))
+
+    setErrors((prev) => ({
+      ...prev,
+      [field]: "",
+    }))
+  }
   const convertToBase64 = async (image) => {
     try {
       if (typeof image === 'string' && image.startsWith('data:image')) return image.split(',')[1]
@@ -243,7 +284,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           const reader = new FileReader()
           reader.readAsDataURL(image)
           reader.onloadend = () => resolve(reader.result.split(',')[1])
-          reader.onerror   = reject
+          reader.onerror = reject
         })
       }
       return ''
@@ -252,32 +293,56 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
 
   const handleFileChange = async (field, file) => {
     if (!file) return
+
     const base64 = await convertToBase64(file)
-    setFormData(prev => ({ ...prev, documents: { ...prev.documents, [field]: base64 } }))
+
+    setFormData((prev) => ({
+      ...prev,
+      documents: {
+        ...prev.documents,
+        [field]: base64,
+      },
+    }))
+
+    setErrors((prev) => ({
+      ...prev,
+      [field]: "",
+    }))
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return
 
-    const { startDay, endDay, startTime, endTime } = formData.availability
+    try {
+      setSaving(true)
 
-    // Build the days array from startDay → endDay range
-    const si = DAY_ORDER.indexOf(startDay)
-    const ei = DAY_ORDER.indexOf(endDay)
-    const selectedDays = si <= ei
-      ? DAY_ORDER.slice(si, ei + 1)
-      : [...DAY_ORDER.slice(si), ...DAY_ORDER.slice(0, ei + 1)]
+      const { startDay, endDay, startTime, endTime } =
+        formData.availability
 
-    onSave({
-      ...formData,
-      availability: {
-        days: selectedDays,
-        startTime,
-        endTime,
-        startDay,
-        endDay,
-      },
-    })
+      const si = DAY_ORDER.indexOf(startDay)
+      const ei = DAY_ORDER.indexOf(endDay)
+
+      const selectedDays =
+        si <= ei
+          ? DAY_ORDER.slice(si, ei + 1)
+          : [
+            ...DAY_ORDER.slice(si),
+            ...DAY_ORDER.slice(0, ei + 1),
+          ]
+
+      await onSave({
+        ...formData,
+        availability: {
+          days: selectedDays,
+          startTime,
+          endTime,
+          startDay,
+          endDay,
+        },
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   // ── react-select shared props ─────────────────────────────────────────────
@@ -302,11 +367,11 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         backgroundColor: state.isSelected ? '#185fa5' : state.isFocused ? '#f0f5fb' : '#fff',
         color: state.isSelected ? '#fff' : '#374151',
       }),
-      multiValue:       (base) => ({ ...base, background: '#e6f1fb', borderRadius: 20 }),
-      multiValueLabel:  (base) => ({ ...base, color: '#0c447c', fontSize: 12 }),
+      multiValue: (base) => ({ ...base, background: '#e6f1fb', borderRadius: 20 }),
+      multiValueLabel: (base) => ({ ...base, color: '#0c447c', fontSize: 12 }),
       multiValueRemove: (base) => ({ ...base, color: '#185fa5', ':hover': { background: '#b5d4f4', color: '#0c447c' } }),
-      menu:             (base) => ({ ...base, fontSize: 13 }),
-      placeholder:      (base) => ({ ...base, fontSize: 13, color: '#9ca3af' }),
+      menu: (base) => ({ ...base, fontSize: 13 }),
+      placeholder: (base) => ({ ...base, fontSize: 13, color: '#9ca3af' }),
     },
   }
 
@@ -357,21 +422,21 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
 
             <InfoCard icon={User} title="Personal Information">
               <div className="pf-inner-grid">
-                <InfoRow label="Full Name"    value={formData.fullName} />
-                <InfoRow label="Contact"      value={formData.contactNumber} />
-                <InfoRow label="Email"        value={formData.emailId} />
-                <InfoRow label="Gender"       value={formData.gender} />
+                <InfoRow label="Full Name" value={formData.fullName} />
+                <InfoRow label="Contact" value={formData.contactNumber} />
+                <InfoRow label="Email" value={formData.emailId} required error={errors.emailId} />
+                <InfoRow label="Gender" value={formData.gender} />
                 <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
-                <InfoRow label="Languages"    value={formData.languages?.join(', ')} />
+                <InfoRow label="Languages" value={formData.languages?.join(', ')} />
               </div>
             </InfoCard>
 
             <InfoCard icon={Briefcase} title="Professional Information">
               <div className="pf-inner-grid">
-                <InfoRow label="Qualification"   value={formData.qualification} />
-                <InfoRow label="Experience"      value={formData.yearsOfExperience ? `${formData.yearsOfExperience} years` : ''} />
-                <InfoRow label="Type"            value={formData.physioType} />
-                <InfoRow label="Services"        value={formData.services?.join(', ')} />
+                <InfoRow label="Qualification" value={formData.qualification} />
+                <InfoRow label="Experience" value={formData.yearsOfExperience ? `${formData.yearsOfExperience} years` : ''} />
+                <InfoRow label="Type" value={formData.physioType} />
+                <InfoRow label="Services" value={formData.services?.join(', ')} />
                 <InfoRow label="Specializations" value={formData.specializations?.join(', ')} />
                 <InfoRow label="Expertise Areas" value={formData.expertiseAreas?.join(', ')} />
                 <InfoRow label="Treatment Types" value={formData.treatmentTypes?.join(', ')} />
@@ -405,16 +470,16 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
                   { label: 'License Certificate', key: 'licenseCertificate' },
-                  { label: 'Degree Certificate',  key: 'degreeCertificate'  },
+                  { label: 'Degree Certificate', key: 'degreeCertificate' },
                 ].map(({ label, key }) => (
                   <div key={key}>
                     <div className="pf-info-label" style={{ marginBottom: 6 }}>{label}</div>
                     {formData.documents?.[key]
                       ? <iframe
-                          src={`data:application/pdf;base64,${formData.documents[key]}`}
-                          width="100%" height="220px"
-                          style={{ borderRadius: 8, border: '0.5px solid #d0dce9' }}
-                        />
+                        src={`data:application/pdf;base64,${formData.documents[key]}`}
+                        width="100%" height="220px"
+                        style={{ borderRadius: 8, border: '0.5px solid #d0dce9' }}
+                      />
                       : <span style={{ fontSize: 13, color: '#9ca3af' }}>Not provided</span>
                     }
                   </div>
@@ -424,7 +489,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           </>
 
         ) : (
-        /* ═══════════════ EDIT / ADD MODE ═══════════════ */
+          /* ═══════════════ EDIT / ADD MODE ═══════════════ */
           <CForm>
 
             <FormSection icon={UserCog} title="System Info">
@@ -483,7 +548,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                 <div className="pf-col-third">
                   <Field label="Date of Birth" required error={errors.dateOfBirth}>
                     <input type="date" className="pf-input" value={formData.dateOfBirth}
-                      max={new Date(new Date().getFullYear()-18, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0]}
+                      max={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0]}
                       min="1950-01-01"
                       onChange={(e) => handleChange('dateOfBirth', e.target.value)} />
                   </Field>
@@ -641,19 +706,19 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
             <FormSection icon={FileText} title="Documents">
               <div className="pf-row">
                 <div className="pf-col-third">
-                  <Field label="License Certificate">
+                  <Field label="License Certificate" error={errors.licenseCertificate}>
                     <input type="file" className="pf-input"
                       onChange={(e) => handleFileChange('licenseCertificate', e.target.files[0])} />
                   </Field>
                 </div>
                 <div className="pf-col-third">
-                  <Field label="Degree Certificate">
+                  <Field label="Degree Certificate" error={errors.degreeCertificate}>
                     <input type="file" className="pf-input"
                       onChange={(e) => handleFileChange('degreeCertificate', e.target.files[0])} />
                   </Field>
                 </div>
                 <div className="pf-col-third">
-                  <Field label="Profile Photo">
+                  <Field label="Profile Photo" error={errors.profilePhoto}>
                     <input type="file" className="pf-input"
                       onChange={(e) => handleFileChange('profilePhoto', e.target.files[0])} />
                   </Field>
@@ -672,7 +737,23 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         ) : (
           <>
             <button className="pf-btn-cancel" onClick={onClose}><X size={13} /> Cancel</button>
-            <button className="pf-btn-save"   onClick={handleSubmit}><Save size={13} /> Save Therapist</button>
+            <button
+              className="pf-btn-save"
+              onClick={handleSubmit}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <span className="spinner-border spinner-border-sm text-white" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={13} />
+                  Save Therapist
+                </>
+              )}
+            </button>
           </>
         )}
       </CModalFooter>
