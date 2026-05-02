@@ -452,162 +452,192 @@ export default function PackagesManagement() {
       </CModal>
 
       {/* ── VIEW MODAL ── */}
-      <CModal
-        visible={viewModal}
-        onClose={() => { setViewModal(false); setSelectedPackage(null); setViewError(null) }}
-        size="lg" alignment="center" className="pm-custom-modal"
-      >
-        <CModalHeader className="pm-modal-header">
-          <CModalTitle className="pm-modal-title">Package Details</CModalTitle>
-        </CModalHeader>
+     {/* ── VIEW MODAL ── */}
+<CModal
+  visible={viewModal}
+  onClose={() => { setViewModal(false); setSelectedPackage(null); setViewError(null) }}
+  size="lg"
+  alignment="center"
+  className="pm-custom-modal"
+>
+  <CModalHeader className="pm-modal-header">
+    <CModalTitle className="pm-modal-title">Package Details</CModalTitle>
+  </CModalHeader>
 
-        <CModalBody className="pm-modal-body pm-view-body">
-          {viewLoading && (
-            <div className="pm-view-state">
-              <div className="pm-spinner" />
-              <p>Loading package details...</p>
-            </div>
-          )}
+  <CModalBody className="pm-modal-body pm-view-body">
 
-          {!viewLoading && viewError && (
-            <div className="pm-view-state pm-view-error">
-              <Package size={36} />
-              <p>{viewError}</p>
-              <button className="pm-btn-secondary" onClick={() => { setViewModal(false); setViewError(null) }}>Close</button>
-            </div>
-          )}
+    {/* Loading */}
+    {viewLoading && (
+      <div className="pm-view-state">
+        <div className="pm-spinner" />
+        <p>Loading package details...</p>
+      </div>
+    )}
 
-          {!viewLoading && !viewError && !selectedPackage && (
-            <div className="pm-view-state">
-              <Package size={36} className="pm-empty-icon" />
-              <p>No data available</p>
-              <button className="pm-btn-secondary" onClick={() => setViewModal(false)}>Close</button>
-            </div>
-          )}
+    {/* Error */}
+    {!viewLoading && viewError && (
+      <div className="pm-view-state pm-view-error">
+        <Package size={36} />
+        <p>{viewError}</p>
+        <button className="pm-btn-secondary" onClick={() => { setViewModal(false); setViewError(null) }}>
+          Close
+        </button>
+      </div>
+    )}
 
-          {!viewLoading && !viewError && selectedPackage && (
-            <div className="d-flex flex-column gap-3">
-              <div className="pm-acc-item">
-                <details open>
-                  <summary className="pm-acc-head">
-                    <span>{selectedPackage.packageName || "—"}</span>
-                    <span className="pm-acc-arrow">▾</span>
-                  </summary>
-                  <div className="pm-acc-body">
-                    <div className="pm-info-grid">
-                      <div className="pm-info-row">
-                        <span className="pm-info-key">No. of Programs</span>
-                        <span className="pm-info-val">{selectedPackage.noOfPrograms ?? safeArray(selectedPackage.programs).length}</span>
-                      </div>
-                      <div className="pm-info-row">
-                        <span className="pm-info-key">Discount</span>
-                        <span className="pm-info-val">{selectedPackage.discountPercentage ?? 0}%</span>
-                      </div>
-                      <div className="pm-info-row">
-                        <span className="pm-info-key">Offer Type</span>
-                        <span className="pm-info-val">{selectedPackage.offerType || "—"}</span>
-                      </div>
-                      <div className="pm-info-row">
-                        <span className="pm-info-key">Start Date</span>
-                        <span className="pm-info-val">{selectedPackage.startOfferDate || "—"}</span>
-                      </div>
-                      <div className="pm-info-row">
-                        <span className="pm-info-key">End Date</span>
-                        <span className="pm-info-val">{selectedPackage.endOfferDate || "—"}</span>
-                      </div>
+    {/* No data */}
+    {!viewLoading && !viewError && !selectedPackage && (
+      <div className="pm-view-state">
+        <Package size={36} className="pm-empty-icon" />
+        <p>No data available</p>
+        <button className="pm-btn-secondary" onClick={() => setViewModal(false)}>Close</button>
+      </div>
+    )}
+
+    {/* ── Data ── */}
+    {!viewLoading && !viewError && selectedPackage && (
+      <div className="d-flex flex-column gap-3">
+
+       {/* ── Package summary cards ── */}
+<div className="pv-summary-header">
+  <div className="pv-summary-icon"><Package size={18} /></div>
+  <div>
+    <p className="pv-summary-name">{selectedPackage.packageName || "—"}</p>
+    {(selectedPackage.discountPercentage ?? 0) > 0 && (
+      <span className="pv-discount-badge">{selectedPackage.discountPercentage}% off</span>
+    )}
+  </div>
+</div>
+
+<div className="pv-summary-grid">
+  <div className="pv-summary-card">
+    <span className="pv-summary-label">No. of programs</span>
+    <span className="pv-summary-value">
+      {selectedPackage.noOfPrograms ?? safeArray(selectedPackage.programs).length}
+    </span>
+  </div>
+  <div className="pv-summary-card">
+    <span className="pv-summary-label">Offer type</span>
+    <span className="pv-summary-value">{selectedPackage.offerType || "—"}</span>
+  </div>
+  <div className="pv-summary-card">
+    <span className="pv-summary-label">Start date</span>
+    <span className="pv-summary-value">{selectedPackage.startOfferDate || "—"}</span>
+  </div>
+  <div className="pv-summary-card">
+    <span className="pv-summary-label">End date</span>
+    <span className="pv-summary-value">{selectedPackage.endOfferDate || "—"}</span>
+  </div>
+</div>
+
+        {/* ── Programs section label ── */}
+        <div className="pv-section-label">Programs</div>
+
+        {safeArray(selectedPackage.programs).length === 0 ? (
+          <div className="pv-no-data pv-no-data--padded">
+            <Package size={32} className="pm-empty-icon" />
+            <p>No programs linked to this package</p>
+          </div>
+        ) : (
+          safeArray(selectedPackage.programs).map((program, pIndex) => {
+            if (!program) return null
+            const therapies = safeArray(program.therophyData)
+            return (
+              <div className="pv-acc-item" key={pIndex}>
+                <details>
+                  <summary className="pv-acc-head pv-acc-head--prog">
+                    <span>{pIndex + 1}. {program.programName || "Unnamed Program"}</span>
+                    <div className="pv-acc-head-right">
+                      <span className="pv-therapy-count">{therapies.length} {therapies.length === 1 ? "therapy" : "therapies"}</span>
+                      <span className="pv-acc-arrow">▾</span>
                     </div>
+                  </summary>
+
+                  <div className="pv-acc-body">
+                    {therapies.length === 0 ? (
+                      <div className="pv-no-data">No therapies linked to this program</div>
+                    ) : (
+                      <div className="d-flex flex-column gap-2">
+                        {therapies.map((therapy, tIndex) => {
+                          if (!therapy) return null
+                          const exercises = safeArray(therapy.exercises)
+                          return (
+                            <div className="pv-therapy-item" key={tIndex}>
+                              <details>
+                                <summary className="pv-therapy-head">
+                                  <span>{tIndex + 1}. {therapy.therapyName || "Unnamed Therapy"}</span>
+                                  <div className="pv-acc-head-right">
+                                    <span className="pv-ex-count">{exercises.length} {exercises.length === 1 ? "exercise" : "exercises"}</span>
+                                    <span className="pv-acc-arrow pv-acc-arrow--sm">▾</span>
+                                  </div>
+                                </summary>
+
+                                <div className="pv-therapy-body">
+                                  {exercises.length === 0 ? (
+                                    <div className="pv-no-data">No exercises available</div>
+                                  ) : (
+                                    <div className="pv-ex-table-wrap">
+                                      <CTable className="pv-ex-table" bordered responsive>
+                                        <CTableHead>
+                                          <CTableRow>
+                                            <CTableHeaderCell className="pv-ex-th" style={{ width: 36 }}>#</CTableHeaderCell>
+                                            <CTableHeaderCell className="pv-ex-th">Name</CTableHeaderCell>
+                                            <CTableHeaderCell className="pv-ex-th">Session</CTableHeaderCell>
+                                            <CTableHeaderCell className="pv-ex-th">Frequency</CTableHeaderCell>
+                                            <CTableHeaderCell className="pv-ex-th">GST</CTableHeaderCell>
+                                            <CTableHeaderCell className="pv-ex-th">Other tax</CTableHeaderCell>
+                                            <CTableHeaderCell className="pv-ex-th">Price</CTableHeaderCell>
+                                          </CTableRow>
+                                        </CTableHead>
+                                        <CTableBody>
+                                          {exercises.map((ex, i) => {
+                                            if (!ex) return null
+                                            return (
+                                              <CTableRow key={i} className="pv-ex-tr">
+                                                <CTableDataCell className="pv-ex-td pv-td-num">{i + 1}</CTableDataCell>
+                                                <CTableDataCell className="pv-ex-td">
+                                                  <span className="pv-ex-name">{ex.name || "—"}</span>
+                                                  {ex.notes && (
+                                                    <><br /><small className="pv-ex-notes">{ex.notes}</small></>
+                                                  )}
+                                                </CTableDataCell>
+                                                <CTableDataCell className="pv-ex-td">{ex.session || "—"}</CTableDataCell>
+                                                <CTableDataCell className="pv-ex-td">{ex.frequency || "—"}</CTableDataCell>
+                                                <CTableDataCell className="pv-ex-td">{ex.gst != null ? `${ex.gst}%` : "—"}</CTableDataCell>
+                                                <CTableDataCell className="pv-ex-td">{ex.otherTax != null ? `${ex.otherTax}%` : "—"}</CTableDataCell>
+                                                <CTableDataCell className="pv-ex-td">
+                                                  <span className="pv-price">{ex.totalPrice != null ? `₹${ex.totalPrice}` : "—"}</span>
+                                                </CTableDataCell>
+                                              </CTableRow>
+                                            )
+                                          })}
+                                        </CTableBody>
+                                      </CTable>
+                                    </div>
+                                  )}
+                                </div>
+                              </details>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 </details>
               </div>
+            )
+          })
+        )}
 
-              <div className="pm-section-label">Programs</div>
-
-              {safeArray(selectedPackage.programs).length === 0 ? (
-                <div className="pm-no-data">No programs linked to this package</div>
-              ) : (
-                safeArray(selectedPackage.programs).map((program, pIndex) => {
-                  if (!program) return null
-                  return (
-                    <div className="pm-acc-item" key={pIndex}>
-                      <details>
-                        <summary className="pm-acc-head">
-                          <span>{pIndex + 1}. {program.programName || "Unnamed Program"}</span>
-                          <span className="pm-acc-arrow">▾</span>
-                        </summary>
-                        <div className="pm-acc-body">
-                          {safeArray(program.therophyData).length === 0 ? (
-                            <div className="pm-no-data">No therapies linked to this program</div>
-                          ) : (
-                            safeArray(program.therophyData).map((therapy, tIndex) => {
-                              if (!therapy) return null
-                              return (
-                                <div className="pm-therapy-item" key={tIndex}>
-                                  <details>
-                                    <summary className="pm-therapy-head">
-                                      <span>{tIndex + 1}. {therapy.therapyName || "Unnamed Therapy"}</span>
-                                      <span className="pm-acc-arrow">▾</span>
-                                    </summary>
-                                    <div className="pm-therapy-body">
-                                      {safeArray(therapy.exercises).length === 0 ? (
-                                        <div className="pm-no-data">No exercises available</div>
-                                      ) : (
-                                        <div className="pm-ex-table-wrap">
-                                          <CTable bordered responsive size="sm" className="pm-ex-table">
-                                            <CTableHead>
-                                              <CTableRow>
-                                                <CTableHeaderCell>#</CTableHeaderCell>
-                                                <CTableHeaderCell>Name</CTableHeaderCell>
-                                                <CTableHeaderCell>Session</CTableHeaderCell>
-                                                <CTableHeaderCell>Frequency</CTableHeaderCell>
-                                                <CTableHeaderCell>Sets</CTableHeaderCell>
-                                                <CTableHeaderCell>Reps</CTableHeaderCell>
-                                                <CTableHeaderCell>Price</CTableHeaderCell>
-                                              </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                              {safeArray(therapy.exercises).map((ex, i) => {
-                                                if (!ex) return null
-                                                return (
-                                                  <CTableRow key={i}>
-                                                    <CTableDataCell>{i + 1}</CTableDataCell>
-                                                    <CTableDataCell>
-                                                      <strong>{ex.name || "—"}</strong>
-                                                      {ex.notes && <><br /><small className="text-muted">{ex.notes}</small></>}
-                                                    </CTableDataCell>
-                                                    <CTableDataCell>{ex.session     || "—"}</CTableDataCell>
-                                                    <CTableDataCell>{ex.frequency   || "—"}</CTableDataCell>
-                                                    <CTableDataCell>{ex.sets        || "—"}</CTableDataCell>
-                                                    <CTableDataCell>{ex.repetitions || "—"}</CTableDataCell>
-                                                    <CTableDataCell>₹{ex.totalPrice ?? 0}</CTableDataCell>
-                                                  </CTableRow>
-                                                )
-                                              })}
-                                            </CTableBody>
-                                          </CTable>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </details>
-                                </div>
-                              )
-                            })
-                          )}
-                        </div>
-                      </details>
-                    </div>
-                  )
-                })
-              )}
-
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
-                <button className="pm-btn-secondary" onClick={() => { setViewModal(false); setSelectedPackage(null) }}>
-                  Close
-                </button>
-              </div>
-            </div>
-          )}
-        </CModalBody>
-      </CModal>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px", paddingTop: "12px", borderTop: "0.5px solid #d0dce9" }}>
+          <button className="pm-btn-secondary" onClick={() => { setViewModal(false); setSelectedPackage(null) }}>
+            Close
+          </button>
+        </div>
+      </div>
+    )}
+  </CModalBody>
+</CModal>
 
       {/* ── DELETE MODAL ── */}
       <ConfirmationModal

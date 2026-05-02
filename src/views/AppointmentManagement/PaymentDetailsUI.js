@@ -16,155 +16,30 @@ import {
 } from "@coreui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FONT_SIZES } from "../../Constant/Themes";
+import { getBookingsByPatientId } from "../../APIs/GetpatinetData";
 
-const data = {
-    bookingId: "BOOK1234",
-    patientId: "PAT123",
-    patientName: "Ramesh Kumar",
-    mobile: "9876543210",
-    doctorName: "Dr. John (Physio)",
-    therapistName: "Therapy_1",
-    totalAmount: 5000,
-    discountAmount: 200,
-    finalAmount: 4800,
-    totalPaid: 2500,
-    balanceAmount: 2300,
-    paymentStatus: "PARTIAL",
-
-    paymentHistory: [
-        {
-            amount: 1000,
-            paymentMode: "CASH",
-            paymentType: "PARTIAL",
-            paymentDate: "2026-04-14",
-            paymentleval: "Session"
-        },
-        {
-            amount: 1500,
-            paymentMode: "UPI",
-            paymentType: "PARTIAL",
-            paymentDate: "2026-04-15",
-            paymentleval: "Therapy"
-        },
-    ],
-
-    therapyWithSessions: [
-        {
-            packageName: "PACKAGE_1",
-            programs: [
-                {
-                    programName: "PROGRAM_1",
-                    therapyData: [
-                        {
-                            therapyName: "THERAPY_1",
-                            exercises: [
-                                {
-                                    exerciseName: "Knee Flexion",
-                                    pricePerSession: 100,
-                                    sessions: [1, 2, 3, 4, 5].map((n) => ({
-                                        sessionNo: n,
-                                        paymentStatus: n <= 2 ? "PAID" : "UNPAID",
-                                    })),
-                                },
-                                {
-                                    exerciseName: "Quad Set",
-                                    pricePerSession: 120,
-                                    sessions: [1, 2, 3, 4, 5].map((n) => ({
-                                        sessionNo: n,
-                                        paymentStatus: n === 1 ? "PAID" : "UNPAID",
-                                    })),
-                                },
-                            ],
-                        },
-                        {
-                            therapyName: "THERAPY_2",
-                            exercises: [
-                                {
-                                    exerciseName: "Hamstring Stretch",
-                                    pricePerSession: 90,
-                                    sessions: [1, 2, 3, 4, 5].map((n) => ({
-                                        sessionNo: n,
-                                        paymentStatus: n <= 3 ? "PAID" : "UNPAID",
-                                    })),
-                                },
-                                {
-                                    exerciseName: "Leg Raise",
-                                    pricePerSession: 110,
-                                    sessions: [1, 2, 3, 4, 5].map((n) => ({
-                                        sessionNo: n,
-                                        paymentStatus: "UNPAID",
-                                    })),
-                                },
-                            ],
-                        },
-                    ],
-                },
-
-                {
-                    programName: "PROGRAM_2",
-                    therapyData: [
-                        {
-                            therapyName: "THERAPY_3",
-                            exercises: [
-                                {
-                                    exerciseName: "Shoulder Rotation",
-                                    pricePerSession: 130,
-                                    sessions: [1, 2, 3, 4, 5].map((n) => ({
-                                        sessionNo: n,
-                                        paymentStatus: n <= 2 ? "PAID" : "UNPAID",
-                                    })),
-                                },
-                                {
-                                    exerciseName: "Wall Climb",
-                                    pricePerSession: 95,
-                                    sessions: [1, 2, 3, 4, 5].map((n) => ({
-                                        sessionNo: n,
-                                        paymentStatus: "UNPAID",
-                                    })),
-                                },
-                            ],
-                        },
-                        {
-                            therapyName: "THERAPY_4",
-                            exercises: [
-                                {
-                                    exerciseName: "Neck Stretch",
-                                    pricePerSession: 80,
-                                    sessions: [1, 2, 3, 4, 5].map((n) => ({
-                                        sessionNo: n,
-                                        paymentStatus: n < 5 ? "PAID" : "UNPAID",
-                                    })),
-                                },
-                                {
-                                    exerciseName: "Arm Raise",
-                                    pricePerSession: 105,
-                                    sessions: [1, 2, 3, 4, 5].map((n) => ({
-                                        sessionNo: n,
-                                        paymentStatus: n === 1 ? "PAID" : "UNPAID",
-                                    })),
-                                },
-                            ],
-                        },
-                    ],
-                },
-            ],
-        },
-    ],
-};
 
 const StatusBadge = ({ status }) => {
-    const color =
-        status === "PAID"
-            ? "success"
-            : status === "PARTIAL"
-                ? "warning"
-                : "danger";
-
-    return <CBadge color={color}>{status}</CBadge>;
-};
-
-
-const percent = Math.round((data.totalPaid / data.finalAmount) * 100);
+    const styles = {
+        PAID:    { background: "#eaf3de", color: "#27500a", border: "0.5px solid #97c459" },
+        PARTIAL: { background: "#faeeda", color: "#633806", border: "0.5px solid #ef9f27" },
+        UNPAID:  { background: "#fcebeb", color: "#791f1f", border: "0.5px solid #f09595" },
+    }
+    const s = styles[status] || styles.UNPAID
+    
+    return (
+        <span style={{
+            ...s,
+            display: "inline-block",
+            borderRadius: "20px",
+            fontSize: "11px",
+            fontWeight: 600,
+            padding: "2px 10px",
+        }}>
+            {status}
+        </span>
+    )
+}
 
 export default function PaymentDetailsUI() {
     const navigate = useNavigate();
@@ -172,348 +47,393 @@ export default function PaymentDetailsUI() {
 
     const paymentData = location.state.paymentData || {};
     const [data, setData] = useState(paymentData);
+    const patientId = data?.patientId;
+    const [patientInfo, setPatientInfo] = useState({
+  name: "",
+  mobileNumber: ""
+});
+useEffect(() => {
+  const patientId = data?.patientId;
+
+  if (!patientId) return;
+
+  const fetchPatientDetails = async () => {
+    try {
+      const res = await getBookingsByPatientId(patientId);
+
+      const bookingList = res?.data?.data || [];
+
+      // ✅ Find correct booking OR take first
+      const booking = bookingList.find(
+        b => b.patientId === patientId
+      ) || bookingList[0];
+
+      setPatientInfo({
+        name: booking?.name || "-",
+        mobileNumber: booking?.mobileNumber || booking?.mobile || "-"
+      });
+
+    } catch (err) {
+      console.error("Patient fetch error:", err);
+    }
+  };
+
+  fetchPatientDetails();
+}, [data?.patientId]);
+
     const normalizeData = (data) => {
-  return 
-  (data?.therapyWithSessions || []).map((item) => {
+        return (data?.therapyWithSessions || []).map((item) => {
+            if (item?.programs?.length) {
+                return {
+                    packageName: item.packageName,
+                    programs: item.programs.map(program => ({
+                        programName: program.programName,
+                        therapies: (program.therapyData || []).map(therapy => ({
+                            therapyName: therapy.therapyName,
+                            exercises: therapy.exercises || []
+                        }))
+                    }))
+                };
+            }
+            if (item?.therapyData?.length) {
+                return {
+                    packageName: null,
+                    programs: [{
+                        programName: item.programName,
+                        therapies: (item.therapyData || []).map(therapy => ({
+                            therapyName: therapy.therapyName,
+                            exercises: therapy.exercises || []
+                        }))
+                    }]
+                };
+            }
+            if (item?.exercises?.length) {
+                return {
+                    packageName: null,
+                    programs: [{
+                        programName: null,
+                        therapies: [{ therapyName: item.therapyName, exercises: item.exercises }]
+                    }]
+                };
+            }
+            if (item?.sessions?.length) {
+                return {
+                    packageName: null,
+                    programs: [{
+                        programName: null,
+                        therapies: [{ therapyName: null, exercises: [item] }]
+                    }]
+                };
+            }
+            return null;
+        }).filter(Boolean);
+    };
 
-    // ✅ CASE 1: PACKAGE
-    if (item?.programs?.length) {
-      return {
-        packageName: item.packageName,
-        programs: item.programs.map(program => ({
-          programName: program.programName,
-          therapies: (program.therapyData || []).map(therapy => ({
-            therapyName: therapy.therapyName,
-            exercises: therapy.exercises || []
-          }))
-        }))
-      };
-    }
+    const normalized = normalizeData(data || {});
 
-    // ✅ CASE 2: PROGRAM
-    if (item?.therapyData?.length) {
-      return {
-        packageName: null,
-        programs: [{
-          programName: item.programName,
-          therapies: (item.therapyData || []).map(therapy => ({
-            therapyName: therapy.therapyName,
-            exercises: therapy.exercises || []
-          }))
-        }]
-      };
-    }
-
-    // ✅ CASE 3: THERAPY
-    if (item?.exercises?.length) {
-      return {
-        packageName: null,
-        programs: [{
-          programName: null,
-          therapies: [{
-            therapyName: item.therapyName,
-            exercises: item.exercises
-          }]
-        }]
-      };
-    }
-
-    // ✅ CASE 4: EXERCISE
-    if (item?.sessions?.length) {
-      return {
-        packageName: null,
-        programs: [{
-          programName: null,
-          therapies: [{
-            therapyName: null,
-            exercises: [item]
-          }]
-        }]
-      };
-    }
-
-    return null;
-  }).filter(Boolean);
-};
-     const normalized = normalizeData(data || {});
-    const allSessions =
-  (data?.therapyWithSessions || []).flatMap(pkg =>
-    (pkg.programs || []).flatMap(program =>
-      (program.therapyData || []).flatMap(therapy =>
-        (therapy.exercises || []).flatMap(exercise =>
-          exercise.sessions || []
+    const allSessions = (data?.therapyWithSessions || []).flatMap(pkg =>
+        (pkg.programs || []).flatMap(program =>
+            (program.therapyData || []).flatMap(therapy =>
+                (therapy.exercises || []).flatMap(exercise =>
+                    exercise.sessions || []
+                )
+            )
         )
-      )
-    )
-  );
+    );
 
     const paidSessions = allSessions.filter(
         item => item.paymentStatus?.toLowerCase() === "paid"
     ).length;
 
-    const percent =
-        allSessions.length > 0
-            ? Math.round((paidSessions / allSessions.length) * 100)
-            : 0;
+    const percent = allSessions.length > 0
+        ? Math.round((paidSessions / allSessions.length) * 100)
+        : 0;
 
-    // alert(bookingId);
-  return (
-  <div className="p-4" style={{ background: "#f4f6f9", minHeight: "100vh" }}>
-    <h2 className="fw-bold mb-4 " style={{fontSize:FONT_SIZES.xl}}>Patient Payment Dashboard</h2>
+    return (
+        <div style={{ background: "#f4f6f9", minHeight: "100vh", padding: "20px" }}>
+            <h2 style={{ fontSize: FONT_SIZES.xl, fontWeight: 600, color: "#0c447c", marginBottom: "20px" }}>
+                Patient Payment Dashboard
+            </h2>
 
-    {/* 🔹 Top Summary */}
-    <CRow className="g-3 mb-4">
-      {[ 
-        { label: "Booking ID", value: data.bookingId },
-        { label: "Patient", value: data.patientName, sub: data.mobile },
-        { label: "Doctor", value: data.doctorName },
-        { label: "Status", value: <StatusBadge status={data.paymentStatus} /> },
-      ].map((item, i) => (
-        <CCol md={3} key={i}>
-          <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px" }}>
-            <CCardBody>
-              <small className="text-muted">{item.label}</small>
-              <h5 className="fw-bold mt-1">{item.value}</h5>
-              {item.sub && <small className="text-muted">{item.sub}</small>}
-            </CCardBody>
-          </CCard>
-        </CCol>
-      ))}
-    </CRow>
+            {/* 🔹 Top Summary */}
+            <CRow className="g-3 mb-4">
+                {[
+                    { label: "Booking ID",     value: data.bookingId },
+                   { label: "Patient", value: patientInfo.name, sub: patientInfo.mobileNumber },
+                    { label: "Doctor",         value: data.doctorName },
+                    { label: "Status",         value: <StatusBadge status={data.paymentStatus} /> },
+                ].map((item, i) => (
+                    <CCol md={3} key={i}>
+                        <div style={{
+                            background: "#fff",
+                            border: "0.5px solid #d0dce9",
+                            borderRadius: "10px",
+                            padding: "13px 15px",
+                        }}>
+                            <p style={{ fontSize: "11px", fontWeight: 500, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.04em", margin: "0 0 5px" }}>
+                                {item.label}
+                            </p>
+                            <p style={{ fontSize: "14px", fontWeight: 600, color: "#0c447c", margin: 0 }}>
+                                {item.value}
+                            </p>
+                            {item.sub && (
+                                <p style={{ fontSize: "11px", color: "#6b7280", margin: "2px 0 0" }}>
+                                    {item.sub}
+                                </p>
+                            )}
+                        </div>
+                    </CCol>
+                ))}
+            </CRow>
 
-    {/* 🔹 Amount Cards */}
-    <CRow className="g-3 mb-4">
-      <CCol md={3}>
-        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#fff" }}>
-          <CCardBody>
-            <small>Total</small>
-            <h4 className="fw-bold">₹{data.totalAmount}</h4>
-          </CCardBody>
-        </CCard>
-      </CCol>
+            {/* 🔹 Amount Cards */}
+            <CRow className="g-3 mb-4">
+                {[
+                    { label: "Total amount",  value: `₹${data.totalAmount}`,    bg: "#f7fafd", color: "#0c447c"  },
+                    { label: "Discount",      value: `₹${data.discountAmount}`, bg: "#faeeda", color: "#854f0b"  },
+                    { label: "Total paid",    value: `₹${data.totalPaid}`,      bg: "#eaf3de", color: "#27500a"  },
+                    { label: "Balance due",   value: `₹${data.balanceAmount}`,  bg: "#fcebeb", color: "#a32d2d"  },
+                ].map((item, i) => (
+                    <CCol md={3} key={i}>
+                        <div style={{
+                            background: item.bg,
+                            border: "0.5px solid #d0dce9",
+                            borderRadius: "10px",
+                            padding: "13px 15px",
+                        }}>
+                            <p style={{ fontSize: "11px", fontWeight: 500, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.04em", margin: "0 0 5px" }}>
+                                {item.label}
+                            </p>
+                            <p style={{ fontSize: "18px", fontWeight: 600, color: item.color, margin: 0 }}>
+                                {item.value}
+                            </p>
+                        </div>
+                    </CCol>
+                ))}
+            </CRow>
 
-      <CCol md={3}>
-        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#fff3cd" }}>
-          <CCardBody>
-            <small>Discount</small>
-            <h4 className="fw-bold text-warning">₹{data.discountAmount}</h4>
-          </CCardBody>
-        </CCard>
-      </CCol>
-
-      <CCol md={3}>
-        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#d1e7dd" }}>
-          <CCardBody>
-            <small>Paid</small>
-            <h4 className="fw-bold text-success">₹{data.totalPaid}</h4>
-          </CCardBody>
-        </CCard>
-      </CCol>
-
-      <CCol md={3}>
-        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#f8d7da" }}>
-          <CCardBody>
-            <small>Balance</small>
-            <h4 className="fw-bold text-danger">₹{data.balanceAmount}</h4>
-          </CCardBody>
-        </CCard>
-      </CCol>
-    </CRow>
-
-    {/* 🔹 Progress */}
-    <CCard className="mb-4 shadow-sm border-0" style={{ borderRadius: "12px" }}>
-      <CCardBody>
-        <div className="d-flex justify-content-between">
-          <strong>Payment Progress</strong>
-          <span className="fw-semibold">
-            {paidSessions}/{allSessions.length} ({percent}%)
-          </span>
-        </div>
-
-        <CProgress
-          value={percent}
-          className="mt-3"
-          style={{ height: "10px", borderRadius: "10px" }}
-          color={percent === 100 ? "success" : "warning"}
-        />
-      </CCardBody>
-    </CCard>
-
-    {/* 🔹 Therapy Sessions */}
-  {(data?.therapyWithSessions || []).map((pkg, pi) => {
-
-  // 🔥 Normalize levels
-  const programs = pkg?.programs
-    ? pkg.programs
-    : pkg?.therapyData
-    ? [pkg]
-    : pkg?.exercises
-    ? [{
-        programName: null,
-        therapyData: [pkg],
-      }]
-    : pkg?.sessions
-    ? [{
-        programName: null,
-        therapyData: [{
-          therapyName: null,
-          exercises: [pkg],
-        }],
-      }]
-    : [];
-
-  return (
-    <div key={pi}>
-
-      {/* PACKAGE NAME */}
-      {pkg?.packageName && (
-        <h4 className="mb-3" style={{ fontSize: FONT_SIZES.lg }}>
-          {pkg.packageName}
-        </h4>
-      )}
-
-      {/* PROGRAM */}
-      {programs.map((program, gi) => (
-        <CCard key={gi} className="mb-4 shadow-sm border-0">
-          <CCardBody>
-
-            {program?.programName && (
-              <h5 className="text-primary fw-bold mb-3">
-                {program.programName}
-              </h5>
-            )}
-
-            {/* THERAPY */}
-            {(program?.therapyData || []).map((therapy, ti) => (
-              <div key={ti} style={{
-                borderLeft: "4px solid #0d6efd",
-                padding: "12px",
-                marginBottom: "16px",
+            {/* 🔹 Progress */}
+            <div style={{
                 background: "#fff",
+                border: "0.5px solid #d0dce9",
                 borderRadius: "10px",
-              }}>
+                padding: "14px 16px",
+                marginBottom: "20px",
+            }}>
+                <div className="d-flex justify-content-between">
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#0c447c" }}>
+                        Payment Progress
+                    </span>
+                    <span style={{ fontSize: "12px", fontWeight: 600, color: "#185fa5" }}>
+                        {paidSessions}/{allSessions.length} ({percent}%)
+                    </span>
+                </div>
+                <CProgress
+                    value={percent}
+                    className="mt-3"
+                    style={{ height: "8px", borderRadius: "10px" }}
+                    color={percent === 100 ? "success" : "warning"}
+                />
+            </div>
 
-                {therapy?.therapyName && (
-                  <h6 className="fw-bold">{therapy.therapyName}</h6>
-                )}
+            {/* 🔹 Therapy Sessions */}
+            <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
+                Therapy Sessions
+            </p>
 
-                {/* EXERCISES */}
-                {(therapy?.exercises || []).map((exercise, ei) => {
+            {(data?.therapyWithSessions || []).map((pkg, pi) => {
+                const programs = pkg?.programs
+                    ? pkg.programs
+                    : pkg?.therapyData
+                    ? [pkg]
+                    : pkg?.exercises
+                    ? [{ programName: null, therapyData: [pkg] }]
+                    : pkg?.sessions
+                    ? [{ programName: null, therapyData: [{ therapyName: null, exercises: [pkg] }] }]
+                    : [];
 
-                  const sessions =
-                    exercise?.sessions ||
-                    Array.from({ length: exercise?.noOfSessions || 0 }, (_, i) => ({
-                      sessionNo: i + 1,
-                      paymentStatus: "UNPAID",
-                    }));
+                return (
+                    <div key={pi}>
+                        {pkg?.packageName && (
+                            <div style={{
+                                fontSize: "13px", fontWeight: 600, color: "#0c447c",
+                                background: "#e6f1fb", border: "0.5px solid #b5d4f4",
+                                borderRadius: "8px", padding: "9px 14px", marginBottom: "10px",
+                            }}>
+                                {pkg.packageName}
+                            </div>
+                        )}
 
-                  return (
-                    <div key={ei} style={{
-                      background: "#f9fafb",
-                      padding: "12px",
-                      borderRadius: "10px",
-                      marginTop: "10px",
-                      border: "1px solid #eee",
-                    }}>
+                        {programs.map((program, gi) => (
+                            <div key={gi} style={{
+                                background: "#fff",
+                                border: "0.5px solid #d0dce9",
+                                borderRadius: "10px",
+                                marginBottom: "12px",
+                                overflow: "hidden",
+                            }}>
+                                {program?.programName && (
+                                    <div style={{
+                                        background: "#e6f1fb",
+                                        padding: "10px 14px",
+                                        fontSize: "13px", fontWeight: 600, color: "#0c447c",
+                                        borderBottom: "0.5px solid #d0dce9",
+                                    }}>
+                                        {program.programName}
+                                    </div>
+                                )}
 
-                      <div className="d-flex justify-content-between mb-2">
-                        <strong>{exercise?.exerciseName}</strong>
-                        <span>₹{exercise?.pricePerSession}/Session</span>
-                      </div>
+                                <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                                    {(program?.therapyData || []).map((therapy, ti) => (
+                                        <div key={ti} style={{
+                                            border: "0.5px solid #d0dce9",
+                                            borderRadius: "8px",
+                                            overflow: "hidden",
+                                        }}>
+                                            {therapy?.therapyName && (
+                                                <div style={{
+                                                    background: "#f0f5fb",
+                                                    padding: "9px 12px",
+                                                    fontSize: "12px", fontWeight: 600, color: "#185fa5",
+                                                    borderBottom: "0.5px solid #d0dce9",
+                                                }}>
+                                                    {therapy.therapyName}
+                                                </div>
+                                            )}
 
-                      {/* SESSIONS */}
-                      <div className="d-flex flex-wrap gap-2">
-                        {sessions.map((session, si) => {
-                          const isPaid =
-                            session?.paymentStatus?.toLowerCase() === "paid";
+                                            <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                                                {(therapy?.exercises || []).map((exercise, ei) => {
+                                                    const sessions = exercise?.sessions ||
+                                                        Array.from({ length: exercise?.noOfSessions || 0 }, (_, i) => ({
+                                                            sessionNo: i + 1,
+                                                            paymentStatus: "UNPAID",
+                                                        }));
 
-                          return (
-                            <CButton
-                              key={si}
-                              size="sm"
-                              disabled={isPaid}
-                              style={{
-                                borderRadius: "20px",
-                                padding: "4px 10px",
-                                fontSize: "12px",
-                                border: isPaid ? "none" : "1px solid #dc3545",
-                                backgroundColor: isPaid ? "#198754" : "#fff",
-                                color: isPaid ? "#fff" : "#dc3545",
-                              }}
-                            >
-                              {isPaid
-                                ? "✓ Paid"
-                                : `Session ${session.sessionNo}`}
-                            </CButton>
-                          );
-                        })}
-                      </div>
+                                                    return (
+                                                        <div key={ei} style={{
+                                                            background: "#f7fafd",
+                                                            border: "0.5px solid #eef2f7",
+                                                            borderRadius: "8px",
+                                                            padding: "10px 12px",
+                                                        }}>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#0c447c" }}>
+                                                                    {exercise?.exerciseName}
+                                                                </span>
+                                                                <span style={{
+                                                                    fontSize: "11px", fontWeight: 500, color: "#3b6d11",
+                                                                    background: "#eaf3de", border: "0.5px solid #c0dd97",
+                                                                    borderRadius: "20px", padding: "2px 9px",
+                                                                }}>
+                                                                    ₹{exercise?.pricePerSession}/session
+                                                                </span>
+                                                            </div>
 
+                                                            <div className="d-flex flex-wrap gap-2">
+                                                                {sessions.map((session, si) => {
+                                                                    const isPaid = session?.paymentStatus?.toLowerCase() === "paid";
+                                                                    return (
+                                                                        <CButton
+                                                                            key={si}
+                                                                            size="sm"
+                                                                            disabled={isPaid}
+                                                                            style={{
+                                                                                borderRadius: "20px",
+                                                                                padding: "3px 10px",
+                                                                                fontSize: "11px",
+                                                                                fontWeight: 500,
+                                                                                border: `0.5px solid ${isPaid ? "#97c459" : "#f09595"}`,
+                                                                                background: isPaid ? "#eaf3de" : "#fcebeb",
+                                                                                color: isPaid ? "#27500a" : "#a32d2d",
+                                                                            }}
+                                                                        >
+                                                                            {isPaid ? `✓ Paid` : `Session ${session.sessionNo}`}
+                                                                        </CButton>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                  );
-                })}
+                );
+            })}
 
-              </div>
-            ))}
+            {/* 🔹 Payment History */}
+            <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", margin: "20px 0 10px" }}>
+                Payment History
+            </p>
 
-          </CCardBody>
-        </CCard>
-      ))}
+            <div style={{
+                background: "#fff",
+                border: "0.5px solid #d0dce9",
+                borderRadius: "10px",
+                overflow: "hidden",
+            }}>
+                <div style={{ background: "#185fa5", padding: "10px 14px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#fff" }}>
+                        Transaction Log
+                    </span>
+                </div>
 
-    </div>
-  );
-})}
+                <CTable hover responsive className="mb-0" style={{ fontSize: "12px" }}>
+                    <CTableHead>
+                        <CTableRow>
+                            {["#", "Date", "Amount", "Mode", "Type", "Level"].map(h => (
+                                <CTableHeaderCell key={h} style={{
+                                    background: "#f0f5fb", color: "#6b7280",
+                                    fontSize: "11px", fontWeight: 600,
+                                    padding: "8px 12px", borderColor: "#d0dce9",
+                                }}>
+                                    {h}
+                                </CTableHeaderCell>
+                            ))}
+                        </CTableRow>
+                    </CTableHead>
+                    <CTableBody>
+                        {data.paymentHistory.map((item, i) => (
+                            <CTableRow key={i}>
+                                <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", color: "#9ca3af" }}>{i + 1}</CTableDataCell>
+                                <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", color: "#374151" }}>{item.paymentDate}</CTableDataCell>
+                                <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", fontWeight: 600, color: "#0c447c" }}>₹{item.amount}</CTableDataCell>
+                                <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7" }}>
+                                    <span style={{
+                                        background: "#e6f1fb", color: "#0c447c",
+                                        border: "0.5px solid #b5d4f4",
+                                        borderRadius: "20px", fontSize: "11px",
+                                        fontWeight: 500, padding: "2px 8px",
+                                    }}>
+                                        {item.paymentMode}
+                                    </span>
+                                </CTableDataCell>
+                                <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7" }}>
+                                    <StatusBadge status={item.paymentType} />
+                                </CTableDataCell>
+                                <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", color: "#6b7280" }}>{item.paymentLevel}</CTableDataCell>
+                            </CTableRow>
+                        ))}
+                    </CTableBody>
+                </CTable>
 
-    {/* 🔹 Payment History */}
-    <CCard className="mt-4 shadow-sm border-0" style={{ borderRadius: "12px" }}>
-      <CCardBody>
-        <h5 className="mb-3" style={{fontSize: FONT_SIZES.md}}>
-          Payment History
-        </h5>
-
-        <CTable striped hover responsive className="align-middle">
-          <CTableHead style={{ background: "#f1f3f5" }}>
-            <CTableRow>
-              <CTableHeaderCell>#</CTableHeaderCell>
-              <CTableHeaderCell>Date</CTableHeaderCell>
-              <CTableHeaderCell>Amount</CTableHeaderCell>
-              <CTableHeaderCell>Mode</CTableHeaderCell>
-              <CTableHeaderCell>Type</CTableHeaderCell>
-              <CTableHeaderCell>Level</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-
-          <CTableBody>
-            {data.paymentHistory.map((item, i) => (
-              <CTableRow key={i}>
-                <CTableDataCell>{i + 1}</CTableDataCell>
-                <CTableDataCell>{item.paymentDate}</CTableDataCell>
-                <CTableDataCell>₹{item.amount}</CTableDataCell>
-                <CTableDataCell>{item.paymentMode}</CTableDataCell>
-                <CTableDataCell>{item.paymentType}</CTableDataCell>
-                <CTableDataCell>{item.paymentLevel}</CTableDataCell>
-              </CTableRow>
-            ))}
-          </CTableBody>
-        </CTable>
-
-        <div className="text-end mt-3">
-          <CButton
-            style={{
-              background: "linear-gradient(135deg, #dc3545, #b02a37)",
-              border: "none",
-              borderRadius: "8px",
-              padding: "8px 16px",
-              fontWeight: "600",
-              color: "#fff",
-            }}
-            onClick={() => navigate(-1)}
-          >
-            Pay Balance ₹{data.balanceAmount}
-          </CButton>
+                <div style={{ padding: "12px 14px", display: "flex", justifyContent: "flex-end", borderTop: "0.5px solid #d0dce9" }}>
+                    <button
+                        style={{
+                            background: "#185fa5", color: "#fff", border: "none",
+                            borderRadius: "8px", padding: "9px 20px",
+                            fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                        }}
+                        onClick={() => navigate(-1)}
+                    >
+                        Pay Balance ₹{data.balanceAmount}
+                    </button>
+                </div>
+            </div>
         </div>
-      </CCardBody>
-    </CCard>
-  </div>
-);
+    );
 }
