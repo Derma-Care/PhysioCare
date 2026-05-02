@@ -86,6 +86,7 @@ const ErrMsg = ({ msg }) => msg ? <p style={errStyle}>{msg}</p> : null
 const BookAppointmentModal = ({ visible, onClose }) => {
   const navigate = useNavigate()
   const { selectedHospital, doctorData } = useHospital()
+  const [isManualAddress, setIsManualAddress] = useState(false)
 
   const [currentTab, setCurrentTab] = useState(0)
   const [visitType, setVisitType] = useState('first')
@@ -293,13 +294,26 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           const data = await (await fetch(`https://api.postalpincode.in/pincode/${value}`)).json()
           if (data[0].Status === 'Success') {
             const po = data[0].PostOffice[0]
+            
             setBookingDetails((p) => ({
               ...p, address: { ...p.address, city: po.District, state: po.State, postalCode: value },
             }))
             setPostOffices(data[0].PostOffice)
+            setIsManualAddress(false) 
           }
-        } catch { }
+          else {
+      // ❗ PIN not found
+      setPostOffices([])
+      setIsManualAddress(true) // ✅ allow manual entry
+    }
+        } catch { 
+           setIsManualAddress(true)
+        }
+      
       }
+       else {
+  setIsManualAddress(false)
+}
     }
   }
 
@@ -655,11 +669,23 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 )}
                 <CCol md={4}>
                   <CFormLabel style={labelStyle}>City</CFormLabel>
-                  <CFormInput value={bookingDetails.address?.city || ''} readOnly style={inputStyle(false)} />
+                  {/* <CFormInput value={bookingDetails.address?.city || ''} readOnly style={inputStyle(false)} /> */}
+                <CFormInput
+  value={bookingDetails.address?.city || ''}
+  readOnly={!isManualAddress}
+  onChange={(e) => handleNestedChange('address', 'city', e.target.value)}
+   style={inputStyle(false)}
+/>
                 </CCol>
                 <CCol md={4}>
                   <CFormLabel style={labelStyle}>State</CFormLabel>
-                  <CFormInput value={bookingDetails.address?.state || ''} readOnly style={inputStyle(false)} />
+                  {/* <CFormInput value={bookingDetails.address?.state || ''} readOnly style={inputStyle(false)} /> */}
+                <CFormInput
+  value={bookingDetails.address?.state || ''}
+  readOnly={!isManualAddress}
+  onChange={(e) => handleNestedChange('address', 'state', e.target.value)}
+   style={inputStyle(false)}
+/>
                 </CCol>
               </CRow>
             </CCol>
@@ -1075,7 +1101,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <COffcanvas placement="end" visible={visible} onHide={onClose} className="w-50" backdrop="static">
+    
+
+    <COffcanvas placement="end" visible={visible} onHide={onClose} className="w-75" backdrop="static">
       <COffcanvasHeader style={{ borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
         <COffcanvasTitle style={{ fontSize: '14px', fontWeight: '600', color: 'var(--color-bgcolor)' }}>
           📅 Book Appointment

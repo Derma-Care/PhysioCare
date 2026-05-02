@@ -67,7 +67,7 @@ const CustomerManagement = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [customerIdToDelete, setCustomerIdToDelete] = useState(null)
   const [formErrors, setFormErrors] = useState({})
-  const { searchQuery } = useGlobalSearch()
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
   const [isAdding, setIsAdding] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [saveloading, setSaveLoading] = useState(false)
@@ -317,6 +317,18 @@ const CustomerManagement = () => {
                 <p className="cm-page-sub">{filteredData.length} Patient{filteredData.length !== 1 ? 's' : ''} found</p>
               </div>
             </div>
+            <div
+  className="cm-search-wrapper"
+  style={{ marginLeft: "auto" }}  // adjust value as needed
+>
+  <input
+    type="text"
+    placeholder="Search..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    className="cm-search-input"
+  />
+</div>
             {can('Customer Management', 'create') && (
               <button className="cm-add-btn" onClick={() => { setIsAdding(true); resetForm() }}>
                 <UserPlus size={15} /> Add New Patient

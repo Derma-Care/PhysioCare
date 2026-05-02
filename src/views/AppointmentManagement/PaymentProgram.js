@@ -737,17 +737,11 @@ export default function ProgramPayment() {
       )
     }
 
-    // THERAPY → keep program + selected therapies
-    if (selectedType === "therapy") {
-      return (root.therapySessions || [])
-        .map((program) => ({
-          ...program,
-          therapyData: (program.therapyData || []).filter((t) =>
-            selectedIds.includes(t.therapyId)
-          ),
-        }))
-        .filter((p) => p.therapyData.length > 0)
-    }
+   if (selectedType === "therapy") {
+  return (root?.therapySessions || [])
+    .flatMap(program => program?.therapyData || [])
+    .filter(t => selectedIds.includes(t.therapyId));
+}
 
     // EXERCISE → keep program + therapy + selected exercises
     if (selectedType === "exercise") {
@@ -850,19 +844,96 @@ export default function ProgramPayment() {
     },
 
     // ✅ send backend full data unchanged
-    therapyWithSessions:
-      backendServiceType?.toLowerCase() === "package"
-        ? [
-          {
-            packageId: apiData?.[0]?.packageId || "",
-            packageName: apiData?.[0]?.packageName || "",
-            totalPrice: apiData?.[0]?.totalPrice || 0,
-            programs: apiData?.[0]?.therapySessions || [],
-          },
-        ]
-        : apiData?.[0]?.therapySessions || [],
+   therapyWithSessions: (() => {
+  const type = backendServiceType?.toLowerCase();
+  const root = apiData?.[0];
+
+  if (!root) return [];
+
+  /* ================= PACKAGE ================= */
+  if (type === "package") {
+    return [
+      {
+        packageId: root.packageId || "",
+        packageName: root.packageName || "",
+        totalPrice: root.totalPrice || 0,
+        programs: root.therapySessions || [],
+      },
+    ];
   }
 
+  /* ================= PROGRAM ================= */
+  if (type === "program") {
+    return (root.therapySessions || []).map(program => ({
+      programId: program.programId,
+      programName: program.programName,
+
+      therapyData: (program.therapyData || []).map(therapy => ({
+        therapyId: therapy.therapyId,
+        therapyName: therapy.therapyName,
+
+        exercises: (therapy.exercises || []).map(ex => ({
+          exerciseId: ex.exerciseId,
+          exerciseName: ex.exerciseName,
+          pricePerSession: Number(ex.pricePerSession || 0),
+          noOfSessions: Number(ex.noOfSessions || 0),
+          repetitions: Number(ex.repetitions || 0),
+          sets: Number(ex.sets || 0),
+          frequency: ex.frequency || "",
+          youtubeUrl: ex.youtubeUrl || "",
+          notes: ex.notes || ""
+        }))
+      }))
+    }));
+  }
+
+  /* ================= THERAPY ================= */
+  if (type === "therapy") {
+    return (root.therapySessions || [])
+      .flatMap(program => program.therapyData || [])
+      .map(therapy => ({
+        therapyId: therapy.therapyId,
+        therapyName: therapy.therapyName,
+
+        exercises: (therapy.exercises || []).map(ex => ({
+          exerciseId: ex.exerciseId,
+          exerciseName: ex.exerciseName,
+          pricePerSession: Number(ex.pricePerSession || 0),
+          noOfSessions: Number(ex.noOfSessions || 0),
+          repetitions: Number(ex.repetitions || 0),
+          sets: Number(ex.sets || 0),
+          frequency: ex.frequency || "",
+          youtubeUrl: ex.youtubeUrl || "",
+          notes: ex.notes || ""
+        }))
+      }));
+  }
+
+  /* ================= EXERCISE ================= */
+  /* ================= EXERCISE ================= */
+if (type === "exercise") {
+  return [
+    {
+      exercises: (root.therapySessions || [])
+        .flatMap(program => program.therapyData || [])
+        .flatMap(therapy => therapy.exercises || [])
+        .map(ex => ({
+          exerciseId: ex.exerciseId,
+          exerciseName: ex.exerciseName,
+          pricePerSession: Number(ex.pricePerSession || 0),
+          noOfSessions: Number(ex.noOfSessions || 0),
+          repetitions: Number(ex.repetitions || 0),
+          sets: Number(ex.sets || 0),
+          frequency: ex.frequency || "",
+          youtubeUrl: ex.youtubeUrl || "",
+          notes: ex.notes || ""
+        }))
+    }
+  ];
+}
+
+  return [];
+})(),}
   const updatePayload = {
     bookingId,
 
@@ -1037,7 +1108,7 @@ export default function ProgramPayment() {
           navigate("/paymentDetails", {
             state: { paymentData: fullPaymentData },
           })
-        } style={{ backgroundColor: "var(--color-black)", color: "#fff", marginRight: "10px" }}>
+        } style={{ backgroundColor: "var(--color-bgcolor)", color: "#fff", marginRight: "10px" }}>
           Payment Details
         </CButton>
       )}
@@ -1127,7 +1198,7 @@ export default function ProgramPayment() {
                 })
               }
               style={{
-                backgroundColor: "var(--color-black)",
+                backgroundColor: "var(--color-bgcolor)",
                 color: "#fff",
                 padding: "10px 20px",
                 borderRadius: "8px",
