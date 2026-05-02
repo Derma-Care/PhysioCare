@@ -70,7 +70,7 @@ a,div {
   box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.15);
 }
 .progress-bar {
-  background: red !important;
+  background: gray !important;
 }
 
 .btn-unselected {
