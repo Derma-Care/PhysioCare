@@ -8,6 +8,7 @@ import {
 import Select from "react-select";
 import { BASE_URL, wifiUrl } from "../../baseUrl";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function ProgramPayment() {
   const location = useLocation();
@@ -122,7 +123,9 @@ export default function ProgramPayment() {
   };
 
   const getOptionsByType = () => {
-    const root = fullPaymentData?.therapyWithSessions?.[0] || apiData?.[0];
+    const root = (fullPaymentData?.therapyWithSessions?.[0]?.programs || fullPaymentData?.therapyWithSessions?.[0]?.therapySessions)
+      ? fullPaymentData.therapyWithSessions[0]
+      : apiData?.[0];
     if (!root) return [];
     const programs = root.programs || root.therapySessions || [];
     switch (selectedType) {
@@ -191,6 +194,10 @@ export default function ProgramPayment() {
   };
 
   const handleGenerate = async () => {
+    if (!startDate) {
+      toast.error("Please select a start date before generating the table");
+      return;
+    }
     try {
       setLoading(true);
       const payload = { startDate, clinicId, branchId, patientId, bookingId, therapistRecordId };
@@ -224,10 +231,26 @@ export default function ProgramPayment() {
   };
 
   const checkAllSessionsPaid = (data) => {
-    const programs = data?.therapyWithSessions?.[0]?.programs || data?.therapyWithSessions || [];
-    const sessions = programs.flatMap(program => (program.therapyData || []).flatMap(therapy => (therapy.exercises || []).flatMap(ex => ex.sessions || [])));
-    if (!sessions.length) return false;
-    return sessions.every(s => s.paymentStatus?.toLowerCase() === "paid");
+    const allSessions = (data?.therapyWithSessions || []).flatMap(pkg => {
+      if (pkg.programs) {
+        return pkg.programs.flatMap(p =>
+          (p.therapyData || []).flatMap(t =>
+            (t.exercises || []).flatMap(e => e.sessions || [])
+          )
+        );
+      }
+      if (pkg.therapyData) {
+        return pkg.therapyData.flatMap(t =>
+          (t.exercises || []).flatMap(e => e.sessions || [])
+        );
+      }
+      if (pkg.sessions) return pkg.sessions;
+      if (pkg.exercises) return pkg.exercises.flatMap(e => e.sessions || []);
+      return [];
+    });
+
+    if (!allSessions.length) return false;
+    return allSessions.every(s => s.paymentStatus?.toLowerCase() === "paid");
   };
 
   const buildTherapyPayload = () => {
@@ -306,9 +329,15 @@ export default function ProgramPayment() {
       const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await response.json();
       console.log("API RESPONSE:", data);
-      setIsFollowUpPayment(true);
-      setPrintData({ ...payload, selectedItems: selectedValue, tableData, startDate });
-      navigate(-1);
+
+      if (data.success) {
+        toast.success(data.message || "Payment processed successfully");
+        setIsFollowUpPayment(true);
+        setPrintData({ ...payload, selectedItems: selectedValue, tableData, startDate });
+        navigate(-1);
+      } else {
+        toast.error(data.message || "Payment failed");
+      }
     } catch (error) { console.error("Payment Error:", error); }
   };
 
@@ -333,6 +362,60 @@ export default function ProgramPayment() {
       setPaymentHistory(result.paymentHistory || []);
       const formatted = formatTherapyTable(result.therapyWithSessions);
       setTableData(formatted);
+
+      // 🔹 Robust Session Extraction (Required for Packages and Programs)
+      // We must drill down: Package > Program > Therapy > Exercise > Sessions
+      const allSessions = (result.therapyWithSessions || []).flatMap(pkg => {
+        // 1. Check for Package/Program structure
+        if (pkg.programs) {
+          return pkg.programs.flatMap(p =>
+            (p.therapyData || []).flatMap(t =>
+              (t.exercises || []).flatMap(ex =>
+                (ex.sessions || []).map(s => ({
+                  sessionId: s.sessionId, date: s.date, status: s.status,
+                  paymentStatus: s.paymentStatus, price: ex.pricePerSession || 0
+                }))
+              )
+            )
+          );
+        }
+        // 2. Check for Therapy-level structure
+        if (pkg.therapyData) {
+          return pkg.therapyData.flatMap(t =>
+            (t.exercises || []).flatMap(ex =>
+              (ex.sessions || []).map(s => ({
+                sessionId: s.sessionId, date: s.date, status: s.status,
+                paymentStatus: s.paymentStatus, price: ex.pricePerSession || 0
+              }))
+            )
+          );
+        }
+        // 3. Check for Exercise-level structure (Flat)
+        if (pkg.sessions) {
+          return pkg.sessions.map(s => ({
+            sessionId: s.sessionId, date: s.date, status: s.status,
+            paymentStatus: s.paymentStatus, price: pkg.pricePerSession || 0
+          }));
+        }
+        return [];
+      });
+      setformattedData(allSessions);
+
+      // 🔹 Normalize apiData for Dropdowns
+      const type = result.serviceType?.toLowerCase() || "";
+      if (type === "exercise" && result.therapyWithSessions && !result.therapyWithSessions[0]?.programs) {
+        setApiData([{
+          ...result,
+          therapySessions: [{
+            programId: "EXERCISE_PROGRAM", programName: "Exercises",
+            therapyData: [{ therapyId: "EXERCISE_THERAPY", therapyName: "Exercises", exercises: result.therapyWithSessions }]
+          }]
+        }]);
+      } else {
+        // Correctly handle Packages/Programs/Nested Therapies
+        setApiData(result.therapyWithSessions || []);
+      }
+
       setShowTable(true);
       if ((result.paymentHistory || []).length > 0) setIsFollowUpPayment(true);
     } catch (err) { console.error(err); }
@@ -397,6 +480,7 @@ export default function ProgramPayment() {
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 style={inputStyle}
+                min={new Date().toISOString().split("T")[0]}
               />
             </CCol>
             <CCol md={3} className="d-flex align-items-end">
@@ -409,7 +493,7 @@ export default function ProgramPayment() {
       )}
 
       {/* ── STEP 2: Session Table ── */}
-      {showTable && !allPaid && (
+      {showTable && !allPaid && !fullPaymentData?.sessionTableCreatedStatus && (
         <div style={{
           background: "#fff", border: "0.5px solid #d0dce9",
           borderRadius: "10px", overflow: "hidden", marginBottom: "16px",

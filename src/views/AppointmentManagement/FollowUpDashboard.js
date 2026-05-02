@@ -85,9 +85,35 @@ const dedupeByBookingId = (arr) => {
   })
 }
 
+statusColorMap[normalizeStatus(status)] ||
+  { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' }
+
 const getStatusStyle = (status) =>
   statusColorMap[normalizeStatus(status)] ||
   { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' }
+
+const getSessionsFromRow = (row) => {
+  if (Array.isArray(row.session) && row.session.length > 0) return row.session
+  if (!Array.isArray(row.therapyWithSessions)) return []
+
+  return row.therapyWithSessions.flatMap(pkg => {
+    if (pkg.programs) {
+      return pkg.programs.flatMap(p =>
+        (p.therapyData || []).flatMap(t =>
+          (t.exercises || []).flatMap(e => e.sessions || [])
+        )
+      )
+    }
+    if (pkg.therapyData) {
+      return pkg.therapyData.flatMap(t =>
+        (t.exercises || []).flatMap(e => e.sessions || [])
+      )
+    }
+    if (pkg.sessions) return pkg.sessions
+    if (pkg.exercises) return pkg.exercises.flatMap(e => e.sessions || [])
+    return []
+  })
+}
 
 /* ─── Stat card ──────────────────────────────────────────────────────── */
 const StatCard = ({ icon, label, value, active, onClick }) => (
@@ -643,7 +669,6 @@ export default function FollowupDashboard() {
                         {/* Action */}
                         <CTableDataCell className="wd-td">
                           <div style={{ display: 'flex', gap: '6px' }}>
-
                             {/* View Button */}
                             <button
                               className="wd-action-btn view"
@@ -659,7 +684,7 @@ export default function FollowupDashboard() {
 
                             {/* Session Button */}
                             {(row.visitType?.toLowerCase() === 'session' ||
-                              row.session?.length > 0) && (
+                              getSessionsFromRow(row).length > 0) && (
                                 <button
                                   className="wd-action-btn view"
                                   onClick={() =>
@@ -680,54 +705,67 @@ export default function FollowupDashboard() {
                       </CTableRow>
 
                       {/* Accordion Row */}
-                      {isExpanded && row.session?.length > 0 && (
-                        <CTableRow>
-                          <CTableDataCell colSpan={12} className="wd-td">
-                            <div
-                              style={{
-                                background: '#f8fafc',
-                                padding: '12px',
-                                borderRadius: '8px',
-                              }}
-                            >
-                              <h6
+                      {(() => {
+                        const rowSessions = getSessionsFromRow(row);
+                        return isExpanded && rowSessions.length > 0 && (
+                          <CTableRow>
+                            <CTableDataCell colSpan={12} className="wd-td">
+                              <div
                                 style={{
-                                  marginBottom: '10px',
-                                  color: '#185fa5',
-                                  fontWeight: '600',
+                                  background: '#f8fafc',
+                                  padding: '12px',
+                                  borderRadius: '8px',
                                 }}
                               >
-                                Session Details
-                              </h6>
+                                <h6
+                                  style={{
+                                    marginBottom: '10px',
+                                    color: '#185fa5',
+                                    fontWeight: '600',
+                                  }}
+                                >
+                                  Session Details
+                                </h6>
 
-                              <CTable small bordered className='pink-table'>
-                                <CTableHead>
-                                  <CTableRow>
-                                    <CTableHeaderCell>Session Id</CTableHeaderCell>
-                                    <CTableHeaderCell>Date</CTableHeaderCell>
-                                    <CTableHeaderCell>Status</CTableHeaderCell>
-                                    <CTableHeaderCell>Payment</CTableHeaderCell>
-                                  </CTableRow>
-                                </CTableHead>
-
-                                <CTableBody>
-                                  {row.session.map((item, i) => (
-                                    <CTableRow key={i}>
-
-                                      <CTableDataCell>{item.sessionId}</CTableDataCell>
-                                      <CTableDataCell>{item.date}</CTableDataCell>
-                                      <CTableDataCell>{item.status}</CTableDataCell>
-                                      <CTableDataCell>
-                                        {item.paymentStatus}
-                                      </CTableDataCell>
+                                <CTable small bordered className='pink-table'>
+                                  <CTableHead>
+                                    <CTableRow>
+                                      <CTableHeaderCell>Session Id</CTableHeaderCell>
+                                      <CTableHeaderCell>Date</CTableHeaderCell>
+                                      <CTableHeaderCell>Status</CTableHeaderCell>
+                                      <CTableHeaderCell>Payment</CTableHeaderCell>
                                     </CTableRow>
-                                  ))}
-                                </CTableBody>
-                              </CTable>
-                            </div>
-                          </CTableDataCell>
-                        </CTableRow>
-                      )}
+                                  </CTableHead>
+
+                                  <CTableBody>
+                                    {rowSessions.map((item, i) => (
+                                      <CTableRow key={i}>
+                                        <CTableDataCell>{item.sessionId}</CTableDataCell>
+                                        <CTableDataCell>{item.date}</CTableDataCell>
+                                        <CTableDataCell>{item.status}</CTableDataCell>
+                                        <CTableDataCell>
+                                          <span style={{
+                                            display: 'inline-block',
+                                            padding: '2px 10px',
+                                            borderRadius: '20px',
+                                            fontSize: '11px',
+                                            fontWeight: '600',
+                                            background: item.paymentStatus?.toLowerCase() === 'paid' ? '#eaf3de' : '#fcebeb',
+                                            color: item.paymentStatus?.toLowerCase() === 'paid' ? '#3b6d11' : '#a32d2d',
+                                            border: `0.5px solid ${item.paymentStatus?.toLowerCase() === 'paid' ? '#c0dd97' : '#f4b5b5'}`,
+                                          }}>
+                                            {item.paymentStatus}
+                                          </span>
+                                        </CTableDataCell>
+                                      </CTableRow>
+                                    ))}
+                                  </CTableBody>
+                                </CTable>
+                              </div>
+                            </CTableDataCell>
+                          </CTableRow>
+                        );
+                      })()}
                     </React.Fragment>
                   )
                 })

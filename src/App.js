@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { CSpinner, useColorModes } from '@coreui/react'
 import './scss/style.scss'
 import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import { HospitalProvider } from './views/Usecontext/HospitalContext'
 import { GlobalSearchProvider } from './views/Usecontext/GlobalSearchContext'  // ✅ added
 
@@ -34,6 +35,7 @@ const App = () => {
     <GlobalSearchProvider>        {/* ✅ added */}
       <HospitalProvider>
         <Suspense fallback={<LogoLoader />}>
+          <ToastContainer position="top-right" autoClose={3000} />
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Login />} />

@@ -7,6 +7,7 @@ import {
     CRow,
     CCol,
     CProgress,
+    CProgressBar,
     CTable,
     CTableHead,
     CTableRow,
@@ -131,15 +132,31 @@ useEffect(() => {
 
     const normalized = normalizeData(data || {});
 
-    const allSessions = (data?.therapyWithSessions || []).flatMap(pkg =>
-        (pkg.programs || []).flatMap(program =>
-            (program.therapyData || []).flatMap(therapy =>
-                (therapy.exercises || []).flatMap(exercise =>
-                    exercise.sessions || []
+    const allSessions = (data?.therapyWithSessions || []).flatMap(pkg => {
+        // 1. Nested: Package > Programs > Therapies > Exercises
+        if (pkg.programs) {
+            return pkg.programs.flatMap(p =>
+                (p.therapyData || []).flatMap(t =>
+                    (t.exercises || []).flatMap(e => e.sessions || [])
                 )
-            )
-        )
-    );
+            );
+        }
+        // 2. Mid-level: Program > Therapies > Exercises
+        if (pkg.therapyData) {
+            return pkg.therapyData.flatMap(t =>
+                (t.exercises || []).flatMap(e => e.sessions || [])
+            );
+        }
+        // 3. Flat: Exercise with sessions
+        if (pkg.sessions) {
+            return pkg.sessions;
+        }
+        // 4. Very Flat: Exercises array (if root is just exercises)
+        if (pkg.exercises) {
+            return pkg.exercises.flatMap(e => e.sessions || []);
+        }
+        return [];
+    });
 
     const paidSessions = allSessions.filter(
         item => item.paymentStatus?.toLowerCase() === "paid"
@@ -228,12 +245,22 @@ useEffect(() => {
                         {paidSessions}/{allSessions.length} ({percent}%)
                     </span>
                 </div>
-                <CProgress
-                    value={percent}
-                    className="mt-3"
-                    style={{ height: "8px", borderRadius: "10px" }}
-                    color={percent === 100 ? "success" : "warning"}
-                />
+                <div style={{ 
+                    height: "8px", 
+                    borderRadius: "10px", 
+                    background: "#e9ecef", 
+                    marginTop: "16px", 
+                    overflow: "hidden",
+                    position: "relative"
+                }}>
+                    <div style={{ 
+                        width: `${percent}%`, 
+                        height: "100%", 
+                        backgroundColor: percent === 100 ? "#97c459" : "#ef9f27",
+                        borderRadius: "10px",
+                        transition: "width 0.5s ease-in-out"
+                    }} />
+                </div>
             </div>
 
             {/* 🔹 Therapy Sessions */}
