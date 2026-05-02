@@ -435,11 +435,18 @@ const WidgetsDropdown = (props) => {
               <CIcon icon={cilArrowRight} style={{ width: '13px', height: '13px' }} />
             </button>
 
+
+
             {/* Search Doctors */}
             <button className="wd-nav-btn" onClick={() => navigate('/employee-management/doctor')}>
               <span className="wd-count-badge">{totalDoctorsCount}</span>
               Search Doctors
               <CIcon icon={cilArrowRight} style={{ width: '13px', height: '13px' }} />
+            </button>
+            {/* Attendance Tracker */}
+            <button className="wd-nav-btn" onClick={() => navigate('/attendance-tracker')} style={{ backgroundColor: '#185fa5', color: '#fff', border: 'none' }}>
+              Attendance Tracker
+              <CIcon icon={cilArrowRight} style={{ width: '13px', height: '13px', color: '#fff' }} />
             </button>
           </div>
         </div>

@@ -616,12 +616,14 @@ export default function Programs() {
                                     <CTableHead>
                                       <CTableRow>
                                         <CTableHeaderCell className="pg-ex-th">#</CTableHeaderCell>
-                                        <CTableHeaderCell className="pg-ex-th">Exercise</CTableHeaderCell>
+                                        <CTableHeaderCell className="pg-ex-th">Activity</CTableHeaderCell>
+                                        <CTableHeaderCell className="pg-ex-th">Activity Type</CTableHeaderCell>
                                         <CTableHeaderCell className="pg-ex-th">Session</CTableHeaderCell>
                                         <CTableHeaderCell className="pg-ex-th">Frequency</CTableHeaderCell>
-                                        <CTableHeaderCell className="pg-ex-th">Sets</CTableHeaderCell>
-                                        <CTableHeaderCell className="pg-ex-th">Reps</CTableHeaderCell>
                                         <CTableHeaderCell className="pg-ex-th">Price</CTableHeaderCell>
+                                        <CTableHeaderCell className="pg-ex-th">GST</CTableHeaderCell>
+                                        <CTableHeaderCell className="pg-ex-th">Other Tax</CTableHeaderCell>
+                                        <CTableHeaderCell className="pg-ex-th">Total</CTableHeaderCell>
                                       </CTableRow>
                                     </CTableHead>
                                     <CTableBody>
@@ -633,12 +635,16 @@ export default function Programs() {
                                             <CTableDataCell className="pg-ex-td">
                                               <span className="pg-ex-name">{ex.name || "—"}</span>
                                             </CTableDataCell>
+                                            <CTableDataCell className="pg-ex-td">{ex.activityType || "—"}</CTableDataCell>
                                             <CTableDataCell className="pg-ex-td">{ex.session    || "—"}</CTableDataCell>
                                             <CTableDataCell className="pg-ex-td">{ex.frequency  || "—"}</CTableDataCell>
-                                            <CTableDataCell className="pg-ex-td">{ex.sets        || "—"}</CTableDataCell>
-                                            <CTableDataCell className="pg-ex-td">{ex.repetitions || "—"}</CTableDataCell>
                                             <CTableDataCell className="pg-ex-td">
-                                              <span className="pg-total-price">₹{ex.totalPrice ?? 0}</span>
+                                              <span className="pg-price">{ex.pricePerSession != null ? `₹${ex.pricePerSession}` : "—"}</span>
+                                            </CTableDataCell>
+                                            <CTableDataCell className="pg-ex-td">{ex.gst != null ? `${ex.gst}%` : "—"}</CTableDataCell>
+                                            <CTableDataCell className="pg-ex-td">{ex.otherTax != null ? `${ex.otherTax}%` : "—"}</CTableDataCell>
+                                            <CTableDataCell className="pg-ex-td">
+                                              <span className="pg-total-price">{ex.totalPrice != null ? `₹${ex.totalPrice}` : "—"}</span>
                                             </CTableDataCell>
                                           </CTableRow>
                                         )

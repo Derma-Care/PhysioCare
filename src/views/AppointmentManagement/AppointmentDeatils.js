@@ -164,6 +164,12 @@ const AppointmentDetails = () => {
     if (formData.height && formData.weight) {
       const bmi = calculateBMI(formData.height, formData.weight)
       setFormData(prev => ({ ...prev, bmi }))
+      if (bmi) {
+        setValidationErrors(prev => ({
+          ...prev,
+          bmi: !regexRules.bmi?.test(bmi) ? errorMap.bmi : '',
+        }))
+      }
     }
   }, [formData.height, formData.weight])
 
@@ -242,17 +248,24 @@ const AppointmentDetails = () => {
     bmi: 'BMI must be a valid number (e.g., 24.5)',
   }
 
-  // ── FIX: onChange only updates state, no validation ──
+  // ── onChange updates state and performs real-time validation ──
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    
+    if (!value) {
+      setValidationErrors(prev => ({ ...prev, [name]: '' }))
+    } else {
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: !regexRules[name]?.test(value) ? errorMap[name] : '',
+      }))
+    }
   }
 
-  // ── FIX: validation only fires when user leaves the field ──
   const handleBlur = (e) => {
     const { name, value } = e.target
     if (!value) {
-      // Clear error if field is empty (let submit handle required check)
       setValidationErrors(prev => ({ ...prev, [name]: '' }))
       return
     }
@@ -373,8 +386,8 @@ const AppointmentDetails = () => {
   )
 
   /* ── form field ── FIX: added onBlur prop ── */
-  const Field = ({ label, name, placeholder }) => (
-    <div style={{ marginBottom: '14px' }}>
+  const renderField = (label, name, placeholder) => (
+    <div style={{ marginBottom: '14px' }} key={name}>
       <label style={{ fontSize: '12px', fontWeight: '600', color: tokens.muted, display: 'block', marginBottom: '4px' }}>
         {label}
       </label>
@@ -625,10 +638,10 @@ const AppointmentDetails = () => {
 
         <CModalBody style={{ padding: '20px' }}>
           <CForm>
-            <Field label="Height (cm)" name="height" placeholder="e.g. 170" />
-            <Field label="Weight (kg)" name="weight" placeholder="e.g. 65" />
-            <Field label="Blood Pressure" name="bloodPressure" placeholder="e.g. 120/80" />
-            <Field label="Temperature (°F / °C)" name="temperature" placeholder="e.g. 98.6" />
+            {renderField("Height (cm)", "height", "e.g. 170")}
+            {renderField("Weight (kg)", "weight", "e.g. 65")}
+            {renderField("Blood Pressure", "bloodPressure", "e.g. 120/80")}
+            {renderField("Temperature (°F / °C)", "temperature", "e.g. 98.6")}
             <div style={{ marginBottom: '14px' }}>
               <label style={{ fontSize: '12px', fontWeight: '600', color: tokens.muted, display: 'block', marginBottom: '4px' }}>
                 BMI (auto-calculated)

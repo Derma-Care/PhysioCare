@@ -97,9 +97,11 @@ const ProgramPayment = React.lazy(() => import('./views/AppointmentManagement/Pa
 const PhysioConsentForm = React.lazy(() => import('./views/AppointmentManagement/PhysioConsentForm'))
 const FollowupDashboard = React.lazy(() => import('./views/AppointmentManagement/FollowUpDashboard'))
 const PaymentDetailsUI = React.lazy(() => import('./views/AppointmentManagement/PaymentDetailsUI'))
+const AttendanceTracker = React.lazy(() => import('./views/AppointmentManagement/AttendanceTracker'))
 
 const routes = [
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
+  { path: '/attendance-tracker', name: 'Attendance Tracker', element: AttendanceTracker },
   { path: '/employee-management/doctor', name: 'Doctors', element: Doctors },
   { path: '/consent-forms', name: 'Consent Forms', element: ConsentForms },
 
@@ -174,14 +176,14 @@ const routes = [
     name: 'Patient View Details',
     element: CustomerViewDetails,
   },
- // Already exists - keep this:
-{ path: '/Patient-Management', name: 'Patient Management', element: CustomerManagement },
+  // Already exists - keep this:
+  { path: '/Patient-Management', name: 'Patient Management', element: CustomerManagement },
 
-// Add this NEW route for the view page:
-{ path: '/patient-management/view', name: 'Patient View', element: PatientManagement },
+  // Add this NEW route for the view page:
+  { path: '/patient-management/view', name: 'Patient View', element: PatientManagement },
 
-// Remove or keep this (it's the same path causing confusion):
-// { path: '/patient-management', element: PatientManagement },  ← REMOVE THIS
+  // Remove or keep this (it's the same path causing confusion):
+  // { path: '/patient-management', element: PatientManagement },  ← REMOVE THIS
   { path: '/patient-management', name: 'Patient Management', element: PatientManagement },
 
   // Attendance
@@ -214,6 +216,7 @@ const routes = [
   { path: "/expenses", element: ExpenseForm },
   { path: "/program-payment/:id", element: ProgramPayment },
   { path: "/physio-consent-form", element: PhysioConsentForm },
+
 
 
   { path: "/followupDashboard", element: FollowupDashboard },

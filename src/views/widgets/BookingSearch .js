@@ -77,7 +77,7 @@ const BookingSearch = ({
       if (validItems.length === 0) {
         setBookingData([]);
         if (visitType === 'followup') {
-          setSearchMessage('No follow-up booking found for this Patient ID.');
+          setSearchMessage('No follow-up booking found for this Booking ID.');
         } else {
           setSearchMessage('No patient found.');
           showCustomToast('No patient records found.', 'info');
@@ -208,7 +208,7 @@ const BookingSearch = ({
         <CCol md={9}>
           <CFormInput
             type="text"
-            placeholder={visitType === 'followup' ? "Search by Patient ID" : "Search by Name / Patient ID / Mobile"}
+            placeholder={visitType === 'followup' ? "Search by Booking Id" : "Search by Name / Patient ID / Mobile"}
             value={patientSearch.toUpperCase()}
             onChange={(e) => setPatientSearch(e.target.value)}
           />
@@ -250,9 +250,9 @@ const BookingSearch = ({
       {/* 📢 No Data Message */}
       {!loading && bookingData.length === 0 && searchMessage && !selectedBooking && (
         <div className="text-center py-5 mb-4 border rounded shadow-sm bg-light">
-          <h4 className="mb-0 text-muted">
+          <h6 className="mb-0 text-muted">
             {searchMessage}
-          </h4>
+          </h6>
         </div>
       )}
 
