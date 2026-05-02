@@ -527,7 +527,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                   </Field>
                 </div>
                 <div className="pf-col-third">
-                  <Field label="Email" error={errors.emailId}>
+                  <Field label="Email" required error={errors.emailId}>
                     <input className="pf-input" value={formData.emailId}
                       onChange={(e) => handleChange('emailId', e.target.value)} />
                   </Field>

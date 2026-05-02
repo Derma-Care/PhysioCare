@@ -623,67 +623,9 @@ const DoctorDetailsPage = () => {
         {activeKey === 2 && (
           <div style={{ padding: '20px 24px' }}>
 
-            {/* ── Services & Procedures — shown in BOTH view & edit ── */}
-            <SectionHeading title="Services & Procedures" />
 
-            {isEditing ? (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                  <FormField label="Category">
-                    <Select isMulti options={categoryOptions} value={selectedCategory} onChange={handleCategoryChange} placeholder="Select Category" />
-                  </FormField>
-                  <FormField label="Services">
-                    <Select isMulti options={serviceOptions} value={selectedServices} onChange={handleServiceChange} placeholder="Select Service(s)" />
-                  </FormField>
-                </div>
-                <FormField label="Procedures">
-                  <Select
-                    isMulti
-                    options={subServiceOptions}
-                    value={selectedSubServices}
-                    onChange={ss => {
-                      setSelectedSubServices(ss)
-                      setFormData(prev => ({ ...prev, subServices: ss.map(s => ({ subServiceId: s.value, subServiceName: s.label })) }))
-                      checkSubServiceDetails(ss.map(opt => opt.value))
-                    }}
-                    placeholder="Select Procedures"
-                  />
-                </FormField>
-                {!isSubServiceComplete && (
-                  <div style={{ fontSize: '12px', color: t.danger, marginBottom: '12px', padding: '8px 12px', background: '#fee2e2', borderRadius: t.radiusSm }}>
-                    Some selected Procedures are missing price or final cost details.{' '}
-                    <a href="/procedure-Management" style={{ color: 'var(--color-bgcolor)', fontWeight: '600' }}>Add Procedure details →</a>
-                  </div>
-                )}
-              </>
-            ) : (
-              /* ── VIEW MODE: Categories, Services, Procedures ── */
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 32px', marginBottom: '4px' }}>
-                <FormField label="Categories">
-                  <div style={{ display: 'flex', flexWrap: 'wrap', paddingTop: '2px' }}>
-                    {(doctorData.category || []).length > 0
-                      ? (doctorData.category || []).map((c, i) => <Tag key={i} label={c.categoryName} />)
-                      : <span style={{ fontSize: '13px', color: t.textMuted }}>—</span>}
-                  </div>
-                </FormField>
-                <FormField label="Services">
-                  <div style={{ display: 'flex', flexWrap: 'wrap', paddingTop: '2px' }}>
-                    {(doctorData.service || []).length > 0
-                      ? (doctorData.service || []).map((s, i) => <Tag key={i} label={s.serviceName} />)
-                      : <span style={{ fontSize: '13px', color: t.textMuted }}>—</span>}
-                  </div>
-                </FormField>
-                <FormField label="Procedures">
-                  <div style={{ display: 'flex', flexWrap: 'wrap', paddingTop: '2px' }}>
-                    {(doctorData.subServices || []).length > 0
-                      ? (doctorData.subServices || []).map((ss, i) => <Tag key={i} label={ss.subServiceName} />)
-                      : <span style={{ fontSize: '13px', color: t.textMuted }}>—</span>}
-                  </div>
-                </FormField>
-              </div>
-            )}
 
-            <Divider />
+
 
             {/* ── Profile Photo (edit only) ── */}
             {isEditing && (
@@ -819,11 +761,11 @@ const DoctorDetailsPage = () => {
                   ? <CFormInput value={formData?.doctorFees?.inClinicFee || ''} onChange={e => { const c = e.target.value.replace(/[^0-9]/g, ''); setFormData(p => ({ ...p, doctorFees: { ...p.doctorFees, inClinicFee: c } })); setErrors(p => ({ ...p, inClinicFee: '' })) }} style={{ fontSize: '13px' }} />
                   : <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--color-bgcolor)', padding: '4px 0' }}>₹{formData?.doctorFees?.inClinicFee || 'N/A'}</div>}
               </FormField>
-              <FormField label="Video Consultation Fee (₹)" error={errors.vedioConsultationFee}>
+              {/* <FormField label="Video Consultation Fee (₹)" error={errors.vedioConsultationFee}>
                 {isEditing
                   ? <CFormInput value={formData?.doctorFees?.vedioConsultationFee || ''} onChange={e => { const c = e.target.value.replace(/[^0-9]/g, ''); setFormData(p => ({ ...p, doctorFees: { ...p.doctorFees, vedioConsultationFee: c } })); setErrors(p => ({ ...p, vedioConsultationFee: '' })) }} style={{ fontSize: '13px' }} />
                   : <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--color-bgcolor)', padding: '4px 0' }}>₹{formData?.doctorFees?.vedioConsultationFee || 'N/A'}</div>}
-              </FormField>
+              </FormField> */}
             </div>
 
             <Divider />

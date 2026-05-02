@@ -606,7 +606,7 @@ const DoctorManagement = () => {
                 className="dm-input"
                 value={form.qualification}
                 onChange={(e) => {
-                  const v = e.target.value.replace(/[0-9]/g, '')
+                  const v = e.target.value
                   setForm((p) => ({ ...p, qualification: v }))
                   if (v.trim().length >= 2) clearFieldError('qualification')
                 }}

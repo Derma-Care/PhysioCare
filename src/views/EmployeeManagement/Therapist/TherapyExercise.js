@@ -609,7 +609,7 @@ export default function ExerciseTable() {
         className="ex-custom-modal"
         size="lg"
       >
-        <CModalHeader className="ex-modal-header">
+        <CModalHeader className="ex-modal-header custom-modal"  >
           <CModalTitle className="ex-modal-title">
             {editId ? "Edit" : "Add"} Activity
           </CModalTitle>
@@ -1203,12 +1203,13 @@ export default function ExerciseTable() {
             </div>
           </CForm>
         </CModalBody>
-      </CModal>
+      </CModal >
 
       {/* ── VIEW MODAL ───────────────────────────────── */}
-      <CModal
+      < CModal
         visible={viewModal}
-        onClose={() => setViewModal(false)}
+        onClose={() => setViewModal(false)
+        }
         size="lg"
         backdrop="static"
         alignment="center"
@@ -1319,10 +1320,10 @@ export default function ExerciseTable() {
             </div>
           )}
         </CModalBody>
-      </CModal>
+      </CModal >
 
       {/* ── SAVE / UPDATE CONFIRMATION ───────────────── */}
-      <ConfirmationModal
+      < ConfirmationModal
         isVisible={saveConfirmVisible}
         title={editId ? "Update Exercise" : "Save Exercise"}
         message={saveConfirmMessage}

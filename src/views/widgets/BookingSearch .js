@@ -27,6 +27,7 @@ const BookingSearch = ({
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
+  const [searchMessage, setSearchMessage] = useState('')
 
   // 🧠 Common API handler
   const formatAddress = (address) => {
@@ -60,23 +61,43 @@ const BookingSearch = ({
     if (!query) return;
 
     setLoading(true);
+    setSearchMessage(''); // Reset message on new search
+    setBookingData([]); // Clear previous results immediately
     try {
       const res = await apiFunc(query);
-      const apiData = res?.data?.data;
+      const resData = res?.data;
+      const apiData = resData?.data;
 
-      const formattedData = (Array.isArray(apiData) ? apiData : [apiData]).map(
-        (item) => ({
-          ...item,
-          patientAddress: formatAddress(item.patientAddress), // ✅ convert to string
-        })
+      // Normalize to array and filter out items that have no patientId or name
+      const rawItems = Array.isArray(apiData) ? apiData : [apiData];
+      const validItems = rawItems.filter(
+        (item) => item && item.patientId && item.name
       );
 
-      setBookingData(formattedData);
+      if (validItems.length === 0) {
+        setBookingData([]);
+        if (visitType === 'followup') {
+          setSearchMessage('No follow-up booking found for this Patient ID.');
+        } else {
+          // For first visits, don't show the UI message box, just a toast
+          setSearchMessage('');
+          showCustomToast('No patient records found.', 'info');
+        }
+      } else {
+        const formattedData = validItems.map((item) => ({
+          ...item,
+          patientAddress: formatAddress(item.patientAddress), // ✅ convert to string
+        }));
+        setBookingData(formattedData);
+      }
 
-      console.log("Final bookingData:", formattedData);
+      console.log("Final bookingData count:", validItems.length);
     } catch (err) {
       console.error("Error fetching bookings:", err);
       setBookingData([]);
+      const errMsg = err.response?.data?.message || 'Something went wrong while fetching data.';
+      setSearchMessage(errMsg);
+      showCustomToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -99,6 +120,15 @@ const BookingSearch = ({
       await fetchBookings(getBookingsByPatientId, patientSearch)
 
     }
+  }
+
+  // 🧹 Clear search and results
+  const handleClear = () => {
+    setPatientSearch('')
+    setBookingData([])
+    setSearchMessage('')
+    setSelectedBooking(null)
+    setModalVisible(false)
   }
 
   // ⚡ Auto-fetch on typing (debounced)
@@ -176,7 +206,7 @@ const BookingSearch = ({
     <div>
       {/* 🔍 Search Bar */}
       <CRow className="mb-3">
-        <CCol md={10}>
+        <CCol md={9}>
           <CFormInput
             type="text"
             placeholder={visitType === 'followup' ? "Search by Patient ID" : "Search by Name / Patient ID / Mobile"}
@@ -184,9 +214,12 @@ const BookingSearch = ({
             onChange={(e) => setPatientSearch(e.target.value)}
           />
         </CCol>
-        <CCol md={2}>
-          <CButton style={{ color: "white", backgroundColor: "var(--color-bgcolor)" }} onClick={handleSearch} disabled={loading}>
+        <CCol md={3} className="d-flex gap-2">
+          <CButton style={{ color: "white", backgroundColor: "var(--color-bgcolor)" }} onClick={handleSearch} disabled={loading} className="flex-grow-1">
             {loading ? 'Searching...' : 'Search'}
+          </CButton>
+          <CButton color="secondary" variant="outline" onClick={handleClear} disabled={loading} className="flex-grow-1">
+            Clear
           </CButton>
         </CCol>
       </CRow>
@@ -213,6 +246,15 @@ const BookingSearch = ({
             </CListGroupItem>
           ))}
         </CListGroup>
+      )}
+
+      {/* 📢 No Data Message */}
+      {!loading && bookingData.length === 0 && searchMessage && !selectedBooking && (
+        <div className="text-center py-5 mb-4 border rounded shadow-sm bg-light">
+          <h4 className="mb-0 text-muted">
+            {searchMessage}
+          </h4>
+        </div>
       )}
 
       {/* 🧾 Modal */}
