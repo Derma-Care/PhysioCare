@@ -172,29 +172,80 @@ export default function PaymentDetailsUI() {
 
     const paymentData = location.state.paymentData || {};
     const [data, setData] = useState(paymentData);
-   const allSessions =
-  (data?.therapyWithSessions || []).flatMap(item => {
-    // CASE 1: Package → Program → Therapy
-    if (item.programs) {
-      return item.programs.flatMap(program =>
-        (program.therapyData || []).flatMap(therapy =>
-          (therapy.exercises || []).flatMap(ex => ex.sessions || [])
+    const normalizeData = (data) => {
+  return 
+  (data?.therapyWithSessions || []).map((item) => {
+
+    // ✅ CASE 1: PACKAGE
+    if (item?.programs?.length) {
+      return {
+        packageName: item.packageName,
+        programs: item.programs.map(program => ({
+          programName: program.programName,
+          therapies: (program.therapyData || []).map(therapy => ({
+            therapyName: therapy.therapyName,
+            exercises: therapy.exercises || []
+          }))
+        }))
+      };
+    }
+
+    // ✅ CASE 2: PROGRAM
+    if (item?.therapyData?.length) {
+      return {
+        packageName: null,
+        programs: [{
+          programName: item.programName,
+          therapies: (item.therapyData || []).map(therapy => ({
+            therapyName: therapy.therapyName,
+            exercises: therapy.exercises || []
+          }))
+        }]
+      };
+    }
+
+    // ✅ CASE 3: THERAPY
+    if (item?.exercises?.length) {
+      return {
+        packageName: null,
+        programs: [{
+          programName: null,
+          therapies: [{
+            therapyName: item.therapyName,
+            exercises: item.exercises
+          }]
+        }]
+      };
+    }
+
+    // ✅ CASE 4: EXERCISE
+    if (item?.sessions?.length) {
+      return {
+        packageName: null,
+        programs: [{
+          programName: null,
+          therapies: [{
+            therapyName: null,
+            exercises: [item]
+          }]
+        }]
+      };
+    }
+
+    return null;
+  }).filter(Boolean);
+};
+     const normalized = normalizeData(data || {});
+    const allSessions =
+  (data?.therapyWithSessions || []).flatMap(pkg =>
+    (pkg.programs || []).flatMap(program =>
+      (program.therapyData || []).flatMap(therapy =>
+        (therapy.exercises || []).flatMap(exercise =>
+          exercise.sessions || []
         )
-      );
-    }
-
-    // CASE 2: Therapy → Exercise
-    if (item.exercises) {
-      return item.exercises.flatMap(ex => ex.sessions || []);
-    }
-
-    // CASE 3: Exercise directly
-    if (item.sessions) {
-      return item.sessions;
-    }
-
-    return [];
-  });
+      )
+    )
+  );
 
     const paidSessions = allSessions.filter(
         item => item.paymentStatus?.toLowerCase() === "paid"
@@ -289,52 +340,92 @@ export default function PaymentDetailsUI() {
     </CCard>
 
     {/* 🔹 Therapy Sessions */}
-    {data.therapyWithSessions.map((pkg, pi) => (
-      <div key={pi}>
-        <h4 className="mb-3" style={{fontSize: FONT_SIZES.lg}}>
+  {(data?.therapyWithSessions || []).map((pkg, pi) => {
+
+  // 🔥 Normalize levels
+  const programs = pkg?.programs
+    ? pkg.programs
+    : pkg?.therapyData
+    ? [pkg]
+    : pkg?.exercises
+    ? [{
+        programName: null,
+        therapyData: [pkg],
+      }]
+    : pkg?.sessions
+    ? [{
+        programName: null,
+        therapyData: [{
+          therapyName: null,
+          exercises: [pkg],
+        }],
+      }]
+    : [];
+
+  return (
+    <div key={pi}>
+
+      {/* PACKAGE NAME */}
+      {pkg?.packageName && (
+        <h4 className="mb-3" style={{ fontSize: FONT_SIZES.lg }}>
           {pkg.packageName}
         </h4>
+      )}
 
-        {pkg.programs.map((program, gi) => (
-          <CCard key={gi} className="mb-4 shadow-sm border-0" style={{ borderRadius: "12px" }}>
-            <CCardBody>
-              <h5 className="text-primary fw-bold mb-3" style={{fontSize: FONT_SIZES.md}}>
+      {/* PROGRAM */}
+      {programs.map((program, gi) => (
+        <CCard key={gi} className="mb-4 shadow-sm border-0">
+          <CCardBody>
+
+            {program?.programName && (
+              <h5 className="text-primary fw-bold mb-3">
                 {program.programName}
               </h5>
+            )}
 
-              {program.therapyData.map((therapy, ti) => (
-                <div
-                  key={ti}
-                  style={{
-                    borderLeft: "4px solid #0d6efd",
-                    padding: "12px",
-                    marginBottom: "16px",
-                    background: "#fff",
-                    borderRadius: "10px",
-                  }}
-                >
+            {/* THERAPY */}
+            {(program?.therapyData || []).map((therapy, ti) => (
+              <div key={ti} style={{
+                borderLeft: "4px solid #0d6efd",
+                padding: "12px",
+                marginBottom: "16px",
+                background: "#fff",
+                borderRadius: "10px",
+              }}>
+
+                {therapy?.therapyName && (
                   <h6 className="fw-bold">{therapy.therapyName}</h6>
+                )}
 
-                  {therapy.exercises.map((exercise, ei) => (
-                    <div
-                      key={ei}
-                      style={{
-                        background: "#f9fafb",
-                        padding: "12px",
-                        borderRadius: "10px",
-                        marginTop: "10px",
-                        border: "1px solid #eee",
-                      }}
-                    >
+                {/* EXERCISES */}
+                {(therapy?.exercises || []).map((exercise, ei) => {
+
+                  const sessions =
+                    exercise?.sessions ||
+                    Array.from({ length: exercise?.noOfSessions || 0 }, (_, i) => ({
+                      sessionNo: i + 1,
+                      paymentStatus: "UNPAID",
+                    }));
+
+                  return (
+                    <div key={ei} style={{
+                      background: "#f9fafb",
+                      padding: "12px",
+                      borderRadius: "10px",
+                      marginTop: "10px",
+                      border: "1px solid #eee",
+                    }}>
+
                       <div className="d-flex justify-content-between mb-2">
-                        <strong>{exercise.exerciseName}</strong>
-                        <span>₹{exercise.pricePerSession}/Session</span>
+                        <strong>{exercise?.exerciseName}</strong>
+                        <span>₹{exercise?.pricePerSession}/Session</span>
                       </div>
 
+                      {/* SESSIONS */}
                       <div className="d-flex flex-wrap gap-2">
-                        {exercise.sessions.map((session, si) => {
+                        {sessions.map((session, si) => {
                           const isPaid =
-                            session.paymentStatus?.toLowerCase() === "paid";
+                            session?.paymentStatus?.toLowerCase() === "paid";
 
                           return (
                             <CButton
@@ -345,32 +436,33 @@ export default function PaymentDetailsUI() {
                                 borderRadius: "20px",
                                 padding: "4px 10px",
                                 fontSize: "12px",
-                                fontWeight: "600",
-                                border: isPaid
-                                  ? "none"
-                                  : "1px solid #dc3545",
-                                backgroundColor: isPaid
-                                  ? "#198754"
-                                  : "#fff",
+                                border: isPaid ? "none" : "1px solid #dc3545",
+                                backgroundColor: isPaid ? "#198754" : "#fff",
                                 color: isPaid ? "#fff" : "#dc3545",
-                                boxShadow:
-                                  "0 2px 6px rgba(0,0,0,0.1)",
                               }}
                             >
-                              {isPaid ? "✓ Paid" : `Session ${session.sessionNo}`}
+                              {isPaid
+                                ? "✓ Paid"
+                                : `Session ${session.sessionNo}`}
                             </CButton>
                           );
                         })}
                       </div>
+
                     </div>
-                  ))}
-                </div>
-              ))}
-            </CCardBody>
-          </CCard>
-        ))}
-      </div>
-    ))}
+                  );
+                })}
+
+              </div>
+            ))}
+
+          </CCardBody>
+        </CCard>
+      ))}
+
+    </div>
+  );
+})}
 
     {/* 🔹 Payment History */}
     <CCard className="mt-4 shadow-sm border-0" style={{ borderRadius: "12px" }}>
