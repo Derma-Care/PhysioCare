@@ -309,7 +309,7 @@ export default function TherapyManagement() {
             <CTableRow>
               <CTableHeaderCell className="tm-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
               <CTableHeaderCell className="tm-th">Therapy Name</CTableHeaderCell>
-              <CTableHeaderCell className="tm-th">No. of Exercises</CTableHeaderCell>
+              <CTableHeaderCell className="tm-th">No. of Activity</CTableHeaderCell>
               <CTableHeaderCell className="tm-th" style={{ width: 120 }}>Actions</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
@@ -334,7 +334,7 @@ export default function TherapyManagement() {
                     <span className="tm-therapy-name">{item.therapyName}</span>
                   </CTableDataCell>
                   <CTableDataCell className="tm-td">
-                    <span className="tm-count-badge">{item.noExerciseIdCount} exercises</span>
+                    <span className="tm-count-badge">{item.noExerciseIdCount} Activity</span>
                   </CTableDataCell>
                   <CTableDataCell className="tm-td">
                     <div className="tm-actions">
@@ -470,19 +470,19 @@ export default function TherapyManagement() {
                   <span className="tm-summary-value tm-id-pill">{viewTherapy.id || viewTherapy.therapyId || "—"}</span>
                 </div>
                 <div className="tm-summary-card">
-                  <span className="tm-summary-label">No. of Exercises</span>
+                  <span className="tm-summary-label">No. of Activity</span>
                   <span className="tm-summary-value">
                     {viewTherapy.noExerciseIdCount ?? getExerciseList(viewTherapy).length ?? "—"}
                   </span>
                 </div>
               </div>
 
-              <div className="tm-section-label">Exercises</div>
+              <div className="tm-section-label">Activity</div>
 
               {getExerciseList(viewTherapy).length === 0 ? (
                 <div className="tm-empty">
                   <Stethoscope size={32} className="tm-empty-icon" />
-                  <p>No exercises linked to this therapy</p>
+                  <p>No Actvity linked to this therapy</p>
                 </div>
               ) : (
                 <div className="tm-ex-table-wrap">
@@ -491,7 +491,7 @@ export default function TherapyManagement() {
                       <CTableRow>
                         <CTableHeaderCell className="tm-ex-th">#</CTableHeaderCell>
                         <CTableHeaderCell className="tm-ex-th">Name</CTableHeaderCell>
-                        <CTableHeaderCell className="tm-ex-th">Image</CTableHeaderCell>
+                        <CTableHeaderCell className="tm-ex-th">Activity Type</CTableHeaderCell>
                         <CTableHeaderCell className="tm-ex-th">Video</CTableHeaderCell>
                         <CTableHeaderCell className="tm-ex-th">Session</CTableHeaderCell>
                         <CTableHeaderCell className="tm-ex-th">Frequency</CTableHeaderCell>
@@ -508,7 +508,7 @@ export default function TherapyManagement() {
                         <CTableRow key={ex.id || ex.exerciseId || i} className="tm-ex-tr">
                           <CTableDataCell className="tm-ex-td tm-td-num">{i + 1}</CTableDataCell>
                           <CTableDataCell className="tm-ex-td"><span className="tm-ex-name">{ex.name || "—"}</span></CTableDataCell>
-                          <CTableDataCell className="tm-ex-td"><SafeImage src={ex.image} alt={ex.name} /></CTableDataCell>
+                          <CTableDataCell className="tm-ex-td">{ex.activityType || "—"}</CTableDataCell>
                           <CTableDataCell className="tm-ex-td"><SafeVideoLink src={ex.video} /></CTableDataCell>
                           <CTableDataCell className="tm-ex-td">{ex.session     || "—"}</CTableDataCell>
                           <CTableDataCell className="tm-ex-td">{ex.frequency   || "—"}</CTableDataCell>

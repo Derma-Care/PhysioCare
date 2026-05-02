@@ -13,11 +13,9 @@ import {
     CTableHeaderCell,
     CTableBody,
     CTableDataCell,
-    CProgressBar,
 } from "@coreui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FONT_SIZES } from "../../Constant/Themes";
-import ExerciseUI from "../AppointmentManagement/ExerciseUI";
 
 const data = {
     bookingId: "BOOK1234",
@@ -172,8 +170,8 @@ export default function PaymentDetailsUI() {
     const navigate = useNavigate();
     const location = useLocation();
 
-   const paymentData = location?.state?.paymentData || {};
-const [data, setData] = useState(paymentData?.data || paymentData);
+    const paymentData = location.state.paymentData || {};
+    const [data, setData] = useState(paymentData);
    const allSessions =
   (data?.therapyWithSessions || []).flatMap(item => {
     // CASE 1: Package → Program → Therapy
@@ -186,11 +184,9 @@ const [data, setData] = useState(paymentData?.data || paymentData);
     }
 
     // CASE 2: Therapy → Exercise
-     if (item?.exercises?.length) {
-    return item.exercises.flatMap(ex =>
-      ex?.sessions || []
-    );
-  }
+    if (item.exercises) {
+      return item.exercises.flatMap(ex => ex.sessions || []);
+    }
 
     // CASE 3: Exercise directly
     if (item.sessions) {
@@ -211,182 +207,221 @@ const [data, setData] = useState(paymentData?.data || paymentData);
 
     // alert(bookingId);
   return (
-  <div style={{ background: "#f4f6f9", minHeight: "100vh", padding: "16px" }}>
+  <div className="p-4" style={{ background: "#f4f6f9", minHeight: "100vh" }}>
+    <h2 className="fw-bold mb-4 " style={{fontSize:FONT_SIZES.xl}}>Patient Payment Dashboard</h2>
 
-    {/* 🔹 TITLE */}
-    <h5 className="fw-bold mb-3" style={{ fontSize: "14px" }}>
-      Patient Payment
-    </h5>
-
-    {/* 🔹 SUMMARY */}
-    <CRow className="g-2 mb-3">
-      {[
+    {/* 🔹 Top Summary */}
+    <CRow className="g-3 mb-4">
+      {[ 
         { label: "Booking ID", value: data.bookingId },
         { label: "Patient", value: data.patientName, sub: data.mobile },
         { label: "Doctor", value: data.doctorName },
         { label: "Status", value: <StatusBadge status={data.paymentStatus} /> },
       ].map((item, i) => (
         <CCol md={3} key={i}>
-          <CCard className="border-0 shadow-sm">
-            <CCardBody style={{ padding: "8px 10px" }}>
-              <div style={{ fontSize: "11px", color: "#777" }}>
-                {item.label}
-              </div>
-              <div style={{ fontSize: "13px", fontWeight: "600" }}>
-                {item.value}
-              </div>
-              {item.sub && (
-                <div style={{ fontSize: "11px", color: "#999" }}>
-                  {item.sub}
-                </div>
-              )}
+          <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px" }}>
+            <CCardBody>
+              <small className="text-muted">{item.label}</small>
+              <h5 className="fw-bold mt-1">{item.value}</h5>
+              {item.sub && <small className="text-muted">{item.sub}</small>}
             </CCardBody>
           </CCard>
         </CCol>
       ))}
     </CRow>
 
-    {/* 🔹 AMOUNT CARDS */}
-    <CRow className="g-2 mb-3">
-      {[
-        { label: "Total", value: data.totalAmount },
-        { label: "Discount", value: data.discountAmount },
-        { label: "Paid", value: data.totalPaid },
-        { label: "Balance", value: data.balanceAmount },
-      ].map((item, i) => (
-        <CCol md={3} key={i}>
-          <CCard className="border-0 shadow-sm">
-            <CCardBody style={{ padding: "8px 10px" }}>
-              <div style={{ fontSize: "11px", color: "#777" }}>
-                {item.label}
-              </div>
-              <div style={{ fontSize: "14px", fontWeight: "700" }}>
-                ₹{item.value}
-              </div>
-            </CCardBody>
-          </CCard>
-        </CCol>
-      ))}
+    {/* 🔹 Amount Cards */}
+    <CRow className="g-3 mb-4">
+      <CCol md={3}>
+        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#fff" }}>
+          <CCardBody>
+            <small>Total</small>
+            <h4 className="fw-bold">₹{data.totalAmount}</h4>
+          </CCardBody>
+        </CCard>
+      </CCol>
+
+      <CCol md={3}>
+        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#fff3cd" }}>
+          <CCardBody>
+            <small>Discount</small>
+            <h4 className="fw-bold text-warning">₹{data.discountAmount}</h4>
+          </CCardBody>
+        </CCard>
+      </CCol>
+
+      <CCol md={3}>
+        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#d1e7dd" }}>
+          <CCardBody>
+            <small>Paid</small>
+            <h4 className="fw-bold text-success">₹{data.totalPaid}</h4>
+          </CCardBody>
+        </CCard>
+      </CCol>
+
+      <CCol md={3}>
+        <CCard className="border-0 shadow-sm" style={{ borderRadius: "12px", background: "#f8d7da" }}>
+          <CCardBody>
+            <small>Balance</small>
+            <h4 className="fw-bold text-danger">₹{data.balanceAmount}</h4>
+          </CCardBody>
+        </CCard>
+      </CCol>
     </CRow>
 
-    {/* 🔹 PROGRESS */}
-    <CCard className="mb-3 border-0 shadow-sm">
-      <CCardBody style={{ padding: "10px" }}>
+    {/* 🔹 Progress */}
+    <CCard className="mb-4 shadow-sm border-0" style={{ borderRadius: "12px" }}>
+      <CCardBody>
         <div className="d-flex justify-content-between">
-          <span style={{ fontSize: "12px", fontWeight: "500" }}>
-            Progress
-          </span>
-          <span style={{ fontSize: "12px" }}>
+          <strong>Payment Progress</strong>
+          <span className="fw-semibold">
             {paidSessions}/{allSessions.length} ({percent}%)
           </span>
         </div>
 
-   <div
-  style={{
-    height: "6px",
-    width: "100%",
-    background: "#e9ecef",
-    borderRadius: "10px",
-    overflow: "hidden",
-    marginTop: "6px"
-  }}
->
-  <div
-    style={{
-      width: `${percent}%`,
-      height: "100%",
-      transition: "width 0.3s ease",
-      background:
-        percent === 100
-          ? "#198754"
-          : percent > 50
-          ? "#0dcaf0"
-          : percent > 0
-          ? "#ffc107"
-          : "#dc3545",
-    }}
-  />
-</div>
+        <CProgress
+          value={percent}
+          className="mt-3"
+          style={{ height: "10px", borderRadius: "10px" }}
+          color={percent === 100 ? "success" : "warning"}
+        />
       </CCardBody>
     </CCard>
 
-    {/* 🔹 SESSIONS */}
-    {(data?.therapyWithSessions || []).map((pkg, pi) => {
+    {/* 🔹 Therapy Sessions */}
+    {data.therapyWithSessions.map((pkg, pi) => (
+      <div key={pi}>
+        <h4 className="mb-3" style={{fontSize: FONT_SIZES.lg}}>
+          {pkg.packageName}
+        </h4>
 
-      // ✅ PACKAGE
-      if (pkg.programs) {
-        return pkg.programs.map((program, pIndex) => (
-          <div key={pIndex} className="mb-2">
+        {pkg.programs.map((program, gi) => (
+          <CCard key={gi} className="mb-4 shadow-sm border-0" style={{ borderRadius: "12px" }}>
+            <CCardBody>
+              <h5 className="text-primary fw-bold mb-3" style={{fontSize: FONT_SIZES.md}}>
+                {program.programName}
+              </h5>
 
-            <h6 style={{ fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-              {program.programName}
-            </h6>
+              {program.therapyData.map((therapy, ti) => (
+                <div
+                  key={ti}
+                  style={{
+                    borderLeft: "4px solid #0d6efd",
+                    padding: "12px",
+                    marginBottom: "16px",
+                    background: "#fff",
+                    borderRadius: "10px",
+                  }}
+                >
+                  <h6 className="fw-bold">{therapy.therapyName}</h6>
 
-            {(program.therapyData || []).map((therapy, ti) => (
-              <CCard key={ti} className="mb-2 border-0 shadow-sm">
-                <CCardBody style={{ padding: "10px" }}>
+                  {therapy.exercises.map((exercise, ei) => (
+                    <div
+                      key={ei}
+                      style={{
+                        background: "#f9fafb",
+                        padding: "12px",
+                        borderRadius: "10px",
+                        marginTop: "10px",
+                        border: "1px solid #eee",
+                      }}
+                    >
+                      <div className="d-flex justify-content-between mb-2">
+                        <strong>{exercise.exerciseName}</strong>
+                        <span>₹{exercise.pricePerSession}/Session</span>
+                      </div>
 
-                  <div
-                    className="fw-bold mb-2"
-                    style={{ fontSize: "12px", color: "#0d6efd" }}
-                  >
-                    {therapy.therapyName}
-                  </div>
+                      <div className="d-flex flex-wrap gap-2">
+                        {exercise.sessions.map((session, si) => {
+                          const isPaid =
+                            session.paymentStatus?.toLowerCase() === "paid";
 
-                  {(therapy.exercises || []).map((ex, ei) => (
-                    <ExerciseUI key={ei} exercise={ex} />
+                          return (
+                            <CButton
+                              key={si}
+                              size="sm"
+                              disabled={isPaid}
+                              style={{
+                                borderRadius: "20px",
+                                padding: "4px 10px",
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                border: isPaid
+                                  ? "none"
+                                  : "1px solid #dc3545",
+                                backgroundColor: isPaid
+                                  ? "#198754"
+                                  : "#fff",
+                                color: isPaid ? "#fff" : "#dc3545",
+                                boxShadow:
+                                  "0 2px 6px rgba(0,0,0,0.1)",
+                              }}
+                            >
+                              {isPaid ? "✓ Paid" : `Session ${session.sessionNo}`}
+                            </CButton>
+                          );
+                        })}
+                      </div>
+                    </div>
                   ))}
+                </div>
+              ))}
+            </CCardBody>
+          </CCard>
+        ))}
+      </div>
+    ))}
 
-                </CCardBody>
-              </CCard>
+    {/* 🔹 Payment History */}
+    <CCard className="mt-4 shadow-sm border-0" style={{ borderRadius: "12px" }}>
+      <CCardBody>
+        <h5 className="mb-3" style={{fontSize: FONT_SIZES.md}}>
+          Payment History
+        </h5>
+
+        <CTable striped hover responsive className="align-middle">
+          <CTableHead style={{ background: "#f1f3f5" }}>
+            <CTableRow>
+              <CTableHeaderCell>#</CTableHeaderCell>
+              <CTableHeaderCell>Date</CTableHeaderCell>
+              <CTableHeaderCell>Amount</CTableHeaderCell>
+              <CTableHeaderCell>Mode</CTableHeaderCell>
+              <CTableHeaderCell>Type</CTableHeaderCell>
+              <CTableHeaderCell>Level</CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
+
+          <CTableBody>
+            {data.paymentHistory.map((item, i) => (
+              <CTableRow key={i}>
+                <CTableDataCell>{i + 1}</CTableDataCell>
+                <CTableDataCell>{item.paymentDate}</CTableDataCell>
+                <CTableDataCell>₹{item.amount}</CTableDataCell>
+                <CTableDataCell>{item.paymentMode}</CTableDataCell>
+                <CTableDataCell>{item.paymentType}</CTableDataCell>
+                <CTableDataCell>{item.paymentLevel}</CTableDataCell>
+              </CTableRow>
             ))}
-          </div>
-        ));
-      }
+          </CTableBody>
+        </CTable>
 
-      // ✅ EXERCISE
-      if (pkg.sessions) {
-        return (
-          <div key={pi} className="mb-2">
-
-            <h6 style={{ fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-              {pkg.exerciseName}
-            </h6>
-
-            <CCard className="mb-2 border-0 shadow-sm">
-              <CCardBody style={{ padding: "10px" }}>
-                <ExerciseUI exercise={pkg} />
-              </CCardBody>
-            </CCard>
-
-          </div>
-        );
-      }
-
-      // ✅ THERAPY
-      if (pkg.exercises) {
-        return (
-          <div key={pi} className="mb-2">
-
-            <h6 style={{ fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-              {pkg.therapyName}
-            </h6>
-
-            <CCard className="mb-2 border-0 shadow-sm">
-              <CCardBody style={{ padding: "10px" }}>
-                {(pkg.exercises || []).map((ex, ei) => (
-                  <ExerciseUI key={ei} exercise={ex} />
-                ))}
-              </CCardBody>
-            </CCard>
-
-          </div>
-        );
-      }
-
-      return null;
-    })}
+        <div className="text-end mt-3">
+          <CButton
+            style={{
+              background: "linear-gradient(135deg, #dc3545, #b02a37)",
+              border: "none",
+              borderRadius: "8px",
+              padding: "8px 16px",
+              fontWeight: "600",
+              color: "#fff",
+            }}
+            onClick={() => navigate(-1)}
+          >
+            Pay Balance ₹{data.balanceAmount}
+          </CButton>
+        </div>
+      </CCardBody>
+    </CCard>
   </div>
 );
-
 }
