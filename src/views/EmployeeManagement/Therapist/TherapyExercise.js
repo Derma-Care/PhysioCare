@@ -543,7 +543,7 @@ export default function ExerciseTable() {
                     <span className="ex-name">{ex.name}</span>
                   </CTableDataCell>
                   <CTableDataCell className="ex-td">
-                    <span className="ex-name">{ex.name}</span>
+                    <span className="ex-name">{ex.activityType}</span>
                   </CTableDataCell>
                   {/* <CTableDataCell className="ex-td">
                     <span className="ex-badge-blue">{ex.sets || "—"}</span>
@@ -1160,7 +1160,7 @@ export default function ExerciseTable() {
               </CCol>
 
               <CCol md={3}>
-                <CFormInput
+<CFormInput
                   type="number"
                   className="ex-input"
                   placeholder="Discount %"
@@ -1222,90 +1222,186 @@ export default function ExerciseTable() {
         <CModalBody className="ex-modal-body ex-view-body">
           {viewData ? (
             <>
-              {/* {viewData.image && (
-                <div style={{ textAlign: "center", marginBottom: 16 }}>
-                  <CImage
-                    src={viewData.image}
-                    width={100}
-                    height={100}
-                    style={{ objectFit: "cover", borderRadius: 10, border: "0.5px solid #d0dce9" }}
-                  />
-                </div>
-              )} */}
-
+              {/* ── Basic Info ── */}
               <div className="ex-summary-grid">
-                <div className="ex-summary-card">
-                  <span className="ex-summary-label">Name</span>
-                  <span className="ex-summary-value">{viewData.name}</span>
-                </div>
-                <div className="ex-summary-card">
-                  <span className="ex-summary-label">Exercise ID</span>
-                  <span className="ex-summary-value ex-id-pill">{viewData.therapyExercisesId}</span>
-                </div>
-                <div className="ex-summary-card">
-                  <span className="ex-summary-label">Session</span>
-                  <span className="ex-summary-value">{viewData.session}</span>
-                </div>
-                <div className="ex-summary-card">
-                  <span className="ex-summary-label">Frequency</span>
-                  <span className="ex-summary-value">{viewData.frequency}</span>
-                </div>
-                <div className="ex-summary-card">
-                  <span className="ex-summary-label">Sets</span>
-                  <span className="ex-summary-value">{viewData.sets}</span>
-                </div>
-                <div className="ex-summary-card">
-                  <span className="ex-summary-label">Repetitions</span>
-                  <span className="ex-summary-value">{viewData.repetitions}</span>
-                </div>
+                {viewData.name && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Name</span>
+                    <span className="ex-summary-value">{viewData.name}</span>
+                  </div>
+                )}
+                {viewData.therapyExercisesId && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Activity ID</span>
+                    <span className="ex-summary-value ex-id-pill">{viewData.therapyExercisesId}</span>
+                  </div>
+                )}
+                {viewData.activityType && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Type</span>
+                    <span className="ex-summary-value">{viewData.activityType}</span>
+                  </div>
+                )}
+                {viewData.bodyPart && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Body Part</span>
+                    <span className="ex-summary-value">{viewData.bodyPart}</span>
+                  </div>
+                )}
+                {viewData.session && viewData.session !== "0" && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Session</span>
+                    <span className="ex-summary-value">{viewData.session}</span>
+                  </div>
+                )}
+                {viewData.frequency && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Frequency</span>
+                    <span className="ex-summary-value">{viewData.frequency}</span>
+                  </div>
+                )}
+                {viewData.duration && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Duration</span>
+                    <span className="ex-summary-value">{viewData.duration} mins</span>
+                  </div>
+                )}
+                {viewData.sets && viewData.sets !== "0" && viewData.sets !== 0 && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Sets</span>
+                    <span className="ex-summary-value">{viewData.sets}</span>
+                  </div>
+                )}
+                {viewData.repetitions && viewData.repetitions !== "0" && viewData.repetitions !== 0 && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Repetitions</span>
+                    <span className="ex-summary-value">{viewData.repetitions}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="ex-section-label">Pricing</div>
+              {/* ── Dynamic Details ── */}
+              {(viewData.technique || viewData.machine || viewData.intensity || viewData.assistanceLevel || viewData.supportType || viewData.area || viewData.metric) && (
+                <>
+                  <div className="ex-section-label">Additional Details</div>
+                  <div className="ex-summary-grid">
+                    {viewData.technique && (
+                      <div className="ex-summary-card" style={{ gridColumn: "span 2" }}>
+                        <span className="ex-summary-label">Technique</span>
+                        <span className="ex-summary-value">{viewData.technique}</span>
+                      </div>
+                    )}
+                    {viewData.machine && (
+                      <div className="ex-summary-card">
+                        <span className="ex-summary-label">Machine</span>
+                        <span className="ex-summary-value">{viewData.machine}</span>
+                      </div>
+                    )}
+                    {viewData.intensity && (
+                      <div className="ex-summary-card">
+                        <span className="ex-summary-label">Intensity</span>
+                        <span className="ex-summary-value">{viewData.intensity}</span>
+                      </div>
+                    )}
+                    {viewData.assistanceLevel && (
+                      <div className="ex-summary-card">
+                        <span className="ex-summary-label">Assistance</span>
+                        <span className="ex-summary-value">{viewData.assistanceLevel}</span>
+                      </div>
+                    )}
+                    {viewData.supportType && (
+                      <div className="ex-summary-card">
+                        <span className="ex-summary-label">Support Type</span>
+                        <span className="ex-summary-value">{viewData.supportType}</span>
+                      </div>
+                    )}
+                    {viewData.area && (
+                      <div className="ex-summary-card">
+                        <span className="ex-summary-label">Area</span>
+                        <span className="ex-summary-value">{viewData.area}</span>
+                      </div>
+                    )}
+                    {viewData.metric && (
+                      <div className="ex-summary-card">
+                        <span className="ex-summary-label">Metric</span>
+                        <span className="ex-summary-value">{viewData.metric}</span>
+                      </div>
+                    )}
+                    {viewData.value && (
+                      <div className="ex-summary-card">
+                        <span className="ex-summary-label">Value</span>
+                        <span className="ex-summary-value">{viewData.value}</span>
+                      </div>
+                    )}
+                    {viewData.unit && (
+                      <div className="ex-summary-card">
+                        <span className="ex-summary-label">Unit</span>
+                        <span className="ex-summary-value">{viewData.unit}</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ── Pricing ── */}
+              <div className="ex-section-label">Pricing & Tax</div>
               <div className="ex-summary-grid">
                 <div className="ex-summary-card">
                   <span className="ex-summary-label">Price / Session</span>
-                  <span className="ex-summary-value">₹{viewData.pricePerSession}</span>
+                  <span className="ex-summary-value">₹{viewData.pricePerSession || 0}</span>
                 </div>
-                <div className="ex-summary-card">
-                  <span className="ex-summary-label">GST</span>
-                  <span className="ex-summary-value">{viewData.gst}%</span>
-                </div>
-                <div className="ex-summary-card">
-                  <span className="ex-summary-label">Other Tax</span>
-                  <span className="ex-summary-value">{viewData.otherTax}%</span>
-                </div>
-                <div className="ex-summary-card">
-                  <span className="ex-summary-label">Discount</span>
-                  <span className="ex-summary-value">{viewData.discountPercentage}%</span>
-                </div>
-                <div className="ex-summary-card">
-                  <span className="ex-summary-label">Discount Amt</span>
-                  <span className="ex-summary-value">₹{viewData.discountAmount?.toFixed(2) || "0.00"}</span>
-                </div>
+                {viewData.gst && viewData.gst !== "0" && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">GST</span>
+                    <span className="ex-summary-value">{viewData.gst}%</span>
+                  </div>
+                )}
+                {viewData.otherTax && viewData.otherTax !== "0" && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Other Tax</span>
+                    <span className="ex-summary-value">{viewData.otherTax}%</span>
+                  </div>
+                )}
+                {viewData.discountPercentage && viewData.discountPercentage !== "0" && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Discount</span>
+                    <span className="ex-summary-value">{viewData.discountPercentage}%</span>
+                  </div>
+                )}
+                {viewData.discountAmount > 0 && (
+                  <div className="ex-summary-card">
+                    <span className="ex-summary-label">Discount Amt</span>
+                    <span className="ex-summary-value">₹{viewData.discountAmount?.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="ex-summary-card" style={{ borderColor: "#b5d4f4", background: "#e6f1fb" }}>
-                  <span className="ex-summary-label">Total</span>
+                  <span className="ex-summary-label">Total Cost</span>
                   <span className="ex-summary-value" style={{ color: "#0c447c", fontSize: 16 }}>₹{calcTotal(viewData)}</span>
                 </div>
               </div>
 
-              <div className="ex-section-label">Notes</div>
-              <div className="ex-notes-box">{viewData.notes || "—"}</div>
+              {viewData.notes && (
+                <>
+                  <div className="ex-section-label">Clinical Notes</div>
+                  <div className="ex-notes-box">{viewData.notes}</div>
+                </>
+              )}
 
-              <div className="ex-section-label" style={{ marginTop: 12 }}>Video</div>
-              <div style={{ marginBottom: 16 }}>
-                {viewData.video ? (
-                  <a
-                    href={viewData.video}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ex-video-link"
-                  >
-                    ▶ Watch Video
-                  </a>
-                ) : (
-                  <span style={{ color: "#9ca3af", fontSize: 13 }}>No video attached</span>
-                )}
-              </div>
+              {viewData.video && (
+                <>
+                  <div className="ex-section-label" style={{ marginTop: 12 }}>Video Reference</div>
+                  <div style={{ marginBottom: 16 }}>
+                    <a
+                      href={viewData.video}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ex-video-link"
+                    >
+                      ▶ Watch Exercise Video
+                    </a>
+                  </div>
+                </>
+              )}
 
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
                 <button className="ex-btn-secondary" onClick={() => setViewModal(false)}>

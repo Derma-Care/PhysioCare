@@ -41,6 +41,7 @@ import Pagination from '../../Utils/Pagination'
 import { CustomerByClinicNdBranchId } from '../customerManagement/CustomerManagementAPI'
 import { Eye, Printer } from 'lucide-react'
 import PrintLetterHead from '../../Utils/PrintLetterHead'
+import ConfirmationModal from '../../components/ConfirmationModal'
 
 const WidgetsDropdown = (props) => {
   const [slides, setSlides] = useState([])
@@ -78,6 +79,8 @@ const WidgetsDropdown = (props) => {
   const [showAppointments, setShowAppointments] = useState(false)
   const [editingPaymentId, setEditingPaymentId] = useState(null)
   const [printData, setPrintData] = useState(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [confirmData, setConfirmData] = useState({ bookingId: null, paymentType: '' })
 
   const statusLabelMap = {
     'In-Progress': 'Active',
@@ -568,8 +571,10 @@ const WidgetsDropdown = (props) => {
                                   className="wd-fu-select"
                                   defaultValue=""
                                   onChange={(e) => {
-                                    if (e.target.value) {
-                                      handlePaymentUpdate(item.bookingId, e.target.value)
+                                    const mode = e.target.value
+                                    if (mode) {
+                                      setConfirmData({ bookingId: item.bookingId, paymentType: mode })
+                                      setShowConfirm(true)
                                     }
                                   }}
                                 >
@@ -637,6 +642,19 @@ const WidgetsDropdown = (props) => {
             </CTableBody>
           </CTable>
         </div>
+
+        <ConfirmationModal
+          isVisible={showConfirm}
+          title="Confirm Payment"
+          message={`Are you sure you want to confirm payment via ${confirmData.paymentType}?`}
+          confirmText="Confirm"
+          confirmColor={COLORS.primary}
+          onConfirm={() => {
+            handlePaymentUpdate(confirmData.bookingId, confirmData.paymentType)
+            setShowConfirm(false)
+          }}
+          onCancel={() => setShowConfirm(false)}
+        />
       </div>
 
       {/* ── ADMIN CARDS ───────────────────────────────────────────────────── */}

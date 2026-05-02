@@ -79,8 +79,7 @@ const BookingSearch = ({
         if (visitType === 'followup') {
           setSearchMessage('No follow-up booking found for this Patient ID.');
         } else {
-          // For first visits, don't show the UI message box, just a toast
-          setSearchMessage('');
+          setSearchMessage('No patient found.');
           showCustomToast('No patient records found.', 'info');
         }
       } else {

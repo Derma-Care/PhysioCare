@@ -57,11 +57,11 @@ const tokens = {
 
 /* Status badge config */
 const statusConfig = {
-  confirmed:  { bg: '#dbeafe', color: '#1d4ed8', label: 'Confirmed' },
-  active:     { bg: '#dcfce7', color: '#15803d', label: 'Active' },
-  completed:  { bg: '#f3f4f6', color: '#374151', label: 'Completed' },
-  pending:    { bg: '#fef3c7', color: '#92400e', label: 'Pending' },
-  rejected:   { bg: '#fee2e2', color: '#991b1b', label: 'Rejected' },
+  confirmed: { bg: '#dbeafe', color: '#1d4ed8', label: 'Confirmed' },
+  active: { bg: '#dcfce7', color: '#15803d', label: 'Active' },
+  completed: { bg: '#f3f4f6', color: '#374151', label: 'Completed' },
+  pending: { bg: '#fef3c7', color: '#92400e', label: 'Pending' },
+  rejected: { bg: '#fee2e2', color: '#991b1b', label: 'Rejected' },
 }
 
 const StatusBadge = ({ status }) => {
@@ -184,13 +184,13 @@ const AppointmentDetails = () => {
     return s === 'in-progress' ? 'active' : s
   })()
 
-  const showConfirmed           = ['completed', 'active'].includes(normalizedStatus)
-  const showCompletedOrActive   = ['completed', 'active'].includes(normalizedStatus)
-  const showVitalsCard          = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
-  const showPayment             = ['active'].includes(normalizedStatus)
+  const showConfirmed = ['active', 'confirmed'].includes(normalizedStatus)
+  const showCompletedOrActive = ['completed', 'active'].includes(normalizedStatus)
+  const showVitalsCard = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
+  const showPayment = ['active'].includes(normalizedStatus)
   const showConfirmedOrCompleted = ['confirmed', 'completed', 'active'].includes(normalizedStatus)
-  const showPrescription        = ['active', 'completed'].includes(normalizedStatus) && appointment?.prescriptionPdf
-  const showAccordion           = ['confirmed', 'active', 'completed'].includes(normalizedStatus)
+  const showPrescription = ['active', 'completed'].includes(normalizedStatus) && appointment?.prescriptionPdf
+  const showAccordion = ['confirmed', 'active', 'completed'].includes(normalizedStatus)
 
   const [validationErrors, setValidationErrors] = useState({})
 
@@ -297,7 +297,7 @@ const AppointmentDetails = () => {
       await updateVitalsData(formData, appointment.bookingId, appointment.patientId)
       showCustomToast('Vitals updated successfully!', 'success')
       setShowModal(false); fetchVitals()
-    } catch (error) {}
+    } catch (error) { }
   }
 
   const handleDeleteVitals = async () => {
@@ -305,7 +305,7 @@ const AppointmentDetails = () => {
       await deleteVitalsData(appointment.bookingId, appointment.patientId)
       showCustomToast('Vitals deleted successfully!', 'success')
       setVitals(null)
-    } catch (error) {}
+    } catch (error) { }
   }
 
   const getMimeTypeFromBase64 = (b64) => {
@@ -464,12 +464,12 @@ const AppointmentDetails = () => {
           <SectionHeading icon={User} title="Patient Details" />
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0 24px' }}>
-            <InfoItem label="Patient Name"      value={appointment?.name} />
-            <InfoItem label="Mobile Number"     value={appointment?.patientMobileNumber} />
-            <InfoItem label="Booking For"       value={appointment?.bookingFor} />
-            <InfoItem label="Age"               value={appointment?.age ? `${appointment.age} Yrs` : null} />
-            <InfoItem label="Gender"            value={appointment?.gender} />
-            <InfoItem label="Visit Type"        value={appointment?.visitType} />
+            <InfoItem label="Patient Name" value={appointment?.name} />
+            <InfoItem label="Mobile Number" value={appointment?.patientMobileNumber} />
+            <InfoItem label="Booking For" value={appointment?.bookingFor} />
+            <InfoItem label="Age" value={appointment?.age ? `${appointment.age} Yrs` : null} />
+            <InfoItem label="Gender" value={appointment?.gender} />
+            <InfoItem label="Visit Type" value={appointment?.visitType} />
           </div>
 
           {appointment?.problem && (
@@ -492,9 +492,9 @@ const AppointmentDetails = () => {
         <div style={{ padding: '0 24px 20px' }}>
           <SectionHeading icon={CreditCard} title="Slot & Payment Details" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0 24px' }}>
-            <InfoItem label="Date"             value={appointment?.serviceDate} />
-            <InfoItem label="Time"             value={appointment?.servicetime} />
-            <InfoItem label="Paid Amount"      value={appointment?.totalFee ? `₹${appointment.totalFee}` : null} />
+            <InfoItem label="Date" value={appointment?.serviceDate} />
+            <InfoItem label="Time" value={appointment?.servicetime} />
+            <InfoItem label="Paid Amount" value={appointment?.totalFee ? `₹${appointment.totalFee}` : null} />
             <InfoItem label="Consultation Fee" value={appointment?.listOfConsultationFee?.[0]?.consulationFee ? `₹${appointment.listOfConsultationFee[0].consulationFee}` : 'N/A'} />
           </div>
         </div>
@@ -506,11 +506,11 @@ const AppointmentDetails = () => {
             <div style={{ padding: '0 24px 20px' }}>
               <SectionHeading icon={Activity} title="Vitals" />
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                <VitalChip label="Height"         value={vitals?.height}        unit="cm" />
-                <VitalChip label="Weight"         value={vitals?.weight}        unit="kg" />
+                <VitalChip label="Height" value={vitals?.height} unit="cm" />
+                <VitalChip label="Weight" value={vitals?.weight} unit="kg" />
                 <VitalChip label="Blood Pressure" value={vitals?.bloodPressure} unit="mmHg" />
-                <VitalChip label="Temperature"    value={vitals?.temperature}   unit="°C" />
-                <VitalChip label="BMI"            value={vitals?.bmi}           unit="kg/m²" />
+                <VitalChip label="Temperature" value={vitals?.temperature} unit="°C" />
+                <VitalChip label="BMI" value={vitals?.bmi} unit="kg/m²" />
               </div>
             </div>
           </>
@@ -625,10 +625,10 @@ const AppointmentDetails = () => {
 
         <CModalBody style={{ padding: '20px' }}>
           <CForm>
-            <Field label="Height (cm)"           name="height"        placeholder="e.g. 170" />
-            <Field label="Weight (kg)"           name="weight"        placeholder="e.g. 65" />
-            <Field label="Blood Pressure"        name="bloodPressure" placeholder="e.g. 120/80" />
-            <Field label="Temperature (°F / °C)" name="temperature"   placeholder="e.g. 98.6" />
+            <Field label="Height (cm)" name="height" placeholder="e.g. 170" />
+            <Field label="Weight (kg)" name="weight" placeholder="e.g. 65" />
+            <Field label="Blood Pressure" name="bloodPressure" placeholder="e.g. 120/80" />
+            <Field label="Temperature (°F / °C)" name="temperature" placeholder="e.g. 98.6" />
             <div style={{ marginBottom: '14px' }}>
               <label style={{ fontSize: '12px', fontWeight: '600', color: tokens.muted, display: 'block', marginBottom: '4px' }}>
                 BMI (auto-calculated)

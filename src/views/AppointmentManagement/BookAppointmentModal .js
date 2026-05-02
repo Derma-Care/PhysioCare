@@ -486,10 +486,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
       })
 
-      // ✅ Correct order: close → reset → toast (toast shows on parent page)
+      // ✅ Correct order: close → reset → toast → navigate
       onClose()
       handleFullReset()
       showCustomToast('Booking submitted successfully!', 'success')
+      navigate('/dashboard')
 
     } catch (err) {
       console.error(err)
@@ -515,10 +516,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
       })
 
-      // ✅ Correct order: close → reset → toast
+      // ✅ Correct order: close → reset → toast → navigate
       onClose()
       handleFullReset()
       showCustomToast('Follow-up booking submitted successfully!', 'success')
+      navigate('/dashboard')
 
     } catch (err) {
       console.error(err)
