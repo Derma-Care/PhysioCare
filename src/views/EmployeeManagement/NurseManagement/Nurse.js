@@ -14,6 +14,7 @@ import { useHospital } from '../../Usecontext/HospitalContext'
 import ConfirmationModal from '../../../components/ConfirmationModal'
 import Pagination from '../../../Utils/Pagination'  // ← same Pagination used in CustomerManagement
 import { showCustomToast } from '../../../Utils/Toaster'
+import LoadingIndicator from '../../../Utils/loader'
 
 
 const PhysioManagement = () => {
@@ -24,6 +25,7 @@ const PhysioManagement = () => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false)
   const [physioToDelete, setPhysioToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // ── Pagination state (mirrors CustomerManagement) ─────────────────────────
   const [currentPage, setCurrentPage] = useState(1)
@@ -37,11 +39,14 @@ const PhysioManagement = () => {
 
   const fetchPhysios = async () => {
     try {
+      setLoading(true)
       const res = await getAllPhysios(hospitalId, branchId)
       setPhysios(Array.isArray(res.data?.data) ? res.data.data : [])
       setCurrentPage(1) // reset to first page on fresh fetch
     } catch (err) {
       console.error(err)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -112,108 +117,112 @@ const PhysioManagement = () => {
       </div>
 
       {/* ── Table ── */}
-      <div className="pm-table-wrapper">
-        <CTable className="pm-table">
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell className="pm-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
-              <CTableHeaderCell className="pm-th" style={{ width: 64 }}>Photo</CTableHeaderCell>
-              <CTableHeaderCell className="pm-th">Name</CTableHeaderCell>
-              <CTableHeaderCell className="pm-th">Contact</CTableHeaderCell>
-              <CTableHeaderCell className="pm-th">Qualification</CTableHeaderCell>
-              <CTableHeaderCell className="pm-th">Experience</CTableHeaderCell>
-              <CTableHeaderCell className="pm-th" style={{ width: 120 }}>Actions</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-
-          <CTableBody>
-            {physios.length === 0 ? (
+      {loading ? (
+        <LoadingIndicator message="Loading therapists..." />
+      ) : (
+        <div className="pm-table-wrapper">
+          <CTable className="pm-table">
+            <CTableHead>
               <CTableRow>
-                <CTableDataCell colSpan={7}>
-                  <div className="pm-empty">
-                    <UserCog size={40} className="pm-empty-icon" />
-                    <p>No therapists found.</p>
-                  </div>
-                </CTableDataCell>
+                <CTableHeaderCell className="pm-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
+                <CTableHeaderCell className="pm-th" style={{ width: 64 }}>Photo</CTableHeaderCell>
+                <CTableHeaderCell className="pm-th">Name</CTableHeaderCell>
+                <CTableHeaderCell className="pm-th">Contact</CTableHeaderCell>
+                <CTableHeaderCell className="pm-th">Qualification</CTableHeaderCell>
+                <CTableHeaderCell className="pm-th">Experience</CTableHeaderCell>
+                <CTableHeaderCell className="pm-th" style={{ width: 120 }}>Actions</CTableHeaderCell>
               </CTableRow>
-            ) : (
-              displayData.map((p, index) => (
-                <CTableRow key={p.id} className="pm-tr">
-                  {/* S.No respects pagination offset */}
-                  <CTableDataCell className="pm-td pm-td-num">
-                    {(currentPage - 1) * rowsPerPage + index + 1}
-                  </CTableDataCell>
+            </CTableHead>
 
-                  <CTableDataCell className="pm-td">
-                    <img
-                      src={
-                        p.documents?.profilePhoto
-                          ? `data:image/jpeg;base64,${p.documents.profilePhoto}`
-                          : '/assets/images/default-avatar.png'
-                      }
-                      alt={p.fullName}
-                      width="36"
-                      height="36"
-                      style={{ borderRadius: '50%', objectFit: 'cover', border: '2px solid #b5d4f4' }}
-                    />
-                  </CTableDataCell>
-
-                  <CTableDataCell className="pm-td">
-                    <span className="pm-name">{p.fullName}</span>
-                  </CTableDataCell>
-
-                  <CTableDataCell className="pm-td pm-muted">{p.contactNumber}</CTableDataCell>
-                  <CTableDataCell className="pm-td pm-muted">{p.qualification}</CTableDataCell>
-                  <CTableDataCell className="pm-td pm-muted">{p.yearsOfExperience} yrs</CTableDataCell>
-
-                  <CTableDataCell className="pm-td">
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {can('Therapist', 'read') && (
-                        <button
-                          className="pm-action-btn pm-view-btn"
-                          title="View"
-                          onClick={() => {
-                            setSelectedPhysio(p)
-                            setViewMode(true)
-                            setModalVisible(true)
-                          }}
-                        >
-                          <Eye size={14} />
-                        </button>
-                      )}
-                      {can('Therapist', 'update') && (
-                        <button
-                          className="pm-action-btn pm-edit-btn"
-                          title="Edit"
-                          onClick={() => {
-                            setSelectedPhysio(p)
-                            setViewMode(false)
-                            setModalVisible(true)
-                          }}
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                      )}
-                      {can('Therapist', 'delete') && (
-                        <button
-                          className="pm-action-btn pm-delete-btn"
-                          title="Delete"
-                          onClick={() => {
-                            setPhysioToDelete(p)
-                            setDeleteModalVisible(true)
-                          }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
+            <CTableBody>
+              {physios.length === 0 ? (
+                <CTableRow>
+                  <CTableDataCell colSpan={7}>
+                    <div className="pm-empty">
+                      <UserCog size={40} className="pm-empty-icon" />
+                      <p>No therapists found.</p>
                     </div>
                   </CTableDataCell>
                 </CTableRow>
-              ))
-            )}
-          </CTableBody>
-        </CTable>
-      </div>
+              ) : (
+                displayData.map((p, index) => (
+                  <CTableRow key={p.id} className="pm-tr">
+                    {/* S.No respects pagination offset */}
+                    <CTableDataCell className="pm-td pm-td-num">
+                      {(currentPage - 1) * rowsPerPage + index + 1}
+                    </CTableDataCell>
+
+                    <CTableDataCell className="pm-td">
+                      <img
+                        src={
+                          p.documents?.profilePhoto
+                            ? `data:image/jpeg;base64,${p.documents.profilePhoto}`
+                            : '/assets/images/default-avatar.png'
+                        }
+                        alt={p.fullName}
+                        width="36"
+                        height="36"
+                        style={{ borderRadius: '50%', objectFit: 'cover', border: '2px solid #b5d4f4' }}
+                      />
+                    </CTableDataCell>
+
+                    <CTableDataCell className="pm-td">
+                      <span className="pm-name">{p.fullName}</span>
+                    </CTableDataCell>
+
+                    <CTableDataCell className="pm-td pm-muted">{p.contactNumber}</CTableDataCell>
+                    <CTableDataCell className="pm-td pm-muted">{p.qualification}</CTableDataCell>
+                    <CTableDataCell className="pm-td pm-muted">{p.yearsOfExperience} yrs</CTableDataCell>
+
+                    <CTableDataCell className="pm-td">
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {can('Therapist', 'read') && (
+                          <button
+                            className="pm-action-btn pm-view-btn"
+                            title="View"
+                            onClick={() => {
+                              setSelectedPhysio(p)
+                              setViewMode(true)
+                              setModalVisible(true)
+                            }}
+                          >
+                            <Eye size={14} />
+                          </button>
+                        )}
+                        {can('Therapist', 'update') && (
+                          <button
+                            className="pm-action-btn pm-edit-btn"
+                            title="Edit"
+                            onClick={() => {
+                              setSelectedPhysio(p)
+                              setViewMode(false)
+                              setModalVisible(true)
+                            }}
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                        )}
+                        {can('Therapist', 'delete') && (
+                          <button
+                            className="pm-action-btn pm-delete-btn"
+                            title="Delete"
+                            onClick={() => {
+                              setPhysioToDelete(p)
+                              setDeleteModalVisible(true)
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </CTableDataCell>
+                  </CTableRow>
+                ))
+              )}
+            </CTableBody>
+          </CTable>
+        </div>
+      )}
 
       {/* ── Pagination (same component + same pattern as CustomerManagement) ── */}
       {physios.length > 0 && (

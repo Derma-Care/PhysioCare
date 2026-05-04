@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { emailPattern } from '../../../Constant/Constants'
 import { showCustomToast } from '../../../Utils/Toaster'
+import LoadingIndicator from '../../../Utils/loader'
 
 /* ─────────────────────────────────────────────────────────────
    ⚠️  CRITICAL: These helpers MUST live outside PhysioForm.
@@ -427,7 +428,16 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
       </CModalHeader>
 
       {/* ── Body ── */}
-      <CModalBody style={{ padding: '20px', maxHeight: '72vh', overflowY: 'auto' }}>
+      <CModalBody style={{ padding: '20px', maxHeight: '72vh', overflowY: 'auto', position: 'relative' }}>
+        {saving && (
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(255,255,255,0.7)', zIndex: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <LoadingIndicator message="Saving therapist details..." />
+          </div>
+        )}
 
         {/* ═══════════════ VIEW MODE ═══════════════ */}
         {isView ? (
