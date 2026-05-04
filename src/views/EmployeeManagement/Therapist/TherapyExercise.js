@@ -606,7 +606,7 @@ export default function ExerciseTable() {
         onClose={resetForm}
         backdrop="static"
         alignment="center"
-        className="ex-custom-modal"
+        className="ex-custom-modal "
         size="lg"
       >
         <CModalHeader className="ex-modal-header custom-modal"  >
@@ -1160,7 +1160,7 @@ export default function ExerciseTable() {
               </CCol>
 
               <CCol md={3}>
-<CFormInput
+                <CFormInput
                   type="number"
                   className="ex-input"
                   placeholder="Discount %"

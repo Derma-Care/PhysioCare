@@ -181,10 +181,13 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   const visibleSlots = showAllSlots ? sortedSlots : sortedSlots.slice(0, 12)
 
   const visibleTabs = TABS.filter((t) => {
-    if (visitType === 'followup' && ['contact', 'medical', 'payment'].includes(t.id)) return false
+    if (visitType === 'followup' && ['contact', 'medical', 'payment', 'assessment'].includes(t.id)) return false
     return true
   })
   const progressPct = Math.round(((currentTab + 1) / visibleTabs.length) * 100)
+
+  // ── Derived State ─────────────────────────────────────────────────────────
+  const isFollowupStatus = visitType === 'followup' && Number(selectedBooking?.freeFollowUpsLeft || 0) > 0
 
   // ── Effects ───────────────────────────────────────────────────────────────
   useEffect(() => { setOnboardToCustomer(!selectedBooking?.customerId) }, [selectedBooking])
@@ -213,6 +216,8 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   useEffect(() => {
     if (!selectedBooking) return
     const parts = (selectedBooking.patientAddress || '').split(',')
+    const docId = selectedBooking.doctorId || ''
+    
     setBookingDetails((p) => ({
       ...p,
       name: selectedBooking.name || '',
@@ -221,6 +226,13 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       age: selectedBooking.age || '',
       gender: selectedBooking.gender || '',
       patientMobileNumber: selectedBooking.mobileNumber || '',
+      branchId: selectedBooking.branchId || p.branchId,
+      branchname: selectedBooking.branchname || p.branchname,
+      doctorId: docId || p.doctorId,
+      doctorName: selectedBooking.doctorName || p.doctorName,
+      doctorDeviceId: selectedBooking.doctorDeviceId || p.doctorDeviceId,
+      foc: isFollowupStatus ? 'FOC' : p.foc,
+      consultationFee: isFollowupStatus ? 0 : p.consultationFee,
       address: {
         houseNo: parts[0]?.trim() || '', street: parts[1]?.trim() || '',
         landmark: parts[2]?.trim() || '', city: parts[3]?.trim() || '',
@@ -228,7 +240,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         country: parts[6]?.trim() || 'India',
       },
     }))
-  }, [selectedBooking])
+
+    if (docId) {
+      fetchSlots(docId)
+    }
+  }, [selectedBooking, isFollowupStatus])
 
   // ── Error helpers ─────────────────────────────────────────────────────────
   const clearErr = (key) => setErrors((p) => { const e = { ...p }; delete e[key]; return e })
@@ -557,7 +573,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               checked={visitType === 'first'} style={{ fontSize: FS }}
               onChange={() => {
                 setVisitType('first')
-                setBookingDetails((p) => ({ ...p, visitType: 'first' }))
+                setBookingDetails((p) => ({
+                  ...p, visitType: 'first',
+                  foc: 'Paid',
+                  consultationFee: originalConsultationFee || 0,
+                }))
                 setSlotsForSelectedDate([]); setSelectedDate(''); setSelectedSlots([])
               }} />
           </CCol>
@@ -566,7 +586,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               checked={visitType === 'followup'} style={{ fontSize: FS }}
               onChange={() => {
                 setVisitType('followup')
-                setBookingDetails((p) => ({ ...p, visitType: 'followup' }))
+                setBookingDetails((p) => ({
+                  ...p, visitType: 'followup',
+                  foc: (Number(selectedBooking?.freeFollowUpsLeft || 0) > 0) ? 'FOC' : p.foc,
+                  consultationFee: (Number(selectedBooking?.freeFollowUpsLeft || 0) > 0) ? 0 : p.consultationFee,
+                }))
                 setSlotsForSelectedDate([]); setSelectedDate(''); setSelectedSlots([])
               }} />
           </CCol>
@@ -741,7 +765,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 setBookingDetails((p) => ({
                   ...p, doctorId: doc.doctorId, doctorName: doc.doctorName,
                   doctorDeviceId: doc.doctorDeviceId,
-                  consultationFee: p.foc === 'FOC' ? 0 : doc.doctorFees.inClinicFee || 0,
+                  consultationFee: (p.foc === 'FOC' || isFollowupStatus) ? 0 : doc.doctorFees.inClinicFee || 0,
                 }))
                 setOriginalConsultationFee(doc.doctorFees.inClinicFee || 0)
                 if (id) clearErr('doctorName')

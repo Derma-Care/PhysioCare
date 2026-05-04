@@ -483,6 +483,8 @@ const AppointmentDetails = () => {
             <InfoItem label="Age" value={appointment?.age ? `${appointment.age} Yrs` : null} />
             <InfoItem label="Gender" value={appointment?.gender} />
             <InfoItem label="Visit Type" value={appointment?.visitType} />
+            <InfoItem label="Symptoms Duration" value={appointment?.symptomsDuration} />
+            <InfoItem label="Free Follow-ups" value={appointment?.freeFollowUpsLeft !== null ? `${appointment.freeFollowUpsLeft} of ${appointment.freeFollowUps}` : null} />
           </div>
 
           {appointment?.problem && (
@@ -495,6 +497,29 @@ const AppointmentDetails = () => {
             }}>
               <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Chief Complaint / Problem</div>
               <div style={{ fontSize: '13px', color: '#1e293b' }}>{appointment.problem}</div>
+            </div>
+          )}
+
+          {appointment?.partImage && (
+            <div style={{ marginTop: '24px' }}>
+              <SectionHeading icon={Activity} title="Pain Assessment / Area Mapping" />
+              <div style={{ 
+                border: `1px solid ${tokens.border}`, 
+                borderRadius: tokens.radius, 
+                padding: '16px', 
+                textAlign: 'center',
+                backgroundColor: '#fff',
+                boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)'
+              }}>
+                <img 
+                  src={`data:image/png;base64,${appointment.partImage}`} 
+                  alt="Pain Area Mapping" 
+                  style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: '8px' }} 
+                />
+                <div style={{ marginTop: '12px', fontSize: '12px', color: tokens.muted }}>
+                  Visual representation of reported pain areas and assessment markings.
+                </div>
+              </div>
             </div>
           )}
         </div>

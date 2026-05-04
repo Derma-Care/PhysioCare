@@ -31,7 +31,7 @@ export const getInProgressfollowupBookings = (patientId) => {
 export const getBookingsForFollowUps = (bookingId) => {
   const clinicid = localStorage.getItem('HospitalId')
 
-  return http.get(`${BASE_URL}/getBookingById/${bookingId}`)
+  return http.get(`${BASE_URL}/getBookedServiceById/${bookingId}`)
 }
 
 export const getBookingsTodayFollowUps = () => {

@@ -104,7 +104,8 @@ const BookingSearch = ({
 
   // 🔍 Manual search on button click
   const handleSearch = async () => {
-    if (!patientSearch.trim()) {
+    const trimmedSearch = patientSearch.trim()
+    if (!trimmedSearch) {
       showCustomToast('Please enter a valid Patient ID / Name / Mobile', 'error')
       return
     }
@@ -114,10 +115,9 @@ const BookingSearch = ({
     setModalVisible(false)
 
     if (visitType === 'followup') {
-      await fetchBookings(getBookingsForFollowUps, patientSearch)
+      await fetchBookings(getBookingsForFollowUps, trimmedSearch)
     } else {
-      await fetchBookings(getBookingsByPatientId, patientSearch)
-
+      await fetchBookings(getBookingsByPatientId, trimmedSearch)
     }
   }
 
@@ -129,6 +129,14 @@ const BookingSearch = ({
     setSelectedBooking(null)
     setModalVisible(false)
   }
+
+  // 🧹 Clear when visitType changes
+  useEffect(() => {
+    setBookingData([])
+    setSearchMessage('')
+    setSelectedBooking(null)
+    setModalVisible(false)
+  }, [visitType])
 
   // ⚡ Auto-fetch on typing (debounced)
   // useEffect(() => {

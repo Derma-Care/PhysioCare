@@ -8,7 +8,6 @@ import {
 import Select from "react-select";
 import { BASE_URL, wifiUrl } from "../../baseUrl";
 import { useLocation, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 
 export default function ProgramPayment() {
   const location = useLocation();
@@ -56,12 +55,7 @@ export default function ProgramPayment() {
   const [allPaid, setAllPaid] = useState(false);
   const [isFollowUpPayment, setIsFollowUpPayment] = useState(false);
 
-  useEffect(() => {
-    if (apiData?.length && !selectedType) {
-      const types = getServiceTypes();
-      if (types.length) setSelectedType(types[0]);
-    }
-  }, [apiData]);
+
 
   useEffect(() => {
     if (bookingId && patientId && clinicId && branchId) {
@@ -105,11 +99,7 @@ export default function ProgramPayment() {
 
   console.log(packageId);
 
-  useEffect(() => {
-    if (apiData?.length && !selectedType) {
-      setSelectedType(apiData?.[0]?.serviceType?.toLowerCase());
-    }
-  }, [apiData]);
+
 
   const getServiceTypes = () => {
     const type = apiData?.[0]?.serviceType?.toLowerCase() || "";
@@ -123,9 +113,7 @@ export default function ProgramPayment() {
   };
 
   const getOptionsByType = () => {
-    const root = (fullPaymentData?.therapyWithSessions?.[0]?.programs || fullPaymentData?.therapyWithSessions?.[0]?.therapySessions)
-      ? fullPaymentData.therapyWithSessions[0]
-      : apiData?.[0];
+    const root = fullPaymentData?.therapyWithSessions?.[0] || apiData?.[0];
     if (!root) return [];
     const programs = root.programs || root.therapySessions || [];
     switch (selectedType) {
@@ -134,7 +122,7 @@ export default function ProgramPayment() {
       case "therapy":
         return programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ label: t.therapyName, value: t.therapyId, price: Number(t.totalPrice || 0) })));
       case "exercise":
-        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ label: ex.exerciseName, value: ex.exerciseId, price: Number(ex.totalSessionCost || ex.pricePerSession || 0) }))));
+        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ label: ex.exerciseName, value: ex.exerciseId, price: Number(ex.totalSessionCost || ex.pricePerSession || ex.price || 0) }))));
       case "session":
         return (formattedData || []).filter(s => s.paymentStatus?.toLowerCase() !== "paid").map(s => ({ label: `${s.sessionId} - ${s.date}`, value: s.sessionId, price: Number(s.price || s.pricePerSession || 0) }));
       default: return [];
@@ -167,24 +155,61 @@ export default function ProgramPayment() {
   const handleSelectValue = (selected) => {
     const selectedItems = selected || [];
     setSelectedValue(selectedItems);
+    
     const ids = selectedItems.map(item => item.value);
     let total = 0;
-    if (isFollowUpPayment) { total = getRemainingAmount(selectedType, ids); }
-    else { total = selectedItems.reduce((sum, item) => sum + Number(item.price || 0), 0); }
-    setPaymentAmount(total);
-    setFinalAmount(total);
+    
+    // First try to get total from selected items' price property
+    const itemTotal = selectedItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+    
+    if (itemTotal > 0) {
+      total = itemTotal;
+    } else if (isFollowUpPayment) {
+      total = getRemainingAmount(selectedType, ids);
+    } else {
+      total = itemTotal;
+    }
+
+    if (paymentType === "partial") {
+      const amount = (total * paymentPercent) / 100;
+      setPaymentAmount(amount.toFixed(2));
+    } else {
+      setPaymentAmount(total);
+    }
   };
 
   const formatTherapyTable = (data = []) => {
     const rows = [];
     if (!Array.isArray(data)) return rows;
     data.forEach(item => {
-      (item.therapySessions || []).forEach(program => {
+      // Handle both { therapySessions: [...] } (package) and direct program object (from generate-table)
+      const programs = item.therapySessions || (item.therapyData ? [item] : []);
+      programs.forEach(program => {
         (program.therapyData || []).forEach(therapy => {
           (therapy.exercises || []).forEach(exercise => {
             const count = Number(exercise.noOfSessions || 0) || 1;
-            for (let i = 1; i <= count; i++) {
-              rows.push({ programName: program.programName, therapyName: therapy.therapyName, exerciseName: exercise.exerciseName, sessionNo: i, date: "-", status: "Planned", paymentStatus: "Unpaid", sets: exercise.sets, repetitions: exercise.repetitions, frequency: exercise.frequancy, notes: exercise.notes, price: exercise.pricePerSession });
+            // Handle sessions array if it exists (from generate-table) or fallback to planned count
+            if (exercise.sessions && exercise.sessions.length > 0) {
+              exercise.sessions.forEach(session => {
+                rows.push({
+                  programName: program.programName,
+                  therapyName: therapy.therapyName,
+                  exerciseName: exercise.exerciseName,
+                  sessionNo: session.sessionId,
+                  date: session.date || "-",
+                  status: session.status || "Planned",
+                  paymentStatus: session.paymentStatus || "Unpaid",
+                  sets: exercise.sets,
+                  repetitions: exercise.repetitions,
+                  frequency: exercise.frequency || exercise.frequancy,
+                  notes: exercise.notes,
+                  price: exercise.pricePerSession
+                });
+              });
+            } else {
+              for (let i = 1; i <= count; i++) {
+                rows.push({ programName: program.programName, therapyName: therapy.therapyName, exerciseName: exercise.exerciseName, sessionNo: i, date: "-", status: "Planned", paymentStatus: "Unpaid", sets: exercise.sets, repetitions: exercise.repetitions, frequency: exercise.frequancy, notes: exercise.notes, price: exercise.pricePerSession });
+              }
             }
           });
         });
@@ -194,10 +219,6 @@ export default function ProgramPayment() {
   };
 
   const handleGenerate = async () => {
-    if (!startDate) {
-      toast.error("Please select a start date before generating the table");
-      return;
-    }
     try {
       setLoading(true);
       const payload = { startDate, clinicId, branchId, patientId, bookingId, therapistRecordId };
@@ -206,15 +227,42 @@ export default function ProgramPayment() {
       const data = await res.json();
       console.log("GENERATE API RESPONSE:", data);
       const apiResponse = Array.isArray(data?.data) ? data.data : [];
-      const apiData = data?.data || [];
-      console.log(apiData);
-      const rows = apiData.flatMap(item => item?.therapyData?.flatMap(therapy => therapy?.exercises?.flatMap(exercise => exercise?.sessions?.map(session => ({ sessionId: session.sessionId, date: session.date, status: session.status, paymentStatus: session.paymentStatus })) || []) || []) || []);
-      setSessionRows(apiData);
+      const apiDataLocal = data?.data || [];
+      console.log(apiDataLocal);
+      
+      // Mapping rows for the session selection dropdown (including price)
+      // Mapping rows for the session selection dropdown (including price)
+      const rows = apiDataLocal.flatMap(item => {
+        const programs = item.therapySessions || (item.therapyData ? [item] : []);
+        return programs.flatMap(program => 
+          program?.therapyData?.flatMap(therapy => 
+            therapy?.exercises?.flatMap(exercise => 
+              exercise?.sessions?.map(session => ({ 
+                sessionId: session.sessionId, 
+                date: session.date, 
+                status: session.status, 
+                paymentStatus: session.paymentStatus,
+                price: exercise.pricePerSession || exercise.price || (exercise.totalExercisePrice / exercise.noOfSessions) || 0
+              })) || []
+            ) || []
+          ) || []
+        ) || [];
+      });
+
+      setSessionRows(apiDataLocal);
       setformattedData(rows);
-      const formatted = formatTherapyTable(apiResponse);
+      const formatted = formatTherapyTable(apiDataLocal);
       console.log("TABLE DATA:", formatted);
       setTableData(formatted);
       setShowTable(true);
+      
+      // Only set backendServiceType if it's one of the root types and not already set correctly
+      if (apiDataLocal.length > 0) {
+        const rootType = apiDataLocal[0].serviceType?.toLowerCase();
+        if (rootType && ["package", "program", "therapy", "exercise"].includes(rootType)) {
+          setBackendServiceType(rootType);
+        }
+      }
     } catch (error) { console.error("Generate API Error:", error); }
     finally { setLoading(false); }
   };
@@ -222,35 +270,34 @@ export default function ProgramPayment() {
   const handleTypeChange = (type) => {
     setSelectedType(type);
     setSelectedValue([]);
+
+    // Force "full" payment if the selected type is more granular than the root service type
+    if (type !== backendServiceType) {
+      setPaymentType("full");
+      setPaymentPercent(100);
+    } else {
+      setPaymentType("full"); // Default to full, but allow change if type matches backend
+      setPaymentPercent(100);
+    }
+
     let amount = 0;
     const root = apiData?.[0];
     if (!root) return;
-    if (type === "package") { amount = Number(root.total || root.totalPrice || 0); }
+    if (type === "package") {
+      amount = Number(root.total || root.totalPrice || 0);
+    } else {
+      // For other types, amount will be calculated when items are selected
+      amount = 0;
+    }
     setPaymentAmount(amount);
     setFinalAmount(amount);
   };
 
   const checkAllSessionsPaid = (data) => {
-    const allSessions = (data?.therapyWithSessions || []).flatMap(pkg => {
-      if (pkg.programs) {
-        return pkg.programs.flatMap(p =>
-          (p.therapyData || []).flatMap(t =>
-            (t.exercises || []).flatMap(e => e.sessions || [])
-          )
-        );
-      }
-      if (pkg.therapyData) {
-        return pkg.therapyData.flatMap(t =>
-          (t.exercises || []).flatMap(e => e.sessions || [])
-        );
-      }
-      if (pkg.sessions) return pkg.sessions;
-      if (pkg.exercises) return pkg.exercises.flatMap(e => e.sessions || []);
-      return [];
-    });
-
-    if (!allSessions.length) return false;
-    return allSessions.every(s => s.paymentStatus?.toLowerCase() === "paid");
+    const programs = data?.therapyWithSessions?.[0]?.programs || data?.therapyWithSessions || [];
+    const sessions = programs.flatMap(program => (program.therapyData || []).flatMap(therapy => (therapy.exercises || []).flatMap(ex => ex.sessions || [])));
+    if (!sessions.length) return false;
+    return sessions.every(s => s.paymentStatus?.toLowerCase() === "paid");
   };
 
   const buildTherapyPayload = () => {
@@ -278,15 +325,27 @@ export default function ProgramPayment() {
     return [];
   };
 
+  // Initialize selected type and payment data when apiData changes
   useEffect(() => {
     if (!apiData?.length) return;
     const root = apiData[0];
     const type = (root.serviceType || "").toLowerCase();
+    
+    // Set initial service type selection
     setSelectedType(type);
+    setBackendServiceType(type); // Ensure backend service type is synced
     setSelectedValue([]);
-    setPaymentAmount(0);
-    setFinalAmount(0);
-    if (type === "package") { const amount = Number(root.total || root.totalPrice || 0); setPaymentAmount(amount); setFinalAmount(amount); }
+    
+    // Default payment settings
+    setPaymentType("full");
+    setPaymentPercent(100);
+    
+    let amount = 0;
+    if (type === "package") {
+      amount = Number(root.total || root.totalPrice || 0);
+    }
+    setPaymentAmount(amount);
+    setFinalAmount(amount);
   }, [apiData]);
 
   const createPayloadData = {
@@ -329,15 +388,9 @@ export default function ProgramPayment() {
       const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await response.json();
       console.log("API RESPONSE:", data);
-
-      if (data.success) {
-        toast.success(data.message || "Payment processed successfully");
-        setIsFollowUpPayment(true);
-        setPrintData({ ...payload, selectedItems: selectedValue, tableData, startDate });
-        navigate(-1);
-      } else {
-        toast.error(data.message || "Payment failed");
-      }
+      setIsFollowUpPayment(true);
+      setPrintData({ ...payload, selectedItems: selectedValue, tableData, startDate });
+      navigate(-1);
     } catch (error) { console.error("Payment Error:", error); }
   };
 
@@ -360,62 +413,9 @@ export default function ProgramPayment() {
       setTherapistRecordId(result.therapistRecordId);
       setPaymentStatus(result.paymentStatus);
       setPaymentHistory(result.paymentHistory || []);
+      setBackendServiceType(result.serviceType?.toLowerCase() || ""); // Sync backend service type
       const formatted = formatTherapyTable(result.therapyWithSessions);
       setTableData(formatted);
-
-      // 🔹 Robust Session Extraction (Required for Packages and Programs)
-      // We must drill down: Package > Program > Therapy > Exercise > Sessions
-      const allSessions = (result.therapyWithSessions || []).flatMap(pkg => {
-        // 1. Check for Package/Program structure
-        if (pkg.programs) {
-          return pkg.programs.flatMap(p =>
-            (p.therapyData || []).flatMap(t =>
-              (t.exercises || []).flatMap(ex =>
-                (ex.sessions || []).map(s => ({
-                  sessionId: s.sessionId, date: s.date, status: s.status,
-                  paymentStatus: s.paymentStatus, price: ex.pricePerSession || 0
-                }))
-              )
-            )
-          );
-        }
-        // 2. Check for Therapy-level structure
-        if (pkg.therapyData) {
-          return pkg.therapyData.flatMap(t =>
-            (t.exercises || []).flatMap(ex =>
-              (ex.sessions || []).map(s => ({
-                sessionId: s.sessionId, date: s.date, status: s.status,
-                paymentStatus: s.paymentStatus, price: ex.pricePerSession || 0
-              }))
-            )
-          );
-        }
-        // 3. Check for Exercise-level structure (Flat)
-        if (pkg.sessions) {
-          return pkg.sessions.map(s => ({
-            sessionId: s.sessionId, date: s.date, status: s.status,
-            paymentStatus: s.paymentStatus, price: pkg.pricePerSession || 0
-          }));
-        }
-        return [];
-      });
-      setformattedData(allSessions);
-
-      // 🔹 Normalize apiData for Dropdowns
-      const type = result.serviceType?.toLowerCase() || "";
-      if (type === "exercise" && result.therapyWithSessions && !result.therapyWithSessions[0]?.programs) {
-        setApiData([{
-          ...result,
-          therapySessions: [{
-            programId: "EXERCISE_PROGRAM", programName: "Exercises",
-            therapyData: [{ therapyId: "EXERCISE_THERAPY", therapyName: "Exercises", exercises: result.therapyWithSessions }]
-          }]
-        }]);
-      } else {
-        // Correctly handle Packages/Programs/Nested Therapies
-        setApiData(result.therapyWithSessions || []);
-      }
-
       setShowTable(true);
       if ((result.paymentHistory || []).length > 0) setIsFollowUpPayment(true);
     } catch (err) { console.error(err); }
@@ -480,7 +480,6 @@ export default function ProgramPayment() {
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 style={inputStyle}
-                min={new Date().toISOString().split("T")[0]}
               />
             </CCol>
             <CCol md={3} className="d-flex align-items-end">
@@ -493,7 +492,7 @@ export default function ProgramPayment() {
       )}
 
       {/* ── STEP 2: Session Table ── */}
-      {showTable && !allPaid && !fullPaymentData?.sessionTableCreatedStatus && (
+      {showTable && !allPaid && (
         <div style={{
           background: "#fff", border: "0.5px solid #d0dce9",
           borderRadius: "10px", overflow: "hidden", marginBottom: "16px",
@@ -617,16 +616,23 @@ export default function ProgramPayment() {
                 <CFormLabel style={labelStyle}>Payment Type</CFormLabel>
                 <CFormSelect
                   value={paymentType}
+                  disabled={String(selectedType).toLowerCase() !== String(backendServiceType).toLowerCase()}
                   onChange={(e) => {
                     const type = e.target.value;
                     setPaymentType(type);
                     if (type === "partial") {
                       setPaymentPercent(50);
-                      const amount = (paymentAmount * 50) / 100;
+                      const amount = (Number(paymentAmount) * 50) / 100;
                       setPaymentAmount(amount.toFixed(2));
                     } else {
                       setPaymentPercent(100);
-                      const total = selectedValue.reduce((sum, item) => sum + (item.price || 0), 0);
+                      let total = 0;
+                      if (selectedType === "package") {
+                        const root = apiData?.[0];
+                        total = Number(root?.total || root?.totalPrice || 0);
+                      } else {
+                        total = selectedValue.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+                      }
                       setPaymentAmount(total);
                     }
                   }}
