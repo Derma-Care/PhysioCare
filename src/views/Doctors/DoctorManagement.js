@@ -234,6 +234,11 @@ const DoctorManagement = () => {
     // if (!selectedServices.length) errs.serviceId = 'Select at least one service'
     // if (!selectedSubService.length) errs.subServiceName = 'Select at least one procedure'
     if (!form.doctorName.trim()) errs.doctorName = 'Doctor name is required'
+    if (!form.languages || form.languages.length === 0) {
+  errs.languages = 'Language is required';
+} else if (!form.languages.every(lang => /^[A-Za-z\s]+$/.test(lang))) {
+  errs.languages = 'Only alphabets are allowed';
+}
     if (!form.doctorLicence.trim()) errs.doctorLicence = 'License number is required'
     if (!/^[6789]\d{9}$/.test(form.doctorMobileNumber)) errs.doctorMobileNumber = 'Enter valid 10-digit number starting with 6-9'
     if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(form.doctorEmail)) errs.doctorEmail = 'Enter a valid email'
@@ -859,7 +864,7 @@ const DoctorManagement = () => {
           <div style={{ marginTop: 12 }}>
             <ChipSection label="Area of Expertise" items={form.focusAreas}
               onAdd={(items) => { const v = items.filter((i) => !/^\d+$/.test(i.trim())); setForm((p) => ({ ...p, focusAreas: v })) }} />
-            <ChipSection label="Languages Known" items={form.languages} onlyAlpha
+            <ChipSection label="Languages Known"  items={form.languages} onlyAlpha 
               onAdd={(items) => { const v = items.filter((i) => /^[A-Za-z\s]+$/.test(i.trim())); setForm((p) => ({ ...p, languages: v })) }} />
             <ChipSection label="Achievements / Awards" items={form.highlights}
               onAdd={(items) => { const v = items.filter((i) => !/^\d+$/.test(i.trim())); setForm((p) => ({ ...p, highlights: v })) }} />

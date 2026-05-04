@@ -10,9 +10,10 @@ import {
 import Select from 'react-select'
 import {
   UserCog, X, User, Briefcase, Clock, FileText,
-  Layers, Save,
+  Layers, Save, Loader
 } from 'lucide-react'
 import { emailPattern } from '../../../Constant/Constants'
+import { showCustomToast } from '../../../Utils/Toaster'
 
 /* ─────────────────────────────────────────────────────────────
    ⚠️  CRITICAL: These helpers MUST live outside PhysioForm.
@@ -33,14 +34,45 @@ const getDayRange = (days = []) => {
     endDay: DAY_ORDER[indices[indices.length - 1]],
   }
 }
+const timeOptions = [
+  { value: '07:00', label: '07:00 AM' },
+  { value: '08:00', label: '08:00 AM' },
+  { value: '09:00', label: '09:00 AM' },
+  { value: '10:00', label: '10:00 AM' },
+  { value: '11:00', label: '11:00 AM' },
+  { value: '12:00', label: '12:00 PM' },
+  { value: '13:00', label: '01:00 PM' },
+  { value: '14:00', label: '02:00 PM' },
+  { value: '15:00', label: '03:00 PM' },
+  { value: '16:00', label: '04:00 PM' },
+  { value: '17:00', label: '05:00 PM' },
+  { value: '18:00', label: '06:00 PM' },
+  { value: '19:00', label: '07:00 PM' },
+  { value: '20:00', label: '08:00 PM' },
+  { value: '21:00', label: '09:00 PM' },
+]
 
-const ChipSection = ({ label, items = [], onAdd, isView }) => {
+const ChipSection = ({ label, items = [], onAdd, isView, setErrors }) => {
   const [input, setInput] = useState('')
 
   const handleAdd = () => {
-    const t = input.trim().toLowerCase()
-    if (t && !items.includes(t)) { onAdd([...items, t]); setInput('') }
-  }
+    const t = input.trim();
+
+    if (!t) return;
+
+    // 🔥 show toaster on invalid input (ONLY on Add click)
+    if (!/^[A-Za-z\s]+$/.test(t)) {
+      showCustomToast(`Only alphabets are allowed in ${label}`, 'error');
+      return;
+    }
+
+    // ✅ prevent duplicates
+    if (!items.map(i => i.toLowerCase()).includes(t.toLowerCase())) {
+      onAdd([...items, t.toLowerCase()]);
+    }
+
+    setInput('');
+  };
 
   const handleRemove = (i) => onAdd(items.filter((_, idx) => idx !== i))
 
@@ -555,12 +587,20 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                 </div>
                 <div className="pf-col-third">
                   <Field label="Qualification" required error={errors.qualification}>
-                    <select className="pf-input" value={formData.qualification}
-                      onChange={(e) => handleChange('qualification', e.target.value)}>
-                      <option value="">Select</option>
-                      <option value="BPT">BPT</option>
-                      <option value="MPT">MPT</option>
-                    </select>
+                    <input
+                      type="text"
+                      className="pf-input"
+                      value={formData.qualification}
+                      onChange={(e) => {
+                        let value = e.target.value;
+
+                        // 🔥 allow only alphabets + space
+                        if (!/^[A-Za-z\s]*$/.test(value)) return;
+
+                        handleChange('qualification', value);
+                      }}
+                    // placeholder="Enter qualification (e.g., BPT, MPT)"
+                    />
                   </Field>
                 </div>
               </div>
@@ -568,8 +608,43 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
               <div className="pf-row">
                 <div className="pf-col-half">
                   <Field label="Experience (Years)" required error={errors.yearsOfExperience}>
-                    <input type="number" className="pf-input" value={formData.yearsOfExperience}
-                      onChange={(e) => handleChange('yearsOfExperience', e.target.value)} />
+                    <input
+                      type="text"
+                      className="pf-input"
+                      value={formData.yearsOfExperience}
+                      onChange={(e) => {
+                        let value = e.target.value;
+
+                        // ✅ allow only digits
+                        if (!/^\d*$/.test(value)) return;
+
+                        // ✅ restrict to max 2 digits
+                        if (value.length > 2) return;
+
+                        // ✅ restrict > 50 while typing
+                        if (value && parseInt(value) > 50) {
+                          setErrors((prev) => ({
+                            ...prev,
+                            yearsOfExperience: 'Experience should not exceed 50 years'
+                          }));
+                          return; // 🔥 stop updating value
+                        }
+
+                        // ✅ update value
+                        handleChange('yearsOfExperience', value);
+
+                        // ✅ set error below field
+                        let error = '';
+                        if (!value) {
+                          error = 'Experience is required';
+                        }
+
+                        setErrors((prev) => ({
+                          ...prev,
+                          yearsOfExperience: error
+                        }));
+                      }}
+                    />
                   </Field>
                 </div>
                 <div className="pf-col-half">
@@ -640,16 +715,25 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
               <div className="pf-row">
                 <div className="pf-col-half">
                   <Field label="Start Time" required error={errors.startTime}>
-                    <input type="time" className="pf-input"
-                      value={formData.availability?.startTime || ''}
-                      onChange={(e) => handleNestedChange('availability', 'startTime', e.target.value)} />
+                    <Select
+                      options={timeOptions}
+                      value={timeOptions.find(o => o.value === formData.availability?.startTime) || null}
+                      onChange={(sel) => handleNestedChange('availability', 'startTime', sel?.value || '')}
+                      placeholder="Select start time"
+                      {...selectPortalProps}
+                    />
                   </Field>
                 </div>
+
                 <div className="pf-col-half">
                   <Field label="End Time" required error={errors.endTime}>
-                    <input type="time" className="pf-input"
-                      value={formData.availability?.endTime || ''}
-                      onChange={(e) => handleNestedChange('availability', 'endTime', e.target.value)} />
+                    <Select
+                      options={timeOptions}
+                      value={timeOptions.find(o => o.value === formData.availability?.endTime) || null}
+                      onChange={(sel) => handleNestedChange('availability', 'endTime', sel?.value || '')}
+                      placeholder="Select end time"
+                      {...selectPortalProps}
+                    />
                   </Field>
                 </div>
               </div>
@@ -671,6 +755,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                     <ChipSection
                       label="Treatment Type"
                       items={formData.treatmentTypes}
+                      onlyAlpha
                       onAdd={(val) => handleChange('treatmentTypes', val)}
                       isView={isView}
                     />
@@ -683,6 +768,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                     <ChipSection
                       label="Area of Expertise"
                       items={formData.expertiseAreas}
+                      onlyAlpha
                       onAdd={(val) => handleChange('expertiseAreas', val)}
                       isView={isView}
                     />
@@ -696,6 +782,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                       label="Languages"
                       items={formData.languages}
                       onAdd={(val) => handleChange('languages', val)}
+                      onlyAlpha
                       isView={isView}
                     />
                   </Field>
@@ -744,7 +831,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
             >
               {saving ? (
                 <>
-                  <span className="spinner-border spinner-border-sm text-white" />
+                  <Loader size={13} className="pf-spinner" />
                   Saving...
                 </>
               ) : (
@@ -859,6 +946,8 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         }
         .pf-btn-save:hover   { filter: brightness(0.9); }
         .pf-btn-save:disabled { opacity: 0.65; cursor: not-allowed; }
+        .pf-spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
         @media (max-width: 600px) {
           .pf-col-third, .pf-col-half { flex: 1 1 100%; }
           .pf-inner-grid { grid-template-columns: 1fr; }

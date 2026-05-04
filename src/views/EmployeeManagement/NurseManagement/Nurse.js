@@ -13,23 +13,24 @@ import { getAllPhysios, addPhysio, updatePhysio, deletePhysio } from './NurseAPI
 import { useHospital } from '../../Usecontext/HospitalContext'
 import ConfirmationModal from '../../../components/ConfirmationModal'
 import Pagination from '../../../Utils/Pagination'  // ← same Pagination used in CustomerManagement
+import { showCustomToast } from '../../../Utils/Toaster'
 
 
 const PhysioManagement = () => {
-  const [physios, setPhysios]                   = useState([])
-  const [modalVisible, setModalVisible]         = useState(false)
-  const [selectedPhysio, setSelectedPhysio]     = useState(null)
-  const [viewMode, setViewMode]                 = useState(false)
+  const [physios, setPhysios] = useState([])
+  const [modalVisible, setModalVisible] = useState(false)
+  const [selectedPhysio, setSelectedPhysio] = useState(null)
+  const [viewMode, setViewMode] = useState(false)
   const [deleteModalVisible, setDeleteModalVisible] = useState(false)
-  const [physioToDelete, setPhysioToDelete]     = useState(null)
-  const [isDeleting, setIsDeleting]             = useState(false)
+  const [physioToDelete, setPhysioToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // ── Pagination state (mirrors CustomerManagement) ─────────────────────────
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
   const hospitalId = localStorage.getItem('HospitalId')
-  const branchId   = localStorage.getItem('branchId')
+  const branchId = localStorage.getItem('branchId')
 
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
@@ -50,9 +51,13 @@ const PhysioManagement = () => {
     try {
       if (selectedPhysio) {
         await updatePhysio(selectedPhysio.therapistId, data)
+        showCustomToast('Therapist updated successfully', 'success')
         await fetchPhysios()
       } else {
         await addPhysio(data)
+        showCustomToast('Therapist added successfully', 'success')
+
+
         await fetchPhysios()
       }
       setModalVisible(false)
@@ -77,7 +82,7 @@ const PhysioManagement = () => {
   }
 
   // ── Pagination slice ───────────────────────────────────────────────────────
-  const totalPages  = Math.ceil(physios.length / rowsPerPage)
+  const totalPages = Math.ceil(physios.length / rowsPerPage)
   const displayData = physios.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
   return (
