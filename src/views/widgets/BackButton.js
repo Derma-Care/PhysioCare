@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { CButton } from '@coreui/react'
 import { useNavigation } from '../Usecontext/NavigationProvider'
 import { useNavigate } from 'react-router-dom'
+import { COLORS } from '../../Constant/Themes'
 
 const BackButton = () => {
   const { goBack } = useNavigation()
@@ -28,9 +29,9 @@ const BackButton = () => {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           style={{
-            borderColor: 'var(--color-black)',
-            color: isHovered ? 'var(--color-bgcolor)' : 'var(--color-white)',
-            backgroundColor: isHovered ? 'var(--color-white)' : 'transparent',
+            borderColor: COLORS.primary,
+            color: isHovered ? COLORS.primary : 'var(--color-white)',
+            backgroundColor: isHovered ? COLORS.white : 'transparent',
             transition: 'all 0.3s ease',
             marginRight: '10px'
           }}

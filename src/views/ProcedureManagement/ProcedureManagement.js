@@ -297,7 +297,7 @@ export default function TherapyManagement() {
         </div>
         {can("Therapy Management", "create") && (
           <button className="tm-add-btn" onClick={() => setModal(true)}>
-            <PlusCircle size={15} /> Add Therapy
+            <PlusCircle size={15} /> Add New Therapy
           </button>
         )}
       </div>

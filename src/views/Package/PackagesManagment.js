@@ -33,16 +33,16 @@ import { useGlobalSearch } from "../Usecontext/GlobalSearchContext"
 import Pagination from "../../Utils/Pagination"
 
 export default function PackagesManagement() {
-  const [list, setList]                     = useState([])
+  const [list, setList] = useState([])
   const [exerciseOptions, setExerciseOptions] = useState([])
-  const [modal, setModal]                   = useState(false)
-  const [editId, setEditId]                 = useState(null)
+  const [modal, setModal] = useState(false)
+  const [editId, setEditId] = useState(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
-  const [delloading, setDelLoading]         = useState(false)
+  const [delloading, setDelLoading] = useState(false)
   const [serviceIdToDelete, setServiceIdToDelete] = useState(null)
-  const [viewModal, setViewModal]           = useState(false)
-  const [viewLoading, setViewLoading]       = useState(false)
-  const [viewError, setViewError]           = useState(null)
+  const [viewModal, setViewModal] = useState(false)
+  const [viewLoading, setViewLoading] = useState(false)
+  const [viewError, setViewError] = useState(null)
   const [selectedPackage, setSelectedPackage] = useState(null)
 
   // ── Pagination state ──────────────────────────────────────────────────────
@@ -78,9 +78,9 @@ export default function PackagesManagement() {
     setViewModal(true)
     setViewLoading(true)
     try {
-      const clinicId  = localStorage.getItem("HospitalId")
-      const branchId  = localStorage.getItem("branchId")
-      const res       = await getTherapiesServicebytherapyId(item.packageId, clinicId, branchId)
+      const clinicId = localStorage.getItem("HospitalId")
+      const branchId = localStorage.getItem("branchId")
+      const res = await getTherapiesServicebytherapyId(item.packageId, clinicId, branchId)
       const data = res?.data?.data ?? res?.data ?? res ?? null
       if (!data) throw new Error("No data returned")
       setSelectedPackage(data)
@@ -95,9 +95,9 @@ export default function PackagesManagement() {
   const fetchPrograms = async () => {
     try {
       const hospitalId = localStorage.getItem("HospitalId")
-      const branchId   = localStorage.getItem("branchId")
-      const res        = await getProgramService(hospitalId, branchId)
-      const options    = safeArray(res?.data?.data).map((item) => ({
+      const branchId = localStorage.getItem("branchId")
+      const res = await getProgramService(hospitalId, branchId)
+      const options = safeArray(res?.data?.data).map((item) => ({
         value: item.id,
         label: item.programName,
       }))
@@ -111,7 +111,7 @@ export default function PackagesManagement() {
     try {
       const clinicId = localStorage.getItem("HospitalId")
       const branchId = localStorage.getItem("branchId")
-      const res      = await getTherapiesService(clinicId, branchId)
+      const res = await getTherapiesService(clinicId, branchId)
       setList(safeArray(res?.data?.data))
       setCurrentPage(1) // reset on fresh fetch
     } catch (err) {
@@ -137,13 +137,13 @@ export default function PackagesManagement() {
   const handleSave = async () => {
     if (!validate()) return
     const payload = {
-      clinicId:           localStorage.getItem("HospitalId"),
-      branchId:           localStorage.getItem("branchId"),
-      packageName:        form.packageName,
-      programIds:         form.programIds,
-      offerType:          form.offerType,
-      startOfferDate:     form.startOfferDate,
-      endOfferDate:       form.endOfferDate,
+      clinicId: localStorage.getItem("HospitalId"),
+      branchId: localStorage.getItem("branchId"),
+      packageName: form.packageName,
+      programIds: form.programIds,
+      offerType: form.offerType,
+      startOfferDate: form.startOfferDate,
+      endOfferDate: form.endOfferDate,
       discountPercentage: Number(form.discountPercentage),
     }
     try {
@@ -165,12 +165,12 @@ export default function PackagesManagement() {
       .map((id) => exerciseOptions.find((opt) => opt.value === id))
       .filter(Boolean)
     setForm({
-      packageName:        item.packageName        || "",
-      programs:           selectedPrograms,
-      programIds:         item.programIds         || [],
-      offerType:          item.offerType          || "",
-      startOfferDate:     item.startOfferDate     || "",
-      endOfferDate:       item.endOfferDate        || "",
+      packageName: item.packageName || "",
+      programs: selectedPrograms,
+      programIds: item.programIds || [],
+      offerType: item.offerType || "",
+      startOfferDate: item.startOfferDate || "",
+      endOfferDate: item.endOfferDate || "",
       discountPercentage: item.discountPercentage || "",
     })
     setModal(true)
@@ -204,7 +204,7 @@ export default function PackagesManagement() {
     if (!search) return true
     return (
       (item.packageName || "").toLowerCase().includes(search) ||
-      (item.packageId   || "").toLowerCase().includes(search) ||
+      (item.packageId || "").toLowerCase().includes(search) ||
       safeArray(item.programs)
         .map((p) => (p?.programName || "").toLowerCase())
         .join(" ")
@@ -212,7 +212,7 @@ export default function PackagesManagement() {
     )
   })
 
-  const totalPages  = Math.ceil(filteredList.length / rowsPerPage)
+  const totalPages = Math.ceil(filteredList.length / rowsPerPage)
   const displayData = filteredList.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
   // Reset to page 1 when search changes
@@ -266,7 +266,7 @@ export default function PackagesManagement() {
         </div>
         {can("Package Management", "create") && (
           <button className="pm-add-btn" onClick={() => setModal(true)}>
-            <PackagePlus size={15} /> Add Package
+            <PackagePlus size={15} /> Add New Package
           </button>
         )}
       </div>
@@ -452,192 +452,192 @@ export default function PackagesManagement() {
       </CModal>
 
       {/* ── VIEW MODAL ── */}
-     {/* ── VIEW MODAL ── */}
-<CModal
-  visible={viewModal}
-  onClose={() => { setViewModal(false); setSelectedPackage(null); setViewError(null) }}
-  size="lg"
-  alignment="center"
-  className="pm-custom-modal"
->
-  <CModalHeader className="pm-modal-header">
-    <CModalTitle className="pm-modal-title">Package Details</CModalTitle>
-  </CModalHeader>
+      {/* ── VIEW MODAL ── */}
+      <CModal
+        visible={viewModal}
+        onClose={() => { setViewModal(false); setSelectedPackage(null); setViewError(null) }}
+        size="lg"
+        alignment="center"
+        className="pm-custom-modal"
+      >
+        <CModalHeader className="pm-modal-header">
+          <CModalTitle className="pm-modal-title">Package Details</CModalTitle>
+        </CModalHeader>
 
-  <CModalBody className="pm-modal-body pm-view-body">
+        <CModalBody className="pm-modal-body pm-view-body">
 
-    {/* Loading */}
-    {viewLoading && (
-      <div className="pm-view-state">
-        <div className="pm-spinner" />
-        <p>Loading package details...</p>
-      </div>
-    )}
+          {/* Loading */}
+          {viewLoading && (
+            <div className="pm-view-state">
+              <div className="pm-spinner" />
+              <p>Loading package details...</p>
+            </div>
+          )}
 
-    {/* Error */}
-    {!viewLoading && viewError && (
-      <div className="pm-view-state pm-view-error">
-        <Package size={36} />
-        <p>{viewError}</p>
-        <button className="pm-btn-secondary" onClick={() => { setViewModal(false); setViewError(null) }}>
-          Close
-        </button>
-      </div>
-    )}
+          {/* Error */}
+          {!viewLoading && viewError && (
+            <div className="pm-view-state pm-view-error">
+              <Package size={36} />
+              <p>{viewError}</p>
+              <button className="pm-btn-secondary" onClick={() => { setViewModal(false); setViewError(null) }}>
+                Close
+              </button>
+            </div>
+          )}
 
-    {/* No data */}
-    {!viewLoading && !viewError && !selectedPackage && (
-      <div className="pm-view-state">
-        <Package size={36} className="pm-empty-icon" />
-        <p>No data available</p>
-        <button className="pm-btn-secondary" onClick={() => setViewModal(false)}>Close</button>
-      </div>
-    )}
+          {/* No data */}
+          {!viewLoading && !viewError && !selectedPackage && (
+            <div className="pm-view-state">
+              <Package size={36} className="pm-empty-icon" />
+              <p>No data available</p>
+              <button className="pm-btn-secondary" onClick={() => setViewModal(false)}>Close</button>
+            </div>
+          )}
 
-    {/* ── Data ── */}
-    {!viewLoading && !viewError && selectedPackage && (
-      <div className="d-flex flex-column gap-3">
+          {/* ── Data ── */}
+          {!viewLoading && !viewError && selectedPackage && (
+            <div className="d-flex flex-column gap-3">
 
-       {/* ── Package summary cards ── */}
-<div className="pv-summary-header">
-  <div className="pv-summary-icon"><Package size={18} /></div>
-  <div>
-    <p className="pv-summary-name">{selectedPackage.packageName || "—"}</p>
-    {(selectedPackage.discountPercentage ?? 0) > 0 && (
-      <span className="pv-discount-badge">{selectedPackage.discountPercentage}% off</span>
-    )}
-  </div>
-</div>
-
-<div className="pv-summary-grid">
-  <div className="pv-summary-card">
-    <span className="pv-summary-label">No. of programs</span>
-    <span className="pv-summary-value">
-      {selectedPackage.noOfPrograms ?? safeArray(selectedPackage.programs).length}
-    </span>
-  </div>
-  <div className="pv-summary-card">
-    <span className="pv-summary-label">Offer type</span>
-    <span className="pv-summary-value">{selectedPackage.offerType || "—"}</span>
-  </div>
-  <div className="pv-summary-card">
-    <span className="pv-summary-label">Start date</span>
-    <span className="pv-summary-value">{selectedPackage.startOfferDate || "—"}</span>
-  </div>
-  <div className="pv-summary-card">
-    <span className="pv-summary-label">End date</span>
-    <span className="pv-summary-value">{selectedPackage.endOfferDate || "—"}</span>
-  </div>
-</div>
-
-        {/* ── Programs section label ── */}
-        <div className="pv-section-label">Programs</div>
-
-        {safeArray(selectedPackage.programs).length === 0 ? (
-          <div className="pv-no-data pv-no-data--padded">
-            <Package size={32} className="pm-empty-icon" />
-            <p>No programs linked to this package</p>
-          </div>
-        ) : (
-          safeArray(selectedPackage.programs).map((program, pIndex) => {
-            if (!program) return null
-            const therapies = safeArray(program.therophyData)
-            return (
-              <div className="pv-acc-item" key={pIndex}>
-                <details>
-                  <summary className="pv-acc-head pv-acc-head--prog">
-                    <span>{pIndex + 1}. {program.programName || "Unnamed Program"}</span>
-                    <div className="pv-acc-head-right">
-                      <span className="pv-therapy-count">{therapies.length} {therapies.length === 1 ? "therapy" : "therapies"}</span>
-                      <span className="pv-acc-arrow">▾</span>
-                    </div>
-                  </summary>
-
-                  <div className="pv-acc-body">
-                    {therapies.length === 0 ? (
-                      <div className="pv-no-data">No therapies linked to this program</div>
-                    ) : (
-                      <div className="d-flex flex-column gap-2">
-                        {therapies.map((therapy, tIndex) => {
-                          if (!therapy) return null
-                          const exercises = safeArray(therapy.exercises)
-                          return (
-                            <div className="pv-therapy-item" key={tIndex}>
-                              <details>
-                                <summary className="pv-therapy-head">
-                                  <span>{tIndex + 1}. {therapy.therapyName || "Unnamed Therapy"}</span>
-                                  <div className="pv-acc-head-right">
-                                    <span className="pv-ex-count">{exercises.length} {exercises.length === 1 ? "exercise" : "exercises"}</span>
-                                    <span className="pv-acc-arrow pv-acc-arrow--sm">▾</span>
-                                  </div>
-                                </summary>
-
-                                <div className="pv-therapy-body">
-                                  {exercises.length === 0 ? (
-                                    <div className="pv-no-data">No exercises available</div>
-                                  ) : (
-                                    <div className="pv-ex-table-wrap">
-                                      <CTable className="pv-ex-table" bordered responsive>
-                                        <CTableHead>
-                                          <CTableRow>
-                                            <CTableHeaderCell className="pv-ex-th" style={{ width: 36 }}>#</CTableHeaderCell>
-                                            <CTableHeaderCell className="pv-ex-th">Name</CTableHeaderCell>
-                                            <CTableHeaderCell className="pv-ex-th">Session</CTableHeaderCell>
-                                            <CTableHeaderCell className="pv-ex-th">Frequency</CTableHeaderCell>
-                                            <CTableHeaderCell className="pv-ex-th">GST</CTableHeaderCell>
-                                            <CTableHeaderCell className="pv-ex-th">Other tax</CTableHeaderCell>
-                                            <CTableHeaderCell className="pv-ex-th">Price</CTableHeaderCell>
-                                          </CTableRow>
-                                        </CTableHead>
-                                        <CTableBody>
-                                          {exercises.map((ex, i) => {
-                                            if (!ex) return null
-                                            return (
-                                              <CTableRow key={i} className="pv-ex-tr">
-                                                <CTableDataCell className="pv-ex-td pv-td-num">{i + 1}</CTableDataCell>
-                                                <CTableDataCell className="pv-ex-td">
-                                                  <span className="pv-ex-name">{ex.name || "—"}</span>
-                                                  {ex.notes && (
-                                                    <><br /><small className="pv-ex-notes">{ex.notes}</small></>
-                                                  )}
-                                                </CTableDataCell>
-                                                <CTableDataCell className="pv-ex-td">{ex.session || "—"}</CTableDataCell>
-                                                <CTableDataCell className="pv-ex-td">{ex.frequency || "—"}</CTableDataCell>
-                                                <CTableDataCell className="pv-ex-td">{ex.gst != null ? `${ex.gst}%` : "—"}</CTableDataCell>
-                                                <CTableDataCell className="pv-ex-td">{ex.otherTax != null ? `${ex.otherTax}%` : "—"}</CTableDataCell>
-                                                <CTableDataCell className="pv-ex-td">
-                                                  <span className="pv-price">{ex.totalPrice != null ? `₹${ex.totalPrice}` : "—"}</span>
-                                                </CTableDataCell>
-                                              </CTableRow>
-                                            )
-                                          })}
-                                        </CTableBody>
-                                      </CTable>
-                                    </div>
-                                  )}
-                                </div>
-                              </details>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </details>
+              {/* ── Package summary cards ── */}
+              <div className="pv-summary-header">
+                <div className="pv-summary-icon"><Package size={18} /></div>
+                <div>
+                  <p className="pv-summary-name">{selectedPackage.packageName || "—"}</p>
+                  {(selectedPackage.discountPercentage ?? 0) > 0 && (
+                    <span className="pv-discount-badge">{selectedPackage.discountPercentage}% off</span>
+                  )}
+                </div>
               </div>
-            )
-          })
-        )}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px", paddingTop: "12px", borderTop: "0.5px solid #d0dce9" }}>
-          <button className="pm-btn-secondary" onClick={() => { setViewModal(false); setSelectedPackage(null) }}>
-            Close
-          </button>
-        </div>
-      </div>
-    )}
-  </CModalBody>
-</CModal>
+              <div className="pv-summary-grid">
+                <div className="pv-summary-card">
+                  <span className="pv-summary-label">No. of programs</span>
+                  <span className="pv-summary-value">
+                    {selectedPackage.noOfPrograms ?? safeArray(selectedPackage.programs).length}
+                  </span>
+                </div>
+                <div className="pv-summary-card">
+                  <span className="pv-summary-label">Offer type</span>
+                  <span className="pv-summary-value">{selectedPackage.offerType || "—"}</span>
+                </div>
+                <div className="pv-summary-card">
+                  <span className="pv-summary-label">Start date</span>
+                  <span className="pv-summary-value">{selectedPackage.startOfferDate || "—"}</span>
+                </div>
+                <div className="pv-summary-card">
+                  <span className="pv-summary-label">End date</span>
+                  <span className="pv-summary-value">{selectedPackage.endOfferDate || "—"}</span>
+                </div>
+              </div>
+
+              {/* ── Programs section label ── */}
+              <div className="pv-section-label">Programs</div>
+
+              {safeArray(selectedPackage.programs).length === 0 ? (
+                <div className="pv-no-data pv-no-data--padded">
+                  <Package size={32} className="pm-empty-icon" />
+                  <p>No programs linked to this package</p>
+                </div>
+              ) : (
+                safeArray(selectedPackage.programs).map((program, pIndex) => {
+                  if (!program) return null
+                  const therapies = safeArray(program.therophyData)
+                  return (
+                    <div className="pv-acc-item" key={pIndex}>
+                      <details>
+                        <summary className="pv-acc-head pv-acc-head--prog">
+                          <span>{pIndex + 1}. {program.programName || "Unnamed Program"}</span>
+                          <div className="pv-acc-head-right">
+                            <span className="pv-therapy-count">{therapies.length} {therapies.length === 1 ? "therapy" : "therapies"}</span>
+                            <span className="pv-acc-arrow">▾</span>
+                          </div>
+                        </summary>
+
+                        <div className="pv-acc-body">
+                          {therapies.length === 0 ? (
+                            <div className="pv-no-data">No therapies linked to this program</div>
+                          ) : (
+                            <div className="d-flex flex-column gap-2">
+                              {therapies.map((therapy, tIndex) => {
+                                if (!therapy) return null
+                                const exercises = safeArray(therapy.exercises)
+                                return (
+                                  <div className="pv-therapy-item" key={tIndex}>
+                                    <details>
+                                      <summary className="pv-therapy-head">
+                                        <span>{tIndex + 1}. {therapy.therapyName || "Unnamed Therapy"}</span>
+                                        <div className="pv-acc-head-right">
+                                          <span className="pv-ex-count">{exercises.length} {exercises.length === 1 ? "exercise" : "exercises"}</span>
+                                          <span className="pv-acc-arrow pv-acc-arrow--sm">▾</span>
+                                        </div>
+                                      </summary>
+
+                                      <div className="pv-therapy-body">
+                                        {exercises.length === 0 ? (
+                                          <div className="pv-no-data">No exercises available</div>
+                                        ) : (
+                                          <div className="pv-ex-table-wrap">
+                                            <CTable className="pv-ex-table" bordered responsive>
+                                              <CTableHead>
+                                                <CTableRow>
+                                                  <CTableHeaderCell className="pv-ex-th" style={{ width: 36 }}>#</CTableHeaderCell>
+                                                  <CTableHeaderCell className="pv-ex-th">Name</CTableHeaderCell>
+                                                  <CTableHeaderCell className="pv-ex-th">Session</CTableHeaderCell>
+                                                  <CTableHeaderCell className="pv-ex-th">Frequency</CTableHeaderCell>
+                                                  <CTableHeaderCell className="pv-ex-th">GST</CTableHeaderCell>
+                                                  <CTableHeaderCell className="pv-ex-th">Other tax</CTableHeaderCell>
+                                                  <CTableHeaderCell className="pv-ex-th">Price</CTableHeaderCell>
+                                                </CTableRow>
+                                              </CTableHead>
+                                              <CTableBody>
+                                                {exercises.map((ex, i) => {
+                                                  if (!ex) return null
+                                                  return (
+                                                    <CTableRow key={i} className="pv-ex-tr">
+                                                      <CTableDataCell className="pv-ex-td pv-td-num">{i + 1}</CTableDataCell>
+                                                      <CTableDataCell className="pv-ex-td">
+                                                        <span className="pv-ex-name">{ex.name || "—"}</span>
+                                                        {ex.notes && (
+                                                          <><br /><small className="pv-ex-notes">{ex.notes}</small></>
+                                                        )}
+                                                      </CTableDataCell>
+                                                      <CTableDataCell className="pv-ex-td">{ex.session || "—"}</CTableDataCell>
+                                                      <CTableDataCell className="pv-ex-td">{ex.frequency || "—"}</CTableDataCell>
+                                                      <CTableDataCell className="pv-ex-td">{ex.gst != null ? `${ex.gst}%` : "—"}</CTableDataCell>
+                                                      <CTableDataCell className="pv-ex-td">{ex.otherTax != null ? `${ex.otherTax}%` : "—"}</CTableDataCell>
+                                                      <CTableDataCell className="pv-ex-td">
+                                                        <span className="pv-price">{ex.totalPrice != null ? `₹${ex.totalPrice}` : "—"}</span>
+                                                      </CTableDataCell>
+                                                    </CTableRow>
+                                                  )
+                                                })}
+                                              </CTableBody>
+                                            </CTable>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </details>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    </div>
+                  )
+                })
+              )}
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px", paddingTop: "12px", borderTop: "0.5px solid #d0dce9" }}>
+                <button className="pm-btn-secondary" onClick={() => { setViewModal(false); setSelectedPackage(null) }}>
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </CModalBody>
+      </CModal>
 
       {/* ── DELETE MODAL ── */}
       <ConfirmationModal

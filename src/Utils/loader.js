@@ -1,5 +1,6 @@
 import React from 'react'
 import { CSpinner } from '@coreui/react'
+import { COLORS } from '../Constant/Themes'
 
 // eslint-disable-next-line react/prop-types
 const LoadingIndicator = ({ message = 'Loading...' }) => {
@@ -9,11 +10,11 @@ const LoadingIndicator = ({ message = 'Loading...' }) => {
       style={{
         height: '50vh', // full screen height
 
-        color: 'var(--color-bgcolor)',
+        color: COLORS.primary,
       }}
     >
       <CSpinner size="sm" className="me-2" />
-      <span style={{ color: 'var(--color-bgcolor)', }}>{message}</span>
+      <span style={{ color: COLORS.primary, }}>{message}</span>
     </div>
   )
 }

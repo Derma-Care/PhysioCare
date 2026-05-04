@@ -15,6 +15,7 @@ import { toast } from 'react-toastify'
 import { getBookingsForFollowUps } from '../../APIs/GetFollowUpApi'
 import { getBookingsByPatientId } from '../../APIs/GetpatinetData'
 import { showCustomToast } from '../../Utils/Toaster'
+import { COLORS } from '../../Constant/Themes'
 
 const BookingSearch = ({
   visitType,
@@ -222,7 +223,7 @@ const BookingSearch = ({
           />
         </CCol>
         <CCol md={3} className="d-flex gap-2">
-          <CButton style={{ color: "white", backgroundColor: "var(--color-bgcolor)" }} onClick={handleSearch} disabled={loading} className="flex-grow-1">
+          <CButton style={{ color: "white", backgroundColor: COLORS.primary }} onClick={handleSearch} disabled={loading} className="flex-grow-1">
             {loading ? 'Searching...' : 'Search'}
           </CButton>
           <CButton color="secondary" variant="outline" onClick={handleClear} disabled={loading} className="flex-grow-1">
@@ -271,6 +272,7 @@ const BookingSearch = ({
         size="lg"
         backdrop="static"
         className="custom-modal"
+
       >
         <CModalHeader>
           <CModalTitle>

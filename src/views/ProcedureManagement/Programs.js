@@ -63,35 +63,35 @@ const extractTherapies = (raw) => {
 }
 
 export default function Programs() {
-  const [list, setList]                           = useState([])
-  const [exerciseOptions, setExerciseOptions]     = useState([])
-  const [modal, setModal]                         = useState(false)
-  const [editId, setEditId]                       = useState(null)
-  const [isModalVisible, setIsModalVisible]       = useState(false)
-  const [delloading, setDelLoading]               = useState(false)
+  const [list, setList] = useState([])
+  const [exerciseOptions, setExerciseOptions] = useState([])
+  const [modal, setModal] = useState(false)
+  const [editId, setEditId] = useState(null)
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [delloading, setDelLoading] = useState(false)
   const [serviceIdToDelete, setServiceIdToDelete] = useState(null)
-  const [dropdownOpen, setDropdownOpen]           = useState(false)
-  const [loading, setLoading]                     = useState(false)
-  const [saveLoading, setSaveLoading]             = useState(false)
-  const [viewModal, setViewModal]                 = useState(false)
-  const [viewLoading, setViewLoading]             = useState(false)
-  const [viewError, setViewError]                 = useState(null)
-  const [viewData, setViewData]                   = useState(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [viewModal, setViewModal] = useState(false)
+  const [viewLoading, setViewLoading] = useState(false)
+  const [viewError, setViewError] = useState(null)
+  const [viewData, setViewData] = useState(null)
 
   // ── Pagination state ──────────────────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
   const { searchQuery } = useGlobalSearch()
-  const { user }        = useHospital()
+  const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 
   const clinicId = localStorage.getItem("HospitalId")
   const branchId = localStorage.getItem("branchId")
 
   const [form, setForm] = useState({
-    therapyName:  "",
-    exercises:    [],
+    therapyName: "",
+    exercises: [],
     exercisesIds: [],
   })
   const [errors, setErrors] = useState({})
@@ -120,7 +120,7 @@ export default function Programs() {
 
   const fetchTherapies = async () => {
     try {
-      const res  = await getTherapiesService(clinicId, branchId)
+      const res = await getTherapiesService(clinicId, branchId)
       const data = safeArray(res?.data?.data)
       setExerciseOptions(
         data.map((item) => ({ value: item.id, label: item.therapyName }))
@@ -154,7 +154,7 @@ export default function Programs() {
 
       setViewData({
         programName: raw.programName ?? raw.name ?? "—",
-        _therapies:  therapies,
+        _therapies: therapies,
       })
     } catch (err) {
       console.error("view error", err)
@@ -177,7 +177,7 @@ export default function Programs() {
   // ─── VALIDATION ────────────────────────────────────────────────────────────
   const validate = () => {
     const err = {}
-    if (!form.therapyName.trim())       err.therapyName  = "Program name is required"
+    if (!form.therapyName.trim()) err.therapyName = "Program name is required"
     if (form.exercisesIds.length === 0) err.exercisesIds = "Select at least one therapy"
     setErrors(err)
     return Object.keys(err).length === 0
@@ -215,10 +215,10 @@ export default function Programs() {
   const handleEdit = (item) => {
     setEditId(item.id)
     const selectedIds = safeArray(item.therophy).map((t) => t.theraphyId)
-    const selected    = exerciseOptions.filter((opt) => selectedIds.includes(opt.value))
+    const selected = exerciseOptions.filter((opt) => selectedIds.includes(opt.value))
     setForm({
-      therapyName:  item.programName,
-      exercises:    selected,
+      therapyName: item.programName,
+      exercises: selected,
       exercisesIds: selected.map((s) => String(s.value)),
     })
     setModal(true)
@@ -255,9 +255,9 @@ export default function Programs() {
     const search = (searchQuery || "").toLowerCase()
     if (!search) return true
     return (
-      (item.id            || "").toString().toLowerCase().includes(search) ||
-      (item.programName   || "").toLowerCase().includes(search)            ||
-      (item.theraphyCount || "").toString().includes(search)               ||
+      (item.id || "").toString().toLowerCase().includes(search) ||
+      (item.programName || "").toLowerCase().includes(search) ||
+      (item.theraphyCount || "").toString().includes(search) ||
       safeArray(item.therophy)
         .map((t) => (t?.therapyName || "").toLowerCase())
         .join(" ")
@@ -265,7 +265,7 @@ export default function Programs() {
     )
   })
 
-  const totalPages  = Math.ceil(filteredList.length / rowsPerPage)
+  const totalPages = Math.ceil(filteredList.length / rowsPerPage)
   const displayData = filteredList.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
   // ─── react-select styles ───────────────────────────────────────────────────
@@ -338,7 +338,7 @@ export default function Programs() {
         {can("Program Management", "create") && (
           <button className="pg-add-btn" onClick={() => setModal(true)}>
             <PlusCircle size={15} />
-            Add Program
+            Add New Program
           </button>
         )}
       </div>
@@ -477,6 +477,7 @@ export default function Programs() {
                     isClearable={false}
                     hideSelectedOptions={false}
                     closeMenuOnSelect={false}
+                    menuPlacement="top"
                     styles={selectStyles}
                     placeholder="Search and select therapies..."
                     value={form.exercises}
@@ -485,7 +486,7 @@ export default function Programs() {
                     onChange={(val) =>
                       setForm((prev) => ({
                         ...prev,
-                        exercises:    val || [],
+                        exercises: val || [],
                         exercisesIds: val ? val.map((v) => String(v.value)) : [],
                       }))
                     }
@@ -636,8 +637,8 @@ export default function Programs() {
                                               <span className="pg-ex-name">{ex.name || "—"}</span>
                                             </CTableDataCell>
                                             <CTableDataCell className="pg-ex-td">{ex.activityType || "—"}</CTableDataCell>
-                                            <CTableDataCell className="pg-ex-td">{ex.session    || "—"}</CTableDataCell>
-                                            <CTableDataCell className="pg-ex-td">{ex.frequency  || "—"}</CTableDataCell>
+                                            <CTableDataCell className="pg-ex-td">{ex.session || "—"}</CTableDataCell>
+                                            <CTableDataCell className="pg-ex-td">{ex.frequency || "—"}</CTableDataCell>
                                             <CTableDataCell className="pg-ex-td">
                                               <span className="pg-price">{ex.pricePerSession != null ? `₹${ex.pricePerSession}` : "—"}</span>
                                             </CTableDataCell>

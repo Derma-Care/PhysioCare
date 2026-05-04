@@ -55,7 +55,7 @@ const AppHeader = () => {
           <CIcon icon={cilMenu} size="lg" />
         </CHeaderToggler>
 
-     
+
 
         {/* ── Right cluster ───────────────────────────── */}
         <div className="d-flex align-items-center ms-auto gap-3">
@@ -69,7 +69,7 @@ const AppHeader = () => {
 
           {/* Theme selector + user dropdown */}
           <CHeaderNav className="d-flex align-items-center gap-1">
-            <ThemeSelector />
+            {/* <ThemeSelector /> */}
             <AppHeaderDropdown />
           </CHeaderNav>
         </div>

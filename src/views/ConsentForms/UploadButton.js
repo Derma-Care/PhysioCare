@@ -5,6 +5,7 @@ import React, { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { showCustomToast } from '../../Utils/Toaster'
 import { bookingUpdate } from '../AppointmentManagement/appointmentAPI'
+import { COLORS } from '../../Constant/Themes'
 
 function UploadButton({ bookingId }) {
   const navigate = useNavigate()
@@ -52,8 +53,8 @@ function UploadButton({ bookingId }) {
     <>
       <CButton
         style={{
-          backgroundColor: 'var(--color-bgcolor)',
-          color: 'var(--color-black)',
+          backgroundColor: COLORS.primary,
+          color: COLORS.white,
         }}
         onClick={handleUpload}
         className="d-flex align-items-center gap-1"

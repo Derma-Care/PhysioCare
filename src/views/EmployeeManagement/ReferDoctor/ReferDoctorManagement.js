@@ -134,7 +134,7 @@ const ReferDoctorManagement = () => {
             </p>
           </div>
         </div>
-        {can('Refer Doctor', 'create') && (
+        {can('Refered By Doctor', 'create') && (
           <button
             className="rd-add-btn"
             onClick={() => { setSelectedTech(null); setViewMode(false); setModalVisible(true) }}
@@ -187,7 +187,11 @@ const ReferDoctorManagement = () => {
                     </CTableDataCell>
 
                     <CTableDataCell className="rd-td">
-                      <span className="rd-name">{capitalizeWords(tech.fullName)}</span>
+                      <span className="rd-name">
+                        {tech.fullName?.toLowerCase().startsWith('dr')
+                          ? capitalizeWords(tech.fullName)
+                          : `Dr. ${capitalizeWords(tech.fullName)}`}
+                      </span>
                     </CTableDataCell>
 
                     <CTableDataCell className="rd-td rd-muted">
@@ -206,7 +210,7 @@ const ReferDoctorManagement = () => {
 
                     <CTableDataCell className="rd-td">
                       <div className="rd-actions">
-                        {can('Refer Doctor', 'read') && (
+                        {can('Refered By Doctor', 'read') && (
                           <button
                             className="rd-action-btn view"
                             title="View"
@@ -215,7 +219,7 @@ const ReferDoctorManagement = () => {
                             <Eye size={14} />
                           </button>
                         )}
-                        {can('Refer Doctor', 'update') && (
+                        {can('Refered By Doctor', 'update') && (
                           <button
                             className="rd-action-btn edit"
                             title="Edit"
@@ -224,7 +228,7 @@ const ReferDoctorManagement = () => {
                             <Edit2 size={14} />
                           </button>
                         )}
-                        {can('Refer Doctor', 'delete') && (
+                        {can('Refered By Doctor', 'delete') && (
                           <button
                             className="rd-action-btn del"
                             title="Delete"

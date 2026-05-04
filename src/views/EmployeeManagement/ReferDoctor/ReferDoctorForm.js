@@ -19,6 +19,7 @@ import { validateField } from '../../../Utils/Validators'
 import capitalizeWords from '../../../Utils/capitalizeWords'
 import { showCustomToast } from '../../../Utils/Toaster'
 import { emailPattern } from '../../../Constant/Constants'
+import { COLORS } from '../../../Constant/Themes'
 
 const ReferDoctorForm = ({
   visible,
@@ -313,7 +314,19 @@ const ReferDoctorForm = ({
 
     try {
       setLoading(true)
-      const res = await onSave(formData)
+      
+      // Ensure "Dr. " prefix is added if missing
+      const formattedName = formData.fullName.trim();
+      const finalFullName = formattedName.toLowerCase().startsWith('dr') 
+        ? formattedName 
+        : `Dr. ${formattedName}`;
+        
+      const dataToSave = {
+        ...formData,
+        fullName: finalFullName
+      };
+
+      const res = await onSave(dataToSave)
       console.log(res) // Now this will log actual API response
       if (res != undefined) {
         setFormData(emptyForm)
@@ -496,7 +509,9 @@ const ReferDoctorForm = ({
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-center">
                   {/* Left Section */}
                   <div>
-                    <h4 className="fw-bold mb-2">Name: {formData.fullName}</h4>
+                    <h4 className="fw-bold mb-2">
+                      Name: {formData.fullName?.toLowerCase().startsWith('dr') ? formData.fullName : `Dr. ${formData.fullName}`}
+                    </h4>
                     <p className="mb-1">
                       <strong>Doctor ID: </strong> {formData.referralId}
                     </p>
@@ -524,7 +539,10 @@ const ReferDoctorForm = ({
                 <h5 className="border-bottom pb-2 mb-3">Personal Information</h5>
                 <div className="row g-3">
                   <div className="col-md-4">
-                    <Row label="Full Name" value={formData.fullName} />
+                    <Row 
+                      label="Full Name" 
+                      value={formData.fullName?.toLowerCase().startsWith('dr') ? formData.fullName : `Dr. ${formData.fullName}`} 
+                    />
                   </div>
                   <div className="col-md-4">
                     <Row label="Email" value={formData.email} />
@@ -1296,7 +1314,7 @@ const ReferDoctorForm = ({
                 Cancel
               </CButton>
               <CButton
-                style={{ backgroundColor: 'var(--color-black)', color: 'white' }}
+                style={{ backgroundColor: COLORS.primary, color: 'white' }}
                 onClick={handleSubmit}
                 disabled={loading}
               >

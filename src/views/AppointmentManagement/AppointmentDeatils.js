@@ -32,6 +32,7 @@ import { showCustomToast } from '../../Utils/Toaster'
 import PaymentAccordion from './PaymentProgram'
 import ProgramPayment from './PaymentProgram'
 import PhysioConsentForm from './PhysioConsentForm'
+import { COLORS } from '../../Constant/Themes'
 
 /* ─────────────────────────────────────────────
    Inline styles – scoped design tokens
@@ -89,13 +90,13 @@ const SectionHeading = ({ icon: Icon, title }) => (
     {Icon && (
       <span style={{
         width: '28px', height: '28px', borderRadius: '6px',
-        backgroundColor: 'var(--color-bgcolor)', display: 'flex',
+        backgroundColor: COLORS.primary, display: 'flex',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
         <Icon size={14} color="#fff" />
       </span>
     )}
-    <h6 style={{ margin: 0, fontWeight: '700', fontSize: '13px', color: '#1e293b' }}>
+    <h6 style={{ margin: 0, fontWeight: '700', fontSize: '13px', color: COLORS.primary }}>
       {title}
     </h6>
   </div>
@@ -124,7 +125,7 @@ const VitalChip = ({ label, value, unit }) => (
     textAlign: 'center',
   }}>
     <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginBottom: '4px' }}>{label}</div>
-    <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-bgcolor)' }}>
+    <div style={{ fontSize: '16px', fontWeight: '700', color: COLORS.primary }}>
       {value || '—'}
     </div>
     {unit && <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{unit}</div>}
@@ -190,7 +191,7 @@ const AppointmentDetails = () => {
     return s === 'in-progress' ? 'active' : s
   })()
 
-  const showConfirmed = ['active', 'confirmed'].includes(normalizedStatus)
+  const showConfirmed = ['active', 'confirmed', 'in-progress'].includes(normalizedStatus)
   const showCompletedOrActive = ['completed', 'active'].includes(normalizedStatus)
   const showVitalsCard = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
   const showPayment = ['active'].includes(normalizedStatus)
@@ -252,7 +253,7 @@ const AppointmentDetails = () => {
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    
+
     if (!value) {
       setValidationErrors(prev => ({ ...prev, [name]: '' }))
     } else {
@@ -411,7 +412,7 @@ const AppointmentDetails = () => {
 
       {/* ── TOP HEADER BAR ─────────────────────────────── */}
       <div style={{
-        backgroundColor: 'var(--color-bgcolor)',
+        backgroundColor: COLORS.primary,
         borderRadius: tokens.radius,
         padding: '14px 20px',
         display: 'flex',
@@ -440,8 +441,8 @@ const AppointmentDetails = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <StatusBadge status={normalizedStatus} />
 
-          {showConfirmed && !vitals && (
-            <ActionBtn onClick={() => {
+          {showConfirmed && (
+            <ActionBtn style={{ backgroundColor: COLORS.white, color: COLORS.primary }} onClick={() => {
               setFormData({ height: '', weight: '', bloodPressure: '', temperature: '', bmi: '' })
               setValidationErrors({})
               setShowModal(true)
@@ -455,7 +456,7 @@ const AppointmentDetails = () => {
             </ActionBtn>
           )}
           {vitals && (
-            <ActionBtn onClick={() => navigate('/physio-consent-form', { state: { bookingDetails: appointment, vitals, doctorsign: doctor?.doctorSignature } })}>
+            <ActionBtn style={{ backgroundColor: COLORS.white, color: COLORS.primary }} onClick={() => navigate('/physio-consent-form', { state: { bookingDetails: appointment, vitals, doctorsign: doctor?.doctorSignature } })}>
               <FileText size={13} /> Consent Form
             </ActionBtn>
           )}
@@ -503,18 +504,18 @@ const AppointmentDetails = () => {
           {appointment?.partImage && (
             <div style={{ marginTop: '24px' }}>
               <SectionHeading icon={Activity} title="Pain Assessment / Area Mapping" />
-              <div style={{ 
-                border: `1px solid ${tokens.border}`, 
-                borderRadius: tokens.radius, 
-                padding: '16px', 
+              <div style={{
+                border: `1px solid ${tokens.border}`,
+                borderRadius: tokens.radius,
+                padding: '16px',
                 textAlign: 'center',
                 backgroundColor: '#fff',
                 boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)'
               }}>
-                <img 
-                  src={`data:image/png;base64,${appointment.partImage}`} 
-                  alt="Pain Area Mapping" 
-                  style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: '8px' }} 
+                <img
+                  src={`data:image/png;base64,${appointment.partImage}`}
+                  alt="Pain Area Mapping"
+                  style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: '8px' }}
                 />
                 <div style={{ marginTop: '12px', fontSize: '12px', color: tokens.muted }}>
                   Visual representation of reported pain areas and assessment markings.
@@ -628,15 +629,15 @@ const AppointmentDetails = () => {
                   style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: `2px solid var(--color-bgcolor)` }}
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>{doctor.doctorName}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--color-bgcolor)', fontWeight: '600', marginBottom: '6px' }}>{doctor.specialization}</div>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: COLORS.primary, marginBottom: '2px' }}>{doctor.doctorName}</div>
+                  <div style={{ fontSize: '12px', color: COLORS.primary, fontWeight: '600', marginBottom: '6px' }}>{doctor.specialization}</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: '#1e293b' }}>Qualification:</strong> {doctor.qualification}</span>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: '#1e293b' }}>Experience:</strong> {doctor.experience} yrs</span>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: '#1e293b' }}>Languages:</strong> {doctor.languages?.join(', ')}</span>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: COLORS.primary }}>Qualification:</strong> {doctor.qualification}</span>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: COLORS.primary }}>Experience:</strong> {doctor.experience} yrs</span>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: COLORS.primary }}>Languages:</strong> {doctor.languages?.join(', ')}</span>
                   </div>
                 </div>
-                <ActionBtn onClick={() => navigate(`/doctor/${doctor.doctorId}`, { state: { doctor } })} style={{ alignSelf: 'center', flexShrink: 0 }}>
+                <ActionBtn style={{ backgroundColor: COLORS.primary, color: COLORS.white, alignSelf: 'center', flexShrink: 0 }} onClick={() => navigate(`/doctor/${doctor.doctorId}`, { state: { doctor } })}  >
                   View <ChevronRight size={13} />
                 </ActionBtn>
               </div>
@@ -702,7 +703,7 @@ const AppointmentDetails = () => {
           >
             Cancel
           </button>
-          <ActionBtn onClick={handleSubmitVitals} style={{ padding: '6px 20px' }}>
+          <ActionBtn onClick={handleSubmitVitals} style={{ padding: '6px 20px', backgroundColor: COLORS.primary }}>
             {loading ? (
               <><span className="spinner-border spinner-border-sm me-1" style={{ width: '12px', height: '12px' }} /> Saving...</>
             ) : 'Save Vitals'}

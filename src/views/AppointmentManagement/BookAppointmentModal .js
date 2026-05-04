@@ -30,6 +30,7 @@ import { addCustomer } from '../customerManagement/CustomerManagementAPI'
 import { showCustomToast } from '../../Utils/Toaster'
 import imageCompression from 'browser-image-compression'
 import BodyAssessment from './BodyAssessment'
+import { COLORS } from '../../Constant/Themes'
 
 // ─── Tab config ────────────────────────────────────────────────────────────────
 const TABS = [
@@ -57,13 +58,13 @@ const textareaStyle = (hasErr) => ({
   borderColor: hasErr ? '#dc3545' : undefined,
 })
 const labelStyle = {
-  color: 'var(--color-bgcolor)', fontSize: '12px', fontWeight: '500',
+  color: COLORS.primary, fontSize: '12px', fontWeight: '500',
   marginBottom: '3px', display: 'block',
 }
 const sectionHeadStyle = {
   fontSize: FS, fontWeight: '600',
   borderBottom: '1px solid var(--color-bgcolor)',
-  paddingBottom: '6px', marginBottom: '14px', color: 'var(--color-bgcolor)',
+  paddingBottom: '6px', marginBottom: '14px', color: COLORS.primary,
 }
 const errStyle = { fontSize: '11px', color: '#dc3545', marginTop: '3px', marginBottom: 0 }
 
@@ -217,7 +218,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     if (!selectedBooking) return
     const parts = (selectedBooking.patientAddress || '').split(',')
     const docId = selectedBooking.doctorId || ''
-    
+
     setBookingDetails((p) => ({
       ...p,
       name: selectedBooking.name || '',
@@ -310,26 +311,26 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           const data = await (await fetch(`https://api.postalpincode.in/pincode/${value}`)).json()
           if (data[0].Status === 'Success') {
             const po = data[0].PostOffice[0]
-            
+
             setBookingDetails((p) => ({
               ...p, address: { ...p.address, city: po.District, state: po.State, postalCode: value },
             }))
             setPostOffices(data[0].PostOffice)
-            setIsManualAddress(false) 
+            setIsManualAddress(false)
           }
           else {
-      // ❗ PIN not found
-      setPostOffices([])
-      setIsManualAddress(true) // ✅ allow manual entry
-    }
-        } catch { 
-           setIsManualAddress(true)
+            // ❗ PIN not found
+            setPostOffices([])
+            setIsManualAddress(true) // ✅ allow manual entry
+          }
+        } catch {
+          setIsManualAddress(true)
         }
-      
+
       }
-       else {
-  setIsManualAddress(false)
-}
+      else {
+        setIsManualAddress(false)
+      }
     }
   }
 
@@ -546,7 +547,14 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     }
   }
 
-  const goNext = () => setCurrentTab((t) => Math.min(t + 1, visibleTabs.length - 1))
+  const goNext = () => {
+    const currentTabId = visibleTabs[currentTab]?.id
+    if (currentTabId === 'slots' && selectedSlots.length === 0) {
+      showCustomToast('Please select an available slot before proceeding.', 'error')
+      return
+    }
+    setCurrentTab((t) => Math.min(t + 1, visibleTabs.length - 1))
+  }
   const goPrev = () => setCurrentTab((t) => Math.max(t - 1, 0))
 
   const { minDate, maxDate } = React.useMemo(() => {
@@ -568,9 +576,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       <div>
         <p style={sectionHeadStyle}>Visit Type</p>
         <CRow className="mb-3">
-          <CCol md={6}>
-            <CFormCheck type="radio" label="First Visit" name="visitTypeRadio" value="first"
-              checked={visitType === 'first'} style={{ fontSize: FS }}
+          <CCol md={6} style={{ color: COLORS.primary }}>
+            <CFormCheck type="radio" label={<span style={{ color: COLORS.primary }}>First Visit</span>} name="visitTypeRadio" value="first"
+              checked={visitType === 'first'} style={{ fontSize: FS, color: COLORS.primary }}
               onChange={() => {
                 setVisitType('first')
                 setBookingDetails((p) => ({
@@ -581,9 +589,9 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 setSlotsForSelectedDate([]); setSelectedDate(''); setSelectedSlots([])
               }} />
           </CCol>
-          <CCol md={6}>
-            <CFormCheck type="radio" label="Follow-Up" name="visitTypeRadio" value="followup"
-              checked={visitType === 'followup'} style={{ fontSize: FS }}
+          <CCol md={6} style={{ color: COLORS.primary }}>
+            <CFormCheck type="radio" label={<span style={{ color: COLORS.primary }}>Follow-Up</span>} name="visitTypeRadio" value="followup"
+              checked={visitType === 'followup'} style={{ fontSize: FS, color: COLORS.primary }}
               onChange={() => {
                 setVisitType('followup')
                 setBookingDetails((p) => ({
@@ -661,7 +669,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                   </CCol>
                 ))}
                 <CCol md={4}>
-                  <CFormLabel style={labelStyle}>Postal Code</CFormLabel>
+                  <CFormLabel style={labelStyle}>Postal Code <span className="text-danger">*</span></CFormLabel>
                   <CFormInput type="text" maxLength={6} value={bookingDetails.address?.postalCode || ''}
                     style={inputStyle(errors.address?.postalCode)}
                     onChange={(e) => {
@@ -696,29 +704,29 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                 <CCol md={4}>
                   <CFormLabel style={labelStyle}>City</CFormLabel>
                   {/* <CFormInput value={bookingDetails.address?.city || ''} readOnly style={inputStyle(false)} /> */}
-                <CFormInput
-  value={bookingDetails.address?.city || ''}
-  readOnly={!isManualAddress}
-  onChange={(e) => handleNestedChange('address', 'city', e.target.value)}
-   style={inputStyle(false)}
-/>
+                  <CFormInput
+                    value={bookingDetails.address?.city || ''}
+                    readOnly={!isManualAddress}
+                    onChange={(e) => handleNestedChange('address', 'city', e.target.value)}
+                    style={inputStyle(false)}
+                  />
                 </CCol>
                 <CCol md={4}>
                   <CFormLabel style={labelStyle}>State</CFormLabel>
                   {/* <CFormInput value={bookingDetails.address?.state || ''} readOnly style={inputStyle(false)} /> */}
-                <CFormInput
-  value={bookingDetails.address?.state || ''}
-  readOnly={!isManualAddress}
-  onChange={(e) => handleNestedChange('address', 'state', e.target.value)}
-   style={inputStyle(false)}
-/>
+                  <CFormInput
+                    value={bookingDetails.address?.state || ''}
+                    readOnly={!isManualAddress}
+                    onChange={(e) => handleNestedChange('address', 'state', e.target.value)}
+                    style={inputStyle(false)}
+                  />
                 </CCol>
               </CRow>
             </CCol>
           </CRow>
         ) : (
           <div className="p-3" style={{ background: '#f9f9f9', borderRadius: '8px', border: '1px solid #eee' }}>
-            <p style={{ margin: 0, fontWeight: '600', fontSize: FS, color: 'var(--color-bgcolor)' }}>{selectedBooking.name}</p>
+            <p style={{ margin: 0, fontWeight: '600', fontSize: FS, color: COLORS.primary }}>{selectedBooking.name}</p>
             <p style={{ margin: 0, fontSize: FS, color: '#555' }}>
               {selectedBooking.mobileNumber} · {selectedBooking.gender} · Age {selectedBooking.age}
             </p>
@@ -836,15 +844,15 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                     clearErr('slot')
                   }}
                   style={{
-                    backgroundColor: isSelected ? 'var(--color-bgcolor)' : 'white',
-                    color: isSelected ? '#fff' : 'var(--color-bgcolor)',
+                    backgroundColor: isSelected ? COLORS.primary : 'white',
+                    color: isSelected ? '#fff' : COLORS.primary,
                     border: '1px solid var(--color-bgcolor)',
                     minWidth: '80px', fontSize: FS,
                   }}>
-                  <div style={{ fontSize: FS, fontWeight: '600', color: isSelected ? '#fff' : 'var(--color-bgcolor)' }}>
+                  <div style={{ fontSize: FS, fontWeight: '600', color: isSelected ? '#fff' : COLORS.primary }}>
                     {dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
                   </div>
-                  <div style={{ fontSize: '11px', color: isSelected ? '#fff' : 'var(--color-bgcolor)' }}>
+                  <div style={{ fontSize: '11px', color: isSelected ? '#fff' : COLORS.primary }}>
                     {dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                   </div>
                 </CButton>
@@ -855,44 +863,44 @@ const BookAppointmentModal = ({ visible, onClose }) => {
         <CCard className="mb-3">
           <CCardBody>
             {slotsToShow.length === 0
-              ? <p className="text-center" style={{ color: 'var(--color-bgcolor)', fontSize: FS, margin: 0 }}>
-                  No available slots for this date
-                </p>
+              ? <p className="text-center" style={{ color: COLORS.primary, fontSize: FS, margin: 0 }}>
+                No available slots for this date
+              </p>
               : <>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: '6px' }}>
-                    {visibleSlots.map((slotObj, i) => {
-                      const isBooked = slotObj.slotbooked
-                      const isSel = selectedSlots.includes(slotObj.slot)
-                      return (
-                        <div key={i}
-                          onClick={() => {
-                            if (isBooked) return
-                            setSelectedSlots([slotObj.slot])
-                            setBookingDetails((p) => ({ ...p, servicetime: slotObj.slot }))
-                            clearErr('slot')
-                          }}
-                          style={{
-                            padding: '6px 4px', textAlign: 'center', fontSize: '12px',
-                            border: `1px solid ${isBooked ? '#f8d7da' : isSel ? 'var(--color-bgcolor)' : '#ddd'}`,
-                            borderRadius: '5px', cursor: isBooked ? 'not-allowed' : 'pointer',
-                            backgroundColor: isBooked ? '#f8d7da' : isSel ? 'var(--color-bgcolor)' : '#fff',
-                            color: isBooked ? '#842029' : isSel ? '#fff' : 'var(--color-bgcolor)',
-                            fontWeight: isSel ? '600' : '400',
-                          }}>
-                          {slotObj.slot}
-                        </div>
-                      )
-                    })}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: '6px' }}>
+                  {visibleSlots.map((slotObj, i) => {
+                    const isBooked = slotObj.slotbooked
+                    const isSel = selectedSlots.includes(slotObj.slot)
+                    return (
+                      <div key={i}
+                        onClick={() => {
+                          if (isBooked) return
+                          setSelectedSlots([slotObj.slot])
+                          setBookingDetails((p) => ({ ...p, servicetime: slotObj.slot }))
+                          clearErr('slot')
+                        }}
+                        style={{
+                          padding: '6px 4px', textAlign: 'center', fontSize: '12px',
+                          border: `1px solid ${isBooked ? '#f8d7da' : isSel ? COLORS.primary : '#ddd'}`,
+                          borderRadius: '5px', cursor: isBooked ? 'not-allowed' : 'pointer',
+                          backgroundColor: isBooked ? '#f8d7da' : isSel ? COLORS.primary : '#fff',
+                          color: isBooked ? '#842029' : isSel ? '#fff' : COLORS.primary,
+                          fontWeight: isSel ? '600' : '400',
+                        }}>
+                        {slotObj.slot}
+                      </div>
+                    )
+                  })}
+                </div>
+                {sortedSlots.length > 12 && (
+                  <div className="text-center mt-2">
+                    <CButton color="secondary" size="sm" style={{ fontSize: FS }}
+                      onClick={() => setShowAllSlots(!showAllSlots)}>
+                      {showAllSlots ? 'Show Less' : 'Show More'}
+                    </CButton>
                   </div>
-                  {sortedSlots.length > 12 && (
-                    <div className="text-center mt-2">
-                      <CButton color="secondary" size="sm" style={{ fontSize: FS }}
-                        onClick={() => setShowAllSlots(!showAllSlots)}>
-                        {showAllSlots ? 'Show Less' : 'Show More'}
-                      </CButton>
-                    </div>
-                  )}
-                </>
+                )}
+              </>
             }
           </CCardBody>
         </CCard>
@@ -1127,11 +1135,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    
+
 
     <COffcanvas placement="end" visible={visible} onHide={onClose} className="w-75" backdrop="static">
       <COffcanvasHeader style={{ borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-        <COffcanvasTitle style={{ fontSize: '14px', fontWeight: '600', color: 'var(--color-bgcolor)' }}>
+        <COffcanvasTitle style={{ fontSize: '14px', fontWeight: '600', color: COLORS.primary }}>
           📅 Book Appointment
         </COffcanvasTitle>
         <button className="btn-close" onClick={onClose} />
@@ -1153,12 +1161,12 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                     border: 'none',
                     borderBottom: isActive ? '2px solid var(--color-bgcolor)' : '2px solid transparent',
                     background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap',
-                    color: isActive ? 'var(--color-bgcolor)' : isComplete ? '#555' : '#aaa',
+                    color: isActive ? COLORS.primary : isComplete ? '#555' : '#aaa',
                     display: 'flex', alignItems: 'center', gap: '4px',
                   }}>
                   {isComplete
                     ? <span style={{ fontSize: '10px', color: '#4caf50', fontWeight: '700' }}>✓</span>
-                    : <span style={{ fontSize: '11px', color: isActive ? 'var(--color-bgcolor)' : '#bbb' }}>{idx + 1}.</span>
+                    : <span style={{ fontSize: '11px', color: isActive ? COLORS.primary : '#bbb' }}>{idx + 1}.</span>
                   }
                   {tab.label}
                 </button>
@@ -1169,7 +1177,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           <div style={{ height: '3px', background: '#eee', marginTop: '-2px' }}>
             <div style={{
               height: '100%', width: `${progressPct}%`,
-              background: 'var(--color-bgcolor)', transition: 'width 0.3s ease',
+              background: COLORS.primary, transition: 'width 0.3s ease',
             }} />
           </div>
         </div>
@@ -1225,7 +1233,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               <CButton size="sm"
                 style={{
                   fontSize: FS, padding: '4px 14px',
-                  backgroundColor: 'var(--color-bgcolor)', color: '#fff', border: 'none',
+                  backgroundColor: COLORS.primary, color: '#fff', border: 'none',
                 }}
                 onClick={goNext}>
                 Next →
@@ -1234,7 +1242,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               <CButton size="sm" disabled={saveloading}
                 style={{
                   fontSize: FS, padding: '4px 14px',
-                  backgroundColor: 'var(--color-bgcolor)', color: '#fff', border: 'none',
+                  backgroundColor: COLORS.primary, color: '#fff', border: 'none',
                 }}
                 onClick={visitType === 'followup' ? handleFollowUpSubmit : handleSubmit}>
                 {saveloading ? 'Submitting…' : '✓ Submit'}

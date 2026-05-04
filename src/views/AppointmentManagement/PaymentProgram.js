@@ -8,6 +8,7 @@ import {
 import Select from "react-select";
 import { BASE_URL, wifiUrl } from "../../baseUrl";
 import { useLocation, useNavigate } from "react-router-dom";
+import { showCustomToast } from "../../Utils/Toaster";
 
 export default function ProgramPayment() {
   const location = useLocation();
@@ -34,6 +35,8 @@ export default function ProgramPayment() {
   const [loading, setLoading] = useState(false);
   const [therapistRecordId, setTherapistRecordId] = useState("");
   const [showTable, setShowTable] = useState(false);
+  const [tableOpen, setTableOpen] = useState(false); // accordion state for generated table
+  const [sessionTableAlreadyCreated, setSessionTableAlreadyCreated] = useState(false); // hide session details when loaded from payment API
   const [printData, setPrintData] = useState(null);
   const [showPrint, setShowPrint] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
@@ -56,12 +59,57 @@ export default function ProgramPayment() {
   const [isFollowUpPayment, setIsFollowUpPayment] = useState(false);
 
 
-
   useEffect(() => {
     if (bookingId && patientId && clinicId && branchId) {
-      fetchTherapySessions();
+      initializePayment();
     }
   }, [bookingId, patientId, clinicId, branchId]);
+
+  // Step 1: Check payment API first for sessionTableCreatedStatus
+  const initializePayment = async () => {
+    try {
+      const res = await fetch(`${wifiUrl}/api/physiotherapy-doctor/payment/${bookingId}`);
+      const data = await res.json();
+      
+      if (data.success && data.data) {
+        const result = data.data;
+        const sessionTableCreated = result.sessionTableCreatedStatus === true;
+        
+        if (sessionTableCreated) {
+          // Table already created — load payment data directly, skip generate
+          setAllPaid(checkAllSessionsPaid(result));
+          setFullPaymentData(result);
+          console.log("Payment data loaded (table exists):", result);
+          if ((result.paymentHistory || []).length > 0) { setPaymentAmount(result.balanceAmount || 0); setFinalAmount(result.balanceAmount || 0); }
+          else { setPaymentAmount(result.totalAmount || 0); setFinalAmount(result.finalAmount || result.totalAmount || 0); }
+          setDiscountAmount(result.discountAmount || 0);
+          setDoctorName(result.doctorName);
+          setTherapistName(result.therapistName);
+          setTherapistRecordId(result.therapistRecordId);
+          setPaymentStatus(result.paymentStatus);
+          setPaymentHistory(result.paymentHistory || []);
+          const typeRaw = result.serviceType?.toLowerCase() || "";
+          setBackendServiceType(typeRaw === "exercise" ? "activity" : typeRaw);
+          const formatted = formatTherapyTable(result.therapyWithSessions);
+          setTableData(formatted);
+          setShowTable(true);
+          setSessionTableAlreadyCreated(true); // mark as pre-existing, hide session details
+          if ((result.paymentHistory || []).length > 0) setIsFollowUpPayment(true);
+          
+          // Also fetch therapy sessions for dropdown options
+          await fetchTherapySessions();
+          return;
+        }
+      }
+      
+      // sessionTableCreatedStatus is false or no payment data — show Generate Table UI
+      await fetchTherapySessions();
+    } catch (err) {
+      console.error("Init payment check error:", err);
+      // Fallback: fetch therapy sessions anyway
+      await fetchTherapySessions();
+    }
+  };
 
   const fetchTherapySessions = async () => {
     try {
@@ -88,12 +136,13 @@ export default function ProgramPayment() {
       }
       console.log("NORMALIZED:", normalized);
       setApiData(normalized);
-      setBackendServiceType(type);
+      const normalizedType = type === "exercise" ? "activity" : type;
+      if (!backendServiceType) setBackendServiceType(normalizedType);
       setPackageId(normalized?.[0]?.packageId || "");
-      setDoctorName(normalized?.[0]?.doctorName || "");
-      setTherapistId(normalized?.[0]?.therapistId || "");
-      setTherapistName(normalized?.[0]?.therapistName || "");
-      setTherapistRecordId(normalized?.[0]?.therapistRecordId || "");
+      setDoctorName(prev => prev || normalized?.[0]?.doctorName || "");
+      setTherapistId(prev => prev || normalized?.[0]?.therapistId || "");
+      setTherapistName(prev => prev || normalized?.[0]?.therapistName || "");
+      setTherapistRecordId(prev => prev || normalized?.[0]?.therapistRecordId || "");
     } catch (error) { console.error("API Error:", error); }
   };
 
@@ -102,12 +151,13 @@ export default function ProgramPayment() {
 
 
   const getServiceTypes = () => {
-    const type = apiData?.[0]?.serviceType?.toLowerCase() || "";
+    const typeRaw = apiData?.[0]?.serviceType?.toLowerCase() || "";
+    const type = typeRaw === "exercise" ? "activity" : typeRaw;
     const typesMap = {
-      package: ["package", "program", "therapy", "exercise", "session"],
-      program: ["program", "therapy", "exercise", "session"],
-      therapy: ["therapy", "exercise", "session"],
-      exercise: ["exercise", "session"],
+      package: ["package", "program", "therapy", "activity", "session"],
+      program: ["program", "therapy", "activity", "session"],
+      therapy: ["therapy", "activity", "session"],
+      activity: ["activity", "session"],
     };
     return typesMap[type] || [];
   };
@@ -121,7 +171,7 @@ export default function ProgramPayment() {
         return programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({ label: p.programName, value: p.programId, price: Number(p.totalPrice || 0) }));
       case "therapy":
         return programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ label: t.therapyName, value: t.therapyId, price: Number(t.totalPrice || 0) })));
-      case "exercise":
+      case "activity":
         return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ label: ex.exerciseName, value: ex.exerciseId, price: Number(ex.totalSessionCost || ex.pricePerSession || ex.price || 0) }))));
       case "session":
         return (formattedData || []).filter(s => s.paymentStatus?.toLowerCase() !== "paid").map(s => ({ label: `${s.sessionId} - ${s.date}`, value: s.sessionId, price: Number(s.price || s.pricePerSession || 0) }));
@@ -139,7 +189,7 @@ export default function ProgramPayment() {
             therapy.exercises?.forEach(ex => { ex.sessions?.forEach(s => { if (s.paymentStatus?.toLowerCase() !== "paid") total += Number(ex.pricePerSession || 0); }); });
           }
           therapy.exercises?.forEach(ex => {
-            if (type === "exercise" && ids.includes(ex.exerciseId)) {
+            if (type === "activity" && ids.includes(ex.exerciseId)) {
               ex.sessions?.forEach(s => { if (s.paymentStatus?.toLowerCase() !== "paid") total += Number(ex.pricePerSession || 0); });
             }
             if (type === "session") {
@@ -155,13 +205,13 @@ export default function ProgramPayment() {
   const handleSelectValue = (selected) => {
     const selectedItems = selected || [];
     setSelectedValue(selectedItems);
-    
+
     const ids = selectedItems.map(item => item.value);
     let total = 0;
-    
+
     // First try to get total from selected items' price property
     const itemTotal = selectedItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
-    
+
     if (itemTotal > 0) {
       total = itemTotal;
     } else if (isFollowUpPayment) {
@@ -219,6 +269,10 @@ export default function ProgramPayment() {
   };
 
   const handleGenerate = async () => {
+    if (!startDate) {
+      showCustomToast("Please select a start date before generating the table.", "error");
+      return;
+    }
     try {
       setLoading(true);
       const payload = { startDate, clinicId, branchId, patientId, bookingId, therapistRecordId };
@@ -229,18 +283,18 @@ export default function ProgramPayment() {
       const apiResponse = Array.isArray(data?.data) ? data.data : [];
       const apiDataLocal = data?.data || [];
       console.log(apiDataLocal);
-      
+
       // Mapping rows for the session selection dropdown (including price)
       // Mapping rows for the session selection dropdown (including price)
       const rows = apiDataLocal.flatMap(item => {
         const programs = item.therapySessions || (item.therapyData ? [item] : []);
-        return programs.flatMap(program => 
-          program?.therapyData?.flatMap(therapy => 
-            therapy?.exercises?.flatMap(exercise => 
-              exercise?.sessions?.map(session => ({ 
-                sessionId: session.sessionId, 
-                date: session.date, 
-                status: session.status, 
+        return programs.flatMap(program =>
+          program?.therapyData?.flatMap(therapy =>
+            therapy?.exercises?.flatMap(exercise =>
+              exercise?.sessions?.map(session => ({
+                sessionId: session.sessionId,
+                date: session.date,
+                status: session.status,
                 paymentStatus: session.paymentStatus,
                 price: exercise.pricePerSession || exercise.price || (exercise.totalExercisePrice / exercise.noOfSessions) || 0
               })) || []
@@ -255,11 +309,13 @@ export default function ProgramPayment() {
       console.log("TABLE DATA:", formatted);
       setTableData(formatted);
       setShowTable(true);
-      
+      setTableOpen(false); // start collapsed so user clicks to expand
+
       // Only set backendServiceType if it's one of the root types and not already set correctly
       if (apiDataLocal.length > 0) {
-        const rootType = apiDataLocal[0].serviceType?.toLowerCase();
-        if (rootType && ["package", "program", "therapy", "exercise"].includes(rootType)) {
+        let rootType = apiDataLocal[0].serviceType?.toLowerCase();
+        if (rootType === "exercise") rootType = "activity"; // Normalize to activity
+        if (rootType && ["package", "program", "therapy", "activity"].includes(rootType)) {
           setBackendServiceType(rootType);
         }
       }
@@ -308,7 +364,31 @@ export default function ProgramPayment() {
       const exerciseData = sessionRows.flatMap(prog => prog.therapyData?.flatMap(ther => ther.exercises?.find(ex => ex.exerciseId === exerciseId))).filter(Boolean)[0];
       return exerciseData?.sessions || [];
     };
-    const mapExercise = (ex) => ({ exerciseId: String(ex.exerciseId || ""), exerciseName: String(ex.exerciseName || ex.name || "Unknown"), pricePerSession: Number(ex.pricePerSession) || 0, noOfSessions: Number(ex.noOfSessions) || 0, totalExercisePrice: Number(ex.totalExercisePrice || ex.totalSessionCost) || 0, paymentStatus: "UNPAID", frequency: String(ex.frequency || ex.frequancy || ""), sets: Number(ex.sets) || 0, repetitions: Number(ex.repetitions) || 0, youtubeUrl: String(ex.videoUrl || ""), notes: String(ex.notes || "") });
+    const mapExercise = (ex) => ({
+      exerciseId: String(ex.exerciseId || ""),
+      exerciseName: String(ex.exerciseName || ex.name || "Unknown"),
+      pricePerSession: Number(ex.pricePerSession) || 0,
+      noOfSessions: Number(ex.noOfSessions) || 0,
+      totalExercisePrice: Number(ex.totalExercisePrice || ex.totalSessionCost) || 0,
+      paymentStatus: "UNPAID",
+      frequency: String(ex.frequency || ex.frequancy || ""),
+      sets: Number(ex.sets) || 0,
+      repetitions: Number(ex.repetitions) || 0,
+      youtubeUrl: String(ex.videoUrl || ex.youtubeUrl || ""),
+      notes: String(ex.notes || ""),
+      technique: ex.technique || null,
+      machine: ex.machine || null,
+      intensity: ex.intensity || null,
+      assistanceLevel: ex.assistanceLevel || null,
+      type: ex.type || null,
+      area: ex.area || null,
+      metric: ex.metric || null,
+      value: ex.value || null,
+      unit: ex.unit || null,
+      bodyPart: ex.bodyPart || null,
+      activityType: ex.activityType || null,
+      activityDuration: ex.activityDuration || null
+    });
     if (selectedType === "package") { return [{ packageId: item.packageId, packageName: item.packageName, programs: (item.therapySessions || []).map(program => ({ programId: program.programId, programName: program.programName, therapyData: (program.therapyData || []).map(therapy => ({ therapyId: therapy.therapyId, therapyName: therapy.therapyName, totalPrice: therapy.totalPrice, exercises: (therapy.exercises || []).map(ex => mapExercise(ex)) })) })) }]; }
     if (selectedType === "program") { return (item.therapySessions || []).filter(p => !selectedIds.length || selectedIds.includes(p.programId)).map(program => ({ programId: program.programId, programName: program.programName, therapyData: (program.therapyData || []).map(therapy => ({ therapyId: therapy.therapyId, therapyName: therapy.therapyName, totalPrice: therapy.totalPrice, exercises: (therapy.exercises || []).map(ex => mapExercise(ex)) })) })); }
     return [];
@@ -321,7 +401,7 @@ export default function ProgramPayment() {
     if (selectedType === "package") return root.therapySessions || [];
     if (selectedType === "program") return (root.therapySessions || []).filter(p => selectedIds.includes(p.programId));
     if (selectedType === "therapy") return (root?.therapySessions || []).flatMap(program => program?.therapyData || []).filter(t => selectedIds.includes(t.therapyId));
-    if (selectedType === "exercise") return (root.therapySessions || []).map(program => ({ ...program, therapyData: (program.therapyData || []).map(therapy => ({ ...therapy, exercises: (therapy.exercises || []).filter(ex => selectedIds.includes(ex.exerciseId)) })).filter(t => t.exercises.length > 0) })).filter(p => p.therapyData.length > 0);
+    if (selectedType === "activity") return (root.therapySessions || []).map(program => ({ ...program, therapyData: (program.therapyData || []).map(therapy => ({ ...therapy, exercises: (therapy.exercises || []).filter(ex => selectedIds.includes(ex.exerciseId)) })).filter(t => t.exercises.length > 0) })).filter(p => p.therapyData.length > 0);
     return [];
   };
 
@@ -330,16 +410,16 @@ export default function ProgramPayment() {
     if (!apiData?.length) return;
     const root = apiData[0];
     const type = (root.serviceType || "").toLowerCase();
-    
+
     // Set initial service type selection
     setSelectedType(type);
     setBackendServiceType(type); // Ensure backend service type is synced
     setSelectedValue([]);
-    
+
     // Default payment settings
     setPaymentType("full");
     setPaymentPercent(100);
-    
+
     let amount = 0;
     if (type === "package") {
       amount = Number(root.total || root.totalPrice || 0);
@@ -350,30 +430,64 @@ export default function ProgramPayment() {
 
   const createPayloadData = {
     clinicId, branchId, bookingId, patientId, sessionStartDate: startDate, doctorId, doctorName, therapistId, therapistName, therapistRecordId,
-    serviceType: backendServiceType.toUpperCase(), paymentLevel: selectedType.toUpperCase(),
+    serviceType: backendServiceType === "activity" ? "EXERCISE" : backendServiceType.toUpperCase(),
+    paymentLevel: selectedType === "activity" ? "EXERCISE" : selectedType.toUpperCase(),
     amount: Number(finalAmount || 0), paymentMode: paymentMode.toUpperCase(), paymentType: paymentType.toUpperCase(),
     totalSessionCount: 2, discountAmount: Number(discountAmount || 0), discountIssuedBy,
     paymentDate: new Date().toISOString().split("T")[0],
-    paymentTarget: { packageIds: selectedType === "package" ? [packageId] : [], programIds: selectedType === "program" ? selectedValue.map(i => i.value) : [], therapyIds: selectedType === "therapy" ? selectedValue.map(i => i.value) : [], exerciseIds: selectedType === "exercise" ? selectedValue.map(i => i.value) : [], sessionIds: selectedType === "session" ? selectedValue.map(i => i.value) : [] },
+    paymentTarget: {
+      packageIds: selectedType === "package" ? [packageId] : [],
+      programIds: selectedType === "program" ? selectedValue.map(i => i.value) : [],
+      therapyIds: selectedType === "therapy" ? selectedValue.map(i => i.value) : [],
+      exerciseIds: selectedType === "activity" ? selectedValue.map(i => i.value) : [],
+      sessionIds: selectedType === "session" ? selectedValue.map(i => i.value) : []
+    },
     therapyWithSessions: (() => {
       const type = backendServiceType?.toLowerCase();
       const root = apiData?.[0];
       if (!root) return [];
+      
+      const mapEx = (ex) => ({
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+        pricePerSession: Number(ex.pricePerSession || 0),
+        noOfSessions: Number(ex.noOfSessions || 0),
+        repetitions: Number(ex.repetitions || 0),
+        sets: Number(ex.sets || 0),
+        frequency: ex.frequency || "",
+        youtubeUrl: ex.youtubeUrl || "",
+        notes: ex.notes || "",
+        technique: ex.technique || null,
+        machine: ex.machine || null,
+        intensity: ex.intensity || null,
+        assistanceLevel: ex.assistanceLevel || null,
+        type: ex.type || null,
+        area: ex.area || null,
+        metric: ex.metric || null,
+        value: ex.value || null,
+        unit: ex.unit || null,
+        bodyPart: ex.bodyPart || null,
+        activityType: ex.activityType || null,
+        activityDuration: ex.activityDuration || null
+      });
+
       if (type === "package") return [{ packageId: root.packageId || "", packageName: root.packageName || "", totalPrice: root.totalPrice || 0, programs: root.therapySessions || [] }];
-      if (type === "program") return (root.therapySessions || []).map(program => ({ programId: program.programId, programName: program.programName, therapyData: (program.therapyData || []).map(therapy => ({ therapyId: therapy.therapyId, therapyName: therapy.therapyName, exercises: (therapy.exercises || []).map(ex => ({ exerciseId: ex.exerciseId, exerciseName: ex.exerciseName, pricePerSession: Number(ex.pricePerSession || 0), noOfSessions: Number(ex.noOfSessions || 0), repetitions: Number(ex.repetitions || 0), sets: Number(ex.sets || 0), frequency: ex.frequency || "", youtubeUrl: ex.youtubeUrl || "", notes: ex.notes || "" })) })) }));
-      if (type === "therapy") return (root.therapySessions || []).flatMap(program => program.therapyData || []).map(therapy => ({ therapyId: therapy.therapyId, therapyName: therapy.therapyName, exercises: (therapy.exercises || []).map(ex => ({ exerciseId: ex.exerciseId, exerciseName: ex.exerciseName, pricePerSession: Number(ex.pricePerSession || 0), noOfSessions: Number(ex.noOfSessions || 0), repetitions: Number(ex.repetitions || 0), sets: Number(ex.sets || 0), frequency: ex.frequency || "", youtubeUrl: ex.youtubeUrl || "", notes: ex.notes || "" })) }));
-      if (type === "exercise") return [{ exercises: (root.therapySessions || []).flatMap(program => program.therapyData || []).flatMap(therapy => therapy.exercises || []).map(ex => ({ exerciseId: ex.exerciseId, exerciseName: ex.exerciseName, pricePerSession: Number(ex.pricePerSession || 0), noOfSessions: Number(ex.noOfSessions || 0), repetitions: Number(ex.repetitions || 0), sets: Number(ex.sets || 0), frequency: ex.frequency || "", youtubeUrl: ex.youtubeUrl || "", notes: ex.notes || "" })) }];
+      if (type === "program") return (root.therapySessions || []).map(program => ({ programId: program.programId, programName: program.programName, therapyData: (program.therapyData || []).map(therapy => ({ therapyId: therapy.therapyId, therapyName: therapy.therapyName, exercises: (therapy.exercises || []).map(ex => mapEx(ex)) })) }));
+      if (type === "therapy") return (root.therapySessions || []).flatMap(program => program.therapyData || []).map(therapy => ({ therapyId: therapy.therapyId, therapyName: therapy.therapyName, exercises: (therapy.exercises || []).map(ex => mapEx(ex)) }));
+      if (type === "activity") return [{ exercises: (root.therapySessions || []).flatMap(program => program.therapyData || []).flatMap(therapy => therapy.exercises || []).map(ex => mapEx(ex)) }];
       return [];
     })(),
   };
 
   const updatePayload = {
-    bookingId, amount: Number(finalAmount || 0), paymentMode: paymentMode?.toUpperCase(), paymentType: paymentType?.toUpperCase(), paymentLevel: selectedType?.toUpperCase(),
+    bookingId, amount: Number(finalAmount || 0), paymentMode: paymentMode?.toUpperCase(),
+    paymentType: paymentType?.toUpperCase(),
+    paymentLevel: selectedType === "activity" ? "EXERCISE" : selectedType?.toUpperCase(),
     paymentTarget: {
       ...(selectedType === "package" && { packageIds: selectedValue.length ? selectedValue.map(i => i.value) : apiData.map(i => i.packageId) }),
       ...(selectedType === "program" && { programIds: selectedValue.length ? selectedValue.map(i => i.value) : apiData[0]?.therapySessions?.map(p => p.programId) }),
       ...(selectedType === "therapy" && { therapyIds: selectedValue.length ? selectedValue.map(i => i.value) : apiData[0]?.therapySessions?.flatMap(p => p.therapyData?.map(t => t.therapyId)) }),
-      ...(selectedType === "exercise" && { exerciseIds: selectedValue.length ? selectedValue.map(i => i.value) : apiData[0]?.therapySessions?.flatMap(p => p.therapyData?.flatMap(t => t.exercises?.map(e => e.therapyExercisesId))) }),
+      ...(selectedType === "activity" && { exerciseIds: selectedValue.length ? selectedValue.map(i => i.value) : apiData[0]?.therapySessions?.flatMap(p => p.therapyData?.flatMap(t => t.exercises?.map(e => e.therapyExercisesId))) }),
       ...(selectedType === "session" && { sessionIds: selectedValue.length ? selectedValue.map(i => i.value) : sessionRows.map(s => s.sessionId) }),
     },
     paymentDate: new Date().toISOString().split("T")[0],
@@ -394,8 +508,6 @@ export default function ProgramPayment() {
     } catch (error) { console.error("Payment Error:", error); }
   };
 
-  useEffect(() => { fetchPaymentDetails(); }, [bookingId]);
-
   const fetchPaymentDetails = async () => {
     try {
       const res = await fetch(`${wifiUrl}/api/physiotherapy-doctor/payment/${bookingId}`);
@@ -413,7 +525,8 @@ export default function ProgramPayment() {
       setTherapistRecordId(result.therapistRecordId);
       setPaymentStatus(result.paymentStatus);
       setPaymentHistory(result.paymentHistory || []);
-      setBackendServiceType(result.serviceType?.toLowerCase() || ""); // Sync backend service type
+      const typeRaw = result.serviceType?.toLowerCase() || "";
+      setBackendServiceType(typeRaw === "exercise" ? "activity" : typeRaw); // Sync backend service type
       const formatted = formatTherapyTable(result.therapyWithSessions);
       setTableData(formatted);
       setShowTable(true);
@@ -483,54 +596,97 @@ export default function ProgramPayment() {
               />
             </CCol>
             <CCol md={3} className="d-flex align-items-end">
-              <button onClick={handleGenerate} style={primaryBtn}>
-                Generate Table
+              <button
+                onClick={handleGenerate}
+                disabled={loading}
+                style={{ ...primaryBtn, opacity: loading ? 0.75 : 1, display: "flex", alignItems: "center", gap: "8px", minWidth: "140px", justifyContent: "center" }}
+              >
+                {loading ? (
+                  <>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: "14px", height: "14px",
+                        border: "2px solid rgba(255,255,255,0.4)",
+                        borderTopColor: "#fff",
+                        borderRadius: "50%",
+                        animation: "spin 0.7s linear infinite",
+                      }}
+                    />
+                    Generating...
+                  </>
+                ) : "Generate Table"}
               </button>
             </CCol>
           </CRow>
         </div>
       )}
 
-      {/* ── STEP 2: Session Table ── */}
-      {showTable && !allPaid && (
+      {/* ── STEP 2: Session Table (Accordion) ── */}
+      {showTable && !allPaid && !sessionTableAlreadyCreated && (
         <div style={{
           background: "#fff", border: "0.5px solid #d0dce9",
           borderRadius: "10px", overflow: "hidden", marginBottom: "16px",
         }}>
-          <div style={{ background: "#185fa5", padding: "10px 14px" }}>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: "#fff" }}>Session Details</span>
+          {/* Accordion header – click to toggle */}
+          <div
+            onClick={() => setTableOpen(prev => !prev)}
+            style={{
+              background: "#185fa5", padding: "10px 16px",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              cursor: "pointer", userSelect: "none",
+            }}
+          >
+            <span style={{ fontSize: "13px", fontWeight: 600, color: "#fff" }}>
+              Session Details
+              <span style={{
+                marginLeft: "10px", background: "rgba(255,255,255,0.2)",
+                borderRadius: "20px", fontSize: "11px", padding: "1px 8px",
+              }}>
+                {formattedData.length} sessions
+              </span>
+            </span>
+            <span style={{
+              color: "#fff", fontSize: "14px",
+              transform: tableOpen ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.2s",
+            }}>▾</span>
           </div>
-          <div style={{ overflowX: "auto" }}>
-            <CTable className="mb-0" style={{ fontSize: "12px" }}>
-              <CTableHead>
-                <CTableRow>
-                  {["Session ID", "Date", "Status", "Payment Status"].map(h => (
-                    <CTableHeaderCell key={h} style={thStyle}>{h}</CTableHeaderCell>
-                  ))}
-                </CTableRow>
-              </CTableHead>
-              <CTableBody>
-                {formattedData.map((session, i) => (
-                  <CTableRow key={session.sessionId || i} style={{ fontSize: "12px" }}>
-                    <CTableDataCell style={tdStyle}>{session?.sessionId}</CTableDataCell>
-                    <CTableDataCell style={tdStyle}>{session?.date}</CTableDataCell>
-                    <CTableDataCell style={tdStyle}>{session?.status}</CTableDataCell>
-                    <CTableDataCell style={tdStyle}>
-                      <span style={{
-                        display: "inline-block", borderRadius: "20px",
-                        fontSize: "11px", fontWeight: 600, padding: "2px 9px",
-                        ...(session?.paymentStatus?.toLowerCase() === "paid"
-                          ? { background: "#eaf3de", color: "#27500a", border: "0.5px solid #97c459" }
-                          : { background: "#fcebeb", color: "#791f1f", border: "0.5px solid #f09595" })
-                      }}>
-                        {session?.paymentStatus}
-                      </span>
-                    </CTableDataCell>
+
+          {/* Collapsible body */}
+          {tableOpen && (
+            <div style={{ overflowX: "auto" }}>
+              <CTable className="mb-0" style={{ fontSize: "12px" }}>
+                <CTableHead>
+                  <CTableRow>
+                    {["Session ID", "Date", "Status", "Payment Status"].map(h => (
+                      <CTableHeaderCell key={h} style={thStyle}>{h}</CTableHeaderCell>
+                    ))}
                   </CTableRow>
-                ))}
-              </CTableBody>
-            </CTable>
-          </div>
+                </CTableHead>
+                <CTableBody>
+                  {formattedData.map((session, i) => (
+                    <CTableRow key={session.sessionId || i} style={{ fontSize: "12px" }}>
+                      <CTableDataCell style={tdStyle}>{session?.sessionId}</CTableDataCell>
+                      <CTableDataCell style={tdStyle}>{session?.date}</CTableDataCell>
+                      <CTableDataCell style={tdStyle}>{session?.status}</CTableDataCell>
+                      <CTableDataCell style={tdStyle}>
+                        <span style={{
+                          display: "inline-block", borderRadius: "20px",
+                          fontSize: "11px", fontWeight: 600, padding: "2px 9px",
+                          ...(session?.paymentStatus?.toLowerCase() === "paid"
+                            ? { background: "#eaf3de", color: "#27500a", border: "0.5px solid #97c459" }
+                            : { background: "#fcebeb", color: "#791f1f", border: "0.5px solid #f09595" })
+                        }}>
+                          {session?.paymentStatus}
+                        </span>
+                      </CTableDataCell>
+                    </CTableRow>
+                  ))}
+                </CTableBody>
+              </CTable>
+            </div>
+          )}
         </div>
       )}
 
@@ -743,6 +899,7 @@ export default function ProgramPayment() {
         .pm-input:focus { border-color: #185fa5 !important; box-shadow: 0 0 0 2px rgba(24,95,165,0.15) !important; }
         select.pm-input, input.pm-input { height: 36px; font-size: 13px; border: 0.5px solid #ced4da; border-radius: 7px; padding: 0 10px; }
         select.pm-input:focus, input.pm-input:focus { border-color: #185fa5; outline: none; box-shadow: 0 0 0 2px rgba(24,95,165,0.15); }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
