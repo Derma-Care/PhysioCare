@@ -54,21 +54,35 @@ const PhysioManagement = () => {
 
   const handleSave = async (data) => {
     try {
+      setLoading(true)
+      let res
       if (selectedPhysio) {
-        await updatePhysio(selectedPhysio.therapistId, data)
-        showCustomToast('Therapist updated successfully', 'success')
-        await fetchPhysios()
+        res = await updatePhysio(selectedPhysio.therapistId, data)
+        if (res.status === 200 || res.status === 201 || res.data?.success) {
+          showCustomToast('Therapist updated successfully', 'success')
+          setModalVisible(false)
+          setSelectedPhysio(null)
+          await fetchPhysios()
+        } else {
+          throw new Error(res.data?.message || 'Failed to update therapist')
+        }
       } else {
-        await addPhysio(data)
-        showCustomToast('Therapist added successfully', 'success')
-
-
-        await fetchPhysios()
+        res = await addPhysio(data)
+        if (res.status === 200 || res.status === 201 || res.data?.success) {
+          showCustomToast('Therapist added successfully', 'success')
+          setModalVisible(false)
+          setSelectedPhysio(null)
+          await fetchPhysios()
+        } else {
+          throw new Error(res.data?.message || 'Failed to add therapist')
+        }
       }
-      setModalVisible(false)
-      setSelectedPhysio(null)
     } catch (err) {
       console.error('Save failed:', err)
+      const msg = err.response?.data?.message || err.message || 'Failed to save therapist details'
+      showCustomToast(msg, 'error')
+    } finally {
+      setLoading(false)
     }
   }
 
