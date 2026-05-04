@@ -497,7 +497,7 @@ export default function ExerciseTable() {
             </p>
           </div>
         </div>
-        {can("Exercise Management", "create") && (
+        {can("Activity Library", "create") && (
           <button className="ex-add-btn" onClick={() => setModal(true)}>
             <PlusCircle size={15} />
             Add Activity
@@ -561,17 +561,17 @@ export default function ExerciseTable() {
                   </CTableDataCell>
                   <CTableDataCell className="ex-td">
                     <div className="ex-actions">
-                      {can("Exercise Management", "read") && (
+                      {can("Activity Library", "read") && (
                         <button className="ex-action-btn view" title="View" onClick={() => handleView(ex)}>
                           <Eye size={14} />
                         </button>
                       )}
-                      {can("Exercise Management", "update") && (
+                      {can("Activity Library", "update") && (
                         <button className="ex-action-btn edit" title="Edit" onClick={() => handleEdit(ex)}>
                           <Edit2 size={14} />
                         </button>
                       )}
-                      {can("Exercise Management", "delete") && (
+                      {can("Activity Library", "delete") && (
                         <button
                           className="ex-action-btn del"
                           title="Delete"
