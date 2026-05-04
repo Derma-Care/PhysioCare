@@ -443,6 +443,11 @@ const ConsentForm = () => {
           box-shadow: 0 2px 8px rgba(0,0,0,0.15);
           overflow: hidden;
           page-break-after: always;
+          color: #000 !important;
+        }
+
+        .a4-page * {
+          color: #000 !important;
         }
 
         body { font-size: 14px; }

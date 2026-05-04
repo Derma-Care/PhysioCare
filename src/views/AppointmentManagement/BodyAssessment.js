@@ -9,6 +9,7 @@ import html2canvas from 'html2canvas'
 import { Spinner } from 'react-bootstrap'
 import LoadingIndicator from '../../Utils/loader'
 import { showCustomToast } from '../../Utils/Toaster'
+import { COLORS } from '../../Constant/Themes'
 export default function BodyAssessment({ onPartClick }) {
   const [view, setView] = useState('front')
   const [selected, setSelected] = useState([])
@@ -19,36 +20,36 @@ export default function BodyAssessment({ onPartClick }) {
   const [loading, setLoading] = useState(false)
   const containerRef = useRef()
   const [modalQueue, setModalQueue] = useState([])
-const [currentPart, setCurrentPart] = useState(null)
-const [finalImage, setFinalImage] = useState(null)
+  const [currentPart, setCurrentPart] = useState(null)
+  const [finalImage, setFinalImage] = useState(null)
   const svgRef = useRef()
-const handleClick = (id, event) => {
-  const svg = svgRef.current
-  const rect = svg.getBoundingClientRect()
+  const handleClick = (id, event) => {
+    const svg = svgRef.current
+    const rect = svg.getBoundingClientRect()
 
-  const px = (event.clientX - rect.left) / rect.width
-const py = (event.clientY - rect.top) / rect.height
+    const px = (event.clientX - rect.left) / rect.width
+    const py = (event.clientY - rect.top) / rect.height
 
-let x = px * 600
-let y = py * 600
+    let x = px * 600
+    let y = py * 600
 
-// fix for left / right body split
-if (px > 0.5) {
-  // right side (back body)
-  x = 300 + (px - 0.5) * 600
-} else {
-  // left side (front body)
-  x = px * 600
-}
+    // fix for left / right body split
+    if (px > 0.5) {
+      // right side (back body)
+      x = 300 + (px - 0.5) * 600
+    } else {
+      // left side (front body)
+      x = px * 600
+    }
 
-  if (selected.includes(id)) {
-    setSelected((prev) => prev.filter((p) => p !== id))
-    setPoints((prev) => prev.filter((p) => p.id !== id))
-  } else {
-    setSelected((prev) => [...prev, id])
-    setPoints((prev) => [...prev, { id, x, y }])
+    if (selected.includes(id)) {
+      setSelected((prev) => prev.filter((p) => p !== id))
+      setPoints((prev) => prev.filter((p) => p.id !== id))
+    } else {
+      setSelected((prev) => [...prev, id])
+      setPoints((prev) => [...prev, { id, x, y }])
+    }
   }
-}
 
   const getColor = () => 'transparent'
 
@@ -72,51 +73,52 @@ if (px > 0.5) {
     })
   }
 
-const handleSaveAnswers = (data) => {
+  const handleSaveAnswers = (data) => {
 
-  const newAnswers = [...answerData, data];
+    const newAnswers = [...answerData, data];
 
-  const selectedParts = [...selected];
+    const selectedParts = [...selected];
 
-  setAnswerData(newAnswers);
-  setModalPart(null);
-  setSelected([]);
+    setAnswerData(newAnswers);
+    setModalPart(null);
+    setSelected([]);
 
-  if (onPartClick) {
-    onPartClick({
-      parts: selectedParts,
-      image: finalImage,
-      answerData: newAnswers,
-    });
-  }
-};
+    if (onPartClick) {
+      onPartClick({
+        parts: selectedParts,
+        image: finalImage,
+        answerData: newAnswers,
+      });
+    }
+  };
 
   console.log(answerData)
   // ✅ SEND TO PARENT
- const sendToParent = async () => {
-  //   if (selected.length === 0) {
-  //   showCustomToast("Please select at least one body part");
-  //   return;
-  // }
-  setLoading(true)
+  const sendToParent = async () => {
+    if (selected.length === 0) {
+      showCustomToast("Please select at least one body part", "error");
+      return;
+    }
+    setLoading(true)
 
-  const canvas = document.createElement("canvas")
-  canvas.width = 600
-  canvas.height = 600
+    const canvas = document.createElement("canvas")
+    canvas.width = 600
+    canvas.height = 600
+    const ctx = canvas.getContext("2d")
 
-  const ctx = canvas.getContext("2d")
+    const loadImage = (src) => new Promise((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = "anonymous"
+      img.onload = () => resolve(img)
+      img.onerror = (e) => reject(e)
+      img.src = src
+    })
 
-  const frontImg = new Image()
-  const backImg = new Image()
+    try {
+      const [fImg, bImg] = await Promise.all([loadImage(front), loadImage(back)])
 
-  frontImg.src = front
-  backImg.src = back
-
-  frontImg.onload = () => {
-    ctx.drawImage(frontImg, 0, 0, 300, 550)
-
-    backImg.onload = () => {
-      ctx.drawImage(backImg, 300, 0, 300, 600)
+      ctx.drawImage(fImg, 0, 0, 300, 550)
+      ctx.drawImage(bImg, 300, 0, 300, 600)
 
       // draw dots
       points.forEach((p) => {
@@ -129,110 +131,107 @@ const handleSaveAnswers = (data) => {
       const base64 = canvas.toDataURL("image/png")
 
       setPreviewImage(base64)
-       setFinalImage(base64);
-      setModalPart(selected)
-
+      setFinalImage(base64);
+      setModalPart([...selected])
+      handleClear()
+    } catch (error) {
+      console.error("Error opening assessment modal:", error)
+      showCustomToast("Could not prepare assessment. Please try again.", "error")
+    } finally {
       setLoading(false)
-handleClear()
-      // if (onPartClick) {
-      //   onPartClick({
-      //     parts: selected,
-      //     image: base64,
-      //     answerData: answerData
-      //   })
-      // }
     }
   }
-}
-const handleClear = () => {
-  setSelected([])
-  setPoints([])
-}
+  const handleClear = () => {
+    setSelected([])
+    setPoints([])
+  }
   return (
     <>
-    <div>
-      {/* TOGGLE */}
-      {/* <button className="btn btn-primary gap-5 mx-2" onClick={() => setView('front')}>Front</button>
-      <button className='btn btn-success' onClick={() => setView('back')}>Back</button> */}
-      {/* SVG + IMAGE */}
-     <svg
-  ref={svgRef}
-  viewBox="0 0 600 600"
-  width="600"
-  height="600"
->
- <image href={front} x="0" y="0" width="300" height="550" />
-  <image href={back} x="300" y="0" width="300" height="600" />
-
-{points.map((p, i) => (
-  <circle
-    key={i}
-    cx={p.x}
-    cy={p.y}
-    r="3"
-    className="dot"
-  />
-))}
-
-  <BodySvg
-    view={view}
-    onClickPart={handleClick}
-    getColor={getColor}
-  />
-</svg>
-     <div
-  style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "10px",
-    marginTop: "10px",
-  }}
->
-
-  <div>
-    <b>Selected:</b> {selected.join(", ")}
-  </div>
-<div >
-  <button
-    className="btn btn-danger mx-2"
-    onClick={handleClear}
-  >
-    Clear
-  </button>
-
-  <button
-    className="btn btn-primary"
-    onClick={sendToParent}
-    style={{ backgroundColor: 'var(--color-bgcolor)' }}
-  >
-    {!loading ? (
-      "Done"
-    ) : (
       <div>
-        <Spinner size="sm" /> Generating...
-      </div>
-    )}
-  </button>
-</div>
-</div>
-      {/* {previewImage && (
+        {/* TOGGLE */}
+        {/* <button className="btn btn-primary gap-5 mx-2" onClick={() => setView('front')}>Front</button>
+      <button className='btn btn-success' onClick={() => setView('back')}>Back</button> */}
+        {/* SVG + IMAGE */}
+        <svg
+          ref={svgRef}
+          viewBox="0 0 600 600"
+          width="600"
+          height="600"
+        >
+          <image href={front} x="0" y="0" width="300" height="550" />
+          <image href={back} x="300" y="0" width="300" height="600" />
+
+          {points.map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r="3"
+              className="dot"
+            />
+          ))}
+
+          <BodySvg
+            view={view}
+            onClickPart={handleClick}
+            getColor={getColor}
+          />
+        </svg>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "10px",
+            marginTop: "10px",
+          }}
+        >
+
+          {selected.length > 0 && (
+            <div style={{ color: COLORS.primary }}>
+              <b>Selected:</b> {selected.join(", ")}
+            </div>
+          )}
+          <div >
+            <button
+              className="btn btn-danger mx-2"
+              onClick={handleClear}
+            >
+              Clear
+            </button>
+
+            <button
+              className="btn btn-primary"
+              onClick={sendToParent}
+              style={{ backgroundColor: COLORS.primary, color: 'white', border: 'none' }}
+            >
+              {!loading ? (
+                "Done"
+              ) : (
+                <div style={{ color: 'white' }}>
+                  <Spinner size="sm" /> Generating...
+                </div>
+              )}
+            </button>
+          </div>
+        </div>
+        {/* {previewImage && (
         <div>
           <h4>Generated Image</h4>
          
           <img src={previewImage}  alt="preview" />
         </div>
       )} */}
-      {modalPart && (
-  <QuestionModal
-    visible={true}
-    partId={modalPart}
-    onClose={() => setModalPart(null)}
-    onSave={handleSaveAnswers}
-  />
-)}
-    </div>
-  <style>{`
+        {modalPart && (
+          <QuestionModal
+            visible={true}
+            partId={modalPart}
+            onClose={() => setModalPart(null)}
+            onSave={handleSaveAnswers}
+          />
+        )}
+      </div>
+      <style>{`
 .dot {
   fill: red;
   transform-box: fill-box;

@@ -57,6 +57,7 @@ export default function ProgramPayment() {
   const [backendServiceType, setBackendServiceType] = useState("");
   const [allPaid, setAllPaid] = useState(false);
   const [isFollowUpPayment, setIsFollowUpPayment] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
 
 
   useEffect(() => {
@@ -162,63 +163,100 @@ export default function ProgramPayment() {
     return typesMap[type] || [];
   };
 
-  const getOptionsByType = () => {
-    const root = fullPaymentData?.therapyWithSessions?.[0] || apiData?.[0];
-    if (!root) return [];
-    const programs = root.programs || root.therapySessions || [];
-    switch (selectedType) {
-      case "program":
-        return programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({ label: p.programName, value: p.programId, price: Number(p.totalPrice || 0) }));
-      case "therapy":
-        return programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ label: t.therapyName, value: t.therapyId, price: Number(t.totalPrice || 0) })));
-      case "activity":
-        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ label: ex.exerciseName, value: ex.exerciseId, price: Number(ex.totalSessionCost || ex.pricePerSession || ex.price || 0) }))));
-      case "session":
-        return (formattedData || []).filter(s => s.paymentStatus?.toLowerCase() !== "paid").map(s => ({ label: `${s.sessionId} - ${s.date}`, value: s.sessionId, price: Number(s.price || s.pricePerSession || 0) }));
-      default: return [];
+  const normalizeToPrograms = (sourceData) => {
+    if (!sourceData || !Array.isArray(sourceData) || sourceData.length === 0) return [];
+    
+    if (sourceData[0]?.programs || sourceData[0]?.therapySessions) {
+      return sourceData[0].programs || sourceData[0].therapySessions || [];
+    } else if (sourceData[0]?.therapyData) {
+      return sourceData;
+    } else if (sourceData[0]?.exercises) {
+      return [{
+        programId: "DEFAULT_PROG", programName: "-",
+        therapyData: sourceData.map(t => ({
+          therapyId: t.therapyId || "DEFAULT_THERAPY",
+          therapyName: t.therapyName || "-",
+          totalPrice: t.totalPrice || 0,
+          paymentStatus: t.paymentStatus,
+          exercises: t.exercises || []
+        }))
+      }];
     }
+    return [];
   };
 
-  const getRemainingAmount = (type, ids = []) => {
-    if (!fullPaymentData?.therapyWithSessions?.length) return 0;
-    let total = 0;
-    fullPaymentData.therapyWithSessions.forEach(pkg => {
-      pkg.programs?.forEach(program => {
-        program.therapyData?.forEach(therapy => {
-          if (type === "therapy" && ids.includes(therapy.therapyId)) {
-            therapy.exercises?.forEach(ex => { ex.sessions?.forEach(s => { if (s.paymentStatus?.toLowerCase() !== "paid") total += Number(ex.pricePerSession || 0); }); });
-          }
-          therapy.exercises?.forEach(ex => {
-            if (type === "activity" && ids.includes(ex.exerciseId)) {
-              ex.sessions?.forEach(s => { if (s.paymentStatus?.toLowerCase() !== "paid") total += Number(ex.pricePerSession || 0); });
-            }
-            if (type === "session") {
-              ex.sessions?.forEach(s => { if (ids.includes(s.sessionId) && s.paymentStatus?.toLowerCase() !== "paid") total += Number(ex.pricePerSession || 0); });
+  const calculateUnpaidAmount = (node, type) => {
+    let amount = 0;
+    let hasSessions = false;
+
+    if (type === "program") {
+      (node.therapyData || []).forEach(t => {
+        (t.exercises || []).forEach(ex => {
+          if (ex.sessions && ex.sessions.length > 0) hasSessions = true;
+          (ex.sessions || []).forEach(s => {
+            if (s.paymentStatus?.toLowerCase() !== "paid") {
+              amount += Number(ex.pricePerSession || ex.price || 0);
             }
           });
         });
       });
-    });
-    return total;
+      if (!hasSessions) return Number(node.totalPrice || 0);
+    } else if (type === "therapy") {
+      (node.exercises || []).forEach(ex => {
+        if (ex.sessions && ex.sessions.length > 0) hasSessions = true;
+        (ex.sessions || []).forEach(s => {
+          if (s.paymentStatus?.toLowerCase() !== "paid") {
+            amount += Number(ex.pricePerSession || ex.price || 0);
+          }
+        });
+      });
+      if (!hasSessions) return Number(node.totalPrice || 0);
+    } else if (type === "activity") {
+      if (node.sessions && node.sessions.length > 0) hasSessions = true;
+      (node.sessions || []).forEach(s => {
+        if (s.paymentStatus?.toLowerCase() !== "paid") {
+          amount += Number(node.pricePerSession || node.price || 0);
+        }
+      });
+      if (!hasSessions) return Number(node.totalSessionCost || node.totalPrice || node.pricePerSession || 0);
+    }
+
+    return amount;
+  };
+
+  const getOptionsByType = () => {
+    let programs = [];
+    
+    if (fullPaymentData && fullPaymentData.therapyWithSessions) {
+      programs = normalizeToPrograms(fullPaymentData.therapyWithSessions);
+    } else if (sessionRows && sessionRows.length > 0) {
+      programs = normalizeToPrograms(sessionRows);
+    } else {
+      programs = apiData?.[0]?.therapySessions || [];
+    }
+
+    switch (selectedType) {
+      case "program":
+        return programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({ label: p.programName, value: p.programId, price: calculateUnpaidAmount(p, "program") }));
+      case "therapy":
+        return programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ label: t.therapyName, value: t.therapyId, price: calculateUnpaidAmount(t, "therapy") })));
+      case "activity":
+        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ label: ex.exerciseName, value: ex.exerciseId, price: calculateUnpaidAmount(ex, "activity") }))));
+      case "session":
+        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).flatMap(ex => (ex.sessions || []).filter(s => s.paymentStatus?.toLowerCase() !== "paid").map(s => ({
+          label: `${s.sessionId} - ${s.date || "-"}`,
+          value: s.sessionId,
+          price: Number(ex.pricePerSession || ex.price || 0)
+        })))));
+      default: return [];
+    }
   };
 
   const handleSelectValue = (selected) => {
     const selectedItems = selected || [];
     setSelectedValue(selectedItems);
 
-    const ids = selectedItems.map(item => item.value);
-    let total = 0;
-
-    // First try to get total from selected items' price property
-    const itemTotal = selectedItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
-
-    if (itemTotal > 0) {
-      total = itemTotal;
-    } else if (isFollowUpPayment) {
-      total = getRemainingAmount(selectedType, ids);
-    } else {
-      total = itemTotal;
-    }
+    const total = selectedItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
 
     if (paymentType === "partial") {
       const amount = (total * paymentPercent) / 100;
@@ -231,12 +269,12 @@ export default function ProgramPayment() {
   const formatTherapyTable = (data = []) => {
     const rows = [];
     if (!Array.isArray(data)) return rows;
-    data.forEach(item => {
-      // Handle both { therapySessions: [...] } (package) and direct program object (from generate-table)
-      const programs = item.therapySessions || (item.therapyData ? [item] : []);
-      programs.forEach(program => {
-        (program.therapyData || []).forEach(therapy => {
-          (therapy.exercises || []).forEach(exercise => {
+    
+    const programs = normalizeToPrograms(data);
+    
+    programs.forEach(program => {
+      (program.therapyData || []).forEach(therapy => {
+        (therapy.exercises || []).forEach(exercise => {
             const count = Number(exercise.noOfSessions || 0) || 1;
             // Handle sessions array if it exists (from generate-table) or fallback to planned count
             if (exercise.sessions && exercise.sessions.length > 0) {
@@ -264,7 +302,6 @@ export default function ProgramPayment() {
           });
         });
       });
-    });
     return rows;
   };
 
@@ -337,10 +374,13 @@ export default function ProgramPayment() {
     }
 
     let amount = 0;
-    const root = apiData?.[0];
-    if (!root) return;
     if (type === "package") {
-      amount = Number(root.total || root.totalPrice || 0);
+      if (isFollowUpPayment && fullPaymentData) {
+        amount = Number(fullPaymentData.balanceAmount || 0);
+      } else {
+        const root = apiData?.[0];
+        amount = Number(root?.total || root?.totalPrice || 0);
+      }
     } else {
       // For other types, amount will be calculated when items are selected
       amount = 0;
@@ -350,7 +390,7 @@ export default function ProgramPayment() {
   };
 
   const checkAllSessionsPaid = (data) => {
-    const programs = data?.therapyWithSessions?.[0]?.programs || data?.therapyWithSessions || [];
+    const programs = normalizeToPrograms(data?.therapyWithSessions || []);
     const sessions = programs.flatMap(program => (program.therapyData || []).flatMap(therapy => (therapy.exercises || []).flatMap(ex => ex.sessions || [])));
     if (!sessions.length) return false;
     return sessions.every(s => s.paymentStatus?.toLowerCase() === "paid");
@@ -495,6 +535,7 @@ export default function ProgramPayment() {
 
   const handleSubmit = async () => {
     try {
+      setSubmitLoading(true);
       let payload, url, method;
       if (!isFollowUpPayment) { payload = createPayloadData; url = `${wifiUrl}/api/physiotherapy-doctor/payment/create`; method = "POST"; }
       else { payload = updatePayload; url = `${wifiUrl}/api/physiotherapy-doctor/payment/update`; method = "POST"; }
@@ -502,10 +543,21 @@ export default function ProgramPayment() {
       const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await response.json();
       console.log("API RESPONSE:", data);
-      setIsFollowUpPayment(true);
-      setPrintData({ ...payload, selectedItems: selectedValue, tableData, startDate });
-      navigate(-1);
-    } catch (error) { console.error("Payment Error:", error); }
+      
+      if (data.success || response.ok) {
+        setIsFollowUpPayment(true);
+        setPrintData({ ...payload, selectedItems: selectedValue, tableData, startDate });
+        showCustomToast("Payment processed successfully!", "success");
+        navigate(-1);
+      } else {
+        showCustomToast(data.message || "Payment processing failed.", "error");
+      }
+    } catch (error) { 
+      console.error("Payment Error:", error); 
+      showCustomToast("An error occurred during payment processing.", "error");
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
   const fetchPaymentDetails = async () => {
@@ -887,8 +939,28 @@ export default function ProgramPayment() {
             </CRow>
 
             <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "0.5px solid #d0dce9", display: "flex", justifyContent: "flex-end" }}>
-              <button onClick={handleSubmit} style={primaryBtn}>
-                {isFollowUpPayment ? "Update Payment" : "Submit Payment"}
+              <button 
+                onClick={handleSubmit} 
+                disabled={submitLoading}
+                style={{ ...primaryBtn, opacity: submitLoading ? 0.75 : 1, display: "flex", alignItems: "center", gap: "8px", minWidth: "160px", justifyContent: "center" }}
+              >
+                {submitLoading ? (
+                  <>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: "14px", height: "14px",
+                        border: "2px solid rgba(255,255,255,0.4)",
+                        borderTopColor: "#fff",
+                        borderRadius: "50%",
+                        animation: "spin 0.7s linear infinite",
+                      }}
+                    />
+                    Processing...
+                  </>
+                ) : (
+                  isFollowUpPayment ? "Update Payment" : "Submit Payment"
+                )}
               </button>
             </div>
           </div>

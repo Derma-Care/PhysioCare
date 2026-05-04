@@ -1121,7 +1121,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               checked={onboardToCustomer} onChange={(e) => setOnboardToCustomer(e.target.checked)} />
             <label className="form-check-label" htmlFor="onboardCheckbox"
               style={{ ...labelStyle, marginBottom: 0 }}>
-              Customer Registration
+              Onboard as new customer
             </label>
           </div>
         )}
