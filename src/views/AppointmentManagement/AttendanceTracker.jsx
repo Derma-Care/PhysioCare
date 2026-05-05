@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { COLORS } from "../../Constant/Themes";
 import {
   CModal,
   CModalHeader,
@@ -11,15 +10,24 @@ import {
   CFormLabel,
   CSpinner,
 } from "@coreui/react";
+import {
+  User, Phone, Stethoscope, Activity,
+  CheckCircle2, Clock, CalendarDays, ArrowRight,
+  ClipboardList, Users, Zap, LogIn, LogOut, ShieldCheck, MapPin, ChevronRight, ListChecks, Eye
+} from 'lucide-react';
+import { COLORS } from "../../Constant/Themes";
+
 
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../../baseUrl";
+import ConfirmModal from "../../components/ConfirmLogoutModal";
+import { showCustomToast } from "../../Utils/Toaster";
 
 const ScrollPicker = ({ items, selected, onChange, label }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '70px' }}>
-      <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 12, color: COLORS.primary, opacity: 0.7, marginBottom: 6 }}>{label}</div>
       <div style={{
         height: '120px',
         overflowY: 'auto',
@@ -73,11 +81,14 @@ const AttendanceTracker = () => {
   const [loggedOut, setLoggedOut] = useState(false);
   const [loginTime, setLoginTime] = useState("");
   const [logoutTime, setLogoutTime] = useState("");
+  const [loginLocation, setLoginLocation] = useState("");
+  const [logoutLocation, setLogoutLocation] = useState("");
   const [activeTab, setActiveTab] = useState("daily");
   const [showModal, setShowModal] = useState(false);
   const [activity, setActivity] = useState("");
   const [durationHours, setDurationHours] = useState(0);
   const [durationMinutes, setDurationMinutes] = useState(0);
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [address, setAddress] = useState("Fetching...");
 
   const [data, setData] = useState([]);
@@ -91,7 +102,16 @@ const AttendanceTracker = () => {
   const location = useLocation();
   const storedData = localStorage.getItem('therapistData');
   const therapistData = location.state || (storedData ? JSON.parse(storedData) : {});
-  const therapistId = therapistData?.therapistId;
+
+  // Get data from localStorage as per requirements
+  const userId = localStorage.getItem('staffId') || therapistData?.therapistId || "0001";
+  const clinicId = localStorage.getItem('HospitalId') || therapistData?.clinicId || "C001";
+  const branchId = localStorage.getItem('branchId') || therapistData?.branchId || "B001";
+  const role = localStorage.getItem('role') || "THERAPIST";
+
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [detailsData, setDetailsData] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   const getCurrentLocation = () => {
     return new Promise((resolve) => {
@@ -109,37 +129,27 @@ const AttendanceTracker = () => {
   const fetchDailyData = async () => {
     try {
       setLoadingDaily(true);
-      // const res = await axios.get(`${BASE_URL}/getDaily/${therapistId}/${dateStr}`);
-      // const result = res.data;
-
-      // Dummy data
-      const result = {
-        success: true,
-        data: {
-          loginTime: "09:00:00",
-          logoutTime: "",
-          sessions: [
-            { sessionId: 1, activity: "Patient Assessment", duration: "1 Hour 30 Minutes", latitude: "12.9716", longitude: "77.5946" },
-            { sessionId: 2, activity: "Therapy Session", duration: "45 Minutes", latitude: "12.9716", longitude: "77.5946" }
-          ]
-        }
-      };
-
+      const res = await axios.get(`${BASE_URL}/getUserDailyAttendence/${userId}/${dateStr}`);
+      const result = res.data;
       if (result.success && result.data) {
-        setData(result.data.sessions || []);
-        if (result.data.loginTime) {
-          setLoginTime(result.data.loginTime);
-          setLoggedIn(true);
+        setData(result.data.activities || []);
+        if (result.data.login?.time) {
+          setLoginTime(result.data.login.time);
+          setLoginLocation(result.data.login.location || "");
+          setLoggedIn(result.data.status === "LOGGED_IN");
         } else {
           setLoginTime("");
+          setLoginLocation("");
           setLoggedIn(false);
         }
-        if (result.data.logoutTime) {
-          setLogoutTime(result.data.logoutTime);
+        if (result.data.logout?.time) {
+          setLogoutTime(result.data.logout.time);
+          setLogoutLocation(result.data.logout.location || "");
           setLoggedOut(true);
           setLoggedIn(false);
         } else {
           setLogoutTime("");
+          setLogoutLocation("");
           setLoggedOut(false);
         }
       } else {
@@ -152,22 +162,28 @@ const AttendanceTracker = () => {
     }
   };
 
+  const fetchDailyDetails = async (date) => {
+    try {
+      setLoadingDetails(true);
+      setShowDetailsModal(true);
+      setDetailsData(null);
+      const res = await axios.get(`${BASE_URL}/getUserDailyAttendence/${userId}/${date}`);
+      if (res.data.success) {
+        setDetailsData(res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching daily details:", err);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   const fetchMonthlyData = async () => {
     try {
       setLoadingMonthly(true);
       const monthStr = dateStr.substring(0, 7);
-      // const res = await axios.get(`${BASE_URL}/getMonthly/${therapistId}/${monthStr}`);
-      // const result = res.data;
-
-      // Dummy data
-      const result = {
-        success: true,
-        data: [
-          { date: "2026-05-01", inTime: "09:00", outTime: "17:00", logTime: "8h", workingHours: "6h", idleTime: "2h" },
-          { date: "2026-05-02", inTime: "09:15", outTime: "17:30", logTime: "8h 15m", workingHours: "7h", idleTime: "1h 15m" }
-        ]
-      };
-
+      const res = await axios.get(`${BASE_URL}/getUserMonthlyAttendence/${userId}/${monthStr}`);
+      const result = res.data;
       if (result.success && result.data) {
         setMonthlyData(result.data || []);
       } else {
@@ -200,48 +216,74 @@ const AttendanceTracker = () => {
       );
   }, []);
 
-  const updateTimes = async (type, timeStr) => {
+  const handleLogin = async () => {
+    if (loggedIn || loggedOut) return;
     try {
       setIsUpdatingStatus(true);
-      const loc = await getCurrentLocation();
+      const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+
       const payload = {
-        completedDate: dateStr,
-        loginTime: type === "login" ? timeStr : loginTime || "",
-        logoutTime: type === "logout" ? timeStr : logoutTime || "",
-        latitude: loc.latitude,
-        longitude: loc.longitude,
-        location: address
+        userId,
+        date: dateStr,
+        loginTime: time,
+        loginLocation: address
       };
 
-      // await axios.put(`${BASE_URL}/updateAttendance/${therapistId}`, payload);
-      console.log('Dummy updateTimes payload:', payload);
-      // await fetchDailyData();
-      // await fetchMonthlyData();
-
-      // Simulate network delay
-      await new Promise(r => setTimeout(r, 500));
+      const res = await axios.put(`${BASE_URL}/updateUserAttendence`, payload);
+      if (res.data.success) {
+        setLoggedIn(true);
+        setLoginTime(time);
+        setLoginLocation(address);
+        showCustomToast("Logged in successfully", "success");
+        await fetchDailyData();
+        await fetchMonthlyData();
+      } else {
+        showCustomToast(res.data.message || "Login failed", "error");
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Error logging in:", err);
+      showCustomToast("Failed to connect to server", "error");
     } finally {
       setIsUpdatingStatus(false);
     }
   };
 
-  const handleLogin = () => {
-    if (loggedIn || loggedOut) return;
-    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
-    setLoggedIn(true);
-    setLoginTime(time);
-    updateTimes("login", time);
-  };
-
   const handleLogout = () => {
     if (!loggedIn || loggedOut) return;
-    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
-    setLoggedIn(false);
-    setLoggedOut(true);
-    setLogoutTime(time);
-    updateTimes("logout", time);
+    setIsLogoutModalVisible(true);
+  };
+
+  const confirmLogout = async () => {
+    try {
+      setIsUpdatingStatus(true);
+      const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+
+      const payload = {
+        userId,
+        date: dateStr,
+        logoutTime: time,
+        logoutLocation: address
+      };
+
+      const res = await axios.put(`${BASE_URL}/updateUserAttendence`, payload);
+      if (res.data.success) {
+        setLoggedIn(false);
+        setLoggedOut(true);
+        setLogoutTime(time);
+        setLogoutLocation(address);
+        setIsLogoutModalVisible(false);
+        showCustomToast("Logged out successfully", "success");
+        await fetchDailyData();
+        await fetchMonthlyData();
+      } else {
+        showCustomToast(res.data.message || "Logout failed", "error");
+      }
+    } catch (err) {
+      console.error("Error logging out:", err);
+      showCustomToast("Failed to connect to server", "error");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const handleAdd = async () => {
@@ -262,28 +304,28 @@ const AttendanceTracker = () => {
 
     try {
       setIsSubmitting(true);
-      let durationStr = "";
-      if (durationHours > 0) durationStr += `${durationHours} Hour${durationHours > 1 ? 's' : ''} `;
-      if (durationMinutes > 0) durationStr += `${durationMinutes} Minute${durationMinutes > 1 ? 's' : ''}`;
-      durationStr = durationStr.trim();
+      const durationStr = `${durationHours}h ${durationMinutes}m`;
 
-      const loc = await getCurrentLocation();
       const payload = {
-        completedDate: dateStr,
-        activity,
-        duration: durationStr,
-        location: address
+        userId,
+        role,
+        clinicId,
+        branchId,
+        date: dateStr,
+        activities: [
+          {
+            activity,
+            duration: durationStr,
+            location: address
+          }
+        ]
       };
 
-      // const res = await axios.put(`${BASE_URL}/updateAttendance/${therapistId}`, payload);
-      // const result = res.data;
-      console.log('Dummy handleAdd payload:', payload);
-      const result = true;
-
-      if (result) {
-        // await fetchDailyData();
-        // await fetchMonthlyData();
-        setData(prev => [...prev, { sessionId: Date.now(), activity, duration: durationStr, latitude: loc.latitude, longitude: loc.longitude }]);
+      const res = await axios.post(`${BASE_URL}/saveUserAttendence`, payload);
+      if (res.data.success) {
+        showCustomToast("Activity added successfully", "success");
+        await fetchDailyData();
+        await fetchMonthlyData();
 
         // reset
         setActivity("");
@@ -291,9 +333,12 @@ const AttendanceTracker = () => {
         setDurationMinutes(0);
         setErrors({});
         setShowModal(false);
+      } else {
+        showCustomToast(res.data.message || "Failed to add activity", "error");
       }
     } catch (err) {
       console.error("Error updating attendance:", err);
+      showCustomToast("Failed to connect to server", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -304,52 +349,50 @@ const AttendanceTracker = () => {
   const isTablet = window.innerWidth > 576 && window.innerWidth <= 992;
   const styles = {
     wrap: {
-      padding: isMobile ? "1rem" : "1.5rem",
+      padding: isMobile ? "0.75rem" : "1rem",
       width: "100%",
       maxWidth: "100%",
       margin: "0 auto",
     },
     header: {
       display: "flex",
-      flexDirection: isMobile ? "column" : "row",
-      alignItems: isMobile ? "flex-start" : "center",
+      flexDirection: "row",
+      alignItems: "center",
       justifyContent: "space-between",
-      gap: isMobile ? 10 : 0,
-      marginBottom: "1.5rem",
-      padding: "12px 16px",
-      borderRadius: 10,
-      color: "#fff",
+      gap: 10,
+      marginBottom: "1rem",
+      padding: "0 4px",
     },
     h2: { fontSize: 18, fontWeight: 600, margin: 0, color: COLORS.primary },
-    subtext: { fontSize: 13, color: "#cbd5e1", marginTop: 2 },
-    subtext: { fontSize: 13, color: "#6b7280", marginTop: 2 },
+    subtext: { fontSize: 13, color: COLORS.primary, opacity: 0.8, marginTop: 2, margin: 0 },
 
     // Stat cards
     statsGrid: {
       display: "grid",
-      gridTemplateColumns: isMobile
-        ? "repeat(2, 1fr)"
-        : isTablet
-          ? "repeat(2, 1fr)"
-          : "repeat(4, 1fr)",
-      gap: 10,
+      gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fit, minmax(160px, 1fr))",
+      gap: isMobile ? 12 : 16,
       marginBottom: "1.5rem",
     },
     statCard: {
       background: "#ffffff",
-      borderRadius: 10,
-      padding: "14px 16px",
-      borderLeft: "4px solid #1B4F8A", // ✅ highlight
-      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+      borderRadius: 12,
+      padding: isMobile ? "1rem" : "1.25rem",
+      borderLeft: `4px solid ${COLORS.primary}`,
+      boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      minHeight: isMobile ? 90 : 100,
     },
     statValue: {
       fontSize: 20,
       fontWeight: 600,
-      color: "#1B4F8A",
+      color: COLORS.primary,
     },
     statLabel: {
       fontSize: 11,
-      color: "#6b7280",
+      color: COLORS.primary,
+      opacity: 0.7,
       textTransform: "uppercase",
       letterSpacing: "0.04em",
       marginBottom: 6,
@@ -359,23 +402,24 @@ const AttendanceTracker = () => {
     // Tabs
     tabs: {
       display: "flex",
-      overflowX: isMobile ? "auto" : "visible",
-      borderBottom: "0.5px solid #e5e7eb",
-      marginBottom: "1rem",
-      color: COLORS.primary
+      borderBottom: "1px solid #e5e7eb",
+      marginBottom: "1.25rem",
+      gap: isMobile ? 0 : "1rem",
     },
     tab: (active) => ({
-      padding: "8px 18px",
-      fontSize: 16,
+      flex: isMobile ? 1 : "initial",
+      textAlign: "center",
+      padding: isMobile ? "12px 0" : "10px 24px",
+      fontSize: isMobile ? 14 : 15,
       cursor: "pointer",
-      color: active ? `${COLORS.primary}` : "#6b7280",
-      fontWeight: active ? 500 : 400,
-      borderBottom: active ? "2px solid #111827" : "2px solid transparent",
+      color: active ? COLORS.primary : COLORS.primary,
+      opacity: active ? 1 : 0.6,
+      fontWeight: active ? 600 : 500,
+      borderBottom: active ? `3px solid ${COLORS.primary}` : "3px solid transparent",
       background: "none",
       border: "none",
-      borderBottom: active ? "2px solid #111827" : "2px solid transparent",
+      transition: "all 0.2s",
       marginBottom: -1,
-      cursor: "pointer",
     }),
 
     // Card / Table
@@ -392,18 +436,19 @@ const AttendanceTracker = () => {
       padding: "14px 18px",
       borderBottom: "0.5px solid #e5e7eb",
     },
-    cardTitle: { fontSize: 18, fontWeight: 500 },
+    cardTitle: { fontSize: 18, fontWeight: 500, color: COLORS.primary },
     table: {
       width: "100%",
       borderCollapse: "collapse",
       fontSize: isMobile ? 11 : 13,
+      color: COLORS.primary,
     },
     th: {
       padding: "10px 18px",
       textAlign: "left",
       fontWeight: 500,
       fontSize: 11,
-      color: "#6b7280",
+      color: COLORS.primary,
       textTransform: "uppercase",
       letterSpacing: "0.04em",
       background: "#f9fafb",
@@ -413,6 +458,7 @@ const AttendanceTracker = () => {
       padding: "12px 18px",
       borderBottom: "0.5px solid #f3f4f6",
       verticalAlign: "middle",
+      color: COLORS.primary,
     },
 
     // Badges
@@ -508,7 +554,8 @@ const AttendanceTracker = () => {
       background: "#fff",
       border: "0.5px solid #e5e7eb",
       borderRadius: 12,
-      width: 380,
+      width: "95%",
+      maxWidth: 380,
       overflow: "hidden",
     },
     modalHeader: {
@@ -518,8 +565,8 @@ const AttendanceTracker = () => {
       padding: "14px 18px",
       borderBottom: "0.5px solid #e5e7eb",
     },
-    modalTitle: { fontSize: 15, fontWeight: 500 },
-    modalBody: { padding: 18 },
+    modalTitle: { fontSize: 15, fontWeight: 500, color: COLORS.primary },
+    modalBody: { padding: 18, color: COLORS.primary },
     modalFooter: {
       display: "flex",
       justifyContent: "flex-end",
@@ -542,13 +589,14 @@ const AttendanceTracker = () => {
       fontSize: 13,
       outline: "none",
       boxSizing: "border-box",
+      color: COLORS.primary,
     },
     infoBox: {
       display: "flex",
       flexDirection: "column",
       gap: 4,
       fontSize: 12,
-      color: "#6b7280",
+      color: COLORS.primary,
       background: "#f9fafb",
       padding: "10px 12px",
       borderRadius: 8,
@@ -563,12 +611,40 @@ const AttendanceTracker = () => {
     }),
     addrCell: {
       fontSize: 11,
-
+      color: COLORS.primary,
       maxWidth: isMobile ? 120 : 180,
       whiteSpace: "nowrap",
       overflow: "hidden",
       textOverflow: "ellipsis",
     },
+    // Mobile specific
+    mobileCard: {
+      background: "#fff",
+      borderRadius: 12,
+      padding: "1rem",
+      marginBottom: "0.85rem",
+      border: "0.5px solid #e5e7eb",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.03)",
+    },
+    mobileCardRow: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    mobileLabel: {
+      fontSize: 11,
+      textTransform: "uppercase",
+      color: COLORS.primary,
+      opacity: 0.6,
+      fontWeight: 600,
+      letterSpacing: "0.03em",
+    },
+    mobileValue: {
+      fontSize: 13,
+      color: COLORS.primary,
+      fontWeight: 500,
+    }
   };
   const [errors, setErrors] = useState({
     activity: "",
@@ -621,22 +697,67 @@ const AttendanceTracker = () => {
       {/* Header */}
       <div style={styles.header}>
         <div>
-          <h2 style={styles.h2}>Attendance tracker</h2>
+          <h2 style={styles.h2}>Daily Duty Log</h2>
           <p style={styles.subtext}>{dateDisplay}</p>
         </div>
         <ActionButton />
       </div>
 
+      <ConfirmModal
+        visible={isLogoutModalVisible}
+        onClose={() => setIsLogoutModalVisible(false)}
+        onConfirm={confirmLogout}
+        title="Logout Confirmation"
+        message="Are you sure you want to logout and end your session for today?"
+        confirmText="Yes, Logout"
+        cancelText="Cancel"
+      />
+
       {/* Stat cards */}
       <div style={styles.statsGrid}>
         {[
-          { label: "Login", value: loginTime || "—" },
-          { label: "Logout", value: logoutTime || "—" },
-          { label: "Activities", value: data.length },
-          { label: "Status", value: <StatusBadge /> },
+          {
+            label: "Login",
+            value: (
+              <div>
+                <div>{loginTime || "—"}</div>
+                {loginTime && (
+                  <div style={{ fontSize: 10, color: COLORS.primary, fontWeight: 500, marginTop: 4, display: 'flex', alignItems: 'center' }}>
+                    <MapPin size={10} style={{ marginRight: 4, }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px', color: COLORS.primary }}>
+                      {loginLocation || "Location not recorded"}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ),
+            icon: <LogIn size={14} />
+          },
+          {
+            label: "Logout",
+            value: (
+              <div>
+                <div>{logoutTime || "—"}</div>
+                {logoutTime && (
+                  <div style={{ fontSize: 10, color: COLORS.primary, fontWeight: 500, marginTop: 4, display: 'flex', alignItems: 'center' }}>
+                    <MapPin size={10} style={{ marginRight: 4, color: COLORS.primary }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px', color: COLORS.primary }}>
+                      {logoutLocation || "Location not recorded"}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ),
+            icon: <LogOut size={14} />
+          },
+          { label: "Activities", value: data.length, icon: <Activity size={14} /> },
+          { label: "Status", value: <StatusBadge />, icon: <ShieldCheck size={14} /> },
         ].map((s) => (
           <div key={s.label} style={styles.statCard}>
-            <div style={styles.statLabel}>{s.label}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={styles.statLabel}>{s.label}</div>
+              <div style={{ color: COLORS.primary, opacity: 0.6 }}>{s.icon}</div>
+            </div>
             <div style={styles.statValue}>{s.value}</div>
           </div>
         ))}
@@ -669,47 +790,72 @@ const AttendanceTracker = () => {
               </button>
             )}
           </div>
-          <div style={{ overflowX: isMobile ? "auto" : "visible" }}>
+          <div style={{ padding: isMobile ? "0 4px" : 0 }}>
             {loadingDaily ? (
               <div style={{ padding: "40px", textAlign: "center" }}>
                 <CSpinner color="primary" />
               </div>
+            ) : isMobile ? (
+              /* Mobile Daily View */
+              <div style={{ padding: "1rem" }}>
+                {data.map((item, i) => (
+                  <div key={item.sessionId || i} style={styles.mobileCard}>
+                    <div style={styles.mobileCardRow}>
+                      <span style={styles.mobileLabel}>Activity</span>
+                      <span style={{ ...styles.mobileValue, fontWeight: 700, color: COLORS.primary }}>{item.activity}</span>
+                    </div>
+                    <div style={styles.mobileCardRow}>
+                      <span style={styles.mobileLabel}>Duration</span>
+                      <span style={styles.badgeAmber}>{item.duration}</span>
+                    </div>
+                    <div style={{ ...styles.mobileCardRow, marginBottom: 0, paddingTop: 8, borderTop: "0.5px solid #f3f4f6" }}>
+                      <span style={styles.mobileLabel}><MapPin size={11} style={{ marginRight: 4 }} /> Location</span>
+                      <span style={{ ...styles.mobileValue, fontSize: 11, maxWidth: "60%", textAlign: "right" }}>{item.location}</span>
+                    </div>
+                  </div>
+                ))}
+                {data.length === 0 && (
+                  <div style={{ textAlign: "center", padding: "2rem", color: COLORS.primary, opacity: 0.6 }}>
+                    <ListChecks size={32} style={{ marginBottom: 8, opacity: 0.5 }} />
+                    <p style={{ fontSize: 13 }}>No activities logged today.</p>
+                  </div>
+                )}
+              </div>
             ) : (
-              <table style={styles.table}    >
-                <thead>
-                  <tr>
-                    {["#", "Activity", "Duration", "Location", "Date"].map((h) => (
-                      <th key={h} style={styles.th}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((item, i) => (
-                    <tr key={item.sessionId || i}>
-                      <td style={styles.td}>{i + 1}</td>
-                      <td style={styles.td}>{item.activity}</td>
-                      <td style={styles.td}>
-                        <span style={styles.badgeAmber}>{item.duration}</span>
-                      </td>
-                      <td style={styles.td}>
-                        <div style={styles.addrCell}>
-                          {item.latitude && item.longitude ? `${item.latitude}, ${item.longitude}` : address}
-                        </div>
-                      </td>
-                      <td style={styles.td}>{dateStr}</td>
-                    </tr>
-                  ))}
-                  {data.length === 0 && (
+              /* Desktop Daily View */
+              <div style={{ overflowX: "auto" }}>
+                <table style={styles.table}>
+                  <thead>
                     <tr>
-                      <td colSpan="5" style={{ ...styles.td, textAlign: "center", color: "#9ca3af", padding: "20px" }}>
-                        No activities logged today.
-                      </td>
+                      {["#", "Activity", "Duration", "Location", "Date"].map((h) => (
+                        <th key={h} style={styles.th}>{h}</th>
+                      ))}
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {data.map((item, i) => (
+                      <tr key={item.sessionId || i}>
+                        <td style={styles.td}>{i + 1}</td>
+                        <td style={styles.td}>{item.activity}</td>
+                        <td style={styles.td}>
+                          <span style={styles.badgeAmber}>{item.duration}</span>
+                        </td>
+                        <td style={styles.td}>
+                          <div style={styles.addrCell}>{item.location}</div>
+                        </td>
+                        <td style={styles.td}>{dateStr}</td>
+                      </tr>
+                    ))}
+                    {data.length === 0 && (
+                      <tr>
+                        <td colSpan="5" style={{ ...styles.td, textAlign: "center", color: COLORS.primary, opacity: 0.6, padding: "20px" }}>
+                          No activities logged today.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -721,46 +867,96 @@ const AttendanceTracker = () => {
           <div style={styles.cardHeader}>
             <span style={styles.cardTitle}>Monthly summary</span>
           </div>
-          <div style={{ overflowX: isMobile ? "auto" : "visible" }}>
+          <div style={{ padding: isMobile ? "0 4px" : 0 }}>
             {loadingMonthly ? (
               <div style={{ padding: "40px", textAlign: "center" }}>
                 <CSpinner color="primary" />
               </div>
+            ) : isMobile ? (
+              /* Mobile Monthly View */
+              <div style={{ padding: "1rem" }}>
+                {monthlyData.map((item, i) => (
+                  <div key={i} style={styles.mobileCard}>
+                    <div style={{ ...styles.mobileCardRow, borderBottom: "1px solid #f3f4f6", pb: 8, mb: 10 }}>
+                      <span style={{ ...styles.mobileValue, fontWeight: 700 }}>{item.date}</span>
+                      <button
+                        style={{ border: 'none', background: 'none', padding: 4, cursor: 'pointer' }}
+                        onClick={() => fetchDailyDetails(item.date)}
+                      >
+                        <Eye size={16} color={COLORS.primary} />
+                      </button>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 20px" }}>
+                      <div>
+                        <div style={styles.mobileLabel}>Login</div>
+                        <div style={styles.mobileValue}>{item.inTime || "—"}</div>
+                      </div>
+                      <div>
+                        <div style={styles.mobileLabel}>Logout</div>
+                        <div style={styles.mobileValue}>{item.outTime || "—"}</div>
+                      </div>
+                      <div>
+                        <div style={styles.mobileLabel}>Working</div>
+                        <span style={styles.badgeGreen}>{item.workingHours || "—"}</span>
+                      </div>
+                      <div>
+                        <div style={styles.mobileLabel}>Total Log</div>
+                        <div style={styles.mobileValue}>{item.logTime || "—"}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {monthlyData.length === 0 && (
+                  <div style={{ textAlign: "center", padding: "2rem", color: COLORS.primary, opacity: 0.6 }}>
+                    <CalendarDays size={32} style={{ marginBottom: 8, opacity: 0.5 }} />
+                    <p style={{ fontSize: 13 }}>No records found for this month.</p>
+                  </div>
+                )}
+              </div>
             ) : (
-              <table style={styles.table}  >
-                <thead>
-                  <tr>
-                    {["Date", "Login", "Logout", "Total", "Working", "Idle"].map(
-                      (h) => (
-                        <th key={h} style={styles.th}>
-                          {h}
-                        </th>
-                      )
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {monthlyData.map((item, i) => (
-                    <tr key={i}>
-                      <td style={styles.td}>{item.date}</td>
-                      <td style={styles.td}>{item.inTime}</td>
-                      <td style={styles.td}>{item.outTime}</td>
-                      <td style={styles.td}>{item.logTime}</td>
-                      <td style={styles.td}>
-                        <span style={styles.badgeGreen}>{item.workingHours}</span>
-                      </td>
-                      <td style={styles.td}>{item.idleTime}</td>
-                    </tr>
-                  ))}
-                  {monthlyData.length === 0 && (
+              /* Desktop Monthly View */
+              <div style={{ overflowX: "auto" }}>
+                <table style={styles.table}>
+                  <thead>
                     <tr>
-                      <td colSpan="6" style={{ ...styles.td, textAlign: "center", color: "#9ca3af", padding: "20px" }}>
-                        No records found for this month.
-                      </td>
+                      {["Date", "Login", "Logout", "Total", "Working", "Idle", "Action"].map((h) => (
+                        // {["Date", "Login", "Logout", "Total", "Working", "Idle"].map((h) => (
+                        <th key={h} style={styles.th}>{h}</th>
+                      ))}
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {monthlyData.map((item, i) => (
+                      <tr key={i}>
+                        <td style={styles.td}>{item.date}</td>
+                        <td style={styles.td}>{item.inTime}</td>
+                        <td style={styles.td}>{item.outTime}</td>
+                        <td style={styles.td}>{item.logTime}</td>
+                        <td style={styles.td}>
+                          <span style={styles.badgeGreen}>{item.workingHours}</span>
+                        </td>
+                        <td style={styles.td}>{item.idleTime}</td>
+                        <td style={styles.td}>
+                          <button
+                            style={{ ...styles.btnBlue, padding: '4px 8px' }}
+                            onClick={() => fetchDailyDetails(item.date)}
+                          >
+                            <Eye size={14} />
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {monthlyData.length === 0 && (
+                      <tr>
+                        <td colSpan="6" style={{ ...styles.td, textAlign: "center", color: COLORS.primary, opacity: 0.6, padding: "20px" }}>
+                          No records found for this month.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -807,7 +1003,7 @@ const AttendanceTracker = () => {
                   onChange={(val) => { setDurationHours(val); setErrors({ ...errors, duration: "" }); }}
                   label="Hours"
                 />
-                <div style={{ fontSize: 20, fontWeight: 'bold', color: '#6b7280', marginTop: 15 }}>:</div>
+                <div style={{ fontSize: 20, fontWeight: 'bold', color: COLORS.primary, marginTop: 15 }}>:</div>
                 <ScrollPicker
                   items={Array.from({ length: 60 }, (_, i) => i)}
                   selected={durationMinutes}
@@ -829,13 +1025,14 @@ const AttendanceTracker = () => {
                 padding: 10,
                 borderRadius: 8,
                 fontSize: 12,
+                color: COLORS.primary
               }}
             >
               <div className="mb-4">
-                <strong>Date:</strong> {dateStr}
+                <strong style={{ color: COLORS.primary }}>Date:</strong> {dateStr}
               </div>
-              <div>
-                <strong>Location:</strong> {address}
+              <div style={{ color: COLORS.primary }}>
+                <strong style={{ color: COLORS.primary }}>Location:</strong> {address}
               </div>
             </div>
           </CModalBody>
@@ -850,6 +1047,112 @@ const AttendanceTracker = () => {
           </CModalFooter>
         </CModal>
       )}
+
+      {/* Daily Details Modal */}
+      <CModal
+        visible={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        alignment="center"
+        size="lg"
+      >
+        <CModalHeader>
+          <CModalTitle>Daily Report - {detailsData?.date}</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {loadingDetails ? (
+            <div style={{ textAlign: "center", padding: "2rem" }}>
+              <CSpinner color="primary" />
+            </div>
+          ) : detailsData ? (
+            <div style={{ color: COLORS.primary }}>
+              <div style={{ display: 'grid', gridTemplateColumns: (detailsData.login || detailsData.logout) && !isMobile ? '1fr 1fr' : '1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                {detailsData.login && (
+                  <div style={styles.infoBox}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: COLORS.primary, marginBottom: 4 }}>
+                      <LogIn size={14} />
+                      <strong style={{ fontSize: 13, color: COLORS.primary }}>Login Details</strong>
+                    </div>
+                    <div style={{ marginBottom: 4, color: COLORS.primary }}>
+                      <Clock size={12} style={{ marginRight: 6, display: 'inline', color: COLORS.primary }} />
+                      <span style={{ fontWeight: 600, color: COLORS.primary }}>{detailsData.login.time || '—'}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: COLORS.primary, display: 'flex', alignItems: 'flex-start' }}>
+                      <MapPin size={12} style={{ marginRight: 6, marginTop: 2, flexShrink: 0, color: COLORS.primary }} />
+                      <span style={{ color: COLORS.primary }}>{detailsData.login.location || 'Location not recorded'}</span>
+                    </div>
+                  </div>
+                )}
+
+                {detailsData.logout && (
+                  <div style={styles.infoBox}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: COLORS.primary, marginBottom: 4 }}>
+                      <LogOut size={14} />
+                      <strong style={{ fontSize: 13, color: COLORS.primary }}>Logout Details</strong>
+                    </div>
+                    <div style={{ marginBottom: 4, color: COLORS.primary }}>
+                      <Clock size={12} style={{ marginRight: 6, display: 'inline', color: COLORS.primary }} />
+                      <span style={{ fontWeight: 600, color: COLORS.primary }}>{detailsData.logout.time || '—'}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: COLORS.primary, display: 'flex', alignItems: 'flex-start' }}>
+                      <MapPin size={12} style={{ marginRight: 6, marginTop: 2, flexShrink: 0, color: COLORS.primary }} />
+                      <span style={{ color: COLORS.primary }}>{detailsData.logout.location || 'Location not recorded'}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginBottom: '1rem', fontWeight: 600, fontSize: 14, color: COLORS.primary, borderBottom: `2px solid ${COLORS.primary}`, paddingBottom: 4, display: 'inline-block' }}>
+                Activity Log
+              </div>
+
+              <div style={{ overflowX: "auto" }}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      {["#", "Activity", "Duration", "Location"].map((h) => (
+                        <th key={h} style={styles.th}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailsData.activities && detailsData.activities.length > 0 ? (
+                      detailsData.activities.map((session, index) => (
+                        <tr key={index}>
+                          <td style={styles.td}>{index + 1}</td>
+                          <td style={styles.td}>
+                            <div style={{ fontWeight: 600, color: COLORS.primary }}>{session.activity}</div>
+                          </td>
+                          <td style={styles.td}>
+                            <span style={styles.badgeAmber}>{session.duration}</span>
+                          </td>
+                          <td style={styles.td}>
+                            <div style={{ ...styles.addrCell, maxWidth: '250px' }}>{session.location}</div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" style={{ ...styles.td, textAlign: "center", color: COLORS.primary, opacity: 0.6, padding: "20px" }}>
+                          No sessions found for this day.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "2rem", color: COLORS.primary, opacity: 0.6 }}>
+              Failed to load data.
+            </div>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setShowDetailsModal(false)}>
+            Close
+          </CButton>
+        </CModalFooter>
+      </CModal>
     </div>
   );
 };

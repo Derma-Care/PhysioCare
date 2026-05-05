@@ -23,9 +23,9 @@ div {
 /* Force dynamic header background + text color */
 .pink-table {
   background-color: var(--color-bgcolor) !important;
-  /* #a5c4d4ff */
+  /* #1B4F8A */
   color: var(--color-bgcolor) !important;
-  /* #7e3a93 */
+  /* #F0F6FF */
   font-size: 14px !important;
 
 }

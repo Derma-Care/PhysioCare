@@ -6,13 +6,8 @@ export const COLORS = {
   danger: '#ff4d4f',
   success: '#28a745',
   white: '#fff',
-  black: '#7e3a93',
-  gray: '#6c757d',
-  lowgray: '#6c757d3e',
-  teal: '#16a085',
-  orange: '#f9c571',
-  theme: '#f3f4f7',
-  bgcolor: '#a5c4d4ff',
+  bgcolor: '#1B4F8A',
+  black: '#F0F6FF',
   logocolor: '#000',
 }
 
