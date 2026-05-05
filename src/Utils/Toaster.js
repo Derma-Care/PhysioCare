@@ -18,8 +18,8 @@ import { COLORS } from '../Constant/Themes'
 const CustomToast = ({ message, type = 'success' }) => {
   const { fetchHospital, selectedHospital } = useHospital()
   return (
-    <div className={`custom-toast ${type}`} style={{ color: 'white' }}>
-      {selectedHospital?.data.hospitalLogo ? (
+    <div style={{ color: COLORS.primary }}>
+      {/* {selectedHospital?.data.hospitalLogo ? (
         <img
           className="profile-image"
           src={
@@ -32,7 +32,7 @@ const CustomToast = ({ message, type = 'success' }) => {
         />
       ) : (
         <div className="spinner"></div>
-      )}
+      )} */}
       <span className="toast-message" style={{ color: 'white', marginLeft: '8px' }}>{message}</span>
     </div>
   )
@@ -49,7 +49,7 @@ export const showCustomToast = (message, type = 'success') => {
     draggable: true,
     progress: undefined,
     style: {
-      backgroundColor: COLORS.primary,
+      backgroundColor: "red",
       color: 'white',
       fontSize: '16px',
       fontWeight: 'bold',

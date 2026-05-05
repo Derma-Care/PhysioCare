@@ -482,7 +482,7 @@ export default function ExerciseTable() {
 
   return (
     <>
-      <ToastContainer />
+      {/* <ToastContainer /> */}
 
       {/* ── Page Header ───────────────────────────────── */}
       <div className="ex-page-header">

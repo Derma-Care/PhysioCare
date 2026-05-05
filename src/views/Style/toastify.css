@@ -2,8 +2,9 @@
 
 /* General toast style */
 .Toastify__toast {
-  background-color: var(--color-black) !important;
+  background-color: var(--color-bgcolor) !important;
   color: white !important;
+  border: 1px solid orange !important;
 }
 
 /* Force all icons to white */

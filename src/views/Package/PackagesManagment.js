@@ -31,6 +31,8 @@ import {
 import { getProgramService } from "../ProcedureManagement/ProgramApi"
 import { useGlobalSearch } from "../Usecontext/GlobalSearchContext"
 import Pagination from "../../Utils/Pagination"
+import { showCustomToast } from "../../Utils/Toaster"
+import { ToastContainer } from "react-toastify"
 
 export default function PackagesManagement() {
   const [list, setList] = useState([])
@@ -149,8 +151,10 @@ export default function PackagesManagement() {
     try {
       if (editId) {
         await updateTherapy(editId, payload)
+        showCustomToast("Package updated successfully", "success")
       } else {
         await addTherapy(payload)
+        showCustomToast("Package added successfully", "success")
       }
       resetForm()
       fetchData()
@@ -253,6 +257,7 @@ export default function PackagesManagement() {
 
   return (
     <>
+      {/* <ToastContainer /> */}
       {/* ── Page Header ── */}
       <div className="pm-page-header">
         <div className="pm-page-title-group">

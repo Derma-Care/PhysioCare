@@ -196,16 +196,16 @@ export default function Programs() {
       }
       if (editId) {
         await updateProgram(editId, payload)
-        showCustomToast("Program updated successfully!", { position: "top-right" }, "success")
+        showCustomToast("Program updated successfully!", "success")
       } else {
         await addProgram(payload)
-        showCustomToast("Program added successfully!", { position: "top-right" }, "success")
+        showCustomToast("Program added successfully!", "success")
       }
       resetForm()
       fetchData()
     } catch (error) {
       console.error(error)
-      showCustomToast("Something went wrong!", { position: "top-right" }, "error")
+      showCustomToast("Something went wrong!", "error")
     } finally {
       setSaveLoading(false)
     }
@@ -320,7 +320,7 @@ export default function Programs() {
 
   return (
     <>
-      <ToastContainer />
+      {/* <ToastContainer /> */}
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <div className="pg-page-header">

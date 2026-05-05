@@ -9,6 +9,7 @@ import Select from "react-select";
 import { BASE_URL, wifiUrl } from "../../baseUrl";
 import { useLocation, useNavigate } from "react-router-dom";
 import { showCustomToast } from "../../Utils/Toaster";
+import { COLORS } from "../../Constant/Themes";
 
 export default function ProgramPayment() {
   const location = useLocation();
@@ -58,6 +59,9 @@ export default function ProgramPayment() {
   const [allPaid, setAllPaid] = useState(false);
   const [isFollowUpPayment, setIsFollowUpPayment] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [totalPaid, setTotalPaid] = useState(0);
+  const [balanceAmount, setBalanceAmount] = useState(0);
+  const [totalForSelection, setTotalForSelection] = useState(0);
 
 
   useEffect(() => {
@@ -71,24 +75,33 @@ export default function ProgramPayment() {
     try {
       const res = await fetch(`${wifiUrl}/api/physiotherapy-doctor/payment/${bookingId}`);
       const data = await res.json();
-      
+
       if (data.success && data.data) {
         const result = data.data;
         const sessionTableCreated = result.sessionTableCreatedStatus === true;
-        
+
         if (sessionTableCreated) {
           // Table already created — load payment data directly, skip generate
           setAllPaid(checkAllSessionsPaid(result));
           setFullPaymentData(result);
           console.log("Payment data loaded (table exists):", result);
-          if ((result.paymentHistory || []).length > 0) { setPaymentAmount(result.balanceAmount || 0); setFinalAmount(result.balanceAmount || 0); }
-          else { setPaymentAmount(result.totalAmount || 0); setFinalAmount(result.finalAmount || result.totalAmount || 0); }
+          if ((result.paymentHistory || []).length > 0) {
+            setTotalForSelection(result.balanceAmount || 0);
+            setPaymentAmount(result.balanceAmount || 0);
+            setFinalAmount(result.balanceAmount || 0);
+          } else {
+            setTotalForSelection(result.totalAmount || 0);
+            setPaymentAmount(result.totalAmount || 0);
+            setFinalAmount(result.finalAmount || result.totalAmount || 0);
+          }
           setDiscountAmount(result.discountAmount || 0);
           setDoctorName(result.doctorName);
           setTherapistName(result.therapistName);
           setTherapistRecordId(result.therapistRecordId);
           setPaymentStatus(result.paymentStatus);
           setPaymentHistory(result.paymentHistory || []);
+          setTotalPaid(result.totalPaid || 0);
+          setBalanceAmount(result.balanceAmount || 0);
           const typeRaw = result.serviceType?.toLowerCase() || "";
           setBackendServiceType(typeRaw === "exercise" ? "activity" : typeRaw);
           const formatted = formatTherapyTable(result.therapyWithSessions);
@@ -96,13 +109,13 @@ export default function ProgramPayment() {
           setShowTable(true);
           setSessionTableAlreadyCreated(true); // mark as pre-existing, hide session details
           if ((result.paymentHistory || []).length > 0) setIsFollowUpPayment(true);
-          
+
           // Also fetch therapy sessions for dropdown options
           await fetchTherapySessions();
           return;
         }
       }
-      
+
       // sessionTableCreatedStatus is false or no payment data — show Generate Table UI
       await fetchTherapySessions();
     } catch (err) {
@@ -122,18 +135,45 @@ export default function ProgramPayment() {
       if (!apiResponse.length) { setApiData([]); return; }
       const type = apiResponse?.[0]?.serviceType?.toLowerCase() || "";
       let normalized = [];
-      if (type === "package") { normalized = apiResponse; }
+      if (type === "package") {
+        normalized = apiResponse.map(pkg => ({
+          ...pkg,
+          therapySessions: pkg.programs || pkg.therapySessions || []
+        }));
+      }
       else if (type === "program") {
-        const item = apiResponse[0];
-        normalized = [{ ...item, therapySessions: [{ programId: item.programId, programName: item.programName, totalPrice: item.totalPrice, therapyData: item.therapyData || [] }] }];
+        normalized = apiResponse.map(item => ({
+          ...item,
+          totalPrice: item.totalSessionCost || item.total || item.totalPrice,
+          therapyData: (item.therapyData || []).map(t => ({
+            ...t,
+            totalPrice: t.totalSessionCost || t.totalPrice || (t.exercises || []).reduce((sum, ex) => sum + Number(ex.totalSessionCost || 0), 0),
+            exercises: (t.exercises || []).map(ex => ({
+              ...ex,
+              totalPrice: (Number(ex.totalSessionCost || 0) / (Number(ex.noOfSessions) || 1)) || ex.totalPrice || ex.pricePerSession
+            }))
+          }))
+        }));
       }
       else if (type === "therapy") {
-        const first = apiResponse[0];
-        normalized = [{ ...first, totalPrice: apiResponse.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0), therapySessions: [{ programId: "THERAPY_PROGRAM", programName: "Therapies", totalPrice: apiResponse.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0), therapyData: apiResponse.map((item) => ({ therapyId: item.therapyId, therapyName: item.therapyName, totalPrice: item.totalPrice, exercises: item.exercises || [] })) }] }];
+        normalized = apiResponse.map((item) => ({
+          ...item,
+          totalPrice: item.totalSessionCost || item.totalPrice,
+          exercises: (item.exercises || []).map(ex => ({
+            ...ex,
+            unitPrice: Number((Number(ex.totalSessionCost || 0) / (Number(ex.noOfSessions) || 1)) || ex.totalPrice || ex.pricePerSession || 0)
+          }))
+        }));
       }
       else if (type === "exercise") {
-        const first = apiResponse[0];
-        normalized = [{ ...first, totalPrice: apiResponse.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0), therapySessions: [{ programId: "EXERCISE_PROGRAM", programName: "Exercises", therapyData: [{ therapyId: "EXERCISE_THERAPY", therapyName: "Exercises", totalPrice: apiResponse.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0), exercises: apiResponse.flatMap((item) => item.exercises || []) }] }] }];
+        normalized = apiResponse.map(item => ({
+          ...item,
+          totalPrice: item.totalSessionCost || item.totalPrice,
+          exercises: (item.exercises || []).map(ex => ({
+            ...ex,
+            totalPrice: (Number(ex.totalSessionCost || 0) / (Number(ex.noOfSessions) || 1)) || ex.totalPrice || ex.pricePerSession
+          }))
+        }));
       }
       console.log("NORMALIZED:", normalized);
       setApiData(normalized);
@@ -165,12 +205,20 @@ export default function ProgramPayment() {
 
   const normalizeToPrograms = (sourceData) => {
     if (!sourceData || !Array.isArray(sourceData) || sourceData.length === 0) return [];
-    
-    if (sourceData[0]?.programs || sourceData[0]?.therapySessions) {
-      return sourceData[0].programs || sourceData[0].therapySessions || [];
-    } else if (sourceData[0]?.therapyData) {
+
+    // Check if any item has direct programs/sessions (containers)
+    const hasContainers = sourceData.some(item => item.programs || item.therapySessions);
+    if (hasContainers) {
+      return sourceData.flatMap(item => item.programs || item.therapySessions || []);
+    }
+
+    // If it's already a list of programs (each having therapyData)
+    if (sourceData[0]?.therapyData) {
       return sourceData;
-    } else if (sourceData[0]?.exercises) {
+    }
+
+    // Fallback for list of therapies (each having exercises)
+    if (sourceData[0]?.exercises) {
       return [{
         programId: "DEFAULT_PROG", programName: "-",
         therapyData: sourceData.map(t => ({
@@ -186,67 +234,91 @@ export default function ProgramPayment() {
   };
 
   const calculateUnpaidAmount = (node, type) => {
+    // Helper to get the most accurate unit price from backend data
+    const getUnitPrice = (ex) => {
+      const tsc = Number(ex.totalPricePerSession || 0);
+      const nos = Number(ex.noOfSessions || 1);
+      if (tsc > 0) return tsc;
+
+      const tp = Number(ex.totalPrice || 0);
+      if (tp > 0 && tp < tsc) return tp; // totalPrice is often the adjusted per-session price
+
+      return Number(ex.pricePerSession || ex.price || 0);
+    };
+
     let amount = 0;
     let hasSessions = false;
 
-    if (type === "program") {
+    console.log(`Calculating Unpaid Amount for ${type}:`, node);
+    if (type === "program" || type === "package") {
       (node.therapyData || []).forEach(t => {
         (t.exercises || []).forEach(ex => {
           if (ex.sessions && ex.sessions.length > 0) hasSessions = true;
           (ex.sessions || []).forEach(s => {
             if (s.paymentStatus?.toLowerCase() !== "paid") {
-              amount += Number(ex.pricePerSession || ex.price || 0);
+              amount += getUnitPrice(ex);
             }
           });
         });
       });
-      if (!hasSessions) return Number(node.totalPrice || 0);
+      if (!hasSessions) {
+        amount = Number(node.totalSessionCost || node.total || node.totalPrice || (node.therapyData || []).reduce((sum, t) => sum + (t.exercises || []).reduce((s, ex) => s + Number(ex.totalSessionCost || ex.totalExercisePrice || 0), 0), 0));
+      }
     } else if (type === "therapy") {
       (node.exercises || []).forEach(ex => {
         if (ex.sessions && ex.sessions.length > 0) hasSessions = true;
         (ex.sessions || []).forEach(s => {
           if (s.paymentStatus?.toLowerCase() !== "paid") {
-            amount += Number(ex.pricePerSession || ex.price || 0);
+            amount += getUnitPrice(ex);
           }
         });
       });
-      if (!hasSessions) return Number(node.totalPrice || 0);
+      if (!hasSessions) {
+        amount = Number(node.totalPrice || node.totalSessionCost || node.total || (node.exercises || []).reduce((sum, ex) => sum + Number(ex.totalSessionCost || ex.totalExercisePrice || 0), 0));
+      }
     } else if (type === "activity") {
       if (node.sessions && node.sessions.length > 0) hasSessions = true;
       (node.sessions || []).forEach(s => {
         if (s.paymentStatus?.toLowerCase() !== "paid") {
-          amount += Number(node.pricePerSession || node.price || 0);
+          amount += getUnitPrice(node);
         }
       });
-      if (!hasSessions) return Number(node.totalSessionCost || node.totalPrice || node.pricePerSession || 0);
+      if (!hasSessions) amount = Number(node.totalSessionCost || node.totalPrice || node.totalExercisePrice || 0);
     }
 
+    console.log(`Final Calculated Amount for ${type}:`, amount);
     return amount;
   };
 
   const getOptionsByType = () => {
     let programs = [];
-    
+
     if (fullPaymentData && fullPaymentData.therapyWithSessions) {
       programs = normalizeToPrograms(fullPaymentData.therapyWithSessions);
     } else if (sessionRows && sessionRows.length > 0) {
       programs = normalizeToPrograms(sessionRows);
     } else {
-      programs = apiData?.[0]?.therapySessions || [];
+      // Use the robust normalizeToPrograms instead of just taking the first item's therapySessions
+      programs = normalizeToPrograms(apiData);
     }
 
-    switch (selectedType) {
+    const type = String(selectedType).toLowerCase();
+
+    switch (type) {
+      case "package":
+        return apiData.map(p => ({ label: p.packageName || p.name || "Package", value: p.packageId, price: calculateUnpaidAmount(p, "package") }));
       case "program":
-        return programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({ label: p.programName, value: p.programId, price: calculateUnpaidAmount(p, "program") }));
+        return programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({ label: p.programName || p.name, value: p.programId, price: calculateUnpaidAmount(p, "program") }));
       case "therapy":
-        return programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ label: t.therapyName, value: t.therapyId, price: calculateUnpaidAmount(t, "therapy") })));
+        return programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ label: t.therapyName || t.name, value: t.therapyId, price: calculateUnpaidAmount(t, "therapy") })));
+      case "exercise":
       case "activity":
-        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ label: ex.exerciseName, value: ex.exerciseId, price: calculateUnpaidAmount(ex, "activity") }))));
+        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ label: ex.exerciseName || ex.name, value: ex.exerciseId, price: calculateUnpaidAmount(ex, "activity") }))));
       case "session":
         return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).flatMap(ex => (ex.sessions || []).filter(s => s.paymentStatus?.toLowerCase() !== "paid").map(s => ({
           label: `${s.sessionId} - ${s.date || "-"}`,
           value: s.sessionId,
-          price: Number(ex.pricePerSession || ex.price || 0)
+          price: Number(ex.totalPricePerSession || 0)
         })))));
       default: return [];
     }
@@ -254,54 +326,61 @@ export default function ProgramPayment() {
 
   const handleSelectValue = (selected) => {
     const selectedItems = selected || [];
+
+    console.log("Selected items:", selectedItems);
     setSelectedValue(selectedItems);
 
     const total = selectedItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+    setTotalForSelection(total);
 
+    let amount = total;
     if (paymentType === "partial") {
-      const amount = (total * paymentPercent) / 100;
-      setPaymentAmount(amount.toFixed(2));
-    } else {
-      setPaymentAmount(total);
+      amount = (total * paymentPercent) / 100;
     }
+
+    // For follow-up payments, ensure we don't exceed the balance
+    const finalVal = isFollowUpPayment ? Math.min(amount, balanceAmount) : amount;
+
+    setPaymentAmount(finalVal);
+    setFinalAmount(finalVal);
   };
 
   const formatTherapyTable = (data = []) => {
     const rows = [];
     if (!Array.isArray(data)) return rows;
-    
+
     const programs = normalizeToPrograms(data);
-    
+
     programs.forEach(program => {
       (program.therapyData || []).forEach(therapy => {
         (therapy.exercises || []).forEach(exercise => {
-            const count = Number(exercise.noOfSessions || 0) || 1;
-            // Handle sessions array if it exists (from generate-table) or fallback to planned count
-            if (exercise.sessions && exercise.sessions.length > 0) {
-              exercise.sessions.forEach(session => {
-                rows.push({
-                  programName: program.programName,
-                  therapyName: therapy.therapyName,
-                  exerciseName: exercise.exerciseName,
-                  sessionNo: session.sessionId,
-                  date: session.date || "-",
-                  status: session.status || "Planned",
-                  paymentStatus: session.paymentStatus || "Unpaid",
-                  sets: exercise.sets,
-                  repetitions: exercise.repetitions,
-                  frequency: exercise.frequency || exercise.frequancy,
-                  notes: exercise.notes,
-                  price: exercise.pricePerSession
-                });
+          const count = Number(exercise.noOfSessions || 0) || 1;
+          // Handle sessions array if it exists (from generate-table) or fallback to planned count
+          if (exercise.sessions && exercise.sessions.length > 0) {
+            exercise.sessions.forEach(session => {
+              rows.push({
+                programName: program.programName,
+                therapyName: therapy.therapyName,
+                exerciseName: exercise.exerciseName,
+                sessionNo: session.sessionId,
+                date: session.date || "-",
+                status: session.status || "Planned",
+                paymentStatus: session.paymentStatus || "Unpaid",
+                sets: exercise.sets,
+                repetitions: exercise.repetitions,
+                frequency: exercise.frequency || exercise.frequancy,
+                notes: exercise.notes,
+                price: exercise.totalPrice || (exercise.totalSessionCost / (exercise.noOfSessions || 1)) || exercise.pricePerSession
               });
-            } else {
-              for (let i = 1; i <= count; i++) {
-                rows.push({ programName: program.programName, therapyName: therapy.therapyName, exerciseName: exercise.exerciseName, sessionNo: i, date: "-", status: "Planned", paymentStatus: "Unpaid", sets: exercise.sets, repetitions: exercise.repetitions, frequency: exercise.frequancy, notes: exercise.notes, price: exercise.pricePerSession });
-              }
+            });
+          } else {
+            for (let i = 1; i <= count; i++) {
+              rows.push({ programName: program.programName, therapyName: therapy.therapyName, exerciseName: exercise.exerciseName, sessionNo: i, date: "-", status: "Planned", paymentStatus: "Unpaid", sets: exercise.sets, repetitions: exercise.repetitions, frequency: exercise.frequancy, notes: exercise.notes, price: (exercise.totalSessionCost / (exercise.noOfSessions || 1)) || exercise.pricePerSession });
             }
-          });
+          }
         });
       });
+    });
     return rows;
   };
 
@@ -333,7 +412,7 @@ export default function ProgramPayment() {
                 date: session.date,
                 status: session.status,
                 paymentStatus: session.paymentStatus,
-                price: exercise.pricePerSession || exercise.price || (exercise.totalExercisePrice / exercise.noOfSessions) || 0
+                price: exercise.totalPrice || (exercise.totalSessionCost / (exercise.noOfSessions || 1)) || exercise.pricePerSession || 0
               })) || []
             ) || []
           ) || []
@@ -374,19 +453,30 @@ export default function ProgramPayment() {
     }
 
     let amount = 0;
-    if (type === "package") {
-      if (isFollowUpPayment && fullPaymentData) {
-        amount = Number(fullPaymentData.balanceAmount || 0);
-      } else {
+    if (type === backendServiceType) {
+      if (isFollowUpPayment) {
+        amount = Number(balanceAmount || 0);
+      } else if (type === "package") {
         const root = apiData?.[0];
-        amount = Number(root?.total || root?.totalPrice || 0);
+        amount = Number(root?.totalSessionCost || root?.total || root?.totalPrice || 0);
+      } else {
+        // For root types like program/therapy, calculate total but don't pre-select
+        const programs = normalizeToPrograms(apiData);
+        if (type === "program") {
+          amount = programs.reduce((sum, p) => sum + calculateUnpaidAmount(p, "program"), 0);
+        } else if (type === "therapy") {
+          amount = programs.flatMap(p => p.therapyData || []).reduce((sum, t) => sum + calculateUnpaidAmount(t, "therapy"), 0);
+        } else if (type === "activity") {
+          amount = programs.flatMap(p => (p.therapyData || []).flatMap(t => t.exercises || [])).reduce((sum, ex) => sum + calculateUnpaidAmount(ex, "activity"), 0);
+        }
+        setSelectedValue([]); // User wants to "select my wish"
       }
     } else {
-      // For other types, amount will be calculated when items are selected
       amount = 0;
     }
-    setPaymentAmount(amount);
-    setFinalAmount(amount);
+    setTotalForSelection(0); // Set to 0 if nothing is selected
+    setPaymentAmount(0);
+    setFinalAmount(0);
   };
 
   const checkAllSessionsPaid = (data) => {
@@ -407,9 +497,9 @@ export default function ProgramPayment() {
     const mapExercise = (ex) => ({
       exerciseId: String(ex.exerciseId || ""),
       exerciseName: String(ex.exerciseName || ex.name || "Unknown"),
-      pricePerSession: Number(ex.pricePerSession) || 0,
+      pricePerSession: Number(ex.totalPrice || ex.pricePerSession) || 0,
       noOfSessions: Number(ex.noOfSessions) || 0,
-      totalExercisePrice: Number(ex.totalExercisePrice || ex.totalSessionCost) || 0,
+      totalExercisePrice: Number(ex.totalSessionCost || ex.totalExercisePrice) || 0,
       paymentStatus: "UNPAID",
       frequency: String(ex.frequency || ex.frequancy || ""),
       sets: Number(ex.sets) || 0,
@@ -449,23 +539,35 @@ export default function ProgramPayment() {
   useEffect(() => {
     if (!apiData?.length) return;
     const root = apiData[0];
-    const type = (root.serviceType || "").toLowerCase();
+    let type = (root.serviceType || "").toLowerCase();
+    if (type === "exercise") type = "activity"; // Normalize to activity
 
     // Set initial service type selection
     setSelectedType(type);
     setBackendServiceType(type); // Ensure backend service type is synced
-    setSelectedValue([]);
 
     // Default payment settings
     setPaymentType("full");
     setPaymentPercent(100);
 
-    let amount = 0;
+    // If it's a follow-up payment, don't overwrite the amounts already set in initializePayment
+    if (isFollowUpPayment) return;
+
+    let totalAmount = 0;
+    let initialSelectedValue = [];
+
     if (type === "package") {
-      amount = Number(root.total || root.totalPrice || 0);
+      totalAmount = Number(root.totalSessionCost || root.total || root.totalPrice || 0);
+      setTotalForSelection(totalAmount);
+      setPaymentAmount(totalAmount);
+      setFinalAmount(totalAmount);
+    } else {
+      // Don't pre-populate; user wants to select manually
+      setSelectedValue([]);
+      setTotalForSelection(0);
+      setPaymentAmount(0);
+      setFinalAmount(0);
     }
-    setPaymentAmount(amount);
-    setFinalAmount(amount);
   }, [apiData]);
 
   const createPayloadData = {
@@ -484,13 +586,13 @@ export default function ProgramPayment() {
     },
     therapyWithSessions: (() => {
       const type = backendServiceType?.toLowerCase();
-      const root = apiData?.[0];
-      if (!root) return [];
-      
+      if (!apiData?.length) return [];
+
       const mapEx = (ex) => ({
         exerciseId: ex.exerciseId,
         exerciseName: ex.exerciseName,
-        pricePerSession: Number(ex.pricePerSession || 0),
+        pricePerSession: Number(ex.totalPrice || (ex.totalSessionCost / (ex.noOfSessions || 1)) || ex.pricePerSession || 0),
+        totalExercisePrice: Number(ex.totalSessionCost || ex.totalExercisePrice || 0),
         noOfSessions: Number(ex.noOfSessions || 0),
         repetitions: Number(ex.repetitions || 0),
         sets: Number(ex.sets || 0),
@@ -511,10 +613,48 @@ export default function ProgramPayment() {
         activityDuration: ex.activityDuration || null
       });
 
-      if (type === "package") return [{ packageId: root.packageId || "", packageName: root.packageName || "", totalPrice: root.totalPrice || 0, programs: root.therapySessions || [] }];
-      if (type === "program") return (root.therapySessions || []).map(program => ({ programId: program.programId, programName: program.programName, therapyData: (program.therapyData || []).map(therapy => ({ therapyId: therapy.therapyId, therapyName: therapy.therapyName, exercises: (therapy.exercises || []).map(ex => mapEx(ex)) })) }));
-      if (type === "therapy") return (root.therapySessions || []).flatMap(program => program.therapyData || []).map(therapy => ({ therapyId: therapy.therapyId, therapyName: therapy.therapyName, exercises: (therapy.exercises || []).map(ex => mapEx(ex)) }));
-      if (type === "activity") return [{ exercises: (root.therapySessions || []).flatMap(program => program.therapyData || []).flatMap(therapy => therapy.exercises || []).map(ex => mapEx(ex)) }];
+      if (type === "package") {
+        return apiData.map(pkg => ({
+          packageId: pkg.packageId || "",
+          packageName: pkg.packageName || "",
+          totalPrice: pkg.totalPrice || 0,
+          programs: (pkg.programs || pkg.therapySessions || []).map(prog => ({
+            programId: prog.programId,
+            programName: prog.programName,
+            therapyData: (prog.therapyData || []).map(therapy => ({
+              therapyId: therapy.therapyId,
+              therapyName: therapy.therapyName,
+              exercises: (therapy.exercises || []).map(ex => mapEx(ex))
+            }))
+          }))
+        }));
+      }
+
+      if (type === "program") {
+        return apiData.map(program => ({
+          programId: program.programId,
+          programName: program.programName,
+          therapyData: (program.therapyData || []).map(therapy => ({
+            therapyId: therapy.therapyId,
+            therapyName: therapy.therapyName,
+            exercises: (therapy.exercises || []).map(ex => mapEx(ex))
+          }))
+        }));
+      }
+
+      if (type === "therapy") {
+        return apiData.map(therapy => ({
+          therapyId: therapy.therapyId,
+          therapyName: therapy.therapyName,
+          exercises: (therapy.exercises || []).map(ex => mapEx(ex))
+        }));
+      }
+
+      if (type === "activity") {
+        return [{
+          exercises: apiData.flatMap(item => (item.exercises || [])).map(ex => mapEx(ex))
+        }];
+      }
       return [];
     })(),
   };
@@ -543,7 +683,7 @@ export default function ProgramPayment() {
       const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await response.json();
       console.log("API RESPONSE:", data);
-      
+
       if (data.success || response.ok) {
         setIsFollowUpPayment(true);
         setPrintData({ ...payload, selectedItems: selectedValue, tableData, startDate });
@@ -552,8 +692,8 @@ export default function ProgramPayment() {
       } else {
         showCustomToast(data.message || "Payment processing failed.", "error");
       }
-    } catch (error) { 
-      console.error("Payment Error:", error); 
+    } catch (error) {
+      console.error("Payment Error:", error);
       showCustomToast("An error occurred during payment processing.", "error");
     } finally {
       setSubmitLoading(false);
@@ -595,30 +735,92 @@ export default function ProgramPayment() {
   // ── react-select styles ──────────────────────────────────────────
   const selectStyles = {
     control: (base, state) => ({
-      ...base, minHeight: "36px", fontSize: "13px",
-      borderColor: state.isFocused ? "#185fa5" : "#ced4da",
-      borderWidth: "0.5px", borderRadius: "7px",
-      boxShadow: state.isFocused ? "0 0 0 2px rgba(24,95,165,0.15)" : "none",
-      "&:hover": { borderColor: "#185fa5" },
+      ...base,
+      minHeight: "38px",
+      fontSize: "13px",
+      borderColor: state.isFocused ? COLORS.primary : "#d1d5db",
+      borderWidth: "1px",
+      borderRadius: "8px",
+      boxShadow: state.isFocused ? `0 0 0 2px ${COLORS.primary}25` : "none",
+      background: "#fff",
+      "&:hover": { borderColor: COLORS.primary },
     }),
-    multiValue: (base) => ({ ...base, background: "#e6f1fb", borderRadius: "20px", border: "0.5px solid #b5d4f4" }),
-    multiValueLabel: (base) => ({ ...base, color: "#0c447c", fontSize: "11px", fontWeight: "500", padding: "1px 6px" }),
-    multiValueRemove: (base) => ({ ...base, color: "#185fa5", borderRadius: "0 20px 20px 0", "&:hover": { background: "#b5d4f4", color: "#042c53" } }),
-    option: (base, state) => ({ ...base, fontSize: "13px", backgroundColor: state.isSelected ? "#185fa5" : state.isFocused ? "#e6f1fb" : "transparent", color: state.isSelected ? "#fff" : "#374151" }),
-    placeholder: (base) => ({ ...base, fontSize: "13px", color: "#9ca3af" }),
-    menu: (base) => ({ ...base, borderRadius: "7px", border: "0.5px solid #d0dce9", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 9999 }),
-    menuList: (base) => ({ ...base, maxHeight: 200, overflowY: "auto" }),
+    placeholder: (base) => ({ ...base, color: "#94a3b8", fontSize: "13px" }),
+    singleValue: (base) => ({ ...base, color: COLORS.primary, fontWeight: "500" }),
+    multiValue: (base) => ({
+      ...base,
+      background: `${COLORS.primary}10`,
+      borderRadius: "6px",
+      border: `1px solid ${COLORS.primary}20`,
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      color: COLORS.primary,
+      fontSize: "12px",
+      fontWeight: "600",
+      padding: "2px 8px",
+    }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: COLORS.primary,
+      "&:hover": { background: COLORS.primary, color: "#fff" },
+    }),
+    option: (base, state) => ({
+      ...base,
+      fontSize: "13px",
+      fontWeight: "500",
+      backgroundColor: state.isSelected ? COLORS.primary : state.isFocused ? `${COLORS.primary}15` : "transparent",
+      color: state.isSelected ? "#fff" : COLORS.primary,
+      cursor: "pointer",
+      "&:active": { backgroundColor: COLORS.primary },
+    }),
+    menu: (base) => ({
+      ...base,
+      borderRadius: "10px",
+      border: "1px solid #e2e8f0",
+      boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+      zIndex: 9999,
+      overflow: "hidden",
+    }),
+    menuList: (base) => ({ ...base, padding: "4px" }),
   };
+
+  const primaryBtn = {
+    background: COLORS.primary, color: "#fff", border: "none",
+    borderRadius: "8px", padding: "9px 18px",
+    fontSize: "13px", fontWeight: 600, cursor: "pointer",
+  };
+
+  const labelStyle = { fontSize: "11px", fontWeight: 600, color: COLORS.primary, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" };
+  const inputStyle = { fontSize: "13px", color: COLORS.primary, border: "0.5px solid #d0dce9", borderRadius: "7px", padding: "8px 12px" };
 
   return (
     <div style={{ background: "#f4f6f9", minHeight: "100vh", padding: "20px" }}>
+
+      {/* ── Patient Financial Stats ── */}
+      {/* {isFollowUpPayment && (
+        <CRow className="g-3 mb-4">
+          <CCol md={3}>
+            <div style={{ background: "#fff", border: "0.5px solid #d0dce9", borderRadius: "10px", padding: "12px 16px", display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "10px", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.02em" }}>Total Paid</span>
+              <span style={{ fontSize: "18px", fontWeight: 700, color: "#15803d" }}>₹{totalPaid}</span>
+            </div>
+          </CCol>
+          <CCol md={3}>
+            <div style={{ background: "#fff", border: "0.5px solid #d0dce9", borderRadius: "10px", padding: "12px 16px", display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "10px", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.02em" }}>Balance Amount</span>
+              <span style={{ fontSize: "18px", fontWeight: 700, color: "#b45309" }}>₹{balanceAmount}</span>
+            </div>
+          </CCol>
+        </CRow>
+      )} */}
 
       {/* ── Payment Details button ── */}
       {isFollowUpPayment && !allPaid && (
         <button
           onClick={() => navigate("/paymentDetails", { state: { paymentData: fullPaymentData } })}
           style={{
-            background: "#185fa5", color: "#fff", border: "none",
+            background: COLORS.primary, color: "#fff", border: "none",
             borderRadius: "8px", padding: "9px 18px",
             fontSize: "13px", fontWeight: 600, cursor: "pointer",
             marginBottom: "16px",
@@ -684,7 +886,7 @@ export default function ProgramPayment() {
           <div
             onClick={() => setTableOpen(prev => !prev)}
             style={{
-              background: "#185fa5", padding: "10px 16px",
+              background: COLORS.primary, padding: "10px 16px",
               display: "flex", alignItems: "center", justifyContent: "space-between",
               cursor: "pointer", userSelect: "none",
             }}
@@ -756,7 +958,7 @@ export default function ProgramPayment() {
               display: "flex", alignItems: "center", justifyContent: "center",
               margin: "0 auto 16px", fontSize: "28px",
             }}>✓</div>
-            <p style={{ fontSize: "17px", fontWeight: 600, color: "#0c447c", marginBottom: "8px" }}>
+            <p style={{ fontSize: "17px", fontWeight: 600, color: COLORS.primary, marginBottom: "8px" }}>
               All Sessions Paid
             </p>
             <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "24px" }}>
@@ -779,8 +981,41 @@ export default function ProgramPayment() {
           borderRadius: "10px", overflow: "hidden",
         }}>
           {/* Header */}
-          <div style={{ background: "#185fa5", padding: "10px 14px" }}>
+          <div style={{
+            background: COLORS.primary,
+            padding: "8px 14px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
             <span style={{ fontSize: "13px", fontWeight: 600, color: "#fff" }}>Payment</span>
+            <div style={{ display: "flex", gap: "10px" }}>
+              {totalPaid > 0 && (
+                <span style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  background: "rgba(255,255,255,0.15)",
+                  color: "#fff",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                  border: "1px solid rgba(255,255,255,0.3)"
+                }}>
+                  PAID: ₹{totalPaid}
+                </span>
+              )}
+              {balanceAmount > 0 && (
+                <span style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  background: "#fbbf24",
+                  color: "#000",
+                  padding: "2px 8px",
+                  borderRadius: "4px"
+                }}>
+                  BALANCE: ₹{balanceAmount}
+                </span>
+              )}
+            </div>
           </div>
 
           <div style={{ padding: "16px 20px" }}>
@@ -850,12 +1085,13 @@ export default function ProgramPayment() {
                   <option value="partial">Partial</option>
                 </CFormSelect>
               </CCol>
+
             </CRow>
 
             <CRow className="g-3">
               <CCol md={2}>
                 <CFormLabel style={labelStyle}>Total Amount</CFormLabel>
-                <CFormInput value={paymentAmount} readOnly style={{ ...inputStyle, background: "#f7fafd", color: "#0c447c", fontWeight: 600 }} />
+                <CFormInput value={totalForSelection} readOnly style={{ ...inputStyle, background: "#f7fafd", color: COLORS.primary, fontWeight: 600 }} />
               </CCol>
 
               <CCol md={2}>
@@ -939,8 +1175,8 @@ export default function ProgramPayment() {
             </CRow>
 
             <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "0.5px solid #d0dce9", display: "flex", justifyContent: "flex-end" }}>
-              <button 
-                onClick={handleSubmit} 
+              <button
+                onClick={handleSubmit}
                 disabled={submitLoading}
                 style={{ ...primaryBtn, opacity: submitLoading ? 0.75 : 1, display: "flex", alignItems: "center", gap: "8px", minWidth: "160px", justifyContent: "center" }}
               >

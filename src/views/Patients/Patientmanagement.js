@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import {
   CSpinner, CModal, CModalBody, CModalHeader, CModalTitle,
-  CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow,
+  CTable, CTableBody, CTableDataCell, CTableHead, CAccordion,
+  CAccordionItem,
+  CAccordionHeader,
+  CAccordionBody, CTableHeaderCell, CTableRow,
 } from '@coreui/react'
 import { useLocation } from 'react-router-dom'
 import axios from 'axios'
@@ -11,14 +14,16 @@ import {
   User, CalendarDays, FileText, ClipboardList,
   Stethoscope, CreditCard, RefreshCw, AlertCircle, Activity, MapPin, Eye, Clock,
 } from 'lucide-react'
+
 import { useNavigate } from 'react-router-dom'
+import LoadingIndicator from '../../Utils/loader'
 
 const TAB_KEYS = { INFO: 1, APPOINTMENTS: 2, REPORTS: 3, HISTORY: 4 }
 
 
 const PatientManagement = () => {
   const location = useLocation()
-const navigate = useNavigate()
+  const navigate = useNavigate()
 
   const patientInfo = location.state?.patientInfo
 
@@ -28,8 +33,10 @@ const navigate = useNavigate()
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [appointmentInfo, setAppointmentInfo] = useState(null)
   const [history, setHistory] = useState([])
+  const [selectedVisit, setSelectedVisit] = useState(null)
   const [report, setReport] = useState([])
   const [loading, setLoading] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(false)
   const [reportLoading, setReportLoading] = useState(false)
   const [viewModal, setViewModal] = useState(false)
   const [selectedHistory, setSelectedHistory] = useState(null)
@@ -57,32 +64,45 @@ const navigate = useNavigate()
       const response = await http.get(`${BASE_URL}/bookings/byPatientId/${patientId}`)
       const data = response.data?.data || []
       setAppointments(data)
+      console.log(data, "data ")
       if (data.length > 0) {
         const first = data[0]
         setSelectedAppointment(first)
         setAppointmentInfo(first)
-        const bookingId = first.bookingId || first.bookingID || first.id
-        if (bookingId) fetchReportByBookingId()
+        if (first.bookingId) fetchReportByBookingId()
+        // Fetch history for the first appointment immediately
+        // fetchVisitHistory(first)
       } else {
         setSelectedAppointment(null)
         setAppointmentInfo(null)
         setReport([])
+        // setHistory([])
       }
     } catch { setAppointments([]); setReport([]) }
     finally { setLoading(false) }
   }
 
-  const fetchVisitHistory = async () => {
-    const patientId = selectedAppointment?.patientId
-    const bookingId = selectedAppointment?.bookingId
-    if (!patientId || !bookingId) return
-    try {
-      const res = await axios.get(
-        `${wifiUrl}/api/physiotherapy-doctor/visitHistoryByUsingPatientIdAndBooking/${patientId}/${bookingId}`
-      )
-      setHistory(res.data?.data || [])
-    } catch { setHistory([]) }
-  }
+  // NOTE: dont delete this code fetchVisitHistory
+
+  // const fetchVisitHistory = async (appointment) => { 
+  //   const appt = appointment || selectedAppointment
+  //   const patientId = appt?.patientId
+  //   const bookingId = appt?.bookingId
+  //   if (!patientId || !bookingId) return
+  //   try {
+  //     setHistoryLoading(true)
+  //     setHistory([])
+  //     setSelectedVisit(null)
+  //     const res = await axios.get(
+  //       `${wifiUrl}/api/physiotherapy-doctor/visitHistoryByUsingPatientIdAndBooking/${patientId}/${bookingId}`
+  //     )
+  //     const data = res.data?.data || []
+  //     setHistory(data)
+  //     // Auto-select the first visit
+  //     if (data.length > 0) setSelectedVisit(data[0])
+  //   } catch { setHistory([]) }
+  //   finally { setHistoryLoading(false) }
+  // }
 
   const fetchReportByBookingId = async () => {
     try {
@@ -98,10 +118,11 @@ const navigate = useNavigate()
       fetchAppointments(selectedPatient.patientId)
   }, [activeKey, selectedPatient])
 
-  useEffect(() => {
-    if (activeKey === TAB_KEYS.HISTORY && selectedPatient?.patientId)
-      fetchVisitHistory()
-  }, [activeKey, selectedPatient])
+  // useEffect(() => {
+  //   // Refetch history whenever selectedAppointment changes (user picks a different booking)
+  //   if (activeKey === TAB_KEYS.HISTORY && selectedAppointment?.bookingId)
+  //     fetchVisitHistory(selectedAppointment)
+  // }, [activeKey, selectedAppointment])
 
   useEffect(() => {
     if (activeKey === TAB_KEYS.REPORTS && selectedAppointment?.bookingId)
@@ -111,7 +132,6 @@ const navigate = useNavigate()
   useEffect(() => {
     if (selectedPatient?.patientId) {
       fetchAppointments(selectedPatient.patientId)
-      fetchVisitHistory()
     }
   }, [selectedPatient])
 
@@ -137,7 +157,7 @@ const navigate = useNavigate()
     { key: TAB_KEYS.INFO, label: 'Patient Info', icon: User },
     { key: TAB_KEYS.APPOINTMENTS, label: 'Appointments', icon: CalendarDays },
     { key: TAB_KEYS.REPORTS, label: 'Reports', icon: FileText },
-    { key: TAB_KEYS.HISTORY, label: 'History', icon: ClipboardList },
+    // { key: TAB_KEYS.HISTORY, label: 'History', icon: ClipboardList },
   ]
 
   return (
@@ -218,354 +238,400 @@ const navigate = useNavigate()
         )}
 
         {/* ── Tab 2: Appointments ── */}
-     {activeKey === TAB_KEYS.APPOINTMENTS && (
-  loading ? (
-    <div className="pm2-center">
-      <CSpinner color="primary" />
-    </div>
-  ) : appointments.length > 0 ? (
+        {activeKey === TAB_KEYS.APPOINTMENTS && (
+          loading ? (
+            <div className="pm2-center">
+              <LoadingIndicator message={'Appointments Loading...'} />
+            </div>
+          ) : appointments.length > 0 ? (
 
-    <CTable className="pm-table">
-      <CTableHead className="pm-thead">
-        <CTableRow>
-          <CTableHeaderCell>Booking ID</CTableHeaderCell>
-          <CTableHeaderCell>Date</CTableHeaderCell>
-          <CTableHeaderCell>Doctor</CTableHeaderCell>
-          <CTableHeaderCell>Visit Type</CTableHeaderCell>
-          <CTableHeaderCell>Action</CTableHeaderCell>
-        </CTableRow>
-      </CTableHead>
+            <CTable className=" pink-table">
+              <CTableHead >
+                <CTableRow>
+                  <CTableHeaderCell>Booking ID</CTableHeaderCell>
+                  <CTableHeaderCell>Date</CTableHeaderCell>
+                  <CTableHeaderCell>Doctor</CTableHeaderCell>
+                  <CTableHeaderCell>Visit Type</CTableHeaderCell>
+                  <CTableHeaderCell>Action</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
 
-      <CTableBody>
-        {appointments.map((appt, index) => (
-          <CTableRow key={index}>
+              <CTableBody>
+                {appointments.map((appt, index) => (
+                  <CTableRow key={index}>
 
-            <CTableDataCell className="pm-bold">
-              {appt.bookingId}
-            </CTableDataCell>
+                    <CTableDataCell className="pm-bold">
+                      {appt.bookingId}
+                    </CTableDataCell>
 
-            <CTableDataCell>
-              {appt.serviceDate}
-            </CTableDataCell>
+                    <CTableDataCell>
+                      {appt.serviceDate}
+                    </CTableDataCell>
 
-            <CTableDataCell>
-              {appt.doctorName}
-            </CTableDataCell>
+                    <CTableDataCell>
+                      {appt.doctorName}
+                    </CTableDataCell>
 
-            <CTableDataCell>
-              <span className="pm-tag">{appt.visitType}</span>
-            </CTableDataCell>
+                    <CTableDataCell>
+                      <span className="pm-tag">{appt.visitType}</span>
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      <button
+                        className="pm-action-btn view"
+                        title="View"
+                        onClick={() =>
+                          navigate(`/appointment-details/${appt.bookingId}`, {
+                            state: { appointment: appt }
+                          })
+                        }
+                      >
+                        <Eye size={14} />
+                      </button>
+                    </CTableDataCell>
+                  </CTableRow>
+                ))}
+              </CTableBody>
+            </CTable>
 
-           <button
-  className="pm-action-btn view"
-  title="View"
-  onClick={() =>
-    navigate(`/appointment-details/${appt.bookingId}`, {
-      state: { appointment: appt }
-    })
-  }
->
-  <Eye size={14} />
-</button>
-
-          </CTableRow>
-        ))}
-      </CTableBody>
-    </CTable>
-
-  ) : (
-    <div className="pm2-empty">
-      No appointments found.
-    </div>
-  )
-)}
+          ) : (
+            <div className="pm2-empty">
+              No appointments found.
+            </div>
+          )
+        )}
 
         {/* ── Tab 3: Reports ── */}
         {activeKey === TAB_KEYS.REPORTS && (
-          reportLoading ? (
-            <div className="pm2-center"><CSpinner color="primary" /></div>
-          ) : Array.isArray(report) && report.length > 0 ? (
-            report.map((r, index) => (
-              <div key={index} className="pm2-info-card" style={{ marginBottom: 12 }}>
-                <div className="pm2-info-card-header" style={{ justifyContent: 'space-between' }}>
-                  <div className="pm2-info-card-header">
-                    <FileText size={14} className="pm2-header-icon" />Reports ({getValue(r.reportName)})
 
-                  </div>
-                  <span
-                    className="pm2-status-pill"
-                    style={{
-                      background:
-                        r.reportStatus === 'Normal' ? '#3b6d11' :
-                          r.reportStatus === 'Abnormal' ? '#a32d2d' : '#5f5e5a',
-                    }}
-                  >
-                    {getValue(r.reportStatus)}
-                  </span>
-                </div>
-                <div className="pm2-info-card-body">
-                  <div className="pm2-inner-grid" style={{ marginBottom: 12 }}>
-                    <InfoRow label="Date" value={r.reportDate} />
-                    <InfoRow label="Type" value={r.reportType} />
-                    <InfoRow label="Booking ID" value={r.bookingId} />
-                  </div>
-                  <div style={{ borderTop: '0.5px solid #d0dce9', paddingTop: 10 }}>
-                    <span className="pm2-info-label" style={{ display: 'block', marginBottom: 6 }}>Report File</span>
-                    {Array.isArray(r.reportFile) && r.reportFile.length > 0 ? (
-                      r.reportFile.map((file, i) => {
-                        const fileType = (file.startsWith('/9j/') || file.startsWith('iVBOR')) ? 'image/png' : 'application/pdf'
-                        return (
-                          <button
-                            key={i}
-                            className="pm2-file-btn"
-                            onClick={() => openBase64File(file, fileType, `${r.reportName || 'report'}${fileType === 'application/pdf' ? '.pdf' : '.png'}`)}
-                          >
-                            <FileText size={12} /> View File {i + 1}
-                          </button>
-                        )
-                      })
-                    ) : <span className="pm2-info-value">N/A</span>}
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
+          reportLoading ? (
+            <div className="pm2-center">
+              <LoadingIndicator message={'Reports Loading...'} />
+            </div>
+          ) : Array.isArray(report) && report.length > 0 ? (() => {
+
+            // ✅ GROUP BY BOOKING ID
+            const groupedReports = report.reduce((acc, r) => {
+              const key = r.bookingId || "Unknown"
+              if (!acc[key]) acc[key] = []
+              acc[key].push(r)
+              return acc
+            }, {})
+
+            return (
+              <CAccordion className="pm-accordion" alwaysOpen>
+
+                {Object.entries(groupedReports).map(([bookingId, reportsList], idx) => (
+
+                  <CAccordionItem itemKey={idx} key={bookingId}>
+
+                    {/* 🔽 HEADER (Booking ID) */}
+                    <CAccordionHeader>
+                      Booking ID: {bookingId} ({reportsList.length} Reports)
+                    </CAccordionHeader>
+
+                    {/* 🔽 BODY (Reports under that booking) */}
+                    <CAccordionBody>
+
+                      {reportsList.map((r, index) => (
+
+                        <div key={index} className="pm2-info-card" style={{ marginBottom: 12 }}>
+
+                          <div className="pm2-info-card-header" style={{ justifyContent: 'space-between' }}>
+                            <div className="pm2-header-icon">
+                              <FileText size={14} />
+                              {" "}Reports ({getValue(r.reportName)})
+                            </div>
+
+                            <span
+                              className="pm2-status-pill"
+                              style={{
+                                background:
+                                  r.reportStatus === 'Normal' ? '#3b6d11' :
+                                    r.reportStatus === 'Abnormal' ? '#a32d2d' : '#5f5e5a',
+                              }}
+                            >
+                              {getValue(r.reportStatus)}
+                            </span>
+                          </div>
+
+                          <div className="pm2-info-card-body">
+
+                            <div className="pm2-inner-grid" style={{ marginBottom: 12 }}>
+                              <InfoRow label="Date" value={r.reportDate} />
+                              <InfoRow label="Type" value={r.reportType} />
+                              <InfoRow label="Booking ID" value={r.bookingId} />
+                            </div>
+
+                            {/* FILES */}
+                            <div style={{ borderTop: '0.5px solid #d0dce9', paddingTop: 10 }}>
+                              <span className="pm2-info-label">Report File</span>
+
+                              {Array.isArray(r.reportFile) && r.reportFile.length > 0 ? (
+                                r.reportFile.map((file, i) => {
+
+                                  const fileType =
+                                    (file.startsWith('/9j/') || file.startsWith('iVBOR'))
+                                      ? 'image/png'
+                                      : 'application/pdf'
+
+                                  return (
+                                    <button
+                                      key={i}
+                                      className="pm2-file-btn"
+                                      onClick={() =>
+                                        openBase64File(
+                                          file,
+                                          fileType,
+                                          `${r.reportName || 'report'}${fileType === 'application/pdf' ? '.pdf' : '.png'}`
+                                        )
+                                      }
+                                    >
+                                      <FileText size={12} /> View File {i + 1}
+                                    </button>
+                                  )
+                                })
+                              ) : (
+                                <span className="pm2-info-value">N/A</span>
+                              )}
+
+                            </div>
+
+                          </div>
+                        </div>
+
+                      ))}
+
+                    </CAccordionBody>
+
+                  </CAccordionItem>
+
+                ))}
+
+              </CAccordion>
+            )
+
+          })() : (
+
             <div className="pm2-empty">
               <FileText size={36} className="pm2-empty-icon" />
               <p>No reports available.</p>
             </div>
+
           )
         )}
 
-        {/* ── Tab 4: History ── */}
-        {activeKey === TAB_KEYS.HISTORY && (
-          loading ? (
-            <div className="pm2-center"><CSpinner color="primary" /></div>
-          ) : Array.isArray(history) && history.length > 0 ? (
-            history.map((item, index) => {
+        {/* ── Tab 4: History Dont Delete── */}
+        {/* {activeKey === TAB_KEYS.HISTORY && (
+          <div>
+
+            
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+
+             
+              {appointments.length > 0 && (
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <label className="pm2-select-label">Booking ID</label>
+                  <select
+                    className="pm2-select"
+                    style={{ width: '100%', maxWidth: '100%' }}
+                    value={selectedAppointment?.bookingId || ''}
+                    onChange={(e) => {
+                      const appt = appointments.find(a => a.bookingId === e.target.value)
+                      if (appt) {
+                        setSelectedAppointment(appt)
+                        fetchVisitHistory(appt)
+                      }
+                    }}
+                  >
+                    {appointments.map((appt, i) => (
+                      <option key={i} value={appt.bookingId}>
+                        {appt.bookingId} — {appt.serviceDate || appt.visitDate || 'No date'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+             
+              {!historyLoading && history.length > 0 && (
+                <div style={{ flex: 1, minWidth: 180 }}>
+                  <label className="pm2-select-label">Select Visit</label>
+                  <select
+                    className="pm2-select"
+                    style={{ width: '100%', maxWidth: '100%' }}
+                    value={selectedVisit?.visitNumber || ''}
+                    onChange={(e) => {
+                      const visit = history.find(v => v.visitNumber === e.target.value)
+                      if (visit) setSelectedVisit(visit)
+                    }}
+                  >
+                    {history.map((v, i) => (
+                      <option key={i} value={v.visitNumber}>
+                        {v.visitNumber} — {v.visitDate || 'No date'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            
+            {historyLoading ? (
+              <div className="pm2-center"> <LoadingIndicator message={'History Loading...'} /></div>
+            ) : selectedVisit ? (() => {
+              const item = selectedVisit
               const doc = item.physiotherapyDoctorData || {}
               const complaints = doc.complaints || {}
+              const pi = doc.patientInfo || {}
+              const assessment = doc.assessment || {}
+              const subj = assessment.subjectiveAssessment || {}
+              const functional = assessment.functionalAssessment || {}
+              const physical = assessment.physicalExamination || {}
+              const diagnosis = doc.diagnosis || {}
+              const investigation = doc.investigation || {}
+              const treatmentPlan = doc.treatmentPlan || {}
+              const therapySessions = doc.therapySessions || []
+              const exercisePlan = doc.exercisePlan || {}
+              const followUp = doc.followUp || {}
+              const prescriptionPdf = doc.prescriptionPdf || item.prescriptionPdf || null
+
               return (
-                <div key={index} className="pm2-info-card" style={{ marginBottom: 12 }}>
-                  <div className="pm2-info-card-header" style={{ justifyContent: 'space-between' }}>
-                    <div className="pm2-info-card-header">
-                      <ClipboardList size={14} className="pm2-header-icon" />History ({getValue(item.visitNumber)})
+                <div className="pm-accordion-wrapper">
 
-                    </div>
-                    <span
-                      className="pm2-status-pill"
-                      style={{
-                        background:
-                          doc.overallStatus === 'Completed' ? '#3b6d11' :
-                            doc.overallStatus === 'Pending' ? '#854f0b' : '#5f5e5a',
-                      }}
-                    >
-                      {getValue(doc.overallStatus)}
-                    </span>
-                  </div>
-                  <div className="pm2-info-card-body">
-                    {/* Visit summary row */}
-                    <div className="pm2-inner-grid" style={{ marginBottom: 12 }}>
-                      <InfoRow label="Date" value={item.visitDate} />
-                      <InfoRow label="Time" value={item.visitTime} />
-                      <InfoRow label="Booking ID" value={doc.bookingId} />
-                      <InfoRow label="Record ID" value={doc.therapistRecordId} />
-                    </div>
+                  <CAccordion className="pm-accordion" activeItemKey={1} alwaysOpen>
 
-                    {/* Complaints section */}
-                    <div style={{ borderTop: '0.5px solid #d0dce9', paddingTop: 10, marginBottom: 10 }}>
-                      <div className="pm2-mini-section-title">
-                        <AlertCircle size={12} style={{ color: '#b5d4f4' }} /> Complaints
-                      </div>
-                      <div className="pm2-inner-grid-3">
-                        <InfoRow label="Complaint" value={complaints.complaintDetails} />
-                        <InfoRow label="Duration" value={complaints.duration} />
-                        <InfoRow label="Pain Type" value={complaints.painType} />
-                        <InfoRow label="Pain Intensity" value={complaints.painIntensity} />
-                        <InfoRow label="Aggravating" value={complaints.aggravatingFactors} />
-                        <InfoRow label="Relieving" value={complaints.relievingFactors} />
-                        <InfoRow label="Medical History" value={complaints.medicalHistory} />
-                        <InfoRow label="Surgical History" value={complaints.surgicalHistory} />
-                        <InfoRow label="Medications" value={complaints.medications} />
-                        <InfoRow label="Allergies" value={complaints.allergies} />
-                        <InfoRow label="Previous Treatment" value={complaints.previousTreatment} />
-                      </div>
-                    </div>
+           
+                    <CAccordionItem itemKey={1}>
+                      <CAccordionHeader>Visit & Patient Info</CAccordionHeader>
+                      <CAccordionBody>
+                        <div className="pm-grid-3">
+                          <InfoRow label="Visit No." value={item.visitNumber} />
+                          <InfoRow label="Visit Date" value={item.visitDate} />
+                          <InfoRow label="Visit Time" value={item.visitTime} />
+                          <InfoRow label="Patient Name" value={pi.patientName} />
+                          <InfoRow label="Age" value={pi.age} />
+                          <InfoRow label="Gender" value={pi.sex} />
+                        </div>
+                      </CAccordionBody>
+                    </CAccordionItem>
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        className="pm2-view-detail-btn"
-                        onClick={() => { setSelectedHistory(item); setViewModal(true) }}
-                      >
-                        <Eye size={13} /> View Full Details
-                      </button>
-                    </div>
-                  </div>
+                 
+                    <CAccordionItem itemKey={2}>
+                      <CAccordionHeader>Complaints</CAccordionHeader>
+                      <CAccordionBody>
+                        <div className="pm-grid-3">
+                          <InfoRow label="Details" value={complaints.complaintDetails} />
+                          <InfoRow label="Pain" value={complaints.patientPain} />
+                          <InfoRow label="Duration" value={complaints.duration} />
+                        </div>
+                      </CAccordionBody>
+                    </CAccordionItem>
+
+              
+                    <CAccordionItem itemKey={3}>
+                      <CAccordionHeader>Assessment</CAccordionHeader>
+                      <CAccordionBody>
+                        <div className="pm-grid-3">
+                          <InfoRow label="Chief Complaint" value={subj.chiefComplaint} />
+                          <InfoRow label="Pain Scale" value={subj.painScale} />
+                          <InfoRow label="Pain Type" value={subj.painType} />
+                        </div>
+                      </CAccordionBody>
+                    </CAccordionItem>
+
+                   
+                    <CAccordionItem itemKey={4}>
+                      <CAccordionHeader>Diagnosis</CAccordionHeader>
+                      <CAccordionBody>
+                        <div className="pm-grid-3">
+                          <InfoRow label="Diagnosis" value={diagnosis.physioDiagnosis} />
+                          <InfoRow label="Area" value={diagnosis.affectedArea} />
+                          <InfoRow label="Severity" value={diagnosis.severity} />
+                        </div>
+                      </CAccordionBody>
+                    </CAccordionItem>
+
+                   
+                    <CAccordionItem itemKey={5}>
+                      <CAccordionHeader>Investigation</CAccordionHeader>
+                      <CAccordionBody>
+                        <InfoRow label="Reason" value={investigation.reason} />
+                        {investigation.tests?.length > 0 && (
+                          <div className="pm-tag-wrap">
+                            {investigation.tests.map((t, i) => (
+                              <span key={i} className="pm-tag">{t}</span>
+                            ))}
+                          </div>
+                        )}
+                      </CAccordionBody>
+                    </CAccordionItem>
+
+                   
+                    <CAccordionItem itemKey={6}>
+                      <CAccordionHeader>Treatment Plan</CAccordionHeader>
+                      <CAccordionBody>
+                        <div className="pm-grid-3">
+                          <InfoRow label="Doctor" value={treatmentPlan.doctorName} />
+                          <InfoRow label="Therapist" value={treatmentPlan.therapistName} />
+                          <InfoRow label="Response" value={treatmentPlan.patientResponse} />
+                        </div>
+                      </CAccordionBody>
+                    </CAccordionItem>
+
+           
+                    {therapySessions.length > 0 && (
+                      <CAccordionItem itemKey={7}>
+                        <CAccordionHeader>
+                          Therapy Sessions ({therapySessions.length})
+                        </CAccordionHeader>
+                        <CAccordionBody>
+
+                          {therapySessions.map((session, i) => (
+                            <div key={i} className="pm-session-card">
+
+                              <div className="pm-session-header">
+                                <span>{session.therapyName}</span>
+                                <span className="pm-price">
+                                  ₹ {session.totalTherapyCost || 0}
+                                </span>
+                              </div>
+
+                            </div>
+                          ))}
+
+                        </CAccordionBody>
+                      </CAccordionItem>
+                    )}
+
+                    
+                    <CAccordionItem itemKey={8}>
+                      <CAccordionHeader>Follow Up</CAccordionHeader>
+                      <CAccordionBody>
+                        <div className="pm-grid-2">
+                          <InfoRow label="Next Visit" value={followUp.nextVisitDate} />
+                          <InfoRow label="Notes" value={followUp.reviewNotes} />
+                        </div>
+                      </CAccordionBody>
+                    </CAccordionItem>
+
+                  </CAccordion>
+
                 </div>
               )
-            })
-          ) : (
-            <div className="pm2-empty">
-              <ClipboardList size={36} className="pm2-empty-icon" />
-              <p>No visit history available.</p>
-            </div>
-          )
-        )}
+            })() : (
+              <div className="pm2-empty">
+                <ClipboardList size={36} className="pm2-empty-icon" />
+                <p>No visit history available.</p>
+              </div>
+            )}
+          </div>
+        )} */}
+
       </div>
 
-      {/* ── Visit Detail Modal ── */}
-      <CModal visible={viewModal} onClose={() => setViewModal(false)} size="lg">
-        <CModalHeader style={{ borderBottom: '0.5px solid #d0dce9', padding: '16px 20px' }}>
-          <CModalTitle style={{ fontSize: 15, fontWeight: 600, color: '#0c447c', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Clock size={14} className="pm2-header-icon" /> Visit Details
-          </CModalTitle>
-        </CModalHeader>
-        <CModalBody style={{ padding: 20, maxHeight: '80vh', overflowY: 'auto' }}>
-          {selectedHistory && (() => {
-            const doc = selectedHistory.physiotherapyDoctorData || {}
-            return (
-              <div>
-                {/* Basic Info */}
-                <div className="pm2-modal-section">
-                  <div className="pm2-modal-section-title"><User size={13} /> Basic Info</div>
-                  <div className="pm2-modal-grid">
-                    <InfoRow label="Date" value={selectedHistory.visitDate} />
-                    <InfoRow label="Doctor" value={doc.doctorName} />
-                    <InfoRow label="Clinic" value={selectedHistory.clinicName} />
-                    <InfoRow label="Booking ID" value={doc.bookingId} />
-                  </div>
-                </div>
-
-                {/* Symptoms */}
-                {selectedHistory.symptoms && (
-                  <div className="pm2-modal-section">
-                    <div className="pm2-modal-section-title"><Activity size={13} /> Symptoms</div>
-                    <div className="pm2-modal-grid">
-                      <InfoRow label="Details" value={selectedHistory.symptoms?.symptomDetails} />
-                      <InfoRow label="Doctor Observation" value={selectedHistory.symptoms?.doctorObs} />
-                      <InfoRow label="Diagnosis" value={selectedHistory.symptoms?.diagnosis} />
-                      <InfoRow label="Duration" value={selectedHistory.symptoms?.duration} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Tests */}
-                <div className="pm2-modal-section">
-                  <div className="pm2-modal-section-title"><FileText size={13} /> Tests</div>
-                  {selectedHistory.tests?.selectedTests?.length > 0 ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 14px' }}>
-                      {selectedHistory.tests.selectedTests.map((test, i) => (
-                        <span key={i} className="pm2-tag">{test}</span>
-                      ))}
-                    </div>
-                  ) : <p className="pm2-muted-text">No tests found.</p>}
-                </div>
-
-                {/* Treatments */}
-                <div className="pm2-modal-section">
-                  <div className="pm2-modal-section-title"><Stethoscope size={13} /> Treatments</div>
-                  <div style={{ padding: '10px 14px' }}>
-                    {selectedHistory.treatments?.generatedData ? (
-                      Object.entries(selectedHistory.treatments.generatedData).map(([name, details], i) => (
-                        <div key={i} style={{ marginBottom: 16 }}>
-                          <p style={{ fontWeight: 600, fontSize: 13, color: '#0c447c', marginBottom: 8 }}>{name}</p>
-                          <div className="pm2-modal-grid" style={{ marginBottom: 10 }}>
-                            <InfoRow label="Frequency" value={details.frequency} />
-                            <InfoRow label="Total" value={details.totalSittings} />
-                            <InfoRow label="Pending" value={details.pendingSittings} />
-                            <InfoRow label="Current" value={details.currentSitting} />
-                            <InfoRow label="Completed" value={details.takenSittings} />
-                          </div>
-                          {details?.dates?.length > 0 && (
-                            <div className="pm2-table-wrapper">
-                              <CTable className="pm2-table">
-                                <CTableHead>
-                                  <CTableRow>
-                                    {['Date', 'Sitting', 'Status'].map((h) => (
-                                      <CTableHeaderCell key={h} className="pm2-th">{h}</CTableHeaderCell>
-                                    ))}
-                                  </CTableRow>
-                                </CTableHead>
-                                <CTableBody>
-                                  {details.dates.map((d, idx) => (
-                                    <CTableRow key={idx} className="pm2-tr">
-                                      <CTableDataCell className="pm2-td pm2-muted">
-                                        {d.date ? new Date(d.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                                      </CTableDataCell>
-                                      <CTableDataCell className="pm2-td pm2-muted">{d.sitting}</CTableDataCell>
-                                      <CTableDataCell className="pm2-td pm2-muted">{d.status}</CTableDataCell>
-                                    </CTableRow>
-                                  ))}
-                                </CTableBody>
-                              </CTable>
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : <p className="pm2-muted-text">No treatments found.</p>}
-                  </div>
-                </div>
-
-                {/* Follow-Up */}
-                {selectedHistory.followUp && (
-                  <div className="pm2-modal-section">
-                    <div className="pm2-modal-section-title"><RefreshCw size={13} /> Follow-Up</div>
-                    <div className="pm2-modal-grid">
-                      <InfoRow label="Next Follow-Up" value={selectedHistory.followUp?.nextFollowUpDate} />
-                      <InfoRow label="Duration" value={selectedHistory.followUp?.durationValue ? `${selectedHistory.followUp.durationValue} ${selectedHistory.followUp.durationUnit}` : null} />
-                      <InfoRow label="Note" value={selectedHistory.followUp?.followUpNote} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Prescription */}
-                <div className="pm2-modal-section">
-                  <div className="pm2-modal-section-title"><FileText size={13} /> Prescription</div>
-                  {selectedHistory.prescription?.medicines?.length > 0 ? (
-                    <div className="pm2-table-wrapper" style={{ margin: '10px 14px 14px' }}>
-                      <CTable className="pm2-table">
-                        <CTableHead>
-                          <CTableRow>
-                            {['Name', 'Dose', 'Duration', 'Food', 'Type', 'Times'].map((h) => (
-                              <CTableHeaderCell key={h} className="pm2-th">{h}</CTableHeaderCell>
-                            ))}
-                          </CTableRow>
-                        </CTableHead>
-                        <CTableBody>
-                          {selectedHistory.prescription.medicines.map((m, i) => (
-                            <CTableRow key={i} className="pm2-tr">
-                              <CTableDataCell className="pm2-td pm2-bold">{m.name}</CTableDataCell>
-                              <CTableDataCell className="pm2-td pm2-muted">{m.dose}</CTableDataCell>
-                              <CTableDataCell className="pm2-td pm2-muted">{m.duration} {m.durationUnit}</CTableDataCell>
-                              <CTableDataCell className="pm2-td pm2-muted">{m.food}</CTableDataCell>
-                              <CTableDataCell className="pm2-td pm2-muted">{m.medicineType}</CTableDataCell>
-                              <CTableDataCell className="pm2-td pm2-muted">{m.times?.join(', ')}</CTableDataCell>
-                            </CTableRow>
-                          ))}
-                        </CTableBody>
-                      </CTable>
-                    </div>
-                  ) : <p className="pm2-muted-text">No prescription found.</p>}
-
-                  {selectedHistory.prescriptionPdf?.length > 0 && (
-                    <div style={{ padding: '0 14px 14px' }}>
-                      <iframe
-                        title="Prescription PDF"
-                        src={`data:application/pdf;base64,${selectedHistory.prescriptionPdf[0]}#toolbar=0&navpanes=0&scrollbar=0`}
-                        width="100%" height="400px"
-                        style={{ border: '0.5px solid #d0dce9', borderRadius: 8 }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })()}
-        </CModalBody>
-      </CModal>
 
       {/* ── STYLES ── */}
-        <style>{`
+      <style>{`
           /* Page header */
           .pm2-page-header {
             display: flex; align-items: center; justify-content: space-between;
@@ -621,7 +687,7 @@ const navigate = useNavigate()
             background: #185fa5; color: #fff;
             font-size: 12px; font-weight: 600; padding: 9px 14px;
           }
-          .pm2-header-icon { color: #b5d4f4; }
+          .pm2-header-icon { color: white; }
           .pm2-info-card-body { padding: 12px 14px; background: #fff; }
 
           /* Grid layouts */
@@ -687,6 +753,99 @@ const navigate = useNavigate()
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 500;
+}
+  /* Accordion Container */
+.pm-accordion .accordion-item {
+  border: 0.5px solid #d0dce9;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.pm-accordion-wrapper {
+  padding: 10px;
+}
+
+/* Accordion */
+.pm-accordion .accordion-item {
+  border: none;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* Header */
+.pm-accordion .accordion-button {
+  background: #185fa5;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 16px;
+}
+
+/* Arrow */
+.pm-accordion .accordion-button::after {
+  filter: brightness(0) invert(1);
+}
+
+/* Body */
+.pm-accordion .accordion-body {
+  background: #fff;
+  padding: 16px;
+}
+
+/* Grid */
+.pm-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.pm-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* Tags */
+.pm-tag-wrap {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pm-tag {
+  background: #e6f1fb;
+  color: #185fa5;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+/* Session Card */
+.pm-session-card {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.pm-session-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.pm-price {
+  color: #185fa5;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .pm-grid-3,
+  .pm-grid-2 {
+    grid-template-columns: 1fr;
+  }
 }
 /* TABLE */
 .pm-table {
