@@ -73,7 +73,7 @@ const AppHeaderDropdown = () => {
             Settings
           </CDropdownItem> */}
 
-          <CDropdownItem onClick={() => setShowLogoutModal(true)}>
+          <CDropdownItem onClick={() => setShowLogoutModal(true)} style={{ cursor: "pointer" }}>
             <CIcon icon={cilAccountLogout} className="me-2" />
             Logout
           </CDropdownItem>

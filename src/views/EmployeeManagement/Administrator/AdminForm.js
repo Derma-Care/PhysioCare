@@ -20,6 +20,37 @@ import {
   Save, X, RotateCcw, UserCog,
 } from 'lucide-react'
 
+// ── View Mode helpers ──
+const InfoCard = ({ icon: Icon, title, children }) => (
+  <div className="af-card">
+    <div className="af-card-header"><Icon size={14} className="af-card-icon" />{title}</div>
+    <div className="af-card-body">{children}</div>
+  </div>
+)
+
+const InfoRow = ({ label, value }) => (
+  <div className="af-info-row">
+    <span className="af-info-label">{label}</span>
+    <span className="af-info-value">{value || '—'}</span>
+  </div>
+)
+
+// ── Edit Mode helpers ──
+const FormSection = ({ icon: Icon, title, children }) => (
+  <div className="af-section">
+    <div className="af-section-title"><Icon size={14} className="af-section-icon" />{title}</div>
+    <div className="af-section-body">{children}</div>
+  </div>
+)
+
+const Field = ({ label, required, error, children }) => (
+  <div className="af-field">
+    <label className="af-label">{label}{required && <span className="af-required">*</span>}</label>
+    {children}
+    {error && <span className="af-error">{error}</span>}
+  </div>
+)
+
 const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fetchAdmins }) => {
   const emptyPermissions = {}
 
@@ -39,7 +70,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
     dateOfJoining: '',
     department: '',
     yearOfExperience: '',
-    role: 'Administrator',
+    role: 'administrator',
     address: {
       houseNo: '',
       street: '',
@@ -125,6 +156,23 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
     })
   }
 
+  const toggleGlobalSelectAll = (selectAll) => {
+    setFormData((prev) => {
+      if (!selectAll) {
+        return { ...prev, permissions: {} }
+      }
+      const updated = {}
+      features.forEach((f) => {
+        if (f === 'Dashboard' || f === 'Employee management') {
+          updated[f] = []
+        } else {
+          updated[f] = [...actions]
+        }
+      })
+      return { ...prev, permissions: updated }
+    })
+  }
+
   const toBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader()
@@ -206,36 +254,6 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
 
   const handleCloseModal = () => { setShowModal(false); setPreviewFileUrl(null); setIsPreviewPdf(false) }
 
-  // ── View Mode helpers ──
-  const InfoCard = ({ icon: Icon, title, children }) => (
-    <div className="af-card">
-      <div className="af-card-header"><Icon size={14} className="af-card-icon" />{title}</div>
-      <div className="af-card-body">{children}</div>
-    </div>
-  )
-
-  const InfoRow = ({ label, value }) => (
-    <div className="af-info-row">
-      <span className="af-info-label">{label}</span>
-      <span className="af-info-value">{value || '—'}</span>
-    </div>
-  )
-
-  // ── Edit Mode helpers ──
-  const FormSection = ({ icon: Icon, title, children }) => (
-    <div className="af-section">
-      <div className="af-section-title"><Icon size={14} className="af-section-icon" />{title}</div>
-      <div className="af-section-body">{children}</div>
-    </div>
-  )
-
-  const Field = ({ label, required, error, children }) => (
-    <div className="af-field">
-      <label className="af-label">{label}{required && <span className="af-required">*</span>}</label>
-      {children}
-      {error && <span className="af-error">{error}</span>}
-    </div>
-  )
 
   return (
     <>
@@ -270,10 +288,10 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
 
               <InfoCard icon={User} title="Personal Information">
                 <div className="af-inner-grid">
-                  <InfoRow label="Full Name"     value={formData.fullName} />
-                  <InfoRow label="Email"         value={formData.emailId} />
-                  <InfoRow label="Contact"       value={formData.contactNumber} />
-                  <InfoRow label="Gender"        value={formData.gender} />
+                  <InfoRow label="Full Name" value={formData.fullName} />
+                  <InfoRow label="Email" value={formData.emailId} />
+                  <InfoRow label="Contact" value={formData.contactNumber} />
+                  <InfoRow label="Gender" value={formData.gender} />
                   <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
                   <InfoRow label="Government ID" value={formData.governmentId} />
                 </div>
@@ -281,10 +299,10 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
 
               <InfoCard icon={Briefcase} title="Work Information">
                 <div className="af-inner-grid">
-                  <InfoRow label="Date of Joining"   value={formData.dateOfJoining} />
-                  <InfoRow label="Department"         value={formData.department} />
+                  <InfoRow label="Date of Joining" value={formData.dateOfJoining} />
+                  <InfoRow label="Department" value={formData.department} />
                   <InfoRow label="Years of Experience" value={formData.yearOfExperience} />
-                  <InfoRow label="Emergency Contact"  value={formData.emergencyContact} />
+                  <InfoRow label="Emergency Contact" value={formData.emergencyContact} />
                 </div>
               </InfoCard>
 
@@ -301,12 +319,12 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
 
               <InfoCard icon={CreditCard} title="Bank Details">
                 <div className="af-inner-grid">
-                  <InfoRow label="Account Number"    value={formData.bankAccountDetails?.accountNumber} />
-                  <InfoRow label="Account Holder"    value={formData.bankAccountDetails?.accountHolderName} />
-                  <InfoRow label="IFSC Code"         value={formData.bankAccountDetails?.ifscCode} />
-                  <InfoRow label="Bank Name"         value={formData.bankAccountDetails?.bankName} />
-                  <InfoRow label="Branch Name"       value={formData.bankAccountDetails?.branchName} />
-                  <InfoRow label="PAN Card"          value={formData.bankAccountDetails?.panCardNumber} />
+                  <InfoRow label="Account Number" value={formData.bankAccountDetails?.accountNumber} />
+                  <InfoRow label="Account Holder" value={formData.bankAccountDetails?.accountHolderName} />
+                  <InfoRow label="IFSC Code" value={formData.bankAccountDetails?.ifscCode} />
+                  <InfoRow label="Bank Name" value={formData.bankAccountDetails?.bankName} />
+                  <InfoRow label="Branch Name" value={formData.bankAccountDetails?.branchName} />
+                  <InfoRow label="PAN Card" value={formData.bankAccountDetails?.panCardNumber} />
                 </div>
               </InfoCard>
 
@@ -329,7 +347,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
             <CForm>
               {/* Basic Info */}
               <FormSection icon={User} title="Basic Information">
-                <div className="af-row">
+                {/* <div className="af-row">
                   <div className="af-col-half">
                     <Field label="Clinic ID" required>
                       <input className="af-input af-input-disabled" value={clinicId} disabled />
@@ -340,7 +358,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
                       <input className="af-input af-input-disabled" value={formData.role} disabled />
                     </Field>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="af-row">
                   <div className="af-col-third">
@@ -505,9 +523,9 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
                           placeholder={ifscLoading && (field === 'bankName' || field === 'branchName') ? 'Fetching...' : ''}
                           maxLength={
                             field === 'accountNumber' ? 20
-                            : field === 'panCardNumber' ? 10
-                            : field === 'ifscCode' ? 11
-                            : undefined
+                              : field === 'panCardNumber' ? 10
+                                : field === 'ifscCode' ? 11
+                                  : undefined
                           }
                           onChange={async (e) => {
                             let value = e.target.value
@@ -606,6 +624,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
                   toggleFeature={toggleFeature}
                   toggleAllActions={toggleAllActions}
                   togglePermission={togglePermission}
+                  toggleGlobalSelectAll={toggleGlobalSelectAll}
                   onSave={() => { console.log('Saved Permissions', formData.permissions); setShowPModal(false) }}
                 />
               </FormSection>

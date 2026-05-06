@@ -191,10 +191,10 @@ const AppointmentDetails = () => {
     return s === 'in-progress' ? 'active' : s
   })()
 
-  const showConfirmed = ['active', 'confirmed', 'in-progress'].includes(normalizedStatus)
+  const showConfirmed = ['active', 'confirmed', 'in-progress', 'followup'].includes(normalizedStatus)
   const showCompletedOrActive = ['completed', 'active'].includes(normalizedStatus)
   const showVitalsCard = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
-  const showPayment = ['active'].includes(normalizedStatus)
+  const showPayment = ['active', 'followup'].includes(normalizedStatus)
   const showConfirmedOrCompleted = ['confirmed', 'completed', 'active'].includes(normalizedStatus)
   const showPrescription = ['active', 'completed'].includes(normalizedStatus) && appointment?.prescriptionPdf
   const showAccordion = ['confirmed', 'active', 'completed'].includes(normalizedStatus)
@@ -355,7 +355,7 @@ const AppointmentDetails = () => {
   }
 
   const handlePaymentClick = () => {
-    if (showPayment && normalizedStatus === 'active' || appointment?.status === 'in-progress') {
+    if (showPayment && normalizedStatus === 'active' || appointment?.status === 'in-progress' || normalizedStatus === 'followup') {
       navigate('/program-payment' + `/${id}`, {
         state: {
           bookingId: appointment.bookingId, doctorId: appointment.doctorId,

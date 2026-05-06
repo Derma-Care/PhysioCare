@@ -301,7 +301,7 @@ const Login = () => {
                     )}
                     {/* <h6 className='text-center'>{role === "admin" ? "Admin Login" : "Receptionist Login"}</h6> */}
                     {/* CLINIC TAB */}
-                    {(activeTab === 'clinic' || activeTab === 'doctor') && (
+                    {['clinic', 'doctor', 'administrator', 'receptionist'].includes(activeTab) && (
                       <CForm onSubmit={handleClinicLogin} noValidate>
                         <CFormSelect
                           value={activeTab}
@@ -309,16 +309,25 @@ const Login = () => {
                             const value = e.target.value
                             setActiveTab(value)
 
+                            let newRole = value
                             if (value === "clinic") {
-                              setRole("admin")
-                            } else if (value === "doctor") {
-                              setRole("receptionist")
+                              newRole = "admin"
+                            } else if (value === "receptionist") {
+                              newRole = "receptionist"
+                            } else if (value === "administrator") {
+                              newRole = "administrator"
                             }
+
+                            setRole(newRole)
+                            // Note: state updates are async, so logging 'role' directly here shows the previous value.
+                            // We log newRole instead to see what is actually being set.
+                            console.log("Role to send:", newRole)
                           }}
                           className="mb-3" style={{ color: COLORS.primary }}
                         >
                           <option value="clinic">Admin</option>
-                          <option value="doctor">Receptionist</option>
+                          <option value="administrator">Clinic Admin</option>
+                          <option value="receptionist">Receptionist</option>
                         </CFormSelect>
                         <CInputGroup className="mb-2">
                           <CInputGroupText>

@@ -255,10 +255,10 @@ const SecurityForm = ({
 
               <InfoCard icon={User} title="Personal Information">
                 <div className="sf-inner-grid">
-                  <InfoRow label="Full Name"     value={formData.fullName} />
-                  <InfoRow label="Email"         value={formData.emailId} />
-                  <InfoRow label="Contact"       value={formData.contactNumber} />
-                  <InfoRow label="Gender"        value={formData.gender} />
+                  <InfoRow label="Full Name" value={formData.fullName} />
+                  <InfoRow label="Email" value={formData.emailId} />
+                  <InfoRow label="Contact" value={formData.contactNumber} />
+                  <InfoRow label="Gender" value={formData.gender} />
                   <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
                   <InfoRow label="Government ID" value={formData.govermentId} />
                 </div>
@@ -266,10 +266,10 @@ const SecurityForm = ({
 
               <InfoCard icon={Briefcase} title="Work Information">
                 <div className="sf-inner-grid">
-                  <InfoRow label="Date of Joining"       value={formData.dateOfJoining} />
-                  <InfoRow label="Department"            value={formData.department} />
-                  <InfoRow label="Shift / Availability"  value={formData.shiftTimingsOrAvailability} />
-                  <InfoRow label="Police Verification"   value={formData.policeVerification} />
+                  <InfoRow label="Date of Joining" value={formData.dateOfJoining} />
+                  <InfoRow label="Department" value={formData.department} />
+                  <InfoRow label="Shift / Availability" value={formData.shiftTimingsOrAvailability} />
+                  <InfoRow label="Police Verification" value={formData.policeVerification} />
                 </div>
               </InfoCard>
 
@@ -281,12 +281,12 @@ const SecurityForm = ({
 
               <InfoCard icon={CreditCard} title="Bank Details">
                 <div className="sf-inner-grid">
-                  <InfoRow label="Account Number"    value={formData.bankAccountDetails?.accountNumber} />
-                  <InfoRow label="Account Holder"    value={formData.bankAccountDetails?.accountHolderName} />
-                  <InfoRow label="IFSC Code"         value={formData.bankAccountDetails?.ifscCode} />
-                  <InfoRow label="Bank Name"         value={formData.bankAccountDetails?.bankName} />
-                  <InfoRow label="Branch Name"       value={formData.bankAccountDetails?.branchName} />
-                  <InfoRow label="PAN Card"          value={formData.bankAccountDetails?.panCardNumber} />
+                  <InfoRow label="Account Number" value={formData.bankAccountDetails?.accountNumber} />
+                  <InfoRow label="Account Holder" value={formData.bankAccountDetails?.accountHolderName} />
+                  <InfoRow label="IFSC Code" value={formData.bankAccountDetails?.ifscCode} />
+                  <InfoRow label="Bank Name" value={formData.bankAccountDetails?.bankName} />
+                  <InfoRow label="Branch Name" value={formData.bankAccountDetails?.branchName} />
+                  <InfoRow label="PAN Card" value={formData.bankAccountDetails?.panCardNumber} />
                 </div>
               </InfoCard>
 
@@ -311,7 +311,7 @@ const SecurityForm = ({
             <CForm>
               {/* Basic Info */}
               <FormSection icon={User} title="Basic Information">
-                <div className="sf-row">
+                {/* <div className="sf-row">
                   <div className="sf-col-half">
                     <Field label="Clinic ID" required>
                       <input className="sf-input sf-input-disabled" value={clinicId} disabled />
@@ -322,7 +322,7 @@ const SecurityForm = ({
                       <input className="sf-input sf-input-disabled" value={formData.role} disabled />
                     </Field>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="sf-row">
                   <div className="sf-col-third">

@@ -17,31 +17,31 @@ const EmployeeManagement = () => {
   const { user } = useHospital()
 
   const iconMap = {
-    doctor:     faUserDoctor,
-    nurse:      faHandsHelping,
-    admin:      faUserAlt,
-    frontDesk:  faUserTie,
-    security:   faShieldHalved,
+    doctor: faUserDoctor,
+    nurse: faHandsHelping,
+    admin: faUserAlt,
+    frontDesk: faUserTie,
+    security: faShieldHalved,
     otherStaff: faUsers,
   }
 
   // Subtle accent colours per card (icon tint + left-border)
   const accentMap = {
-    doctor:     { accent: '#185fa5', bg: '#e6f1fb', border: '#b5d4f4' },
-    nurse:      { accent: '#3b6d11', bg: '#eaf3de', border: '#c0dd97' },
-    admin:      { accent: '#92680a', bg: '#fff8e1', border: '#f0d080' },
-    frontDesk:  { accent: '#5b21b6', bg: '#f3f0ff', border: '#c4b5fd' },
-    security:   { accent: '#a32d2d', bg: '#fcebeb', border: '#f4b5b5' },
+    doctor: { accent: '#185fa5', bg: '#e6f1fb', border: '#b5d4f4' },
+    nurse: { accent: '#3b6d11', bg: '#eaf3de', border: '#c0dd97' },
+    admin: { accent: '#92680a', bg: '#fff8e1', border: '#f0d080' },
+    frontDesk: { accent: '#5b21b6', bg: '#f3f0ff', border: '#c4b5fd' },
+    security: { accent: '#a32d2d', bg: '#fcebeb', border: '#f4b5b5' },
     otherStaff: { accent: '#0e6b6b', bg: '#e6fafa', border: '#9fd9d9' },
   }
 
   const employees = [
-    { title: 'Doctors',       type: 'doctor',     path: '/employee-management/doctor' },
-    { title: 'Therapist',     type: 'nurse',       path: '/employee-management/nurse' },
-    { title: 'FrontDesk',     type: 'frontDesk',   path: '/employee-management/frontdesk' },
-    { title: 'Security',      type: 'security',    path: '/employee-management/security' },
-    { title: 'OtherStaff',    type: 'otherStaff',  path: '/employee-management/otherstaff' },
-    { title: 'Administrator', type: 'admin',       path: '/employee-management/admin' },
+    { title: 'Doctors', type: 'doctor', path: '/employee-management/doctor' },
+    { title: 'Therapist', type: 'therapist', path: '/employee-management/therapist' },
+    { title: 'FrontDesk', type: 'frontDesk', path: '/employee-management/frontdesk' },
+    { title: 'Security', type: 'security', path: '/employee-management/security' },
+    { title: 'OtherStaff', type: 'otherStaff', path: '/employee-management/otherstaff' },
+    { title: 'Administrator', type: 'admin', path: '/employee-management/admin' },
   ]
 
   const can = (feature) => (user?.permissions?.[feature] || []).length > 0

@@ -23,6 +23,7 @@ import {
   cilMedicalCross,
   cilRunning,
   cilLayers,
+  cilStar,
 } from '@coreui/icons'
 import { CNavItem } from '@coreui/react'
 import { NavLink } from 'react-router-dom'
@@ -112,6 +113,13 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
     },
+    {
+      component: CNavItem,
+      to: '/feedback',
+      name: 'Patient Feedback',
+      as: NavLink,
+      icon: <CIcon icon={cilStar} customClassName="nav-icon" />,
+    },
 
     // {
     //   component: CNavItem,
@@ -199,7 +207,8 @@ export const getNavigation = (permissions = {}) => {
     (item) =>
       permissions[item.name] ||
       item.name === 'Patient Management' ||
-      item.name === 'Package Management',
+      item.name === 'Package Management' ||
+      item.name === 'Patient Feedback',
   )
 }
 

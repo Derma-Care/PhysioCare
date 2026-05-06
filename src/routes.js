@@ -98,14 +98,16 @@ const PhysioConsentForm = React.lazy(() => import('./views/AppointmentManagement
 const FollowupDashboard = React.lazy(() => import('./views/AppointmentManagement/FollowUpDashboard'))
 const PaymentDetailsUI = React.lazy(() => import('./views/AppointmentManagement/PaymentDetailsUI'))
 const AttendanceTracker = React.lazy(() => import('./views/AppointmentManagement/AttendanceTracker'))
+const PatientFeedback = React.lazy(() => import('./views/Feedback/PatientFeedback'))
 
 const routes = [
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
   { path: '/attendance-tracker', name: 'Attendance Tracker', element: AttendanceTracker },
+  { path: '/feedback', name: 'Patient Feedback', element: PatientFeedback },
   { path: '/employee-management/doctor', name: 'Doctors', element: Doctors },
   { path: '/consent-forms', name: 'Consent Forms', element: ConsentForms },
 
-  { path: '/employee-management/nurse', name: 'Therapist', element: Therapist },
+  { path: '/employee-management/therapist', name: 'Therapist', element: Therapist },
   { path: '/ref-doctor', name: 'Ref Doctor', element: ReferDoctorManagement },
   { path: '/employee-management/security', name: 'Security', element: SecurityManagement },
   { path: '/employee-management/otherstaff', name: 'Other Staff', element: OtherStaffManagement },
@@ -119,7 +121,7 @@ const routes = [
 
   { path: '/employee-management/pharmacist', name: 'Pharmacist', element: PharmacistManagement },
   { path: '/employee-management', name: 'Employee Management', element: EmployeeManagement },
-  { path: '/employee-management/nurse', name: 'Therapist', element: Therapist },
+  { path: '/employee-management/therapist', name: 'Therapist', element: Therapist },
   { path: '/package-management', name: 'Package Management', element: PackagesManagement },
   //   {
   //   path: '/employee-management/physio',

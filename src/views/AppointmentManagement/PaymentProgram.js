@@ -236,7 +236,7 @@ export default function ProgramPayment() {
   const calculateUnpaidAmount = (node, type) => {
     // Helper to get the most accurate unit price from backend data
     const getUnitPrice = (ex) => {
-      const tsc = Number(ex.totalPricePerSession || 0);
+      const tsc = Number(ex.totalPricePerSession || ex.pricePerSession || 0);
       const nos = Number(ex.noOfSessions || 1);
       if (tsc > 0) return tsc;
 
@@ -298,7 +298,6 @@ export default function ProgramPayment() {
     } else if (sessionRows && sessionRows.length > 0) {
       programs = normalizeToPrograms(sessionRows);
     } else {
-      // Use the robust normalizeToPrograms instead of just taking the first item's therapySessions
       programs = normalizeToPrograms(apiData);
     }
 
@@ -306,19 +305,38 @@ export default function ProgramPayment() {
 
     switch (type) {
       case "package":
-        return apiData.map(p => ({ label: p.packageName || p.name || "Package", value: p.packageId, price: calculateUnpaidAmount(p, "package") }));
+        const packageSource = (fullPaymentData && fullPaymentData.therapyWithSessions && fullPaymentData.therapyWithSessions.length > 0 && fullPaymentData.therapyWithSessions[0].packageId) 
+          ? fullPaymentData.therapyWithSessions 
+          : apiData;
+        return packageSource.map(p => ({ 
+          label: p.packageName || p.name || p.programName || "Package", 
+          value: p.packageId, 
+          price: calculateUnpaidAmount(p, "package") 
+        }));
       case "program":
-        return programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({ label: p.programName || p.name, value: p.programId, price: calculateUnpaidAmount(p, "program") }));
+        return programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({ 
+          label: p.programName || p.name || p.packageName || "-", 
+          value: p.programId, 
+          price: calculateUnpaidAmount(p, "program") 
+        }));
       case "therapy":
-        return programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ label: t.therapyName || t.name, value: t.therapyId, price: calculateUnpaidAmount(t, "therapy") })));
+        return programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ 
+          label: t.therapyName || t.name || "-", 
+          value: t.therapyId, 
+          price: calculateUnpaidAmount(t, "therapy") 
+        })));
       case "exercise":
       case "activity":
-        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ label: ex.exerciseName || ex.name, value: ex.exerciseId, price: calculateUnpaidAmount(ex, "activity") }))));
+        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ 
+          label: ex.exerciseName || ex.name || "-", 
+          value: ex.exerciseId || ex.therapyExercisesId, 
+          price: calculateUnpaidAmount(ex, "activity") 
+        }))));
       case "session":
         return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).flatMap(ex => (ex.sessions || []).filter(s => s.paymentStatus?.toLowerCase() !== "paid").map(s => ({
           label: `${s.sessionId} - ${s.date || "-"}`,
           value: s.sessionId,
-          price: Number(ex.totalPricePerSession || 0)
+          price: Number(ex.totalPricePerSession || ex.pricePerSession || 0)
         })))));
       default: return [];
     }
@@ -441,42 +459,48 @@ export default function ProgramPayment() {
 
   const handleTypeChange = (type) => {
     setSelectedType(type);
-    setSelectedValue([]);
 
-    // Force "full" payment if the selected type is more granular than the root service type
     if (type !== backendServiceType) {
       setPaymentType("full");
       setPaymentPercent(100);
+      setSelectedValue([]); // If switching to a more granular level, make them select manually
+      setTotalForSelection(0);
+      setPaymentAmount(0);
+      setFinalAmount(0);
     } else {
-      setPaymentType("full"); // Default to full, but allow change if type matches backend
+      setPaymentType("full"); 
       setPaymentPercent(100);
-    }
 
-    let amount = 0;
-    if (type === backendServiceType) {
+      // If switching back to root type, pre-select everything by default
+      const programs = normalizeToPrograms(apiData);
+      let opts = [];
+      if (type === "package") {
+        opts = apiData.map(p => ({ label: p.packageName || p.name || p.programName || "Package", value: p.packageId, price: calculateUnpaidAmount(p, "package") }));
+      } else if (type === "program") {
+        opts = programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({ label: p.programName || p.name || p.packageName || "-", value: p.programId, price: calculateUnpaidAmount(p, "program") }));
+      } else if (type === "therapy") {
+        opts = programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ label: t.therapyName || t.name || "-", value: t.therapyId, price: calculateUnpaidAmount(t, "therapy") })));
+      } else if (type === "activity") {
+        opts = programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ label: ex.exerciseName || ex.name || "-", value: ex.exerciseId || ex.therapyExercisesId, price: calculateUnpaidAmount(ex, "activity") }))));
+      }
+
+      setSelectedValue(opts);
+
+      let amount = 0;
       if (isFollowUpPayment) {
         amount = Number(balanceAmount || 0);
-      } else if (type === "package") {
-        const root = apiData?.[0];
-        amount = Number(root?.totalSessionCost || root?.total || root?.totalPrice || 0);
       } else {
-        // For root types like program/therapy, calculate total but don't pre-select
-        const programs = normalizeToPrograms(apiData);
-        if (type === "program") {
-          amount = programs.reduce((sum, p) => sum + calculateUnpaidAmount(p, "program"), 0);
-        } else if (type === "therapy") {
-          amount = programs.flatMap(p => p.therapyData || []).reduce((sum, t) => sum + calculateUnpaidAmount(t, "therapy"), 0);
-        } else if (type === "activity") {
-          amount = programs.flatMap(p => (p.therapyData || []).flatMap(t => t.exercises || [])).reduce((sum, ex) => sum + calculateUnpaidAmount(ex, "activity"), 0);
+        if (type === "package") {
+          const root = apiData?.[0];
+          amount = Number(root?.totalSessionCost || root?.total || root?.totalPrice || 0);
+        } else {
+          amount = opts.reduce((sum, i) => sum + i.price, 0);
         }
-        setSelectedValue([]); // User wants to "select my wish"
       }
-    } else {
-      amount = 0;
+      setTotalForSelection(amount);
+      setPaymentAmount(amount);
+      setFinalAmount(amount);
     }
-    setTotalForSelection(0); // Set to 0 if nothing is selected
-    setPaymentAmount(0);
-    setFinalAmount(0);
   };
 
   const checkAllSessionsPaid = (data) => {
@@ -553,21 +577,30 @@ export default function ProgramPayment() {
     // If it's a follow-up payment, don't overwrite the amounts already set in initializePayment
     if (isFollowUpPayment) return;
 
-    let totalAmount = 0;
-    let initialSelectedValue = [];
+    const programs = normalizeToPrograms(apiData);
+    let opts = [];
+    if (type === "package") {
+      opts = apiData.map(p => ({ label: p.packageName || p.name || p.programName || "Package", value: p.packageId, price: calculateUnpaidAmount(p, "package") }));
+    } else if (type === "program") {
+      opts = programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({ label: p.programName || p.name || p.packageName || "-", value: p.programId, price: calculateUnpaidAmount(p, "program") }));
+    } else if (type === "therapy") {
+      opts = programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ label: t.therapyName || t.name || "-", value: t.therapyId, price: calculateUnpaidAmount(t, "therapy") })));
+    } else if (type === "activity") {
+      opts = programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ label: ex.exerciseName || ex.name || "-", value: ex.exerciseId || ex.therapyExercisesId, price: calculateUnpaidAmount(ex, "activity") }))));
+    }
 
+    setSelectedValue(opts);
+
+    let totalAmount = 0;
     if (type === "package") {
       totalAmount = Number(root.totalSessionCost || root.total || root.totalPrice || 0);
-      setTotalForSelection(totalAmount);
-      setPaymentAmount(totalAmount);
-      setFinalAmount(totalAmount);
     } else {
-      // Don't pre-populate; user wants to select manually
-      setSelectedValue([]);
-      setTotalForSelection(0);
-      setPaymentAmount(0);
-      setFinalAmount(0);
+      totalAmount = opts.reduce((sum, item) => sum + item.price, 0);
     }
+
+    setTotalForSelection(totalAmount);
+    setPaymentAmount(totalAmount);
+    setFinalAmount(totalAmount);
   }, [apiData]);
 
   const createPayloadData = {

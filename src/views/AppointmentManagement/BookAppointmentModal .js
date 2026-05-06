@@ -16,7 +16,7 @@ import {
   CCardBody,
 } from '@coreui/react'
 
-import { GetClinicBranches } from '../Doctors/DoctorAPI'
+import { GetClinicBranches, getDoctorByClinicIdData } from '../Doctors/DoctorAPI'
 import { useNavigate } from 'react-router-dom'
 import { getAllReferDoctors } from '../EmployeeManagement/ReferDoctor/ReferDoctorAPI'
 import Select from 'react-select'
@@ -206,9 +206,29 @@ const BookAppointmentModal = ({ visible, onClose }) => {
   }, [visible])
 
   useEffect(() => {
-    if (!bookingDetails.branchId || !doctorData?.data) { setDoctors([]); return }
-    setDoctors(doctorData.data.filter((d) => d.branchId === bookingDetails.branchId))
-  }, [bookingDetails.branchId, doctorData])
+    const fetchDoctors = async () => {
+      if (!bookingDetails.branchId) {
+        setDoctors([])
+        return
+      }
+      try {
+        const clinicId = localStorage.getItem('HospitalId')
+        const res = await getDoctorByClinicIdData(clinicId, bookingDetails.branchId)
+        if (res && res.data) {
+          setDoctors(res.data)
+        } else {
+          setDoctors([])
+        }
+      } catch (err) {
+        setDoctors([])
+      }
+    }
+
+    const tabId = visibleTabs[currentTab]?.id
+    if (tabId === 'booking') {
+      fetchDoctors()
+    }
+  }, [bookingDetails.branchId, currentTab, visibleTabs])
 
   useEffect(() => {
     setBookingDetails((p) => ({ ...p, activityLevels }))

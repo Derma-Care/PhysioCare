@@ -53,7 +53,7 @@ const timeOptions = [
   { value: '21:00', label: '09:00 PM' },
 ]
 
-const ChipSection = ({ label, items = [], onAdd, isView, setErrors }) => {
+const ChipSection = ({ label, items = [], onAdd, isView, setErrors, onlyAlpha }) => {
   const [input, setInput] = useState('')
 
   const handleAdd = () => {
@@ -61,8 +61,8 @@ const ChipSection = ({ label, items = [], onAdd, isView, setErrors }) => {
 
     if (!t) return;
 
-    // 🔥 show toaster on invalid input (ONLY on Add click)
-    if (!/^[A-Za-z\s]+$/.test(t)) {
+    // 🔥 show toaster on invalid input (ONLY on Add click) if onlyAlpha is true
+    if (onlyAlpha && !/^[A-Za-z\s]+$/.test(t)) {
       showCustomToast(`Only alphabets are allowed in ${label}`, 'error');
       return;
     }
@@ -327,6 +327,32 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   const handleFileChange = async (field, file) => {
     if (!file) return
 
+    if (field === 'licenseCertificate' || field === 'degreeCertificate') {
+      if (file.type !== 'application/pdf') {
+        showCustomToast('Only PDF allowed for certificates', 'error');
+        setErrors(prev => ({ ...prev, [field]: 'Only PDF allowed' }));
+        return;
+      }
+      if (file.size > 250 * 1024) {
+        showCustomToast('Max size 250 KB for certificates', 'error');
+        setErrors(prev => ({ ...prev, [field]: 'Max 250 KB' }));
+        return;
+      }
+    }
+
+    if (field === 'profilePhoto') {
+      if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+        showCustomToast('Only JPG/PNG allowed for profile photo', 'error');
+        setErrors(prev => ({ ...prev, profilePhoto: 'Only JPG/PNG allowed' }));
+        return;
+      }
+      if (file.size > 250 * 1024) {
+        showCustomToast('Max size 250 KB for profile photo', 'error');
+        setErrors(prev => ({ ...prev, profilePhoto: 'Max 250 KB' }));
+        return;
+      }
+    }
+
     const base64 = await convertToBase64(file)
 
     setFormData((prev) => ({
@@ -365,6 +391,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
 
       await onSave({
         ...formData,
+        role: formData.physioType === 'intern' ? 'intern' : 'physiotherapist',
         availability: {
           days: selectedDays,
           startTime,
@@ -429,7 +456,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
 
       {/* ── Body ── */}
       <CModalBody style={{ padding: '20px', maxHeight: '72vh', overflowY: 'auto', position: 'relative' }}>
-        {saving && (
+        {/* {saving && (
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(255,255,255,0.7)', zIndex: 10,
@@ -437,7 +464,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           }}>
             <LoadingIndicator message="Saving therapist details..." />
           </div>
-        )}
+        )} */}
 
         {/* ═══════════════ VIEW MODE ═══════════════ */}
         {isView ? (
@@ -534,7 +561,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           /* ═══════════════ EDIT / ADD MODE ═══════════════ */
           <CForm>
 
-            <FormSection icon={UserCog} title="System Info">
+            {/* <FormSection icon={UserCog} title="System Info">
               <div className="pf-row">
                 <div className="pf-col-third">
                   <Field label="Clinic ID">
@@ -552,7 +579,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                   </Field>
                 </div>
               </div>
-            </FormSection>
+            </FormSection> */}
 
             <FormSection icon={User} title="Basic Information">
               <div className="pf-row">
@@ -565,7 +592,12 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                 <div className="pf-col-third">
                   <Field label="Contact Number" required error={errors.contactNumber}>
                     <input className="pf-input" value={formData.contactNumber} maxLength={10}
-                      onChange={(e) => handleChange('contactNumber', e.target.value)} />
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^[6-9]\d{0,9}$/.test(val)) {
+                          handleChange('contactNumber', val);
+                        }
+                      }} />
                   </Field>
                 </div>
                 <div className="pf-col-third">
@@ -765,7 +797,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                     <ChipSection
                       label="Treatment Type"
                       items={formData.treatmentTypes}
-                      onlyAlpha
                       onAdd={(val) => handleChange('treatmentTypes', val)}
                       isView={isView}
                     />
@@ -778,7 +809,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                     <ChipSection
                       label="Area of Expertise"
                       items={formData.expertiseAreas}
-                      onlyAlpha
                       onAdd={(val) => handleChange('expertiseAreas', val)}
                       isView={isView}
                     />
@@ -804,20 +834,29 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
               <div className="pf-row">
                 <div className="pf-col-third">
                   <Field label="License Certificate" error={errors.licenseCertificate}>
-                    <input type="file" className="pf-input"
+                    <input type="file" className="pf-input" accept="application/pdf"
                       onChange={(e) => handleFileChange('licenseCertificate', e.target.files[0])} />
                   </Field>
                 </div>
                 <div className="pf-col-third">
                   <Field label="Degree Certificate" error={errors.degreeCertificate}>
-                    <input type="file" className="pf-input"
+                    <input type="file" className="pf-input" accept="application/pdf"
                       onChange={(e) => handleFileChange('degreeCertificate', e.target.files[0])} />
                   </Field>
                 </div>
                 <div className="pf-col-third">
                   <Field label="Profile Photo" error={errors.profilePhoto}>
-                    <input type="file" className="pf-input"
+                    <input type="file" className="pf-input" accept="image/jpeg, image/png, image/jpg"
                       onChange={(e) => handleFileChange('profilePhoto', e.target.files[0])} />
+                    {formData.documents?.profilePhoto && (
+                      <div style={{ marginTop: 8 }}>
+                        <img 
+                          src={`data:image/jpeg;base64,${formData.documents.profilePhoto}`} 
+                          alt="Profile Preview" 
+                          style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', border: '1px solid #d0dce9' }} 
+                        />
+                      </div>
+                    )}
                   </Field>
                 </div>
               </div>

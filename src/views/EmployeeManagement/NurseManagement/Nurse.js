@@ -14,6 +14,8 @@ import { useHospital } from '../../Usecontext/HospitalContext'
 import ConfirmationModal from '../../../components/ConfirmationModal'
 import Pagination from '../../../Utils/Pagination'  // ← same Pagination used in CustomerManagement
 import { showCustomToast } from '../../../Utils/Toaster'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import LoadingIndicator from '../../../Utils/loader'
 
 
@@ -92,6 +94,7 @@ const PhysioManagement = () => {
       await deletePhysio(physioToDelete.therapistId)
       setDeleteModalVisible(false)
       setPhysioToDelete(null)
+      showCustomToast('Therapist deleted successfully', 'success')
       fetchPhysios()
     } catch (error) {
       console.error('Delete failed:', error)
@@ -106,6 +109,7 @@ const PhysioManagement = () => {
 
   return (
     <>
+      <ToastContainer />
       {/* ── Page Header ── */}
       <div className="pm-page-header">
         <div className="pm-title-group">

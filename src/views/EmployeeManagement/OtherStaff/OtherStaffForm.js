@@ -294,21 +294,21 @@ const OtherStaffForm = ({
 
               <InfoCard icon={User} title="Personal Information">
                 <div className="osf-grid-3">
-                  <InfoRow label="Full Name"     value={formData.fullName} />
-                  <InfoRow label="Email"         value={formData.emailId} />
-                  <InfoRow label="Contact"       value={formData.contactNumber} />
+                  <InfoRow label="Full Name" value={formData.fullName} />
+                  <InfoRow label="Email" value={formData.emailId} />
+                  <InfoRow label="Contact" value={formData.contactNumber} />
                   <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
                   <InfoRow label="Government ID" value={formData.governmentId} />
-                  <InfoRow label="Gender"        value={capitalizeWords(formData.gender)} />
+                  <InfoRow label="Gender" value={capitalizeWords(formData.gender)} />
                 </div>
               </InfoCard>
 
               <InfoCard icon={Briefcase} title="Work Information">
                 <div className="osf-grid-3">
-                  <InfoRow label="Date of Joining"   value={formData.dateOfJoining} />
-                  <InfoRow label="Department"        value={formData.department} />
-                  <InfoRow label="Experience"        value={formData.workExprience} />
-                  <InfoRow label="Shift Timings"     value={formData.shiftTimingsOrAvailability} />
+                  <InfoRow label="Date of Joining" value={formData.dateOfJoining} />
+                  <InfoRow label="Department" value={formData.department} />
+                  <InfoRow label="Experience" value={formData.workExprience} />
+                  <InfoRow label="Shift Timings" value={formData.shiftTimingsOrAvailability} />
                   <InfoRow label="Emergency Contact" value={formData.emergencyContact} />
                 </div>
               </InfoCard>
@@ -326,12 +326,12 @@ const OtherStaffForm = ({
 
               <InfoCard icon={CreditCard} title="Bank Details">
                 <div className="osf-grid-3">
-                  <InfoRow label="Account Number"  value={formData.bankAccountDetails?.accountNumber} />
-                  <InfoRow label="Account Holder"  value={formData.bankAccountDetails?.accountHolderName} />
-                  <InfoRow label="IFSC Code"        value={formData.bankAccountDetails?.ifscCode} />
-                  <InfoRow label="Bank Name"        value={formData.bankAccountDetails?.bankName} />
-                  <InfoRow label="Branch Name"      value={formData.bankAccountDetails?.branchName} />
-                  <InfoRow label="PAN Card"         value={formData.bankAccountDetails?.panCardNumber} />
+                  <InfoRow label="Account Number" value={formData.bankAccountDetails?.accountNumber} />
+                  <InfoRow label="Account Holder" value={formData.bankAccountDetails?.accountHolderName} />
+                  <InfoRow label="IFSC Code" value={formData.bankAccountDetails?.ifscCode} />
+                  <InfoRow label="Bank Name" value={formData.bankAccountDetails?.bankName} />
+                  <InfoRow label="Branch Name" value={formData.bankAccountDetails?.branchName} />
+                  <InfoRow label="PAN Card" value={formData.bankAccountDetails?.panCardNumber} />
                 </div>
               </InfoCard>
 
@@ -360,7 +360,7 @@ const OtherStaffForm = ({
 
               {/* Basic Information */}
               <FormSection icon={User} title="Basic Information">
-                <div className="osf-row">
+                {/* <div className="osf-row">
                   <div className="osf-col-half">
                     <Field label="Clinic ID">
                       <input className="osf-input osf-input-disabled" value={clinicId} disabled />
@@ -371,7 +371,7 @@ const OtherStaffForm = ({
                       <input className="osf-input osf-input-disabled" value={formData.role} disabled />
                     </Field>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="osf-row">
                   <div className="osf-col-third">

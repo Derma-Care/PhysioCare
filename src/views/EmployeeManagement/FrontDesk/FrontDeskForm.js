@@ -128,13 +128,13 @@ const FrontDeskForm = ({
 }) => {
   const clinicId = localStorage.getItem('HospitalId')
 
-  const [formData, setFormData]   = useState(makeEmptyForm)
+  const [formData, setFormData] = useState(makeEmptyForm)
   const [showPModal, setShowPModal] = useState(false)
   const [showFileModal, setShowFileModal] = useState(false)
   const [previewFileUrl, setPreviewFileUrl] = useState(null)
-  const [isPreviewPdf, setIsPreviewPdf]     = useState(false)
-  const [errors,   setErrors]   = useState({})
-  const [loading,  setLoading]  = useState(false)
+  const [isPreviewPdf, setIsPreviewPdf] = useState(false)
+  const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
   const [ifscLoading, setIfscLoading] = useState(false)
 
   /* ── Scroll-position lock ──────────────────────────────────────
@@ -143,9 +143,9 @@ const FrontDeskForm = ({
      re-render via a layout effect. This prevents the body from
      jumping back to the top on every keystroke.
   ─────────────────────────────────────────────────────────────── */
-  const bodyRef      = useRef(null)
-  const scrollLock   = useRef(false)
-  const savedScroll  = useRef(0)
+  const bodyRef = useRef(null)
+  const scrollLock = useRef(false)
+  const savedScroll = useRef(0)
 
   const saveScroll = () => {
     if (bodyRef.current) savedScroll.current = bodyRef.current.scrollTop
@@ -229,7 +229,7 @@ const FrontDeskForm = ({
     new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.readAsDataURL(file)
-      reader.onload  = () => resolve(reader.result)
+      reader.onload = () => resolve(reader.result)
       reader.onerror = reject
     })
 
@@ -268,7 +268,7 @@ const FrontDeskForm = ({
     const missing = validateMandatoryFields(formData, mandatoryFields)
     if (missing.length) { showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error'); return false }
     if (formData.dateOfBirth) {
-      const dob   = new Date(formData.dateOfBirth)
+      const dob = new Date(formData.dateOfBirth)
       const today = new Date()
       let age = today.getFullYear() - dob.getFullYear()
       const beforeBirthday = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
@@ -354,23 +354,23 @@ const FrontDeskForm = ({
 
               <InfoCard icon={User} title="Personal Information">
                 <div className="fdf-grid-3">
-                  <InfoRow label="Full Name"      value={formData.fullName} />
-                  <InfoRow label="Email"          value={formData.emailId} />
-                  <InfoRow label="Contact"        value={formData.contactNumber} />
-                  <InfoRow label="Date of Birth"  value={formData.dateOfBirth} />
-                  <InfoRow label="Government ID"  value={formData.governmentId} />
-                  <InfoRow label="Gender"         value={capitalizeWords(formData.gender)} />
+                  <InfoRow label="Full Name" value={formData.fullName} />
+                  <InfoRow label="Email" value={formData.emailId} />
+                  <InfoRow label="Contact" value={formData.contactNumber} />
+                  <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
+                  <InfoRow label="Government ID" value={formData.governmentId} />
+                  <InfoRow label="Gender" value={capitalizeWords(formData.gender)} />
                 </div>
               </InfoCard>
 
               <InfoCard icon={Briefcase} title="Work Information">
                 <div className="fdf-grid-3">
-                  <InfoRow label="Date of Joining"  value={formData.dateOfJoining} />
-                  <InfoRow label="Department"       value={formData.department} />
-                  <InfoRow label="Qualification"    value={formData.qualification} />
+                  <InfoRow label="Date of Joining" value={formData.dateOfJoining} />
+                  <InfoRow label="Department" value={formData.department} />
+                  <InfoRow label="Qualification" value={formData.qualification} />
                   <InfoRow label="Emergency Contact" value={formData.emergencyContact} />
-                  <InfoRow label="Experience"       value={formData.yearOfExperience} />
-                  <InfoRow label="Vaccination"      value={formData.vaccinationStatus} />
+                  <InfoRow label="Experience" value={formData.yearOfExperience} />
+                  <InfoRow label="Vaccination" value={formData.vaccinationStatus} />
                 </div>
               </InfoCard>
 
@@ -387,12 +387,12 @@ const FrontDeskForm = ({
 
               <InfoCard icon={CreditCard} title="Bank Details">
                 <div className="fdf-grid-3">
-                  <InfoRow label="Account Number"  value={formData.bankAccountDetails?.accountNumber} />
-                  <InfoRow label="Account Holder"  value={formData.bankAccountDetails?.accountHolderName} />
-                  <InfoRow label="IFSC Code"        value={formData.bankAccountDetails?.ifscCode} />
-                  <InfoRow label="Bank Name"        value={formData.bankAccountDetails?.bankName} />
-                  <InfoRow label="Branch Name"      value={formData.bankAccountDetails?.branchName} />
-                  <InfoRow label="PAN Card"         value={formData.bankAccountDetails?.panCardNumber} />
+                  <InfoRow label="Account Number" value={formData.bankAccountDetails?.accountNumber} />
+                  <InfoRow label="Account Holder" value={formData.bankAccountDetails?.accountHolderName} />
+                  <InfoRow label="IFSC Code" value={formData.bankAccountDetails?.ifscCode} />
+                  <InfoRow label="Bank Name" value={formData.bankAccountDetails?.bankName} />
+                  <InfoRow label="Branch Name" value={formData.bankAccountDetails?.branchName} />
+                  <InfoRow label="PAN Card" value={formData.bankAccountDetails?.panCardNumber} />
                 </div>
               </InfoCard>
 
@@ -418,7 +418,7 @@ const FrontDeskForm = ({
             <CForm>
               {/* Basic Info */}
               <FormSection icon={User} title="Basic Information">
-                <div className="fdf-row">
+                {/* <div className="fdf-row">
                   <div className="fdf-col-half">
                     <Field label="Clinic ID" required>
                       <input className="fdf-input fdf-input-disabled" value={clinicId} disabled />
@@ -429,7 +429,7 @@ const FrontDeskForm = ({
                       <input className="fdf-input fdf-input-disabled" value={formData.role} disabled />
                     </Field>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="fdf-row">
                   <div className="fdf-col-third">
@@ -634,11 +634,11 @@ const FrontDeskForm = ({
                           disabled={ifscLoading && (field === 'bankName' || field === 'branchName')}
                           placeholder={ifscLoading && (field === 'bankName' || field === 'branchName') ? 'Fetching...' : ''}
                           maxLength={
-                            field === 'accountNumber'     ? 20
-                            : field === 'panCardNumber'   ? 10
-                            : field === 'ifscCode'        ? 11
-                            : field === 'accountHolderName' ? 50
-                            : undefined
+                            field === 'accountNumber' ? 20
+                              : field === 'panCardNumber' ? 10
+                                : field === 'ifscCode' ? 11
+                                  : field === 'accountHolderName' ? 50
+                                    : undefined
                           }
                           onChange={async e => {
                             let value = e.target.value
@@ -667,11 +667,11 @@ const FrontDeskForm = ({
                                     const res = await fetch(`https://ifsc.razorpay.com/${value}`)
                                     if (res.ok) {
                                       const data = await res.json()
-                                      handleNestedChange('bankAccountDetails', 'bankName',   data.BANK   || '')
+                                      handleNestedChange('bankAccountDetails', 'bankName', data.BANK || '')
                                       handleNestedChange('bankAccountDetails', 'branchName', data.BRANCH || '')
                                     }
                                   } catch {
-                                    handleNestedChange('bankAccountDetails', 'bankName',   '')
+                                    handleNestedChange('bankAccountDetails', 'bankName', '')
                                     handleNestedChange('bankAccountDetails', 'branchName', '')
                                   } finally {
                                     setIfscLoading(false)

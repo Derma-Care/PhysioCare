@@ -662,8 +662,8 @@ const DoctorManagement = () => {
                       setFormErrors((p) => ({ ...p, doctorPicture: 'Only JPG/PNG allowed' }))
                       return
                     }
-                    if (file.size > 2 * 1024 * 1024) {
-                      setFormErrors((p) => ({ ...p, doctorPicture: 'Max 2 MB' }))
+                    if (file.size > 250 * 1024) {
+                      setFormErrors((p) => ({ ...p, doctorPicture: 'Max 250 KB' }))
                       return
                     }
                     const r = new FileReader()
@@ -865,7 +865,12 @@ const DoctorManagement = () => {
             <ChipSection label="Area of Expertise" items={form.focusAreas}
               onAdd={(items) => { const v = items.filter((i) => !/^\d+$/.test(i.trim())); setForm((p) => ({ ...p, focusAreas: v })) }} />
             <ChipSection label="Languages Known"  items={form.languages} onlyAlpha 
-              onAdd={(items) => { const v = items.filter((i) => /^[A-Za-z\s]+$/.test(i.trim())); setForm((p) => ({ ...p, languages: v })) }} />
+              onAdd={(items) => { 
+                const v = items.filter((i) => /^[A-Za-z\s]+$/.test(i.trim())); 
+                setForm((p) => ({ ...p, languages: v }));
+                if (v.length > 0) clearFieldError('languages');
+              }} />
+            <Err field="languages" />
             <ChipSection label="Achievements / Awards" items={form.highlights}
               onAdd={(items) => { const v = items.filter((i) => !/^\d+$/.test(i.trim())); setForm((p) => ({ ...p, highlights: v })) }} />
           </div>

@@ -1,6 +1,7 @@
 import React from 'react'
 import { toast } from 'react-toastify'
 import { showCustomToast } from '../../Utils/Toaster'
+import { COLORS } from '../../Constant/Themes'
 
 const UserPermissionModal = ({
   show,
@@ -11,6 +12,7 @@ const UserPermissionModal = ({
   toggleFeature,
   toggleAllActions,
   togglePermission,
+  toggleGlobalSelectAll,
   onSave,
 }) => {
   if (!show) return null // Don't render if modal is hidden
@@ -32,6 +34,12 @@ const UserPermissionModal = ({
   const isEmployeeManagementChecked = !!permissions['Employee management']
   const isAppointmnetManagementChecked = !!permissions['Appointments']
 
+  const allFeaturesSelected = features.every((f) => {
+    const isChecked = !!permissions[f]
+    if (f === 'Dashboard' || f === 'Employee management') return isChecked
+    return isChecked && permissions[f]?.length === actions.length
+  })
+
   // Handler to check if we should block interaction
   const handleFeatureToggle = (feature) => {
     // Block Employee Management dependencies
@@ -51,12 +59,22 @@ const UserPermissionModal = ({
 
   return (
     <>
-      <div className="modal fade show d-block" tabIndex="-1">
+      <div className="modal fade show d-block custom-modal" tabIndex="-1" >
         <div className="modal-dialog modal-lg">
           <div className="modal-content">
-            <div className="modal-header">
+            <div className="modal-header d-flex justify-content-between align-items-center">
               <h5 className="modal-title">Set User Permissions</h5>
-              <button type="button" className="btn-close" onClick={onClose}></button>
+              <div className="d-flex align-items-center">
+                <label className="fw-bold me-4 mb-0 d-flex align-items-center gap-2" style={{ cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={allFeaturesSelected}
+                    onChange={(e) => toggleGlobalSelectAll(e.target.checked)}
+                  />
+                  Select All Permissions
+                </label>
+                <button type="button" className="btn-close" onClick={onClose}></button>
+              </div>
             </div>
 
             <div className="modal-body">
@@ -130,7 +148,7 @@ const UserPermissionModal = ({
               <button type="button" className="btn btn-secondary" onClick={onClose}>
                 Close
               </button>
-              <button type="button" className="btn btn-primary" onClick={onSave}>
+              <button type="button" className="btn" style={{ backgroundColor: COLORS.primary, color: 'white' }} onClick={onSave}>
                 Save Permissions
               </button>
             </div>
