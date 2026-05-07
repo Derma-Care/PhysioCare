@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CRow, CCol, CSpinner, CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter, CButton } from '@coreui/react';
 import { ToastContainer } from 'react-toastify';
 import { showCustomToast } from '../../Utils/Toaster';
@@ -8,19 +9,29 @@ import './PatientFeedback.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faHospital, faUserMd, faUserNurse, faCheckCircle,
-  faPlus, faEye, faEdit, faTrash, faConciergeBell
+  faPlus, faEye, faEdit, faTrash, faConciergeBell, faHistory
 } from '@fortawesome/free-solid-svg-icons';
 import Select from 'react-select';
+import { Edit2, Eye, Trash2 } from 'lucide-react';
+import { getAllPhysios } from '../EmployeeManagement/NurseManagement/NurseAPI';
+import { getAllFrontDeskAPI } from '../EmployeeManagement/FrontDesk/FrontDeskAPI';
 
 const RATING_OPTIONS = [
-  { id: 'bad', emoji: '😞', label: 'Bad', className: 'active-bad' },
-  { id: 'normal', emoji: '😐', label: 'Normal', className: 'active-normal' },
-  { id: 'good', emoji: '😄', label: 'Good', className: 'active-good' },
-  { id: 'excellent', emoji: '😍', label: 'Like More', className: 'active-excellent' }
+  { id: '1', emoji: '😡', label: '1', className: 'active-1' },
+  { id: '2', emoji: '😠', label: '2', className: 'active-2' },
+  { id: '3', emoji: '😞', label: '3', className: 'active-3' },
+  { id: '4', emoji: '😟', label: '4', className: 'active-4' },
+  { id: '5', emoji: '😐', label: '5', className: 'active-5' },
+  { id: '6', emoji: '🙂', label: '6', className: 'active-6' },
+  { id: '7', emoji: '😊', label: '7', className: 'active-7' },
+  { id: '8', emoji: '😄', label: '8', className: 'active-8' },
+  { id: '9', emoji: '😍', label: '9', className: 'active-9' },
+  { id: '10', emoji: '🤩', label: '10', className: 'active-10' }
 ];
 
 const PatientFeedback = () => {
-  const { doctorData } = useHospital() || {};
+  const { doctorData, addNotification } = useHospital() || {};
+  const navigate = useNavigate();
 
   // State for CRUD
   const [feedbacks, setFeedbacks] = useState([]);
@@ -38,6 +49,11 @@ const PatientFeedback = () => {
 
   // Data for Dropdowns
   const [patients, setPatients] = useState([]);
+  const [therapistsList, setTherapistsList] = useState([]);
+  const [receptionistsList, setReceptionistsList] = useState([]);
+
+  const hospitalId = localStorage.getItem('HospitalId');
+  const branchId = localStorage.getItem('branchId');
 
   const [form, setForm] = useState({
     patientId: '',
@@ -61,23 +77,38 @@ const PatientFeedback = () => {
         console.error("Failed to fetch patients", error);
       }
     };
+
+    const fetchStaff = async () => {
+      const hId = localStorage.getItem('HospitalId');
+      const bId = localStorage.getItem('branchId');
+      if (hId && bId) {
+        try {
+          const physiosRes = await getAllPhysios(hId, bId);
+          let physioData = [];
+          if (Array.isArray(physiosRes?.data?.data)) physioData = physiosRes.data.data;
+          else if (Array.isArray(physiosRes?.data)) physioData = physiosRes.data;
+          else if (Array.isArray(physiosRes)) physioData = physiosRes;
+          setTherapistsList(physioData);
+
+          const staffRes = await getAllFrontDeskAPI(hId, bId);
+          let staffData = [];
+          if (Array.isArray(staffRes?.data?.data)) staffData = staffRes.data.data;
+          else if (Array.isArray(staffRes?.data)) staffData = staffRes.data;
+          else if (Array.isArray(staffRes)) staffData = staffRes;
+          setReceptionistsList(staffData);
+        } catch (error) {
+          console.error("PatientFeedback: Failed to fetch staff data", error);
+        }
+      }
+    };
     fetchPatients();
+    fetchStaff();
   }, []);
 
   // Use real doctors if available in context, else mock
   const doctorsList = doctorData?.data || [
     { doctorId: 'd1', doctorName: 'Dr. John Doe' },
     { doctorId: 'd2', doctorName: 'Dr. Sarah Smith' }
-  ];
-
-  const therapistsList = [
-    { id: 't1', name: 'Alice Johnson (PT)' },
-    { id: 't2', name: 'Bob Williams (OT)' }
-  ];
-
-  const receptionistsList = [
-    { id: 'r1', name: 'Emily Davis' },
-    { id: 'r2', name: 'Michael Brown' }
   ];
 
   const handlePatientSelect = (selectedOption) => {
@@ -140,7 +171,7 @@ const PatientFeedback = () => {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!validateForm()) return;
 
     setLoading(true);
@@ -226,22 +257,28 @@ const PatientFeedback = () => {
 
   // Prepare Patient Options for react-select
   const patientOptions = patients.map(p => ({
-    value: p.customerId,
+    value: p.patientId,
     label: p.fullName || `${p.firstName} ${p.lastName}`.trim(),
     mobileNumber: p.mobileNumber
   }));
 
   const getTargetName = (type, id) => {
     if (type === 'Doctor') return doctorsList.find(d => (d.doctorId || d.doctorName) === id)?.doctorName || id;
-    if (type === 'Therapist') return therapistsList.find(t => t.id === id)?.name || id;
-    if (type === 'Receptionist') return receptionistsList.find(r => r.id === id)?.name || id;
+    if (type === 'Therapist') {
+      const t = therapistsList.find(t => (t.therapistId || t.id) === id);
+      return t ? (t.fullName || t.name || `${t.firstName} ${t.lastName}`.trim()) : id;
+    }
+    if (type === 'Receptionist') {
+      const r = receptionistsList.find(r => (r.receptionistId || r.id) === id);
+      return r ? (r.fullName || r.name || `${r.firstName} ${r.lastName}`.trim()) : id;
+    }
     return id;
   };
 
   const filteredFeedbacks = useMemo(() => {
     if (!searchQuery) return feedbacks;
     const lowerQuery = searchQuery.toLowerCase();
-    
+
     return feedbacks.filter(f => {
       // 1. Patient match
       if (f.patientName?.toLowerCase().includes(lowerQuery)) return true;
@@ -275,14 +312,48 @@ const PatientFeedback = () => {
       <div className="pf-card">
 
         <div className="pf-header">
-          <div className="pf-header-content" style={{ color: "white" }}>
-            <h2>Patient Rating & Feedback</h2>
-            <p style={{ color: "white" }}>Manage comprehensive feedback from patients.</p>
+          <div className="pf-header-content">
+            <h4 className='fw-bold'>Patient Rating & Feedback</h4>
+            <p>Manage comprehensive feedback from patients.</p>
           </div>
-          {!isFormVisible && (
-            <button className="pf-add-btn" onClick={openAddForm}>
-              <FontAwesomeIcon icon={faPlus} /> Add Feedback
-            </button>
+          {!isFormVisible ? (
+            <div className="d-flex gap-2">
+              <button className="pf-add-btn sf-btn-alt" onClick={() => addNotification({
+                type: 'SESSION_COMPLETE',
+                title: 'Full Session Completed',
+                message: 'Patient has successfully completed all assigned sessions.',
+                patientId: 'p1',
+                patientName: 'John Doe',
+                mobileNumber: '9876543210',
+                bookingId: 'BK-2024-001'
+              })} style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047' }}>
+                <FontAwesomeIcon icon={faHistory} /> Test Notif
+              </button>
+              <button className="pf-add-btn sf-btn-alt" onClick={() => navigate('/session-feedback')}>
+                <FontAwesomeIcon icon={faHistory} /> Session Feedback
+              </button>
+              <button className="pf-add-btn" onClick={openAddForm}>
+                <FontAwesomeIcon icon={faPlus} /> Add Feedback
+              </button>
+            </div>
+          ) : (
+            <div className="d-flex gap-2">
+              <button
+                type="button"
+                className="pf-add-btn sf-btn-alt"
+                onClick={closeForm}
+                style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="patientFeedbackForm"
+                className="pf-add-btn"
+              >
+                <FontAwesomeIcon icon={faCheckCircle} /> Save Feedback
+              </button>
+            </div>
           )}
         </div>
 
@@ -304,7 +375,7 @@ const PatientFeedback = () => {
                 {filteredFeedbacks.length === 0 ? (
                   <div className="pf-empty-state">
                     <FontAwesomeIcon icon={faHospital} size="3x" style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                    <h4>No Feedbacks Found</h4>
+                    <h6>No Feedbacks Found</h6>
                     <p>Click "Add Feedback" to create a new entry.</p>
                   </div>
                 ) : (
@@ -337,13 +408,13 @@ const PatientFeedback = () => {
                             <td>
                               <div className="pf-action-btns">
                                 <button className="pf-btn-icon pf-btn-view" onClick={() => handleView(f)} title="View">
-                                  <FontAwesomeIcon icon={faEye} />
+                                  <Eye size={14} />
                                 </button>
                                 <button className="pf-btn-icon pf-btn-edit" onClick={() => openEditForm(f)} title="Edit">
-                                  <FontAwesomeIcon icon={faEdit} />
+                                  <Edit2 size={14} />
                                 </button>
                                 <button className="pf-btn-icon pf-btn-delete" onClick={() => handleDelete(f.id)} title="Delete">
-                                  <FontAwesomeIcon icon={faTrash} />
+                                  <Trash2 size={14} />
                                 </button>
                               </div>
                             </td>
@@ -357,7 +428,7 @@ const PatientFeedback = () => {
             </>
           ) : (
             /* --- Form View --- */
-            <form onSubmit={handleSubmit}>
+            <form id="patientFeedbackForm" onSubmit={handleSubmit}>
 
               {/* Patient Details */}
               <div className="pf-target-section">
@@ -479,7 +550,9 @@ const PatientFeedback = () => {
                   >
                     <option value="">-- Choose Therapist --</option>
                     {therapistsList.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
+                      <option key={t.therapistId || t.id} value={t.therapistId || t.id}>
+                        {t.fullName || t.name || `${t.firstName} ${t.lastName}`.trim()}
+                      </option>
                     ))}
                   </select>
                   {errors.therapistTarget && <span className="pf-error-text">{errors.therapistTarget}</span>}
@@ -522,7 +595,9 @@ const PatientFeedback = () => {
                   >
                     <option value="">-- Choose Receptionist --</option>
                     {receptionistsList.map(r => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
+                      <option key={r.receptionistId || r.id} value={r.receptionistId || r.id}>
+                        {r.fullName || r.name || `${r.firstName} ${r.lastName}`.trim()}
+                      </option>
                     ))}
                   </select>
                   {errors.receptionistTarget && <span className="pf-error-text">{errors.receptionistTarget}</span>}
@@ -601,8 +676,8 @@ const PatientFeedback = () => {
                   <h5><FontAwesomeIcon icon={faHospital} /> Hospital</h5>
                   <div className="pf-view-row">
                     <span className="pf-view-label">Rating:</span>
-                    <span className="pf-view-value" style={{ textTransform: 'capitalize' }}>
-                      {RATING_OPTIONS.find(r => r.id === selectedFeedback.hospitalFeedback.rating)?.emoji} {selectedFeedback.hospitalFeedback.rating}
+                    <span className="pf-view-value">
+                      {RATING_OPTIONS.find(r => r.id === selectedFeedback.hospitalFeedback.rating)?.emoji} ({selectedFeedback.hospitalFeedback.rating}/10)
                     </span>
                   </div>
                   {selectedFeedback.hospitalFeedback.feedbackText && (
@@ -616,8 +691,8 @@ const PatientFeedback = () => {
                   <h5><FontAwesomeIcon icon={faUserMd} /> Doctor: {getTargetName('Doctor', selectedFeedback.doctorFeedback.targetId)}</h5>
                   <div className="pf-view-row">
                     <span className="pf-view-label">Rating:</span>
-                    <span className="pf-view-value" style={{ textTransform: 'capitalize' }}>
-                      {RATING_OPTIONS.find(r => r.id === selectedFeedback.doctorFeedback.rating)?.emoji} {selectedFeedback.doctorFeedback.rating}
+                    <span className="pf-view-value">
+                      {RATING_OPTIONS.find(r => r.id === selectedFeedback.doctorFeedback.rating)?.emoji} ({selectedFeedback.doctorFeedback.rating}/10)
                     </span>
                   </div>
                   {selectedFeedback.doctorFeedback.feedbackText && (
@@ -631,8 +706,8 @@ const PatientFeedback = () => {
                   <h5><FontAwesomeIcon icon={faUserNurse} /> Therapist: {getTargetName('Therapist', selectedFeedback.therapistFeedback.targetId)}</h5>
                   <div className="pf-view-row">
                     <span className="pf-view-label">Rating:</span>
-                    <span className="pf-view-value" style={{ textTransform: 'capitalize' }}>
-                      {RATING_OPTIONS.find(r => r.id === selectedFeedback.therapistFeedback.rating)?.emoji} {selectedFeedback.therapistFeedback.rating}
+                    <span className="pf-view-value">
+                      {RATING_OPTIONS.find(r => r.id === selectedFeedback.therapistFeedback.rating)?.emoji} ({selectedFeedback.therapistFeedback.rating}/10)
                     </span>
                   </div>
                   {selectedFeedback.therapistFeedback.feedbackText && (
@@ -646,8 +721,8 @@ const PatientFeedback = () => {
                   <h5><FontAwesomeIcon icon={faConciergeBell} /> Receptionist: {getTargetName('Receptionist', selectedFeedback.receptionistFeedback.targetId)}</h5>
                   <div className="pf-view-row">
                     <span className="pf-view-label">Rating:</span>
-                    <span className="pf-view-value" style={{ textTransform: 'capitalize' }}>
-                      {RATING_OPTIONS.find(r => r.id === selectedFeedback.receptionistFeedback.rating)?.emoji} {selectedFeedback.receptionistFeedback.rating}
+                    <span className="pf-view-value">
+                      {RATING_OPTIONS.find(r => r.id === selectedFeedback.receptionistFeedback.rating)?.emoji} ({selectedFeedback.receptionistFeedback.rating}/10)
                     </span>
                   </div>
                   {selectedFeedback.receptionistFeedback.feedbackText && (

@@ -99,11 +99,13 @@ const FollowupDashboard = React.lazy(() => import('./views/AppointmentManagement
 const PaymentDetailsUI = React.lazy(() => import('./views/AppointmentManagement/PaymentDetailsUI'))
 const AttendanceTracker = React.lazy(() => import('./views/AppointmentManagement/AttendanceTracker'))
 const PatientFeedback = React.lazy(() => import('./views/Feedback/PatientFeedback'))
+const SessionFeedback = React.lazy(() => import('./views/Feedback/SessionFeedback'))
 
 const routes = [
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
   { path: '/attendance-tracker', name: 'Attendance Tracker', element: AttendanceTracker },
   { path: '/feedback', name: 'Patient Feedback', element: PatientFeedback },
+  { path: '/session-feedback', name: 'Session Feedback', element: SessionFeedback },
   { path: '/employee-management/doctor', name: 'Doctors', element: Doctors },
   { path: '/consent-forms', name: 'Consent Forms', element: ConsentForms },
 

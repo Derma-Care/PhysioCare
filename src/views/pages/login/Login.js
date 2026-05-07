@@ -325,7 +325,7 @@ const Login = () => {
                           }}
                           className="mb-3" style={{ color: COLORS.primary }}
                         >
-                          <option value="clinic">Admin</option>
+                          <option value="clinic">Super Admin</option>
                           <option value="administrator">Clinic Admin</option>
                           <option value="receptionist">Receptionist</option>
                         </CFormSelect>

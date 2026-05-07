@@ -1,5 +1,5 @@
 .pf-wrapper {
-  padding: 1.5rem 0;
+  padding: 0;
   min-height: 80vh;
   font-family: 'Inter', sans-serif;
   width: 100%;
@@ -7,20 +7,22 @@
 
 .pf-card {
   width: 100%;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  border: none;
 }
 
 .pf-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--color-bgcolor);
-  color: white;
-  padding: 1.5rem 2rem;
+  background-color: transparent;
+  color: #0c447c;
+  padding: 14px 0;
+  border-bottom: 0.5px solid #d0dce9;
+  margin-bottom: 18px;
 }
 
 .pf-header-content h2 {
@@ -32,17 +34,18 @@
 }
 
 .pf-header-content p {
-  margin: 0.25rem 0 0;
-  font-size: 0.9rem;
-  opacity: 0.9;
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 .pf-add-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: #185fa5;
+  border: none;
   color: white;
-  padding: 0.6rem 1.2rem;
+  padding: 8px 18px;
   border-radius: 8px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -52,11 +55,21 @@
 }
 
 .pf-add-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  filter: brightness(0.9);
+}
+
+.pf-add-btn.sf-btn-alt {
+  background: #e6f1fb;
+  color: #185fa5;
+  border: 1px solid #b5d4f4;
+}
+
+.pf-add-btn.sf-btn-alt:hover {
+  background: #d0e6f8;
 }
 
 .pf-body {
-  padding: 2rem;
+  padding: 0;
 }
 
 /* Filters */
@@ -69,10 +82,10 @@
 .pf-search-input {
   flex: 1;
   max-width: 300px;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  border: 1px solid #d0dce9;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 13px;
   color: #334155;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -96,12 +109,13 @@
 }
 
 .pf-table th {
-  background-color: #f8fafc;
-  color: #475569;
+  background-color: #185fa5;
+  color: #ffffff;
   font-weight: 600;
   text-align: left;
-  padding: 1rem;
-  border-bottom: 2px solid #e2e8f0;
+  padding: 11px 14px;
+  border-bottom: none;
+  font-size: 12px;
 }
 
 .pf-table td {
@@ -123,44 +137,45 @@
 
 .pf-action-btns {
   display: flex;
-  gap: 0.5rem;
+  gap: 6px;
+  align-items: center;
 }
 
 .pf-btn-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: white;
+  transition: all 0.12s ease, transform 0.1s;
+  flex-shrink: 0;
 }
 
 .pf-btn-view {
-  background-color: #3b82f6;
-}
-
-.pf-btn-view:hover {
-  background-color: #2563eb;
+  background: #e6f1fb;
+  color: #185fa5;
 }
 
 .pf-btn-edit {
-  background-color: #eab308;
-}
-
-.pf-btn-edit:hover {
-  background-color: #ca8a04;
+  background: #eaf3de;
+  color: #3b6d11;
 }
 
 .pf-btn-delete {
-  background-color: #ef4444;
+  background: #fcebeb;
+  color: #a32d2d;
 }
 
-.pf-btn-delete:hover {
-  background-color: #dc2626;
+.pf-btn-icon:hover {
+  filter: brightness(0.9);
+  transform: scale(1.07);
+}
+
+.pf-btn-icon:active {
+  transform: scale(0.94);
 }
 
 
@@ -236,15 +251,17 @@
 /* Ratings */
 .pf-ratings {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .pf-rating-card {
-  flex: 1;
+  flex: 1 0 calc(10% - 0.5rem);
+  min-width: 50px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem 0.5rem;
+  padding: 0.75rem 0.25rem;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   cursor: pointer;
@@ -253,15 +270,15 @@
 }
 
 .pf-rating-emoji {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
   filter: grayscale(100%);
   opacity: 0.7;
   transition: all 0.3s ease;
 }
 
 .pf-rating-label {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #64748b;
   text-align: center;
@@ -269,9 +286,9 @@
 }
 
 .pf-rating-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   border-color: #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
 .pf-rating-card:hover .pf-rating-emoji {
@@ -281,8 +298,8 @@
 }
 
 .pf-rating-card.active {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
 .pf-rating-card.active .pf-rating-emoji {
@@ -295,25 +312,12 @@
   color: #1e293b;
 }
 
-.pf-rating-card.active-bad {
-  border-color: #ef4444;
-  background: #fef2f2;
-}
-
-.pf-rating-card.active-normal {
-  border-color: #eab308;
-  background: #fefce8;
-}
-
-.pf-rating-card.active-good {
-  border-color: #22c55e;
-  background: #f0fdf4;
-}
-
-.pf-rating-card.active-excellent {
-  border-color: #3b82f6;
-  background: #eff6ff;
-}
+/* Active colors for 10-point scale */
+.pf-rating-card.active-1, .pf-rating-card.active-2 { border-color: #ef4444; background: #fef2f2; }
+.pf-rating-card.active-3, .pf-rating-card.active-4 { border-color: #f97316; background: #fff7ed; }
+.pf-rating-card.active-5, .pf-rating-card.active-6 { border-color: #eab308; background: #fefce8; }
+.pf-rating-card.active-7, .pf-rating-card.active-8 { border-color: #22c55e; background: #f0fdf4; }
+.pf-rating-card.active-9, .pf-rating-card.active-10 { border-color: #3b82f6; background: #eff6ff; }
 
 /* Buttons */
 .pf-form-actions {

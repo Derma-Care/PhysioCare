@@ -24,6 +24,12 @@ export const HospitalProvider = ({ children }) => {
   })
   const [hospitalId, setHospitalId] = useState(localStorage.getItem('HospitalId'))
   const [hydrated, setHydrated] = useState(false) // Track data readiness
+  const [notifications, setNotifications] = useState([])
+
+  const addNotification = useCallback((notif) => {
+    setNotifications(prev => [{ ...notif, id: Date.now(), read: false }, ...prev])
+    setNotificationCount(prev => (parseInt(prev) || 0) + 1)
+  }, [])
 
   // Persist user & hospital to localStorage
   useEffect(() => {
@@ -162,6 +168,9 @@ export const HospitalProvider = ({ children }) => {
         fetchDoctors,
         fetchHospital,
         fetchSubServices, // expose for manual calls (like after login)
+        notifications,
+        setNotifications,
+        addNotification,
       }}
     >
       {children}

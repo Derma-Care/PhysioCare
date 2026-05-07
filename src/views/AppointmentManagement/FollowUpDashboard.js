@@ -37,6 +37,7 @@ import BookAppointmentModal from './BookAppointmentModal '
 import axios from 'axios'
 import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import { BASE_URL } from '../../baseUrl'
+import { ToastContainer } from 'react-toastify'
 
 /* ─── Status list ─────────────────────────────────────────────────────── */
 const followUpStatus = [
@@ -411,6 +412,7 @@ export default function FollowupDashboard() {
   ══════════════════════════════════════════════════════════════════ */
   return (
     <>
+      <ToastContainer />
       <CContainer fluid className="px-3 py-3">
 
         {/* ── STAT CARDS ────────────────────────────────────────────── */}
