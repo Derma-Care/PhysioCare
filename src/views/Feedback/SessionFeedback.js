@@ -15,7 +15,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Edit2, Eye, Trash2 } from 'lucide-react';
 import Select from 'react-select';
-import { getAllPhysios } from '../EmployeeManagement/NurseManagement/NurseAPI';
+import { COLORS } from '../../Constant/Themes';
 
 const RATING_OPTIONS = [
   { id: '1', emoji: '😡', label: '1', className: 'active-1' },
@@ -42,9 +42,13 @@ const SessionFeedback = () => {
       patientPhone: '9876543210',
       doctorId: 'd1',
       doctorName: 'Dr. John Doe',
+      bookingId: "Der-Mai-2026-0001",
       therapistId: 't1',
       therapistName: 'Alice Johnson',
-      serviceType: 'Physiotherapy',
+      serviceType: "PACKAGE",
+      service: [
+        { serviceId: "PKG_AUTO", serviceName: "Auto Package" }
+      ],
       totalSessions: 10,
       sessionsCompleted: 5,
       isHalfSessionCompleted: true,
@@ -64,7 +68,6 @@ const SessionFeedback = () => {
 
   // Data for Dropdowns
   const [patients, setPatients] = useState([]);
-  const [therapistsList, setTherapistsList] = useState([]);
 
   const hospitalId = localStorage.getItem('HospitalId');
   const branchId = localStorage.getItem('branchId');
@@ -76,11 +79,66 @@ const SessionFeedback = () => {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock data for auto-filling based on patient selection
-  const MOCK_PATIENT_SESSIONS = {
-    'p1': { doctorId: 'd1', doctorName: 'Dr. John Doe', therapistId: 't1', therapistName: 'Alice Johnson', serviceType: 'Physiotherapy', totalSessions: 10, sessionsCompleted: 5 },
-    'p2': { doctorId: 'd2', doctorName: 'Dr. Sarah Smith', therapistId: 't2', therapistName: 'Bob Williams', serviceType: 'Occupational Therapy', totalSessions: 12, sessionsCompleted: 6 },
-  };
+  // Mock data based on the provided API structure
+  const MOCK_FEEDBACK_DATA = [
+    {
+      patientId: "B0110_PT_61AFD0",
+      patientName: "Prashnath",
+      mobileNumber: "7842259803",
+      bookingId: "Der-Mai-2026-0001",
+      doctorId: "00010111",
+      doctorName: "Dr. Kaleeswaran",
+      therapistId: "THER-DD0F6E",
+      therapistName: "Banavath",
+      therapistRecordId: "69fad1cc5dc5c090f4fcb68b",
+      serviceType: "PACKAGE",
+      service: [
+        { serviceId: "PKG_AUTO", serviceName: "Auto Package" }
+      ],
+      totalNoOfSessions: 10,
+      noOfSessionsCompleted: 5,
+      halfSessionsCompleted: true,
+      fullSessionsCompleted: false
+    },
+    {
+      patientId: "P_002_RJ",
+      patientName: "Rajesh Kumar",
+      mobileNumber: "9988776655",
+      bookingId: "BK-2026-0042",
+      doctorId: "DOC_01",
+      doctorName: "Dr. Anita Sharma",
+      therapistId: "THER_05",
+      therapistName: "Suresh Babu",
+      therapistRecordId: "rec_987654",
+      serviceType: "PHYSIOTHERAPY",
+      service: [
+        { serviceId: "SRV_SHLD", serviceName: "Shoulder Rehab" }
+      ],
+      totalNoOfSessions: 12,
+      noOfSessionsCompleted: 12,
+      halfSessionsCompleted: true,
+      fullSessionsCompleted: true
+    },
+    {
+      patientId: "P_003_SN",
+      patientName: "Sita Nair",
+      mobileNumber: "8877665544",
+      bookingId: "BK-2026-0089",
+      doctorId: "DOC_02",
+      doctorName: "Dr. Vijay Varma",
+      therapistId: "THER_02",
+      therapistName: "Meera Das",
+      therapistRecordId: "rec_123456",
+      serviceType: "EXERCISE",
+      service: [
+        { serviceId: "SRV_CORE", serviceName: "Core Strengthening" }
+      ],
+      totalNoOfSessions: 8,
+      noOfSessionsCompleted: 2,
+      halfSessionsCompleted: false,
+      fullSessionsCompleted: false
+    }
+  ];
 
   const [form, setForm] = useState({
     patientId: '',
@@ -91,8 +149,12 @@ const SessionFeedback = () => {
     therapistId: '',
     therapistName: '',
     serviceType: '',
+    serviceNames: '',
     totalSessions: '',
     sessionsCompleted: '',
+    isHalfSessionCompleted: false,
+    isFullSessionCompleted: false,
+    bookingId: '',
     rating: '',
     whatWentWell: '',
     improvements: '',
@@ -106,15 +168,24 @@ const SessionFeedback = () => {
     const params = new URLSearchParams(window.location.search);
     const autoPatientId = params.get('patientId');
     if (autoPatientId && patients.length > 0) {
-      const p = patients.find(p => p.customerId === autoPatientId);
+      const p = patients.find(p => p.patientId === autoPatientId);
       if (p) {
-        const mockData = MOCK_PATIENT_SESSIONS[autoPatientId] || {};
         setForm(prev => ({
           ...prev,
-          patientId: p.customerId,
-          patientName: p.fullName || `${p.firstName} ${p.lastName}`.trim(),
-          patientPhone: p.mobileNumber || '',
-          ...mockData
+          patientId: p.patientId,
+          patientName: p.patientName,
+          patientPhone: p.mobileNumber,
+          bookingId: p.bookingId,
+          doctorId: p.doctorId,
+          doctorName: p.doctorName,
+          therapistId: p.therapistId,
+          therapistName: p.therapistName,
+          serviceType: p.serviceType,
+          serviceNames: p.service?.map(s => s.serviceName).join(', ') || '—',
+          totalSessions: p.totalNoOfSessions,
+          sessionsCompleted: p.noOfSessionsCompleted,
+          isHalfSessionCompleted: p.halfSessionsCompleted,
+          isFullSessionCompleted: p.fullSessionsCompleted
         }));
         setIsFormVisible(true);
       }
@@ -122,43 +193,8 @@ const SessionFeedback = () => {
   }, [patients]);
 
   useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        const data = await CustomerData();
-        setPatients(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Failed to fetch patients", error);
-      }
-    };
-
-    const fetchStaff = async () => {
-      const hId = localStorage.getItem('HospitalId');
-      const bId = localStorage.getItem('branchId');
-      
-      console.log("SessionFeedback: fetchStaff called with:", { hId, bId });
-      
-      if (hId && bId) {
-        try {
-          const res = await getAllPhysios(hId, bId);
-          console.log("SessionFeedback: Physios raw response:", res);
-          
-          let physioData = [];
-          if (Array.isArray(res?.data?.data)) physioData = res.data.data;
-          else if (Array.isArray(res?.data)) physioData = res.data;
-          else if (Array.isArray(res)) physioData = res;
-          
-          console.log("SessionFeedback: Processed physioData:", physioData);
-          setTherapistsList(physioData);
-        } catch (error) {
-          console.error("SessionFeedback: Failed to fetch staff data", error);
-        }
-      } else {
-        console.warn("SessionFeedback: fetchStaff skipped - missing IDs", { hId, bId });
-      }
-    };
-
-    fetchPatients();
-    fetchStaff();
+    console.log("SessionFeedback: Loading Mock Data");
+    setPatients(MOCK_FEEDBACK_DATA);
   }, []);
 
   const doctorsList = doctorData?.data || [
@@ -168,16 +204,31 @@ const SessionFeedback = () => {
 
   const handlePatientSelect = (selectedOption) => {
     if (selectedOption) {
-      const mockData = MOCK_PATIENT_SESSIONS[selectedOption.value] || {};
       setForm(prev => ({
         ...prev,
-        patientId: selectedOption.value,
-        patientName: selectedOption.label,
-        patientPhone: selectedOption.mobileNumber || '',
-        ...mockData
+        patientId: selectedOption.patientId,
+        patientName: selectedOption.patientName,
+        patientPhone: selectedOption.mobileNumber,
+        bookingId: selectedOption.bookingId,
+        doctorId: selectedOption.doctorId,
+        doctorName: selectedOption.doctorName,
+        therapistId: selectedOption.therapistId,
+        therapistName: selectedOption.therapistName,
+        serviceType: selectedOption.serviceType,
+        serviceNames: selectedOption.service?.map(s => s.serviceName).join(', ') || '—',
+        totalSessions: selectedOption.totalNoOfSessions,
+        sessionsCompleted: selectedOption.noOfSessionsCompleted,
+        isHalfSessionCompleted: selectedOption.halfSessionsCompleted,
+        isFullSessionCompleted: selectedOption.fullSessionsCompleted
       }));
     } else {
-      setForm(prev => ({ ...prev, patientId: '', patientName: '', patientPhone: '' }));
+      setForm(prev => ({
+        ...prev,
+        patientId: '', patientName: '', patientPhone: '',
+        bookingId: '', doctorName: '', therapistName: '',
+        serviceType: '', serviceNames: '',
+        totalSessions: '', sessionsCompleted: ''
+      }));
     }
     if (errors.patientId) setErrors(prev => { const n = { ...prev }; delete n.patientId; return n; });
   };
@@ -266,9 +317,9 @@ const SessionFeedback = () => {
   const closeForm = () => setIsFormVisible(false);
 
   const patientOptions = patients.map(p => ({
-    value: p.customerId,
-    label: p.fullName || `${p.firstName} ${p.lastName}`.trim(),
-    mobileNumber: p.mobileNumber
+    value: p.patientId,
+    label: `${p.patientName} (${p.mobileNumber})`,
+    ...p
   }));
 
   const filteredSessions = useMemo(() => {
@@ -340,6 +391,7 @@ const SessionFeedback = () => {
                     <thead>
                       <tr>
                         <th>S.No</th>
+                        <th>Booking ID</th>
                         <th>Date</th>
                         <th>Patient</th>
                         <th>Doctor / Therapist</th>
@@ -353,6 +405,7 @@ const SessionFeedback = () => {
                       {filteredSessions.map((s, idx) => (
                         <tr key={s.id}>
                           <td>{idx + 1}</td>
+                          <td><span className="sf-booking-badge">{s.bookingId || '—'}</span></td>
                           <td>{s.date}</td>
                           <td>
                             <div className="sf-pat-cell">
@@ -372,7 +425,7 @@ const SessionFeedback = () => {
                               <div className="sf-prog-bar">
                                 <div
                                   className="sf-prog-fill"
-                                  style={{ width: `${(s.sessionsCompleted / s.totalSessions) * 100}%` }}
+                                  style={{ width: `${(s.sessionsCompleted / (s.totalSessions || 1)) * 100}%` }}
                                 ></div>
                               </div>
                             </div>
@@ -410,12 +463,12 @@ const SessionFeedback = () => {
               </div>
             </>
           ) : (
-            <form onSubmit={handleSubmit} className="sf-form-grid">
+            <form onSubmit={handleSubmit} id="sessionFeedbackForm" className="sf-form-grid">
               <div className="sf-form-section">
-                <h5 className="sf-form-subtitle"><FontAwesomeIcon icon={faCalendarCheck} /> Session Details</h5>
+                <h5 className="sf-form-subtitle" style={{ color: COLORS.primary }}><FontAwesomeIcon icon={faCalendarCheck} /> Session Details</h5>
                 <CRow>
-                  <CCol md={6} className="mb-3">
-                    <label className="sf-label">Patient<span className="sf-req">*</span></label>
+                  <CCol md={12} className="mb-3">
+                    <label className="sf-label">Patient (Search Name or Mobile)<span className="sf-req">*</span></label>
                     <Select
                       options={patientOptions}
                       value={patientOptions.find(p => p.value === form.patientId)}
@@ -425,13 +478,24 @@ const SessionFeedback = () => {
                     />
                     {errors.patientId && <span className="sf-err">{errors.patientId}</span>}
                   </CCol>
+
+                  <CCol md={6} className="mb-3">
+                    <label className="sf-label">Booking ID</label>
+                    <input
+                      type="text" className="sf-input" readOnly
+                      value={form.bookingId || '—'}
+                      style={{ background: '#f8fafc', color: '#64748b' }}
+                    />
+                  </CCol>
                   <CCol md={6} className="mb-3">
                     <label className="sf-label">Service Type</label>
                     <input
-                      type="text" className="sf-input" placeholder="e.g. Physiotherapy"
-                      value={form.serviceType} onChange={e => setForm({ ...form, serviceType: e.target.value })}
+                      type="text" className="sf-input" readOnly
+                      value={form.serviceType || '—'}
+                      style={{ background: '#f8fafc', color: '#64748b' }}
                     />
                   </CCol>
+
                   <CCol md={6} className="mb-3">
                     <label className="sf-label">Doctor</label>
                     <input
@@ -441,28 +505,58 @@ const SessionFeedback = () => {
                     />
                   </CCol>
                   <CCol md={6} className="mb-3">
-                    <label className="sf-label">Therapist<span className="sf-req">*</span></label>
-                    <select
-                      className="sf-select" value={form.therapistId}
-                      onChange={e => setForm({ ...form, therapistId: e.target.value, therapistName: therapistsList.find(t => (t.therapistId || t.id) === e.target.value)?.name || therapistsList.find(t => (t.therapistId || t.id) === e.target.value)?.fullName })}
+                    <label className="sf-label">Therapist</label>
+                    <input
+                      type="text" className="sf-input" readOnly
+                      value={form.therapistName || '—'}
+                      style={{ background: '#f8fafc', color: '#64748b' }}
+                    />
+                  </CCol>
+                  <CCol md={2} className="mb-3">
+                    <label className="sf-label">Total Sessions</label>
+                    <input
+                      type="text" className="sf-input" readOnly
+                      value={form.totalSessions || '0'}
+                      style={{ background: '#f8fafc', color: '#64748b' }}
+                    />
+                  </CCol>
+                  <CCol md={2} className="mb-3">
+                    <label className="sf-label">Sessions Completed</label>
+                    <input
+                      type="text" className="sf-input" readOnly
+                      value={form.sessionsCompleted || '0'}
+                      style={{ background: '#f8fafc', color: '#64748b' }}
+                    />
+                  </CCol>
+                  <CCol md={3} className="mb-3">
+                    <label className="sf-label">Milestone Status</label>
+                    <div
+                      className="sf-input d-flex align-items-center"
+                      style={{ background: '#f0f9ff', color: '#0369a1', fontWeight: 'bold', border: '1px solid #bae6fd' }}
                     >
-                      <option value="">Select Therapist</option>
-                      {therapistsList.map(t => (
-                        <option key={t.therapistId || t.id} value={t.therapistId || t.id}>
-                          {t.fullName || t.name || `${t.firstName} ${t.lastName}`.trim()}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.therapistId && <span className="sf-err">{errors.therapistId}</span>}
+                      {form.isFullSessionCompleted
+                        ? "🏆 Course Completed (100%)"
+                        : form.isHalfSessionCompleted
+                          ? "📊 Milestone: 50% Achieved"
+                          : "⚙️ Treatment in Progress"}
+                    </div>
+                  </CCol>
+                  <CCol md={5} className="mb-3">
+                    <label className="sf-label">Service Names</label>
+                    <input
+                      type="text" className="sf-input" readOnly
+                      value={form.serviceNames || '—'}
+                      style={{ background: '#f8fafc', color: '#64748b' }}
+                    />
                   </CCol>
                 </CRow>
               </div>
 
               <div className="sf-form-section">
-                <h5 className="sf-form-subtitle"><FontAwesomeIcon icon={faStar} /> Experience Feedback</h5>
+                <h5 className="sf-form-subtitle" style={{ color: COLORS.primary }}><FontAwesomeIcon icon={faStar} /> Experience Feedback</h5>
 
-                <div className="mb-4">
-                  <label className="sf-label">Session Experience Rating</label>
+                <div className="mb-4" >
+                  <label className="sf-label"  >Session Experience Rating</label>
                   <div className="sf-ratings">
                     {RATING_OPTIONS.map(opt => (
                       <div
@@ -508,14 +602,30 @@ const SessionFeedback = () => {
         </div>
       </div>
 
-      <CModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} size="lg">
+      <CModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} size="lg" className='custom-modal' backdrop="static">
         <CModalHeader><CModalTitle>Session Report</CModalTitle></CModalHeader>
         <CModalBody>
           {selectedSession && (
             <div className="sf-report-view">
               <div className="sf-report-section main">
                 <div className="sf-rep-row"><strong>Patient:</strong> <span>{selectedSession.patientName} ({selectedSession.patientPhone})</span></div>
-                <div className="sf-rep-row"><strong>Status:</strong> <span className={`badge ${selectedSession.isFullSessionCompleted ? 'bg-success' : 'bg-primary'}`}>{selectedSession.sessionsCompleted} / {selectedSession.totalSessions} Sessions</span></div>
+                <div className="sf-rep-row"><strong>Booking ID:</strong> <span className="sf-booking-badge">{selectedSession.bookingId || '—'}</span></div>
+                <div className="sf-rep-row">
+                  <strong>Progress:</strong> 
+                  <span className={`badge ${selectedSession.isFullSessionCompleted ? 'bg-success' : 'bg-primary'}`}>
+                    {selectedSession.sessionsCompleted} / {selectedSession.totalSessions} Sessions
+                  </span>
+                </div>
+                <div className="sf-rep-row">
+                  <strong>Milestone:</strong> 
+                  <span style={{ fontWeight: '700', color: selectedSession.isFullSessionCompleted ? '#166534' : (selectedSession.isHalfSessionCompleted ? '#854d0e' : '#0369a1') }}>
+                    {selectedSession.isFullSessionCompleted 
+                      ? "🏆 Course Completed (100%)" 
+                      : selectedSession.isHalfSessionCompleted 
+                        ? "📊 Milestone: 50% Achieved" 
+                        : "⚙️ Treatment in Progress"}
+                  </span>
+                </div>
                 {selectedSession.rating && (
                   <div className="sf-rep-row">
                     <strong>Rating:</strong>
@@ -526,7 +636,8 @@ const SessionFeedback = () => {
               <div className="sf-report-section">
                 <div className="sf-rep-row"><strong>Doctor:</strong> <span>{selectedSession.doctorName}</span></div>
                 <div className="sf-rep-row"><strong>Therapist:</strong> <span>{selectedSession.therapistName}</span></div>
-                <div className="sf-rep-row"><strong>Service:</strong> <span>{selectedSession.serviceType}</span></div>
+                <div className="sf-rep-row"><strong>Service Type:</strong> <span>{selectedSession.serviceType}</span></div>
+                <div className="sf-rep-row"><strong>Service Names:</strong> <span>{selectedSession.serviceNames || (selectedSession.service?.map(s => s.serviceName).join(', ')) || '—'}</span></div>
               </div>
               <div className="sf-report-section feedback">
                 <h6>Feedback Highlights</h6>
