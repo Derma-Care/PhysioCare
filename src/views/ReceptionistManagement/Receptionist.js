@@ -73,7 +73,7 @@ const ReceptionistManagement = () => {
 
   return (
     <CContainer className="p-4">
-      <ToastContainer />
+      {/* {/* <ToastContainer /> */} */}
       <CRow className="mb-3 align-items-center">
         <CCol md={6}>
           <CInputGroup>

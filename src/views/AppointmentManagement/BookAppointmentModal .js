@@ -1084,7 +1084,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               }
               getOptionLabel={(o) => o.referralId === 'OTHER'
                 ? 'Others'
-                : `${o.fullName} - (${o.address?.street || ''}, ${o.address?.city || ''})`
+                : `${o.fullName} - ${o.mobileNumber}`
               }
               getOptionValue={(o) => o.referralId}
               onChange={(sel) => {

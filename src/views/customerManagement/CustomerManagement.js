@@ -292,7 +292,7 @@ const CustomerManagement = () => {
 
   return (
     <div className="cm-wrapper">
-      <ToastContainer />
+      {/* {/* <ToastContainer /> */} */}
       <ConfirmationModal
         isVisible={isModalVisible}
         title="Delete Patient"

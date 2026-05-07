@@ -525,7 +525,7 @@ const DoctorDetailsPage = () => {
   /* ─── Render ─── */
   return (
     <div style={{ backgroundColor: '#f1f5f9', minHeight: '100vh', padding: '20px', color: t.text }}>
-      <ToastContainer />
+      {/* {/* <ToastContainer /> */} */}
 
       {/* ── PAGE TITLE BAR ── */}
       <div style={{ backgroundColor: 'var(--color-bgcolor)', borderRadius: t.radius, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', boxShadow: t.shadowMd }}>

@@ -149,7 +149,7 @@ const DoctorNotifications = () => {
 
   return (
     <div className="container mt-4">
-      <ToastContainer />
+      {/* {/* <ToastContainer /> */} */}
       <h5>Doctor Notifications</h5>
 
       <CTable striped hover responsive>

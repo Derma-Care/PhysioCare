@@ -35,7 +35,7 @@ const App = () => {
     <GlobalSearchProvider>        {/* ✅ added */}
       <HospitalProvider>
         <Suspense fallback={<LogoLoader />}>
-          <ToastContainer position="top-right" autoClose={3000} />
+          {/* <ToastContainer position="top-right" autoClose={3000} /> */}
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
@@ -54,7 +54,7 @@ const App = () => {
           </Routes>
         </Suspense>
       </HospitalProvider>
-    </GlobalSearchProvider>       
+    </GlobalSearchProvider>
   )
 }
 

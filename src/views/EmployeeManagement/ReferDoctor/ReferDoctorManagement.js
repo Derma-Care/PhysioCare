@@ -119,7 +119,7 @@ const ReferDoctorManagement = () => {
 
   return (
     <>
-      <ToastContainer />
+      {/* {/* <ToastContainer /> */} */}
 
       {/* ── Page Header ─────────────────────────── */}
       <div className="rd-page-header">

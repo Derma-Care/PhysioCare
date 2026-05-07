@@ -120,6 +120,13 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilStar} customClassName="nav-icon" />,
     },
+    {
+      component: CNavItem,
+      to: '/equipment-management',
+      name: 'Equipment Management',
+      as: NavLink,
+      icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
+    },
 
     // {
     //   component: CNavItem,
@@ -208,7 +215,8 @@ export const getNavigation = (permissions = {}) => {
       permissions[item.name] ||
       item.name === 'Patient Management' ||
       item.name === 'Package Management' ||
-      item.name === 'Patient Feedback',
+      item.name === 'Patient Feedback' ||
+      item.name === 'Equipment Management',
   )
 }
 

@@ -280,7 +280,7 @@ const todayISO = getTodayLocal();
 
   return (
     <div style={{ padding: '16px' }}>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      {/* <ToastContainer /> */}
 
       {/* ── Page Header ── */}
       <div className="rd-page-header">

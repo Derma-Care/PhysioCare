@@ -24,6 +24,7 @@ import TherapistDashboard from './views/EmployeeManagement/Therapist/TherapistDa
 import TherapyExercisesForm from './views/EmployeeManagement/Therapist/TherapyExercise'
 import ExerciseTable from './views/EmployeeManagement/Therapist/TherapyExercise'
 import { COLORS } from './Constant/Themes'
+import EquipmentManagement from './views/EquipmentManagement/EquipmentManagement'
 function Root() {
   // attach interceptors once when app mounts
   // useEffect(() => {
@@ -56,7 +57,7 @@ function Root() {
                 <App />
 
 
-                {/* <BodyAssessment   /> */}
+                {/* <EquipmentManagement /> */}
 
 
 

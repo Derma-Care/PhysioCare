@@ -641,7 +641,7 @@ const ClinicRegistration = () => {
 
   return (
     <div style={{ overflow: 'hidden' }}>
-      <ToastContainer />
+      {/* {/* <ToastContainer /> */} */}
 
       <div>
         <CForm className="d-flex justify-content-end mb-3">

@@ -332,7 +332,7 @@ const CategoryManagement = () => {
 
   return (
     <div style={{ overflow: 'hidden' }}>
-      <ToastContainer />
+      {/* {/* <ToastContainer /> */} */}
       <div>
         <CForm className="d-flex justify-content-end mb-3">
           <CInputGroup className="mb-3" style={{ marginRight: '20px', width: '400px' }}>

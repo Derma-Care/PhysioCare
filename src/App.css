@@ -519,6 +519,7 @@ details[open]>summary .pv-acc-arrow {
 
 .nav-icon {
   color: var(--color-white) !important;
+  margin-right: -2px !important;
 }
 
 /* Hover effect */

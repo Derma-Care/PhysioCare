@@ -85,6 +85,7 @@ const emptyExercise = {
   // Manual
   technique: "",
   duration: "",
+  durationUnit: "mins",
 
   // Electrotherapy
   machine: "",
@@ -388,7 +389,8 @@ export default function ExerciseTable() {
 
   // ── CONFIRMED SAVE ────────────────────────────────────
   const handleConfirmedSave = async () => {
-    const payload = { ...form, activityDuration: form.duration, clinicId, branchId }
+    const combinedDuration = form.duration ? `${form.duration} ${form.durationUnit || 'mins'}` : "";
+    const payload = { ...form, duration: combinedDuration, activityDuration: combinedDuration, clinicId, branchId }
     console.log(payload)
     try {
       setIsSaveConfirming(true)
@@ -414,7 +416,14 @@ export default function ExerciseTable() {
   // ── EDIT ─────────────────────────────────────────────
   const handleEdit = (item) => {
     const videoUrl = decodeVideoUrl(item.video)
-    const prefilled = { ...item, video: videoUrl, imagePreview: item.image }
+    let dVal = item.duration || item.activityDuration || "";
+    let dUnit = "mins";
+    if (dVal && dVal.includes(" ")) {
+      const parts = dVal.split(" ");
+      dVal = parts[0];
+      dUnit = parts.slice(1).join(" ") || "mins";
+    }
+    const prefilled = { ...item, video: videoUrl, imagePreview: item.image, duration: dVal, durationUnit: dUnit }
     setForm(prefilled)
     setOriginalForm(prefilled)
     setEditId(item.therapyExercisesId)
@@ -766,15 +775,28 @@ export default function ExerciseTable() {
                       <CFormLabel className="ex-label">
                         Duration<span className="ex-req">*</span>
                       </CFormLabel>
-                      <CFormInput
-                        className={`ex-input ${errors.duration ? "is-invalid" : ""}`}
-                        value={form.duration}
-                        placeholder="Enter duration (mins)"
-                        onChange={(e) => {
-                          setForm({ ...form, duration: e.target.value })
-                          setErrors((prev) => ({ ...prev, duration: "" }))
-                        }}
-                      />
+                      <div className="d-flex gap-2">
+                        <CFormInput
+                          className={`ex-input ${errors.duration ? "is-invalid" : ""}`}
+                          value={form.duration}
+                          placeholder="Enter duration"
+                          onChange={(e) => {
+                            setForm({ ...form, duration: e.target.value })
+                            setErrors((prev) => ({ ...prev, duration: "" }))
+                          }}
+                        />
+                        <select
+                          className="ex-input"
+                          style={{ width: "100px", padding: "0.375rem 0.75rem" }}
+                          value={form.durationUnit || "mins"}
+                          onChange={(e) => setForm({ ...form, durationUnit: e.target.value })}
+                        >
+                          <option value="mins">mins</option>
+                          <option value="hours">hours</option>
+                          {/* <option value="days">days</option>
+                          <option value="weeks">weeks</option> */}
+                        </select>
+                      </div>
                       <CFormText className="ex-err-msg">{errors.duration}</CFormText>
                     </div>
                   </CCol>
@@ -808,16 +830,28 @@ export default function ExerciseTable() {
                       <CFormLabel className="ex-label">
                         Duration <span className="ex-req">*</span>
                       </CFormLabel>
-                      <CFormInput
-                        className={`ex-input${errors.duration ? " is-invalid" : ""}`}
-                        placeholder="Enter duration (mins)"
-                        value={form.duration}
-                        onChange={(e) => {
-                          setForm({ ...form, duration: e.target.value })
-                          setErrors({ ...errors, duration: "" })
-                        }
-                        }
-                      />
+                      <div className="d-flex gap-2">
+                        <CFormInput
+                          className={`ex-input${errors.duration ? " is-invalid" : ""}`}
+                          placeholder="Enter duration"
+                          value={form.duration}
+                          onChange={(e) => {
+                            setForm({ ...form, duration: e.target.value })
+                            setErrors({ ...errors, duration: "" })
+                          }}
+                        />
+                        <select
+                          className="ex-input"
+                          style={{ width: "100px", padding: "0.375rem 0.75rem" }}
+                          value={form.durationUnit || "mins"}
+                          onChange={(e) => setForm({ ...form, durationUnit: e.target.value })}
+                        >
+                          <option value="mins">mins</option>
+                          <option value="hours">hours</option>
+                          {/* <option value="days">days</option>
+                          <option value="weeks">weeks</option> */}
+                        </select>
+                      </div>
                       <CFormText className="ex-err-msg">{errors.duration}</CFormText>
                     </div>
                   </CCol>
@@ -871,15 +905,28 @@ export default function ExerciseTable() {
                       <CFormLabel className="ex-label">
                         Duration <span className="ex-req">*</span>
                       </CFormLabel>
-                      <CFormInput
-                        className={`ex-input${errors.duration ? " is-invalid" : ""}`}
-                        placeholder="Enter duration (mins)"
-                        value={form.duration}
-                        onChange={(e) => {
-                          setForm({ ...form, duration: e.target.value })
-                          setErrors({ ...errors, duration: "" })
-                        }}
-                      />
+                      <div className="d-flex gap-2">
+                        <CFormInput
+                          className={`ex-input${errors.duration ? " is-invalid" : ""}`}
+                          placeholder="Enter duration"
+                          value={form.duration}
+                          onChange={(e) => {
+                            setForm({ ...form, duration: e.target.value })
+                            setErrors({ ...errors, duration: "" })
+                          }}
+                        />
+                        <select
+                          className="ex-input"
+                          style={{ width: "100px", padding: "0.375rem 0.75rem" }}
+                          value={form.durationUnit || "mins"}
+                          onChange={(e) => setForm({ ...form, durationUnit: e.target.value })}
+                        >
+                          <option value="mins">mins</option>
+                          <option value="hours">hours</option>
+                          {/* <option value="days">days</option>
+                          <option value="weeks">weeks</option> */}
+                        </select>
+                      </div>
                       <CFormText className="ex-err-msg">{errors.duration}</CFormText>
                     </div>
                   </CCol>
@@ -893,15 +940,28 @@ export default function ExerciseTable() {
                     <CFormLabel className="ex-label">
                       Duration <span className="ex-req">*</span>
                     </CFormLabel>
-                    <CFormInput
-                      className={`ex-input${errors.duration ? " is-invalid" : ""}`}
-                      placeholder="Enter duration (mins)"
-                      value={form.duration}
-                      onChange={(e) => {
-                        setForm({ ...form, duration: e.target.value })
-                        setErrors({ ...errors, duration: "" })
-                      }}
-                    />
+                    <div className="d-flex gap-2">
+                      <CFormInput
+                        className={`ex-input${errors.duration ? " is-invalid" : ""}`}
+                        placeholder="Enter duration"
+                        value={form.duration}
+                        onChange={(e) => {
+                          setForm({ ...form, duration: e.target.value })
+                          setErrors({ ...errors, duration: "" })
+                        }}
+                      />
+                      <select
+                        className="ex-input"
+                        style={{ width: "100px", padding: "0.375rem 0.75rem" }}
+                        value={form.durationUnit || "mins"}
+                        onChange={(e) => setForm({ ...form, durationUnit: e.target.value })}
+                      >
+                        <option value="mins">mins</option>
+                        <option value="hours">hours</option>
+                        {/* <option value="days">days</option>
+                        <option value="weeks">weeks</option> */}
+                      </select>
+                    </div>
                     <CFormText className="ex-err-msg">{errors.duration}</CFormText>
                   </div>
                 </CCol>
@@ -915,15 +975,28 @@ export default function ExerciseTable() {
                       <CFormLabel className="ex-label">
                         Duration <span className="ex-req">*</span>
                       </CFormLabel>
-                      <CFormInput
-                        className={`ex-input${errors.duration ? " is-invalid" : ""}`}
-                        placeholder="Enter duration (mins)"
-                        value={form.duration}
-                        onChange={(e) => {
-                          setForm({ ...form, duration: e.target.value })
-                          setErrors({ ...errors, duration: "" })
-                        }}
-                      />
+                      <div className="d-flex gap-2">
+                        <CFormInput
+                          className={`ex-input${errors.duration ? " is-invalid" : ""}`}
+                          placeholder="Enter duration"
+                          value={form.duration}
+                          onChange={(e) => {
+                            setForm({ ...form, duration: e.target.value })
+                            setErrors({ ...errors, duration: "" })
+                          }}
+                        />
+                        <select
+                          className="ex-input"
+                          style={{ width: "100px", padding: "0.375rem 0.75rem" }}
+                          value={form.durationUnit || "mins"}
+                          onChange={(e) => setForm({ ...form, durationUnit: e.target.value })}
+                        >
+                          <option value="mins">mins</option>
+                          <option value="hours">hours</option>
+                          {/* <option value="days">days</option>
+                          <option value="weeks">weeks</option> */}
+                        </select>
+                      </div>
                       <CFormText className="ex-err-msg">{errors.duration}</CFormText>
                     </div>
                   </CCol>
@@ -992,15 +1065,28 @@ export default function ExerciseTable() {
                       <CFormLabel className="ex-label">
                         Duration <span className="ex-req">*</span>
                       </CFormLabel>
-                      <CFormInput
-                        className={`ex-input${errors.duration ? " is-invalid" : ""}`}
-                        placeholder="Enter duration (mins)"
-                        value={form.duration}
-                        onChange={(e) => {
-                          setForm({ ...form, duration: e.target.value })
-                          setErrors({ ...errors, duration: "" })
-                        }}
-                      />
+                      <div className="d-flex gap-2">
+                        <CFormInput
+                          className={`ex-input${errors.duration ? " is-invalid" : ""}`}
+                          placeholder="Enter duration"
+                          value={form.duration}
+                          onChange={(e) => {
+                            setForm({ ...form, duration: e.target.value })
+                            setErrors({ ...errors, duration: "" })
+                          }}
+                        />
+                        <select
+                          className="ex-input"
+                          style={{ width: "100px", padding: "0.375rem 0.75rem" }}
+                          value={form.durationUnit || "mins"}
+                          onChange={(e) => setForm({ ...form, durationUnit: e.target.value })}
+                        >
+                          <option value="mins">mins</option>
+                          <option value="hours">hours</option>
+                          {/* <option value="days">days</option>
+                          <option value="weeks">weeks</option> */}
+                        </select>
+                      </div>
                       <CFormText className="ex-err-msg">{errors.duration}</CFormText>
                     </div>
                   </CCol>
@@ -1263,7 +1349,7 @@ export default function ExerciseTable() {
                 {viewData.duration && (
                   <div className="ex-summary-card">
                     <span className="ex-summary-label">Duration</span>
-                    <span className="ex-summary-value">{viewData.duration} mins</span>
+                    <span className="ex-summary-value">{viewData.duration}</span>
                   </div>
                 )}
                 {viewData.sets && viewData.sets !== "0" && viewData.sets !== 0 && (

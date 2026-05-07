@@ -6,7 +6,7 @@ import {
 import { ToastContainer } from 'react-toastify';
 import { showCustomToast } from '../../Utils/Toaster';
 import { useHospital } from '../Usecontext/HospitalContext';
-import { CustomerData } from '../customerManagement/CustomerManagementAPI';
+import { getFeedbackDetails, submitSessionFeedback } from './FeedbackAPI';
 import './SessionFeedback.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -79,66 +79,6 @@ const SessionFeedback = () => {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock data based on the provided API structure
-  const MOCK_FEEDBACK_DATA = [
-    {
-      patientId: "B0110_PT_61AFD0",
-      patientName: "Prashnath",
-      mobileNumber: "7842259803",
-      bookingId: "Der-Mai-2026-0001",
-      doctorId: "00010111",
-      doctorName: "Dr. Kaleeswaran",
-      therapistId: "THER-DD0F6E",
-      therapistName: "Banavath",
-      therapistRecordId: "69fad1cc5dc5c090f4fcb68b",
-      serviceType: "PACKAGE",
-      service: [
-        { serviceId: "PKG_AUTO", serviceName: "Auto Package" }
-      ],
-      totalNoOfSessions: 10,
-      noOfSessionsCompleted: 5,
-      halfSessionsCompleted: true,
-      fullSessionsCompleted: false
-    },
-    {
-      patientId: "P_002_RJ",
-      patientName: "Rajesh Kumar",
-      mobileNumber: "9988776655",
-      bookingId: "BK-2026-0042",
-      doctorId: "DOC_01",
-      doctorName: "Dr. Anita Sharma",
-      therapistId: "THER_05",
-      therapistName: "Suresh Babu",
-      therapistRecordId: "rec_987654",
-      serviceType: "PHYSIOTHERAPY",
-      service: [
-        { serviceId: "SRV_SHLD", serviceName: "Shoulder Rehab" }
-      ],
-      totalNoOfSessions: 12,
-      noOfSessionsCompleted: 12,
-      halfSessionsCompleted: true,
-      fullSessionsCompleted: true
-    },
-    {
-      patientId: "P_003_SN",
-      patientName: "Sita Nair",
-      mobileNumber: "8877665544",
-      bookingId: "BK-2026-0089",
-      doctorId: "DOC_02",
-      doctorName: "Dr. Vijay Varma",
-      therapistId: "THER_02",
-      therapistName: "Meera Das",
-      therapistRecordId: "rec_123456",
-      serviceType: "EXERCISE",
-      service: [
-        { serviceId: "SRV_CORE", serviceName: "Core Strengthening" }
-      ],
-      totalNoOfSessions: 8,
-      noOfSessionsCompleted: 2,
-      halfSessionsCompleted: false,
-      fullSessionsCompleted: false
-    }
-  ];
 
   const [form, setForm] = useState({
     patientId: '',
@@ -193,8 +133,24 @@ const SessionFeedback = () => {
   }, [patients]);
 
   useEffect(() => {
-    console.log("SessionFeedback: Loading Mock Data");
-    setPatients(MOCK_FEEDBACK_DATA);
+    const fetchFeedbackData = async () => {
+      const hId = localStorage.getItem('HospitalId');
+      const bId = localStorage.getItem('branchId');
+      if (!hId || !bId) return;
+      try {
+        const res = await getFeedbackDetails(hId, bId);
+        const raw = res?.data;
+        // Handle both array and single object responses
+        let dataList = [];
+        if (Array.isArray(raw?.data)) dataList = raw.data;
+        else if (raw?.data && typeof raw.data === 'object') dataList = [raw.data];
+        else if (Array.isArray(raw)) dataList = raw;
+        setPatients(dataList);
+      } catch (error) {
+        console.error('SessionFeedback: Failed to fetch feedback data', error);
+      }
+    };
+    fetchFeedbackData();
   }, []);
 
   const doctorsList = doctorData?.data || [
@@ -204,30 +160,33 @@ const SessionFeedback = () => {
 
   const handlePatientSelect = (selectedOption) => {
     if (selectedOption) {
+      const p = selectedOption;
       setForm(prev => ({
         ...prev,
-        patientId: selectedOption.patientId,
-        patientName: selectedOption.patientName,
-        patientPhone: selectedOption.mobileNumber,
-        bookingId: selectedOption.bookingId,
-        doctorId: selectedOption.doctorId,
-        doctorName: selectedOption.doctorName,
-        therapistId: selectedOption.therapistId,
-        therapistName: selectedOption.therapistName,
-        serviceType: selectedOption.serviceType,
-        serviceNames: selectedOption.service?.map(s => s.serviceName).join(', ') || '—',
-        totalSessions: selectedOption.totalNoOfSessions,
-        sessionsCompleted: selectedOption.noOfSessionsCompleted,
-        isHalfSessionCompleted: selectedOption.halfSessionsCompleted,
-        isFullSessionCompleted: selectedOption.fullSessionsCompleted
+        patientId: p.patientId || p.id || '',
+        patientName: p.patientName || '',
+        patientPhone: p.mobileNumber || '',
+        bookingId: p.bookingId || '',
+        doctorId: p.doctorId || '',
+        doctorName: p.doctorName || '',
+        therapistId: p.therapistId || '',
+        therapistName: p.therapistName || '',
+        serviceType: p.serviceType || '',
+        serviceNames: p.service?.map(s => s.serviceName).join(', ') || '',
+        totalSessions: p.totalNoOfSessions ?? p.totalSessions ?? '',
+        sessionsCompleted: p.noOfSessionsCompleted ?? p.sessionsCompleted ?? '',
+        isHalfSessionCompleted: p.halfSessionsCompleted ?? p.isHalfSessionCompleted ?? false,
+        isFullSessionCompleted: p.fullSessionsCompleted ?? p.isFullSessionCompleted ?? false,
       }));
     } else {
       setForm(prev => ({
         ...prev,
         patientId: '', patientName: '', patientPhone: '',
-        bookingId: '', doctorName: '', therapistName: '',
+        bookingId: '', doctorId: '', doctorName: '',
+        therapistId: '', therapistName: '',
         serviceType: '', serviceNames: '',
-        totalSessions: '', sessionsCompleted: ''
+        totalSessions: '', sessionsCompleted: '',
+        isHalfSessionCompleted: false, isFullSessionCompleted: false,
       }));
     }
     if (errors.patientId) setErrors(prev => { const n = { ...prev }; delete n.patientId; return n; });
@@ -317,8 +276,8 @@ const SessionFeedback = () => {
   const closeForm = () => setIsFormVisible(false);
 
   const patientOptions = patients.map(p => ({
-    value: p.patientId,
-    label: `${p.patientName} (${p.mobileNumber})`,
+    value: p.patientId || p.id,
+    label: `${p.patientName || 'Unknown'} (${p.mobileNumber || '—'})`,
     ...p
   }));
 
@@ -334,7 +293,7 @@ const SessionFeedback = () => {
 
   return (
     <div className="sf-wrapper">
-      <ToastContainer />
+      {/* <ToastContainer /> */}
       <div className="sf-card">
         <div className="sf-header">
           <div className="sf-header-content">
@@ -611,18 +570,18 @@ const SessionFeedback = () => {
                 <div className="sf-rep-row"><strong>Patient:</strong> <span>{selectedSession.patientName} ({selectedSession.patientPhone})</span></div>
                 <div className="sf-rep-row"><strong>Booking ID:</strong> <span className="sf-booking-badge">{selectedSession.bookingId || '—'}</span></div>
                 <div className="sf-rep-row">
-                  <strong>Progress:</strong> 
+                  <strong>Progress:</strong>
                   <span className={`badge ${selectedSession.isFullSessionCompleted ? 'bg-success' : 'bg-primary'}`}>
                     {selectedSession.sessionsCompleted} / {selectedSession.totalSessions} Sessions
                   </span>
                 </div>
                 <div className="sf-rep-row">
-                  <strong>Milestone:</strong> 
+                  <strong>Milestone:</strong>
                   <span style={{ fontWeight: '700', color: selectedSession.isFullSessionCompleted ? '#166534' : (selectedSession.isHalfSessionCompleted ? '#854d0e' : '#0369a1') }}>
-                    {selectedSession.isFullSessionCompleted 
-                      ? "🏆 Course Completed (100%)" 
-                      : selectedSession.isHalfSessionCompleted 
-                        ? "📊 Milestone: 50% Achieved" 
+                    {selectedSession.isFullSessionCompleted
+                      ? "🏆 Course Completed (100%)"
+                      : selectedSession.isHalfSessionCompleted
+                        ? "📊 Milestone: 50% Achieved"
                         : "⚙️ Treatment in Progress"}
                   </span>
                 </div>

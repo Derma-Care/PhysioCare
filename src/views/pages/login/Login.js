@@ -239,7 +239,7 @@ const Login = () => {
   return (
     // Outer container uses flex column and full viewport height to allow sticky footer without overflow
     <>
-      <ToastContainer />
+      {/* <ToastContainer /> */}
       <div className="d-flex flex-column min-vh-100 derma-bg">
         {/* Main content - will grow and keep footer at bottom */}
         <div className="flex-grow-1 d-flex justify-content-center align-content-center align-items-center ">

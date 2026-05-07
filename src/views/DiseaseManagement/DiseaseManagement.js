@@ -279,7 +279,7 @@ const DiseasesManagement = () => {
 
   return (
     <div>
-      <ToastContainer />
+      {/* {/* <ToastContainer /> */} */}
 
       {can('Disease-Management', 'create') && (
         <div

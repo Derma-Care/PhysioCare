@@ -280,7 +280,7 @@ const TreatmentsManagement = () => {
 
   return (
     <div>
-      {/* <ToastContainer /> */}
+      {/* {/* {/* <ToastContainer /> */} */} */}
       <CForm className="d-flex justify-content-between mb-3">
         {can('Treatments', 'create') && (
           <div
