@@ -200,33 +200,47 @@ const PharmacistForm = ({
       reader.onerror = (error) => reject(error)
     })
   useEffect(() => {
-    if (initialData) {
-      setFormData((prev) => ({
-        ...prev,
-        ...initialData,
-        address: { ...emptyForm.address, ...(initialData.address || {}) },
-        bankAccountDetails: {
-          ...emptyForm.bankAccountDetails,
-          ...(initialData.bankAccountDetails || {}),
-        },
-        permissions: { ...emptyPermissions, ...(initialData.permissions || {}) },
-      }))
-    } else {
-      setFormData(emptyForm)
+    if (visible) {
+      if (initialData) {
+        setFormData((prev) => ({
+          ...prev,
+          ...initialData,
+          address: { ...emptyForm.address, ...(initialData.address || {}) },
+          bankAccountDetails: {
+            ...emptyForm.bankAccountDetails,
+            ...(initialData.bankAccountDetails || {}),
+          },
+          permissions: { ...emptyPermissions, ...(initialData.permissions || {}) },
+        }))
+      } else {
+        setFormData(emptyForm)
+      }
+      setErrors({})
     }
-  }, [initialData])
+  }, [initialData, visible])
 
   // 🔹 Handle text inputs (top-level fields)
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    setErrors(prev => ({ ...prev, [field]: '' }))
   }
 
-  // 🔹 Handle nested objects (address, bankAccountDetails)
   const handleNestedChange = (parent, field, value) => {
     setFormData((prev) => ({
       ...prev,
       [parent]: { ...prev[parent], [field]: value },
     }))
+    if (errors[parent]?.[field] || errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        if (newErrors[parent]) {
+          newErrors[parent] = { ...newErrors[parent] }
+          delete newErrors[parent][field]
+        }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
   }
 
   // 🔹 File upload → Base64
@@ -261,58 +275,101 @@ const PharmacistForm = ({
   }
 
   const validateForm = () => {
-    const missing = validateMandatoryFields(formData, mandatoryFields)
+    const newErrors = {}
+    let isValid = true
 
-    if (missing.length > 0) {
-      showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error')
-      return
+    const fieldLabels = {
+      fullName: 'Full Name',
+      gender: 'Gender',
+      dateOfBirth: 'Date of Birth',
+      contactNumber: 'Contact Number',
+      emailID: 'Email',
+      governmentId: 'Government ID',
+      dateOfJoining: 'Date of Joining',
+      department: 'Department',
+      qualification: 'Qualification',
+      yearsOfExperience: 'Years of Experience',
+      shiftTimingsOrAvailability: 'Shift Timings',
+      profilePicture: 'Profile Image',
+      emergencyContactNumber: 'Emergency Contact',
+      'address.houseNo': 'House Number',
+      'address.street': 'Street',
+      'address.city': 'City',
+      'address.state': 'State',
+      'address.postalCode': 'Postal Code',
+      'address.country': 'Country',
+      'bankAccountDetails.accountNumber': 'Account Number',
+      'bankAccountDetails.accountHolderName': 'Account Holder Name',
+      'bankAccountDetails.bankName': 'Bank Name',
+      'bankAccountDetails.branchName': 'Branch Name',
+      'bankAccountDetails.ifscCode': 'IFSC Code',
+      'bankAccountDetails.panCardNumber': 'PAN Card Number',
     }
 
+    mandatoryFields.forEach((field) => {
+      let value = formData
+      field.split('.').forEach((key) => { value = value?.[key] })
+      if (!value || String(value).trim() === '') {
+        isValid = false
+        const label = fieldLabels[field] || field
+        if (field.includes('.')) {
+          const [parent, child] = field.split('.')
+          if (!newErrors[parent]) newErrors[parent] = {}
+          newErrors[parent][child] = `${label} is required.`
+        } else {
+          newErrors[field] = `${label} is required.`
+        }
+      }
+    })
+
+    const todayStr = new Date().toISOString().split('T')[0]
+
     if (formData.dateOfBirth) {
-      const dob = new Date(formData.dateOfBirth)
-      const today = new Date()
-      const age = today.getFullYear() - dob.getFullYear()
-      const isBeforeBirthday =
-        today.getMonth() < dob.getMonth() ||
-        (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-
-      const actualAge = isBeforeBirthday ? age - 1 : age
-
-      if (actualAge < 18) {
-        showCustomToast('Pharmacist must be at least 18 years old.', 'error')
-        return
+      if (formData.dateOfBirth > todayStr) {
+        newErrors.dateOfBirth = 'Date of Birth cannot be in the future.'
+        isValid = false
+      } else {
+        const dob = new Date(formData.dateOfBirth)
+        const today = new Date()
+        const age = today.getFullYear() - dob.getFullYear()
+        const isBeforeBirthday = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+        const actualAge = isBeforeBirthday ? age - 1 : age
+        if (actualAge < 18) { newErrors.dateOfBirth = 'Pharmacist must be at least 18 years old.'; isValid = false }
       }
     }
 
-    const mobileRegex = /^[6-9]\d{9}$/
-    if (!mobileRegex.test(formData.contactNumber)) {
-      showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error')
-      return
+    if (formData.dateOfJoining && formData.dateOfJoining > todayStr) {
+      newErrors.dateOfJoining = 'Joining Date cannot be in the future.'
+      isValid = false
     }
 
-    // ✅ Email validation
-
-    if (!emailPattern.test(formData.emailID)) {
-      showCustomToast('Please enter a valid email address.', 'error')
-      return
+    if (formData.contactNumber && !/^[6-9]\d{9}$/.test(formData.contactNumber)) {
+      newErrors.contactNumber = 'Invalid contact number (must be 10 digits starting 6-9).'
+      isValid = false
     }
 
-    const duplicateContact = pharmacists?.some(
-      (t) => t.contactNumber === formData.contactNumber && t.pharmacistId !== formData.pharmacistId,
-    )
-    if (duplicateContact) {
-      showCustomToast('Contact number already exists!', 'error')
-      return
+    if (formData.emailID && !emailPattern.test(formData.emailID)) {
+      newErrors.emailID = 'Invalid email address format.'
+      isValid = false
     }
 
-    const duplicateEmail = pharmacists?.some(
-      (t) => t.emailID === formData.emailID && t.pharmacistId !== formData.pharmacistId,
-    )
-    if (duplicateEmail) {
-      showCustomToast('Email already exists!', 'error')
-      return
+    if (formData.contactNumber && formData.emergencyContactNumber && formData.contactNumber === formData.emergencyContactNumber) {
+      newErrors.emergencyContactNumber = 'Emergency contact cannot be same as contact number.'
+      isValid = false
     }
-    return true
+
+    if (pharmacists?.some((t) => t.contactNumber === formData.contactNumber && t.pharmacistId !== formData.pharmacistId)) {
+      newErrors.contactNumber = 'Contact number already exists!'
+      isValid = false
+    }
+    if (pharmacists?.some((t) => t.emailID === formData.emailID && t.pharmacistId !== formData.pharmacistId)) {
+      newErrors.emailID = 'Email already exists!'
+      isValid = false
+    }
+
+    setErrors(newErrors)
+    if (!isValid) showCustomToast('Please correct the highlighted errors.', 'error')
+    return isValid
   }
 
   // 🔹 Save handler
@@ -329,14 +386,14 @@ const PharmacistForm = ({
       }
     }
 
-  try {
+    try {
       setLoading(true)
       const res = await onSave(formData)
       console.log(res) // Now this will log actual API response
       if (res != undefined) {
         setFormData(emptyForm)
-        
-      }  
+
+      }
     } catch (err) {
       console.error('Submit failed', err)
     } finally {
@@ -451,7 +508,7 @@ const PharmacistForm = ({
 
   return (
     <>
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
       <CModal
         visible={visible}
         onClose={onClose}
@@ -695,13 +752,17 @@ const PharmacistForm = ({
                   </CFormLabel>
                   <CFormSelect
                     value={formData.gender}
-                    onChange={(e) => handleChange('gender', e.target.value)}
+                    onChange={(e) => {
+                      handleChange('gender', e.target.value)
+                      setErrors(p => ({ ...p, gender: e.target.value ? '' : 'Gender is required.' }))
+                    }}
                   >
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                   </CFormSelect>
+                  {errors.gender && <div className="text-danger mt-1">{errors.gender}</div>}
                 </div>
               </div>
 
@@ -718,8 +779,12 @@ const PharmacistForm = ({
                         .toISOString()
                         .split('T')[0]
                     } // ✅ only allow DOB ≤ today-18yrs
-                    onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+                    onChange={(e) => {
+                      handleChange('dateOfBirth', e.target.value)
+                      setErrors(p => ({ ...p, dateOfBirth: validateField('dateOfBirth', e.target.value) }))
+                    }}
                   />
+                  {errors.dateOfBirth && <div className="text-danger mt-1">{errors.dateOfBirth}</div>}
                 </div>
 
                 <div className="col-md-4">
@@ -869,24 +934,19 @@ const PharmacistForm = ({
                   )}
                 </div>
                 <div className="col-md-4">
-                  <CFormLabel>Emergency Contact</CFormLabel>
-
+                  <CFormLabel>Emergency Contact Number <span style={{ color: 'red' }}>*</span></CFormLabel>
                   <CFormInput
-                    type="text"
                     maxLength={10}
                     value={formData.emergencyContactNumber}
                     onChange={(e) => {
-                      const value = e.target.value
-                      // Allow only digits
-                      if (/^\d*$/.test(value)) {
-                        handleChange('emergencyContactNumber', value)
+                      if (/^\d*$/.test(e.target.value)) {
+                        handleChange('emergencyContactNumber', e.target.value)
+                        const err = validateField('emergencyContactNumber', e.target.value)
+                        setErrors((prev) => ({ ...prev, emergencyContactNumber: err }))
                       }
-                      // Validate on change
                     }}
                   />
-                  {errors.emergencyContactNumber && (
-                    <small className="text-danger">{errors.emergencyContactNumber}</small>
-                  )}
+                  {errors.emergencyContactNumber && <div className="text-danger mt-1">{errors.emergencyContactNumber}</div>}
                 </div>
               </div>
 
@@ -1182,30 +1242,6 @@ const PharmacistForm = ({
                     Profile Picture
                     <span className="text-danger">*</span>
                   </CFormLabel>
-                  {/* {formData.profilePicture && (
-                    <div className="mb-2">
-                      <img
-                        src={formData.profilePicture}
-                        alt="Profile"
-                        width="80"
-                        height="80"
-                        style={{
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '1px solid var(--color-black)',
-                        }}
-                      />
-                      <br />
-                      <a
-                        href={formData.profilePicture}
-                        download="profile-picture"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Download
-                      </a>
-                    </div>
-                  )} */}
                   <CFormInput
                     type="file"
                     accept="image/*"
@@ -1214,9 +1250,12 @@ const PharmacistForm = ({
                       if (file) {
                         const base64 = await toBase64(file)
                         handleChange('profilePicture', base64) // update state
+                        const err = validateField('profilePicture', base64)
+                        setErrors((prev) => ({ ...prev, profilePicture: err }))
                       }
                     }}
                   />
+                  {errors.profilePicture && <div className="text-danger mt-1">{errors.profilePicture}</div>}
                 </div>
 
                 {/* State Pharmacy Council Registration */}

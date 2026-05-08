@@ -22,7 +22,7 @@ div {
 
 /* Force dynamic header background + text color */
 .pink-table {
-  background-color: var(--color-bgcolor) !important;
+  /* background-color: var(--color-bgcolor) !important; */
   /* #1B4F8A */
   color: var(--color-bgcolor) !important;
   /* #F0F6FF */

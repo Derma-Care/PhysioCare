@@ -62,14 +62,14 @@ const Get_AllPayoutsData = async () => {
 }
 
 const PayoutManagement = () => {
-  const [payouts, setPayouts]     = useState([])
-  const [viewData, setViewData]   = useState(null)
-  const [loading, setLoading]     = useState(false)
+  const [payouts, setPayouts] = useState([])
+  const [viewData, setViewData] = useState(null)
+  const [loading, setLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
   const { searchQuery } = useGlobalSearch()
-  const { user }        = useHospital()
+  const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 
   // ── FETCH ──────────────────────────────────
@@ -107,7 +107,7 @@ const PayoutManagement = () => {
 
   return (
     <>
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
 
       {/* ── Page Header ───────────────────────── */}
       <div className="po-page-header">

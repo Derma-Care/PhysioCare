@@ -200,27 +200,34 @@ const LabTechnicianForm = ({
     })
 
   useEffect(() => {
-    if (initialData) {
-      setFormData(initialData)
-    } else {
-      setFormData(emptyForm)
+    if (visible) {
+      if (initialData) setFormData(initialData)
+      else setFormData(emptyForm)
+      setErrors({})
     }
-  }, [initialData])
+  }, [initialData, visible])
 
   // 🔹 Handle text inputs (top-level fields)
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-
-    // Run validation on each change
-    const error = validateField(field, value, { ...formData, [field]: value }, technicians)
-
-    setErrors((prev) => ({ ...prev, [field]: error }))
+    setErrors((prev) => ({ ...prev, [field]: '' }))
   }
   const handleNestedChange = (parent, field, value) => {
     setFormData((prev) => ({
       ...prev,
       [parent]: { ...prev[parent], [field]: value },
     }))
+    if (errors[parent]?.[field] || errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        if (newErrors[parent]) {
+          newErrors[parent] = { ...newErrors[parent] }
+          delete newErrors[parent][field]
+        }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
   }
 
   // 🔹 File upload → Base64
@@ -245,64 +252,98 @@ const LabTechnicianForm = ({
   }
 
   const validateForm = () => {
-    // 1️⃣ Mandatory fields
-    const missing = validateMandatoryFields(formData, mandatoryFields)
-    if (missing.length > 0) {
-      showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error')
+    const newErrors = {}
+    let isValid = true
 
-      // toast.error(`Please fill required fields: ${missing.join(', ')}`)
-      return false
+    const fieldLabels = {
+      fullName: 'Full Name',
+      gender: 'Gender',
+      dateOfBirth: 'Date of Birth',
+      contactNumber: 'Contact Number',
+      emailId: 'Email',
+      governmentId: 'Government ID',
+      dateOfJoining: 'Date of Joining',
+      yearOfExperience: 'Years of Experience',
+      vaccinationStatus: 'Vaccination Status',
+      profilePicture: 'Profile Image',
+      emergencyContact: 'Emergency Contact',
+      'address.houseNo': 'House Number',
+      'address.street': 'Street',
+      'address.city': 'City',
+      'address.state': 'State',
+      'address.postalCode': 'Postal Code',
+      'address.country': 'Country',
+      'bankAccountDetails.accountNumber': 'Account Number',
+      'bankAccountDetails.accountHolderName': 'Account Holder Name',
+      'bankAccountDetails.bankName': 'Bank Name',
+      'bankAccountDetails.branchName': 'Branch Name',
+      'bankAccountDetails.ifscCode': 'IFSC Code',
+      'bankAccountDetails.panCardNumber': 'PAN Card Number',
     }
 
-    // 2️⃣ Age check
+    mandatoryFields.forEach((field) => {
+      let value = formData
+      field.split('.').forEach((key) => { value = value?.[key] })
+      if (!value || String(value).trim() === '') {
+        isValid = false
+        const label = fieldLabels[field] || field
+        if (field.includes('.')) {
+          const [parent, child] = field.split('.')
+          if (!newErrors[parent]) newErrors[parent] = {}
+          newErrors[parent][child] = `${label} is required.`
+        } else {
+          newErrors[field] = `${label} is required.`
+        }
+      }
+    })
+
+    const todayStr = new Date().toISOString().split('T')[0]
+
     if (formData.dateOfBirth) {
-      const dob = new Date(formData.dateOfBirth)
-      const today = new Date()
-      let age = today.getFullYear() - dob.getFullYear()
-      if (
-        today.getMonth() < dob.getMonth() ||
-        (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-      ) {
-        age -= 1
-      }
-      if (age < 18) {
-        showCustomToast('Technician must be at least 18 years old.', 'error')
-        return false
+      if (formData.dateOfBirth > todayStr) {
+        newErrors.dateOfBirth = 'Date of Birth cannot be in the future.'
+        isValid = false
+      } else {
+        const dob = new Date(formData.dateOfBirth)
+        const today = new Date()
+        let age = today.getFullYear() - dob.getFullYear()
+        if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age -= 1
+        if (age < 18) { newErrors.dateOfBirth = 'Technician must be at least 18 years old.'; isValid = false }
       }
     }
 
-    // 3️⃣ Mobile number
-    const mobileRegex = /^[6-9]\d{9}$/
-    if (!mobileRegex.test(formData.contactNumber)) {
-      showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error')
-      return false
+    if (formData.dateOfJoining && formData.dateOfJoining > todayStr) {
+      newErrors.dateOfJoining = 'Joining Date cannot be in the future.'
+      isValid = false
     }
 
-    // 4️⃣ Emergency contact
-    if (formData.contactNumber === formData.emergencyContact) {
-      showCustomToast('Contact Number and Emergency Contact cannot be the same.', 'error')
-      return false
+    if (formData.contactNumber && !/^[6-9]\d{9}$/.test(formData.contactNumber)) {
+      newErrors.contactNumber = 'Invalid contact number (must be 10 digits starting 6-9).'
+      isValid = false
     }
 
-    // 5️⃣ Email
-    if (!emailPattern.test(formData.emailId)) {
-      showCustomToast('Please enter a valid email address.', 'error')
-      return false
+    if (formData.emailId && !emailPattern.test(formData.emailId)) {
+      newErrors.emailId = 'Invalid email address format.'
+      isValid = false
     }
 
-    // 6️⃣ Duplicates
-    if (
-      technicians?.some((t) => t.contactNumber === formData.contactNumber && t.id !== formData.id)
-    ) {
-      showCustomToast('Contact number already exists!', 'error')
-      return false
+    if (formData.contactNumber && formData.emergencyContact && formData.contactNumber === formData.emergencyContact) {
+      newErrors.emergencyContact = 'Emergency contact cannot be same as contact number.'
+      isValid = false
+    }
+
+    if (technicians?.some((t) => t.contactNumber === formData.contactNumber && t.id !== formData.id)) {
+      newErrors.contactNumber = 'Contact number already exists!'
+      isValid = false
     }
     if (technicians?.some((t) => t.emailId === formData.emailId && t.id !== formData.id)) {
-      showCustomToast('Email already exists!', 'error')
-      return false
+      newErrors.emailId = 'Email already exists!'
+      isValid = false
     }
 
-    return true // ✅ everything is valid
+    setErrors(newErrors)
+    if (!isValid) showCustomToast('Please correct the highlighted errors.', 'error')
+    return isValid
   }
 
   const handleSubmit = async () => {
@@ -422,7 +463,7 @@ const LabTechnicianForm = ({
 
   return (
     <>
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
       <CModal
         visible={visible}
         onClose={onClose}
@@ -916,20 +957,17 @@ const LabTechnicianForm = ({
                 </div>
 
                 <div className="col-md-4">
-                  <CFormLabel>Emergency Contact</CFormLabel>
-
+                  <CFormLabel>Emergency Contact <span style={{ color: 'red' }}>*</span></CFormLabel>
                   <CFormInput
-                    type="text"
-                    maxLength={10} // ✅ Restrict to 10 digits
+                    maxLength={10}
                     value={formData.emergencyContact}
                     onChange={(e) => {
-                      const value = e.target.value
-                      // ✅ Allow only digits
-                      if (/^\d*$/.test(value)) {
+                      if (/^\d*$/.test(e.target.value)) {
                         handleChange('emergencyContact', e.target.value)
                       }
                     }}
                   />
+                  {errors.emergencyContact && <div className="text-danger mt-1">{errors.emergencyContact}</div>}
                 </div>
                 <div className="col-md-4">
                   <CFormLabel>
@@ -962,39 +1000,23 @@ const LabTechnicianForm = ({
                       <div className="col-md-4" key={field}>
                         <CFormLabel className="text-capitalize">
                           {field}
-                            {field !== 'landmark' && <span style={{ color: 'red' }}>*</span>}
+                          {field !== 'landmark' && <span style={{ color: 'red' }}>*</span>}
                         </CFormLabel>
                         <CFormInput
-                          type="text"
+                          className="af-input" type="text"
                           maxLength={field === 'postalCode' ? 6 : undefined}
                           value={formData.address[field]}
                           onChange={(e) => {
                             let value = e.target.value
                             if (field === 'postalCode') {
-                              // Only digits allowed
-                              if (/^\d*$/.test(value)) {
-                                handleNestedChange('address', field, value)
-                                // Live validation
-                                const err = validateField(field, value, formData)
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  address: { ...prev.address, [field]: err },
-                                }))
-                              }
+                              if (/^\d*$/.test(value)) handleNestedChange('address', field, value)
                             } else {
                               handleNestedChange('address', field, value)
-                              // Live validation
-                              const err = validateField(field, value, formData)
-                              setErrors((prev) => ({
-                                ...prev,
-                                address: { ...prev.address, [field]: err },
-                              }))
                             }
+                            setErrors((p) => ({ ...p, address: { ...p.address, [field]: validateField(field, value, formData) } }))
                           }}
                         />
-                        {errors.address?.[field] && (
-                          <div className="text-danger mt-1">{errors.address[field]}</div>
-                        )}
+                        {errors.address?.[field] && <div className="text-danger mt-1">{errors.address[field]}</div>}
                       </div>
                     ))}
                   </div>
@@ -1016,131 +1038,63 @@ const LabTechnicianForm = ({
                           {field} <span style={{ color: 'red' }}>*</span>
                         </CFormLabel>
                         <CFormInput
+                          className="af-input"
                           value={formData.bankAccountDetails[field]}
                           disabled={ifscLoading && (field === 'bankName' || field === 'branchName')}
-                          placeholder={
-                            ifscLoading && (field === 'bankName' || field === 'branchName')
-                              ? 'Fetching...'
-                              : ''
-                          }
+                          placeholder={ifscLoading && (field === 'bankName' || field === 'branchName') ? 'Fetching...' : ''}
                           maxLength={
-                            field === 'accountNumber'
-                              ? 20
-                              : field === 'panCardNumber'
-                                ? 10
-                                : field === 'ifscCode'
-                                  ? 11
+                            field === 'accountNumber' ? 20
+                              : field === 'panCardNumber' ? 10
+                                : field === 'ifscCode' ? 11
                                   : undefined
                           }
                           onChange={async (e) => {
                             let value = e.target.value
-
-                            // Account Number → only digits
-                            if (field === 'accountNumber') {
-                              if (/^\d*$/.test(value))
-                                handleNestedChange('bankAccountDetails', field, value)
-                            }
-                            // PAN → uppercase, specific format
-                            else if (field === 'panCardNumber') {
+                            let err = ''
+                            if (field === 'accountHolderName') {
+                              value = value.replace(/[^A-Za-z\s]/g, '')
+                              handleNestedChange('bankAccountDetails', field, value)
+                            } else if (field === 'accountNumber') {
+                              if (/^\d*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
+                            } else if (field === 'panCardNumber') {
                               value = value.toUpperCase()
-                              if (/^[A-Z]{0,5}[0-9]{0,4}[A-Z]{0,1}$/.test(value))
-                                handleNestedChange('bankAccountDetails', field, value)
-                            }
-                            // IFSC → uppercase, alphanumeric
-                            else if (field === 'ifscCode') {
+                              if (/^[A-Z]{0,5}[0-9]{0,4}[A-Z]{0,1}$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
+                              err = value.length === 10 ? (/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? '' : 'Invalid PAN (ABCDE1234F)') : ''
+                            } else if (field === 'ifscCode') {
                               value = value.toUpperCase()
-                              if (/^[A-Z0-9]*$/.test(value))
-                                handleNestedChange('bankAccountDetails', field, value)
-                            }
-                            // Other fields
-                            else {
+                              if (/^[A-Z0-9]*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
+                            } else {
                               handleNestedChange('bankAccountDetails', field, value)
                             }
-
-                            // Live validation
-                            const error = validateField(field, value, formData)
-                            setErrors((prev) => ({
-                              ...prev,
-                              bankAccountDetails: {
-                                ...prev.bankAccountDetails,
-                                [field]: error,
-                              },
-                            }))
+                            setErrors((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, [field]: err || validateField(field, value, formData) } }))
                           }}
                           onBlur={async () => {
                             const value = formData.bankAccountDetails[field]
-                            const error = validateField(field, value, formData)
-                            setErrors((prev) => ({
-                              ...prev,
-                              bankAccountDetails: {
-                                ...prev.bankAccountDetails,
-                                [field]: error,
-                              },
-                            }))
-
-                            // Special handling for PAN
-                            if (field === 'panCardNumber' && value.length === 10) {
-                              const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]$/
-                              if (!panRegex.test(value))
-                                showCustomToast('Invalid PAN format (e.g., ABCDE1234F)', 'error')
-                            }
-
-                            // Special handling for IFSC
-                            if (field === 'ifscCode' && value.length === 11) {
-                              const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
-                              if (!ifscRegex.test(value)) {
-                                showCustomToast('Invalid IFSC format (e.g., HDFC0001234)', 'error')
-                                handleNestedChange('bankAccountDetails', 'bankName', '')
-                                handleNestedChange('bankAccountDetails', 'branchName', '')
-                              } else {
-                                try {
-                                  // ✅ Show loading in UI
-                                  setIfscLoading(true)
-                                  handleNestedChange(
-                                    'bankAccountDetails',
-                                    'bankName',
-                                    'Fetching...',
-                                  )
-                                  handleNestedChange(
-                                    'bankAccountDetails',
-                                    'branchName',
-                                    'Fetching...',
-                                  )
-
-                                  const res = await fetch(`https://ifsc.razorpay.com/${value}`)
-                                  if (res.ok) {
-                                    const data = await res.json()
-                                    handleNestedChange(
-                                      'bankAccountDetails',
-                                      'bankName',
-                                      data.BANK || '',
-                                    )
-                                    handleNestedChange(
-                                      'bankAccountDetails',
-                                      'branchName',
-                                      data.BRANCH || '',
-                                    )
-                                  } else {
-                                    showCustomToast('Invalid IFSC code', 'error')
-                                    handleNestedChange('bankAccountDetails', 'bankName', '')
-                                    handleNestedChange('bankAccountDetails', 'branchName', '')
-                                  }
-                                } catch (err) {
-                                  // showCustomToast('Error fetching bank details', 'error')
+                            if (field === 'ifscCode' && value.length === 11 && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value)) {
+                              try {
+                                setIfscLoading(true)
+                                handleNestedChange('bankAccountDetails', 'bankName', 'Fetching...')
+                                handleNestedChange('bankAccountDetails', 'branchName', 'Fetching...')
+                                const res = await fetch(`https://ifsc.razorpay.com/${value}`)
+                                if (res.ok) {
+                                  const data = await res.json()
+                                  handleNestedChange('bankAccountDetails', 'bankName', data.BANK || '')
+                                  handleNestedChange('bankAccountDetails', 'branchName', data.BRANCH || '')
+                                } else {
                                   handleNestedChange('bankAccountDetails', 'bankName', '')
                                   handleNestedChange('bankAccountDetails', 'branchName', '')
-                                 
-                                } finally {
-                                  // ✅ Hide loading
-                                  setIfscLoading(false)
+                                  showCustomToast('Invalid IFSC code', 'error')
                                 }
+                              } catch {
+                                handleNestedChange('bankAccountDetails', 'bankName', '')
+                                handleNestedChange('bankAccountDetails', 'branchName', '')
+                              } finally {
+                                setIfscLoading(false)
                               }
                             }
                           }}
                         />
-                        {errors.bankAccountDetails?.[field] && (
-                          <div className="text-danger mt-1">{errors.bankAccountDetails[field]}</div>
-                        )}
+                        {errors.bankAccountDetails?.[field] && <div className="text-danger mt-1">{errors.bankAccountDetails[field]}</div>}
                       </div>
                     ))}
                   </div>
@@ -1157,24 +1111,9 @@ const LabTechnicianForm = ({
                   <CFormInput
                     type="file"
                     accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files[0]
-                      if (file) {
-                        // ✅ Convert to Base64
-                        const base64 = await toBase64(file)
-
-                        // ✅ Validate using validators.js
-                        const error = validateField('profilePicture', base64)
-                        if (error) {
-                          showCustomToast(error, 'error') // show error message
-                          return // do not save invalid file
-                        }
-
-                        // ✅ Save valid file
-                        handleChange('profilePicture', base64)
-                      }
-                    }}
+                    onChange={(e) => handleFileUpload(e, 'profilePicture')}
                   />
+                  {errors.profilePicture && <div className="text-danger mt-1">{errors.profilePicture}</div>}
                 </div>
                 <div className="col-md-4">
                   <CFormLabel>Medical Fitness Certificate</CFormLabel>

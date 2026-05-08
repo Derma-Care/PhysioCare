@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   CForm,
   CModal,
@@ -7,14 +7,89 @@ import {
   CModalBody,
   CModalFooter,
 } from '@coreui/react'
-import { ToastContainer } from 'react-toastify'
-import { actions, features } from '../../../Constant/Features'
-import UserPermissionModal from '../UserPermissionModal'
+import capitalizeWords from '../../../Utils/capitalizeWords'
 import { validateField } from '../../../Utils/Validators'
 import { emailPattern } from '../../../Constant/Constants'
 import FilePreview from '../../../Utils/FilePreview'
 import { showCustomToast } from '../../../Utils/Toaster'
-import { User, Briefcase, MapPin, CreditCard, FileText, ShieldCheck, Save, X, RotateCcw } from 'lucide-react'
+import { User, Briefcase, MapPin, CreditCard, FileText, Save, X, RotateCcw } from 'lucide-react'
+
+/* ─────────────────────────────────────────────────────────────────
+   ⚠️  CRITICAL: emptyForm MUST live outside the component.
+   Defining it inside means a new object reference on every render,
+   which makes useEffect([initialData]) fire on every keystroke
+   → formData resets → only one character survives per keystroke.
+───────────────────────────────────────────────────────────────── */
+const makeEmptyForm = () => ({
+  clinicId: localStorage.getItem('HospitalId'),
+  branchId: localStorage.getItem('branchId'),
+  branchName: localStorage.getItem('branchName'),
+  hospitalName: localStorage.getItem('HospitalName'),
+  fullName: '',
+  gender: '',
+  dateOfBirth: '',
+  contactNumber: '',
+  createdBy: localStorage.getItem('staffId') || 'admin',
+  emailId: '',
+  govermentId: '',
+  dateOfJoining: '',
+  department: '',
+  shiftTimingsOrAvailability: '',
+  role: 'security',
+  address: { houseNo: '', street: '', landmark: '', city: '', state: '', postalCode: '', country: 'India' },
+  bankAccountDetails: { accountNumber: '', accountHolderName: '', ifscCode: '', bankName: '', branchName: '', panCardNumber: '' },
+  medicalFitnessCertificate: '',
+  profilePicture: '',
+  policeVerification: '',
+  previousEmployeeHistory: '',
+  traningOrGuardLicense: '',
+  permissions: {},
+  userName: '',
+  password: '',
+})
+
+/* ─────────────────────────────────────────────────────────────────
+   Sub-components MUST also live outside SecurityForm.
+   Defining them inside creates new component types on every render
+   → React unmounts/remounts → inputs lose focus after one character.
+───────────────────────────────────────────────────────────────── */
+
+const InfoCard = ({ icon: Icon, title, children }) => (
+  <div className="sf-card">
+    <div className="sf-card-header">
+      <Icon size={14} className="sf-card-icon" />
+      {title}
+    </div>
+    <div className="sf-card-body">{children}</div>
+  </div>
+)
+
+const InfoRow = ({ label, value }) => (
+  <div className="sf-info-row">
+    <span className="sf-info-label">{label}</span>
+    <span className="sf-info-value">{value || '—'}</span>
+  </div>
+)
+
+const FormSection = ({ icon: Icon, title, children }) => (
+  <div className="sf-section">
+    <div className="sf-section-title">
+      <Icon size={14} className="sf-section-icon" />
+      {title}
+    </div>
+    <div className="sf-section-body">{children}</div>
+  </div>
+)
+
+const Field = ({ label, required, error, children }) => (
+  <div className="sf-field">
+    <label className="sf-label">
+      {label}{required && <span className="sf-required">*</span>}
+    </label>
+    {children}
+    {error && <span className="sf-error">{error}</span>}
+  </div>
+)
 
 const SecurityForm = ({
   visible,
@@ -22,49 +97,49 @@ const SecurityForm = ({
   onSave,
   initialData,
   viewMode,
-  technicians,
   security,
-  fetchTechs,
 }) => {
-  const emptyPermissions = {}
-
-  const emptyForm = {
-    clinicId: localStorage.getItem('HospitalId'),
-    branchId: localStorage.getItem('branchId'),
-    branchName: localStorage.getItem('branchName'),
-    hospitalName: localStorage.getItem('HospitalName'),
-    fullName: '',
-    gender: '',
-    dateOfBirth: '',
-    contactNumber: '',
-    createdBy: localStorage.getItem('staffId') || 'admin',
-    emailId: '',
-    govermentId: '',
-    dateOfJoining: '',
-    department: '',
-    shiftTimingsOrAvailability: '',
-    role: 'security',
-    address: { houseNo: '', street: '', landmark: '', city: '', state: '', postalCode: '', country: 'India' },
-    bankAccountDetails: { accountNumber: '', accountHolderName: '', ifscCode: '', bankName: '', branchName: '', panCardNumber: '' },
-    medicalFitnessCertificate: '',
-    profilePicture: '',
-    policeVerification: '',
-    previousEmployeeHistory: '',
-    traningOrGuardLicense: '',
-    permissions: emptyPermissions,
-    userName: '',
-    password: '',
-  }
-
-  const [formData, setFormData] = useState(emptyForm)
-  const [clinicId] = useState(localStorage.getItem('HospitalId'))
+  const [formData, setFormData] = useState(makeEmptyForm)
   const [showModal, setShowModal] = useState(false)
-  const [showPModal, setShowPModal] = useState(false)
   const [previewFileUrl, setPreviewFileUrl] = useState(null)
   const [isPreviewPdf, setIsPreviewPdf] = useState(false)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [ifscLoading, setIfscLoading] = useState(false)
+
+  /* ── Scroll-position lock ── */
+  const bodyRef = useRef(null)
+  const scrollLock = useRef(false)
+  const savedScroll = useRef(0)
+
+  const saveScroll = () => {
+    if (bodyRef.current) savedScroll.current = bodyRef.current.scrollTop
+    scrollLock.current = true
+  }
+
+  useEffect(() => {
+    if (scrollLock.current && bodyRef.current) {
+      bodyRef.current.scrollTop = savedScroll.current
+      scrollLock.current = false
+    }
+  })
+
+  useEffect(() => {
+    if (visible) {
+      if (initialData) {
+        setFormData({
+          ...makeEmptyForm(),
+          ...initialData,
+          address: { ...makeEmptyForm().address, ...(initialData.address || {}) },
+          bankAccountDetails: { ...makeEmptyForm().bankAccountDetails, ...(initialData.bankAccountDetails || {}) },
+        })
+      } else {
+        setFormData(makeEmptyForm())
+      }
+      setErrors({})
+      if (bodyRef.current) bodyRef.current.scrollTop = 0
+    }
+  }, [visible, initialData])
 
   const mandatoryFields = [
     'fullName', 'dateOfBirth', 'gender', 'contactNumber', 'govermentId', 'dateOfJoining',
@@ -72,48 +147,32 @@ const SecurityForm = ({
     'bankAccountDetails.accountNumber', 'bankAccountDetails.accountHolderName',
     'bankAccountDetails.bankName', 'bankAccountDetails.branchName',
     'bankAccountDetails.ifscCode', 'bankAccountDetails.panCardNumber',
-    'medicalFitnessCertificate',
+    'medicalFitnessCertificate', 'profilePicture',
   ]
 
-  function validateMandatoryFields(formData, mandatoryFields) {
-    const missingFields = []
-    for (const field of mandatoryFields) {
-      const keys = field.split('.')
-      let value = formData
-      for (const key of keys) value = value?.[key]
-      if (!value || String(value).trim() === '') missingFields.push(field)
+  const handleChange = (field, value) => {
+    saveScroll()
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    setErrors((prev) => ({ ...prev, [field]: '' }))
+  }
+
+  const handleNestedChange = (parent, field, value) => {
+    saveScroll()
+    setFormData((prev) => ({ ...prev, [parent]: { ...prev[parent], [field]: value } }))
+    if (errors[parent]?.[field] || errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        if (newErrors[parent]) {
+          newErrors[parent] = { ...newErrors[parent] }
+          delete newErrors[parent][field]
+        }
+        delete newErrors[field]
+        return newErrors
+      })
     }
-    return missingFields
   }
 
-  const toggleFeature = (feature) => {
-    setFormData((prev) => {
-      const updated = { ...prev.permissions }
-      if (updated[feature]) delete updated[feature]
-      else updated[feature] = []
-      return { ...prev, permissions: updated }
-    })
-  }
 
-  const togglePermission = (feature, action) => {
-    setFormData((prev) => {
-      const updated = { ...prev.permissions }
-      if (!updated[feature]) updated[feature] = []
-      if (updated[feature].includes(action)) updated[feature] = updated[feature].filter((a) => a !== action)
-      else updated[feature] = [...updated[feature], action]
-      return { ...prev, permissions: updated }
-    })
-  }
-
-  const toggleAllActions = (feature) => {
-    setFormData((prev) => {
-      const updated = { ...prev.permissions }
-      if (!updated[feature]) updated[feature] = [...actions]
-      else if (updated[feature].length === actions.length) updated[feature] = []
-      else updated[feature] = [...actions]
-      return { ...prev, permissions: updated }
-    })
-  }
 
   const toBase64 = (file) =>
     new Promise((resolve, reject) => {
@@ -123,54 +182,108 @@ const SecurityForm = ({
       reader.onerror = (error) => reject(error)
     })
 
-  useEffect(() => {
-    if (initialData) {
-      setFormData((prev) => ({ ...prev, ...initialData, createdBy: initialData.createdBy || prev.createdBy }))
-    } else {
-      setFormData(emptyForm)
-    }
-  }, [initialData])
-
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    const error = validateField(field, value, { ...formData, [field]: value }, security)
-    setErrors((prev) => ({ ...prev, [field]: error }))
-  }
-
-  const handleNestedChange = (parent, field, value) => {
-    setFormData((prev) => ({ ...prev, [parent]: { ...prev[parent], [field]: value } }))
-  }
-
-  const handleBlur = (field, value) => {
-    const error = validateField(field, value, formData, security)
-    setErrors((prev) => ({ ...prev, [field]: error }))
-  }
-
   const handleFileUpload = (e, field) => {
     const file = e.target.files[0]
     if (!file) return
+    if (file.size > 250 * 1024) { showCustomToast('File size must be less than 250KB.', 'error'); return }
     const reader = new FileReader()
     reader.onloadend = () => {
-      setFormData((prev) => ({ ...prev, [field]: reader.result, [`${field}Name`]: file.name, [`${field}Type`]: file.type }))
+      saveScroll()
+      setFormData((prev) => ({
+        ...prev,
+        [field]: reader.result,
+        [`${field}Name`]: file.name,
+        [`${field}Type`]: file.type,
+      }))
+      setErrors((prev) => ({ ...prev, [field]: '' }))
     }
     reader.readAsDataURL(file)
   }
 
   const validateForm = () => {
-    const missing = validateMandatoryFields(formData, mandatoryFields)
-    if (missing.length > 0) { showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error'); return }
-    if (formData.dateOfBirth) {
-      const dob = new Date(formData.dateOfBirth)
-      const today = new Date()
-      const age = today.getFullYear() - dob.getFullYear()
-      const isBeforeBirthday = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-      if ((isBeforeBirthday ? age - 1 : age) < 18) { showCustomToast('Security must be at least 18 years old.', 'error'); return }
+    const newErrors = {}
+    let isValid = true
+
+    const fieldLabels = {
+      fullName: 'Full Name',
+      gender: 'Gender',
+      dateOfBirth: 'Date of Birth',
+      contactNumber: 'Contact Number',
+      govermentId: 'Government ID',
+      dateOfJoining: 'Date of Joining',
+      department: 'Department',
+      shiftTimingsOrAvailability: 'Shift Timings',
+      profilePicture: 'Profile Image',
+      medicalFitnessCertificate: 'Medical Fitness Certificate',
+      'address.houseNo': 'House Number',
+      'address.street': 'Street',
+      'address.city': 'City',
+      'address.state': 'State',
+      'address.postalCode': 'Postal Code',
+      'address.country': 'Country',
+      'bankAccountDetails.accountNumber': 'Account Number',
+      'bankAccountDetails.accountHolderName': 'Account Holder Name',
+      'bankAccountDetails.bankName': 'Bank Name',
+      'bankAccountDetails.branchName': 'Branch Name',
+      'bankAccountDetails.ifscCode': 'IFSC Code',
+      'bankAccountDetails.panCardNumber': 'PAN Card Number',
     }
-    if (!/^[6-9]\d{9}$/.test(formData.contactNumber)) { showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error'); return }
-    if (formData.emailId?.trim() && !emailPattern.test(formData.emailId)) { showCustomToast('Please enter a valid email address.', 'error'); return }
-    if (security?.some((t) => t.contactNumber === formData.contactNumber && t.id !== formData.id)) { showCustomToast('Contact number already exists!', 'error'); return }
-    if (formData.emailId?.trim() && security?.some((t) => t.emailId === formData.emailId && t.id !== formData.id)) { showCustomToast('Email already exists!', 'error'); return }
-    return true
+
+    mandatoryFields.forEach((field) => {
+      let value = formData
+      field.split('.').forEach((key) => { value = value?.[key] })
+      if (!value || String(value).trim() === '') {
+        isValid = false
+        const label = fieldLabels[field] || field
+        if (field.includes('.')) {
+          const [parent, child] = field.split('.')
+          if (!newErrors[parent]) newErrors[parent] = {}
+          newErrors[parent][child] = `${label} is required.`
+        } else {
+          newErrors[field] = `${label} is required.`
+        }
+      }
+    })
+
+    const todayStr = new Date().toISOString().split('T')[0]
+
+    if (formData.dateOfBirth) {
+      if (formData.dateOfBirth > todayStr) {
+        newErrors.dateOfBirth = 'Date of Birth cannot be in the future.'
+        isValid = false
+      } else {
+        const dob = new Date(formData.dateOfBirth)
+        const today = new Date()
+        let age = today.getFullYear() - dob.getFullYear()
+        const before = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+        if (before) age--
+        if (age < 18) { newErrors.dateOfBirth = 'Security must be at least 18 years old.'; isValid = false }
+      }
+    }
+
+    if (formData.dateOfJoining && formData.dateOfJoining > todayStr) {
+      newErrors.dateOfJoining = 'Joining Date cannot be in the future.'
+      isValid = false
+    }
+
+    if (formData.contactNumber && !/^[6-9]\d{9}$/.test(formData.contactNumber)) {
+      newErrors.contactNumber = 'Invalid contact number (must be 10 digits starting 6-9).'
+      isValid = false
+    }
+
+    if (formData.emailId && !emailPattern.test(formData.emailId)) {
+      newErrors.emailId = 'Invalid email address format.'
+      isValid = false
+    }
+
+    if (security?.some((t) => t.contactNumber === formData.contactNumber && t.securityId !== formData.securityId)) {
+      newErrors.contactNumber = 'Contact number already exists!'
+      isValid = false
+    }
+
+    setErrors(newErrors)
+    if (!isValid) showCustomToast('Please correct the highlighted errors.', 'error')
+    return isValid
   }
 
   const handleSubmit = async () => {
@@ -179,8 +292,8 @@ const SecurityForm = ({
       setLoading(true)
       const res = await onSave(formData)
       if (res && (res.status === 201 || (res.status === 200 && res.data?.success))) {
-        setFormData(emptyForm)
         onClose()
+        setFormData(makeEmptyForm())
       }
     } catch (err) {
       console.error('Submit failed', err)
@@ -191,42 +304,8 @@ const SecurityForm = ({
 
   const handleCloseModal = () => { setShowModal(false); setPreviewFileUrl(null); setIsPreviewPdf(false) }
 
-  // ── View Mode helpers ──
-  const InfoCard = ({ icon: Icon, title, children }) => (
-    <div className="sf-card">
-      <div className="sf-card-header"><Icon size={14} className="sf-card-icon" />{title}</div>
-      <div className="sf-card-body">{children}</div>
-    </div>
-  )
-
-  const InfoRow = ({ label, value }) => (
-    <div className="sf-info-row">
-      <span className="sf-info-label">{label}</span>
-      <span className="sf-info-value">{value || '—'}</span>
-    </div>
-  )
-
-  // ── Edit Mode helpers ──
-  const FormSection = ({ icon: Icon, title, children }) => (
-    <div className="sf-section">
-      <div className="sf-section-title"><Icon size={14} className="sf-section-icon" />{title}</div>
-      <div className="sf-section-body">{children}</div>
-    </div>
-  )
-
-  const Field = ({ label, required, error, children }) => (
-    <div className="sf-field">
-      <label className="sf-label">{label}{required && <span className="sf-required">*</span>}</label>
-      {children}
-      {error && <span className="sf-error">{error}</span>}
-    </div>
-  )
-
   return (
     <>
-      {/* {/* <ToastContainer /> */} */}
-
-      {/* ── Main Modal ── */}
       <CModal visible={visible} onClose={onClose} size="lg" backdrop="static">
         <CModalHeader style={{ borderBottom: '0.5px solid #d0dce9', padding: '16px 20px' }}>
           <CModalTitle style={{ fontSize: 15, fontWeight: 600, color: '#0c447c' }}>
@@ -234,11 +313,10 @@ const SecurityForm = ({
           </CModalTitle>
         </CModalHeader>
 
-        <CModalBody style={{ padding: '20px', maxHeight: '75vh', overflowY: 'auto' }}>
+        <CModalBody ref={bodyRef} style={{ padding: '20px', maxHeight: '75vh', overflowY: 'auto' }}>
           {viewMode ? (
             /* ═══════════════ VIEW MODE ═══════════════ */
             <div>
-              {/* Profile Header */}
               <div className="sf-profile-header">
                 <img
                   src={formData.profilePicture || '/assets/images/default-avatar.png'}
@@ -309,21 +387,7 @@ const SecurityForm = ({
           ) : (
             /* ═══════════════ EDIT MODE ═══════════════ */
             <CForm>
-              {/* Basic Info */}
               <FormSection icon={User} title="Basic Information">
-                {/* <div className="sf-row">
-                  <div className="sf-col-half">
-                    <Field label="Clinic ID" required>
-                      <input className="sf-input sf-input-disabled" value={clinicId} disabled />
-                    </Field>
-                  </div>
-                  <div className="sf-col-half">
-                    <Field label="Role" required>
-                      <input className="sf-input sf-input-disabled" value={formData.role} disabled />
-                    </Field>
-                  </div>
-                </div> */}
-
                 <div className="sf-row">
                   <div className="sf-col-third">
                     <Field label="Full Name" required error={errors.fullName}>
@@ -331,12 +395,11 @@ const SecurityForm = ({
                         className="sf-input"
                         value={formData.fullName}
                         onChange={(e) => handleChange('fullName', e.target.value.replace(/[^A-Za-z\s]/g, ''))}
-                        onBlur={() => handleBlur('fullName', formData.fullName)}
                       />
                     </Field>
                   </div>
                   <div className="sf-col-third">
-                    <Field label="Gender" required>
+                    <Field label="Gender" required error={errors.gender}>
                       <select className="sf-input" value={formData.gender} onChange={(e) => handleChange('gender', e.target.value)}>
                         <option value="">Select Gender</option>
                         <option value="male">Male</option>
@@ -346,7 +409,7 @@ const SecurityForm = ({
                     </Field>
                   </div>
                   <div className="sf-col-third">
-                    <Field label="Date of Birth" required>
+                    <Field label="Date of Birth" required error={errors.dateOfBirth}>
                       <input
                         className="sf-input" type="date"
                         value={formData.dateOfBirth}
@@ -364,10 +427,7 @@ const SecurityForm = ({
                         className="sf-input" type="text" maxLength={10}
                         value={formData.contactNumber}
                         onChange={(e) => {
-                          if (/^\d*$/.test(e.target.value)) {
-                            handleChange('contactNumber', e.target.value)
-                            setErrors((p) => ({ ...p, contactNumber: validateField('contactNumber', e.target.value, formData, security) }))
-                          }
+                          if (/^\d*$/.test(e.target.value)) handleChange('contactNumber', e.target.value)
                         }}
                       />
                     </Field>
@@ -377,10 +437,7 @@ const SecurityForm = ({
                       <input
                         className="sf-input" type="email"
                         value={formData.emailId}
-                        onChange={(e) => {
-                          handleChange('emailId', e.target.value)
-                          setErrors((p) => ({ ...p, emailId: e.target.value && !emailPattern.test(e.target.value) ? 'Invalid email format' : '' }))
-                        }}
+                        onChange={(e) => handleChange('emailId', e.target.value)}
                       />
                     </Field>
                   </div>
@@ -390,23 +447,18 @@ const SecurityForm = ({
                         className="sf-input" maxLength={12}
                         value={formData.govermentId}
                         onChange={(e) => {
-                          if (/^\d*$/.test(e.target.value)) {
-                            handleChange('govermentId', e.target.value)
-                            setErrors((p) => ({ ...p, govermentId: validateField('governmentId', e.target.value, formData) }))
-                          }
+                          if (/^\d*$/.test(e.target.value)) handleChange('govermentId', e.target.value)
                         }}
-                        onBlur={() => setErrors((p) => ({ ...p, govermentId: validateField('governmentId', formData.govermentId, formData) }))}
                       />
                     </Field>
                   </div>
                 </div>
               </FormSection>
 
-              {/* Work Info */}
               <FormSection icon={Briefcase} title="Work Information">
                 <div className="sf-row">
                   <div className="sf-col-third">
-                    <Field label="Date of Joining" required>
+                    <Field label="Date of Joining" required error={errors.dateOfJoining}>
                       <input
                         className="sf-input" type="date"
                         value={formData.dateOfJoining}
@@ -420,7 +472,7 @@ const SecurityForm = ({
                       <input
                         className="sf-input"
                         value={formData.department}
-                        onChange={(e) => handleChange('department', e.target.value.replace(/[^A-Za-z\s]/g, ''))}
+                        onChange={(e) => handleChange('department', e.target.value)}
                       />
                     </Field>
                   </div>
@@ -437,7 +489,7 @@ const SecurityForm = ({
 
                 <div className="sf-row">
                   <div className="sf-col-full">
-                    <Field label="Shift Timings / Availability" required>
+                    <Field label="Shift Timings / Availability" required error={errors.shiftTimingsOrAvailability}>
                       <select
                         className="sf-input"
                         value={formData.shiftTimingsOrAvailability}
@@ -459,7 +511,6 @@ const SecurityForm = ({
                 </div>
               </FormSection>
 
-              {/* Address */}
               <FormSection icon={MapPin} title="Address">
                 <div className="sf-row">
                   {Object.keys(formData.address).map((field) => (
@@ -479,9 +530,7 @@ const SecurityForm = ({
                             if (field === 'postalCode') { if (/^\d*$/.test(value)) handleNestedChange('address', field, value) }
                             else if (['city', 'state', 'country'].includes(field)) { value = value.replace(/[^A-Za-z\s]/g, ''); handleNestedChange('address', field, value) }
                             else handleNestedChange('address', field, value)
-                            setErrors((p) => ({ ...p, address: { ...p.address, [field]: validateField(field, value, formData) } }))
                           }}
-                          onBlur={() => setErrors((p) => ({ ...p, address: { ...p.address, [field]: validateField(field, formData.address[field], formData) } }))}
                         />
                       </Field>
                     </div>
@@ -489,7 +538,6 @@ const SecurityForm = ({
                 </div>
               </FormSection>
 
-              {/* Bank Details */}
               <FormSection icon={CreditCard} title="Bank Account Details">
                 <div className="sf-row">
                   {Object.keys(formData.bankAccountDetails).map((field) => (
@@ -507,46 +555,32 @@ const SecurityForm = ({
                           maxLength={field === 'accountNumber' ? 20 : field === 'panCardNumber' ? 10 : field === 'ifscCode' ? 11 : field === 'accountHolderName' ? 50 : undefined}
                           onChange={async (e) => {
                             let value = e.target.value
-                            let err = ''
                             if (field === 'accountHolderName') {
-                              value = value.replace(/[^A-Za-z\s]/g, '')
-                              handleNestedChange('bankAccountDetails', field, value)
-                              err = !value.trim() ? 'Required.' : ''
+                              if (/^[A-Za-z\s]*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
                             } else if (field === 'accountNumber') {
                               if (/^\d*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
-                              err = value ? '' : 'Required.'
                             } else if (field === 'panCardNumber') {
                               value = value.toUpperCase()
                               if (/^[A-Z]{0,5}[0-9]{0,4}[A-Z]{0,1}$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
-                              err = value.length === 10 ? (/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? '' : 'Invalid PAN (ABCDE1234F)') : 'PAN must be 10 characters.'
                             } else if (field === 'ifscCode') {
                               value = value.toUpperCase()
-                              if (/^[A-Z0-9]*$/.test(value)) handleNestedChange('bankAccountDetails', field, value)
-                              err = value.length === 11 ? (/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value) ? '' : 'Invalid IFSC (HDFC0001234)') : 'IFSC must be 11 characters.'
+                              if (/^[A-Z0-9]*$/.test(value)) {
+                                handleNestedChange('bankAccountDetails', field, value)
+                                if (value.length === 11) {
+                                  try {
+                                    setIfscLoading(true)
+                                    const res = await fetch(`https://ifsc.razorpay.com/${value}`)
+                                    if (res.ok) {
+                                      const data = await res.json()
+                                      handleNestedChange('bankAccountDetails', 'bankName', data.BANK || '')
+                                      handleNestedChange('bankAccountDetails', 'branchName', data.BRANCH || '')
+                                    }
+                                  } catch { handleNestedChange('bankAccountDetails', 'bankName', ''); handleNestedChange('bankAccountDetails', 'branchName', '') }
+                                  finally { setIfscLoading(false) }
+                                }
+                              }
                             } else {
                               handleNestedChange('bankAccountDetails', field, value)
-                              err = value ? '' : 'Required.'
-                            }
-                            setErrors((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, [field]: err } }))
-                          }}
-                          onBlur={async () => {
-                            const value = formData.bankAccountDetails[field]
-                            if (field === 'ifscCode' && value.length === 11 && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value)) {
-                              try {
-                                setIfscLoading(true)
-                                handleNestedChange('bankAccountDetails', 'bankName', 'Fetching...')
-                                handleNestedChange('bankAccountDetails', 'branchName', 'Fetching...')
-                                const res = await fetch(`https://ifsc.razorpay.com/${value}`)
-                                if (res.ok) {
-                                  const data = await res.json()
-                                  handleNestedChange('bankAccountDetails', 'bankName', data.BANK || '')
-                                  handleNestedChange('bankAccountDetails', 'branchName', data.BRANCH || '')
-                                } else {
-                                  handleNestedChange('bankAccountDetails', 'bankName', '')
-                                  handleNestedChange('bankAccountDetails', 'branchName', '')
-                                }
-                              } catch { handleNestedChange('bankAccountDetails', 'bankName', ''); handleNestedChange('bankAccountDetails', 'branchName', '') }
-                              finally { setIfscLoading(false) }
                             }
                           }}
                         />
@@ -556,11 +590,10 @@ const SecurityForm = ({
                 </div>
               </FormSection>
 
-              {/* Documents */}
               <FormSection icon={FileText} title="Documents">
                 <div className="sf-row">
                   <div className="sf-col-third">
-                    <Field label="Profile Image" required>
+                    <Field label="Profile Image" required error={errors.profilePicture}>
                       <input className="sf-input" type="file" accept="image/*"
                         onChange={async (e) => {
                           const file = e.target.files[0]
@@ -570,7 +603,7 @@ const SecurityForm = ({
                     </Field>
                   </div>
                   <div className="sf-col-third">
-                    <Field label="Medical Fitness Certificate" required>
+                    <Field label="Medical Fitness Certificate" required error={errors.medicalFitnessCertificate}>
                       <input className="sf-input" type="file" onChange={(e) => handleFileUpload(e, 'medicalFitnessCertificate')} />
                     </Field>
                   </div>
@@ -592,17 +625,7 @@ const SecurityForm = ({
                 </Field>
               </FormSection>
 
-              <UserPermissionModal
-                show={showPModal}
-                onClose={() => setShowPModal(false)}
-                features={features}
-                actions={actions}
-                permissions={formData.permissions}
-                toggleFeature={toggleFeature}
-                toggleAllActions={toggleAllActions}
-                togglePermission={togglePermission}
-                onSave={() => setShowPModal(false)}
-              />
+
             </CForm>
           )}
         </CModalBody>
@@ -612,10 +635,10 @@ const SecurityForm = ({
             <button className="sf-btn-cancel" onClick={onClose}><X size={13} /> Close</button>
           ) : (
             <>
-              <button type="button" className="sf-btn-cancel" onClick={() => setFormData(emptyForm)}>
+              <button type="button" className="sf-btn-cancel" onClick={() => { saveScroll(); setFormData(makeEmptyForm()) }}>
                 <RotateCcw size={13} /> Clear
               </button>
-              <button type="button" className="sf-btn-cancel" onClick={() => { setFormData(emptyForm); onClose() }}>
+              <button type="button" className="sf-btn-cancel" onClick={() => { setFormData(makeEmptyForm()); onClose() }}>
                 <X size={13} /> Cancel
               </button>
               <button type="button" className="sf-btn-save" onClick={handleSubmit} disabled={loading}>
@@ -642,14 +665,12 @@ const SecurityForm = ({
 
       {/* ── STYLES ── */}
       <style>{`
-        /* Profile header */
         .sf-profile-header { display: flex; align-items: center; gap: 16px; padding: 16px; background: #f0f5fb; border-radius: 10px; margin-bottom: 14px; }
         .sf-profile-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid #b5d4f4; flex-shrink: 0; }
         .sf-profile-name { font-size: 16px; font-weight: 700; color: #0c447c; margin: 0 0 4px; }
         .sf-profile-meta { font-size: 12px; color: #6b7280; margin: 0 0 2px; }
         .sf-badge { display: inline-block; background: #185fa5; color: #fff; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; margin-top: 4px; }
 
-        /* View cards */
         .sf-card { border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
         .sf-card-header { display: flex; align-items: center; gap: 8px; background: #185fa5; color: #fff; font-size: 12px; font-weight: 600; padding: 9px 14px; }
         .sf-card-icon { color: #b5d4f4; }
@@ -661,7 +682,6 @@ const SecurityForm = ({
         .sf-info-value { font-size: 13px; color: #374151; font-weight: 500; }
         .sf-muted { font-size: 12px; color: #9ca3af; font-style: italic; margin: 0; }
 
-        /* Edit sections */
         .sf-section { margin-bottom: 18px; border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; }
         .sf-section-title { display: flex; align-items: center; gap: 8px; background: #185fa5; color: #fff; font-size: 12px; font-weight: 600; padding: 9px 14px; }
         .sf-section-icon { color: #b5d4f4; }
@@ -675,7 +695,7 @@ const SecurityForm = ({
         .sf-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
         .sf-label { font-size: 11px; font-weight: 600; color: #374151; display: flex; align-items: center; gap: 3px; }
         .sf-required { color: #e24b4a; font-size: 11px; }
-        .sf-error { font-size: 11px; color: #e24b4a; }
+        .sf-error { font-size: 11px; color: #e24b4a; margin-top: 2px; }
 
         .sf-input {
           width: 100%; padding: 7px 10px; font-size: 12.5px; color: #374151;
@@ -687,7 +707,6 @@ const SecurityForm = ({
         .sf-input-disabled { background: #f0f5fb !important; color: #9ca3af !important; cursor: not-allowed; }
         .sf-textarea { resize: vertical; min-height: 70px; }
 
-        /* Footer buttons */
         .sf-btn-cancel {
           display: inline-flex; align-items: center; gap: 5px;
           background: #fff; color: #374151; border: 0.5px solid #d0dce9;
@@ -702,7 +721,7 @@ const SecurityForm = ({
           border-radius: 8px; padding: 7px 18px; font-size: 12px; font-weight: 600;
           cursor: pointer; transition: filter 0.15s;
         }
-        .sf-btn-save:hover { filter: brightness(0.9); }
+        .sf-btn-save:hover:not(:disabled) { filter: brightness(0.9); }
         .sf-btn-save:disabled { opacity: 0.65; cursor: not-allowed; }
 
         @media (max-width: 600px) {

@@ -196,34 +196,44 @@ const ReferDoctorForm = ({
     })
 
   useEffect(() => {
-    if (initialData) {
-      // Format dateOfBirth to YYYY-MM-DD for input[type=date]
-      const formattedData = {
-        ...initialData,
-        dateOfBirth: initialData.dateOfBirth
-          ? new Date(initialData.dateOfBirth).toISOString().split('T')[0]
-          : '',
+    if (visible) {
+      if (initialData) {
+        // Format dateOfBirth to YYYY-MM-DD for input[type=date]
+        const formattedData = {
+          ...initialData,
+          dateOfBirth: initialData.dateOfBirth
+            ? new Date(initialData.dateOfBirth).toISOString().split('T')[0]
+            : '',
+        }
+        setFormData(formattedData)
+      } else {
+        setFormData(emptyForm)
       }
-      setFormData(formattedData)
-    } else {
-      setFormData(emptyForm)
+      setErrors({})
     }
   }, [initialData, visible])
 
   // 🔹 Handle text inputs (top-level fields)
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-
-    // Run validation on each change
-    const error = validateField(field, value, { ...formData, [field]: value }, technicians)
-
-    setErrors((prev) => ({ ...prev, [field]: error }))
+    setErrors((prev) => ({ ...prev, [field]: '' }))
   }
   const handleNestedChange = (parent, field, value) => {
     setFormData((prev) => ({
       ...prev,
       [parent]: { ...prev[parent], [field]: value },
     }))
+    if (errors[parent]?.[field] || errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        if (newErrors[parent]) {
+          newErrors[parent] = { ...newErrors[parent] }
+          delete newErrors[parent][field]
+        }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
   }
 
   // 🔹 File upload → Base64
@@ -244,73 +254,94 @@ const ReferDoctorForm = ({
   }
 
   // 🔹 Save handler
-  const handleSubmit = async () => {
-    const missing = validateMandatoryFields(formData, mandatoryFields)
+  const validateForm = () => {
+    const newErrors = {}
+    let isValid = true
 
-    if (missing.length > 0) {
-      showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error')
-      return
+    const fieldLabels = {
+      fullName: 'Full Name',
+      gender: 'Gender',
+      dateOfBirth: 'Date of Birth',
+      mobileNumber: 'Mobile Number',
+      email: 'Email',
+      governmentId: 'Government ID',
+      yearsOfExperience: 'Years of Experience',
+      currentHospitalName: 'Current Hospital Name',
+      specialization: 'Specialization',
+      medicalRegistrationNumber: 'Medical Registration Number',
+      status: 'Status',
+      'address.houseNo': 'House Number',
+      'address.street': 'Street',
+      'address.city': 'City',
+      'address.state': 'State',
+      'address.postalCode': 'Postal Code',
+      'address.country': 'Country',
+      'bankAccountNumber.accountNumber': 'Account Number',
+      'bankAccountNumber.accountHolderName': 'Account Holder Name',
+      'bankAccountNumber.bankName': 'Bank Name',
+      'bankAccountNumber.branchName': 'Branch Name',
+      'bankAccountNumber.ifscCode': 'IFSC Code',
+      'bankAccountNumber.panCardNumber': 'PAN Card Number',
     }
 
-    //     const missing = validateMandatoryFields(formData, mandatoryFields)
+    mandatoryFields.forEach((field) => {
+      let value = formData
+      field.split('.').forEach((key) => { value = value?.[key] })
+      if (!value || String(value).trim() === '') {
+        isValid = false
+        const label = fieldLabels[field] || field
+        if (field.includes('.')) {
+          const [parent, child] = field.split('.')
+          if (!newErrors[parent]) newErrors[parent] = {}
+          newErrors[parent][child] = `${label} is required.`
+        } else {
+          newErrors[field] = `${label} is required.`
+        }
+      }
+    })
 
-    // if (missing.length > 0) {
-    //   toast.error(`Please fill required fields: ${missing.join(', ')}`)
-    //   return
-    // }
+    const todayStr = new Date().toISOString().split('T')[0]
 
     if (formData.dateOfBirth) {
-      const dob = new Date(formData.dateOfBirth)
-      const today = new Date()
-      const age = today.getFullYear() - dob.getFullYear()
-      const isBeforeBirthday =
-        today.getMonth() < dob.getMonth() ||
-        (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-
-      const actualAge = isBeforeBirthday ? age - 1 : age
-
-      if (actualAge < 18) {
-        showCustomToast('Technician must be at least 18 years old.', 'error')
-        return
+      if (formData.dateOfBirth > todayStr) {
+        newErrors.dateOfBirth = 'Date of Birth cannot be in the future.'
+        isValid = false
+      } else {
+        const dob = new Date(formData.dateOfBirth)
+        const today = new Date()
+        const age = today.getFullYear() - dob.getFullYear()
+        const isBeforeBirthday = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+        const actualAge = isBeforeBirthday ? age - 1 : age
+        if (actualAge < 18) { newErrors.dateOfBirth = 'Doctor must be at least 18 years old.'; isValid = false }
       }
     }
 
-    // ✅ Mobile validation (10 digits, starting with 6-9)
-    const mobileRegex = /^[6-9]\d{9}$/
-    if (!mobileRegex.test(formData.mobileNumber)) {
-      showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error')
-      return
+    if (formData.mobileNumber && !/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
+      newErrors.mobileNumber = 'Invalid mobile number (must be 10 digits starting 6-9).'
+      isValid = false
     }
 
-    // ✅ Email validation
-    if (formData.email != '') {
-      if (!emailPattern.test(formData.email)) {
-        showCustomToast('Please enter a valid email address.', 'error')
-        return
-      }
+    if (formData.email && !emailPattern.test(formData.email)) {
+      newErrors.email = 'Invalid email address format.'
+      isValid = false
     }
 
-    // ✅ Check duplicate contact number
-    const duplicateContact = technicians?.some(
-      (t) => t.mobileNumber === formData.mobileNumber && t.id !== formData.id,
-    )
-    if (duplicateContact) {
-      showCustomToast('Contact number already exists!', 'error')
-      return
+    if (technicians?.some((t) => t.mobileNumber === formData.mobileNumber && t.id !== formData.id)) {
+      newErrors.mobileNumber = 'Mobile number already exists!'
+      isValid = false
+    }
+    if (technicians?.some((t) => t.emailId === formData.email && t.id !== formData.id)) {
+      newErrors.email = 'Email already exists!'
+      isValid = false
     }
 
-    // ✅ Check duplicate email
-    const duplicateEmail = technicians?.some(
-      (t) => t.emailId === formData.email && t.id !== formData.id,
-    )
-    if (duplicateEmail) {
-      showCustomToast('Email already exists!', 'error')
-      return
-    }
-    // if (Object.keys(formData.permissions).length === 0) {
-    //   toast.error('Please assign at least one user permission before saving.')
-    //   return
-    // }
+    setErrors(newErrors)
+    if (!isValid) showCustomToast('Please correct the highlighted errors.', 'error')
+    return isValid
+  }
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return
 
     try {
       setLoading(true)
@@ -338,15 +369,9 @@ const ReferDoctorForm = ({
     } finally {
       setLoading(false)
     }
-
-    // console.log(formData)
-    // onSave(formData)
-    // setFormData(emptyForm)
-    // onClose()
   }
 
   const handleUserPermission = () => {
-    const missing = validateMandatoryFields(formData, mandatoryFields)
 
     if (missing.length > 0) {
       showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error')
@@ -697,16 +722,20 @@ const ReferDoctorForm = ({
                   )}
                 </div>
                 <div className="col-md-4">
-                  <CFormLabel>Gender</CFormLabel>
+                  <CFormLabel>Gender <span style={{ color: 'red' }}>*</span></CFormLabel>
                   <CFormSelect
                     value={formData.gender}
-                    onChange={(e) => handleChange('gender', e.target.value)}
+                    onChange={(e) => {
+                      handleChange('gender', e.target.value)
+                      setErrors(p => ({ ...p, gender: e.target.value ? '' : 'Gender is required.' }))
+                    }}
                   >
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                   </CFormSelect>
+                  {errors.gender && <div className="text-danger mt-1">{errors.gender}</div>}
                 </div>
               </div>
 
@@ -721,8 +750,12 @@ const ReferDoctorForm = ({
                         .toISOString()
                         .split('T')[0]
                     } // ✅ only allow DOB ≤ today-18yrs
-                    onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+                    onChange={(e) => {
+                      handleChange('dateOfBirth', e.target.value)
+                      setErrors(p => ({ ...p, dateOfBirth: validateField('dateOfBirth', e.target.value) }))
+                    }}
                   />
+                  {errors.dateOfBirth && <div className="text-danger mt-1">{errors.dateOfBirth}</div>}
                 </div>
 
                 <div className="col-md-4">
@@ -755,17 +788,12 @@ const ReferDoctorForm = ({
                     type="email"
                     value={formData.email}
                     onChange={(e) => {
-                      const value = e.target.value
-
-                      // Update form data
-                      handleChange('email', value)
-
-                      // Run live validation using your validateField function
-                      // const err = validateField('emailId', value, formData)
-                      // setErrors((prev) => ({ ...prev, email: err }))
+                      handleChange('email', e.target.value)
+                      const err = validateField('emailId', e.target.value)
+                      setErrors((prev) => ({ ...prev, email: err }))
                     }}
                   />
-                  {/* {errors.email && <div className="text-danger mt-1">{errors.email}</div>} */}
+                  {errors.email && <div className="text-danger mt-1">{errors.email}</div>}
                 </div>
               </div>
 

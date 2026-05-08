@@ -55,7 +55,7 @@ const DoctorNotifications = () => {
       const res = await postNotifyData(payload)
 
       if (res.status === 200) {
-        showCustomToast(`Notification ${status} successfully`,'success')
+        showCustomToast(`Notification ${status} successfully`, 'success')
 
         // Close modals
         setShowViewModal(false)
@@ -71,7 +71,7 @@ const DoctorNotifications = () => {
         setNotificationCount((prev) => prev - 1)
       }
     } catch (err) {
-      showCustomToast('Something went wrong!','error')
+      showCustomToast('Something went wrong!', 'error')
     }
   }
 
@@ -104,7 +104,7 @@ const DoctorNotifications = () => {
       setLoading(true) // start loading
       const hospitalId = localStorage.getItem('HospitalId')
       if (!hospitalId) {
-        showCustomToast('Missing Hospital ID in localStorage','error')
+        showCustomToast('Missing Hospital ID in localStorage', 'error')
         setLoading(false) // stop loading even on early return
         return
       }
@@ -149,7 +149,7 @@ const DoctorNotifications = () => {
 
   return (
     <div className="container mt-4">
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
       <h5>Doctor Notifications</h5>
 
       <CTable striped hover responsive>
@@ -259,9 +259,9 @@ const DoctorNotifications = () => {
             size="sm"
             className="px-3"
             // onClick={() => navigate(`/doctor`)}
-             onClick={() => {
-                // Corrected line: navigate to the specific doctor's details page
-                navigate(`/doctor/${selectedNotification.data?.doctorId}`);
+            onClick={() => {
+              // Corrected line: navigate to the specific doctor's details page
+              navigate(`/doctor/${selectedNotification.data?.doctorId}`);
             }}      >
             Doctor Details
           </CButton>
@@ -306,7 +306,7 @@ const DoctorNotifications = () => {
             className="text-white"
             onClick={() => {
               if (!rejectReason.trim()) {
-               showCustomToast('Please provide a reason.','warning')
+                showCustomToast('Please provide a reason.', 'warning')
                 return
               }
               handleResponse('Rejected', rejectReason)

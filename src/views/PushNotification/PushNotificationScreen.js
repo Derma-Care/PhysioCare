@@ -39,9 +39,9 @@ const toImgSrc = (raw) => {
   if (typeof raw !== 'string') return null
   const t = raw.trim()
   if (!t || t === 'null' || t === 'undefined') return null
-  if (t.startsWith('data:'))   return t                               // already data-URL
+  if (t.startsWith('data:')) return t                               // already data-URL
   if (t.startsWith('http://') || t.startsWith('https://')) return t  // CDN / S3 URL
-  if (t.startsWith('/'))       return t                               // relative URL
+  if (t.startsWith('/')) return t                               // relative URL
   return `data:image/jpeg;base64,${t}`                               // raw base64
 }
 
@@ -54,13 +54,13 @@ const stripDataUrl = (dataUrl) =>
 // Using ONE state object means resetForm() is always atomic.
 // ─────────────────────────────────────────────────────────────
 const BLANK = {
-  title:             '',
-  body:              '',
-  image:             null,   // dataURL string while composing, null = no image
-  sendAll:           false,
+  title: '',
+  body: '',
+  image: null,   // dataURL string while composing, null = no image
+  sendAll: false,
   selectedCustomers: [],
-  isEditing:         false,
-  editId:            null,
+  isEditing: false,
+  editId: null,
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -70,17 +70,17 @@ const FCMNotification = () => {
 
   // ── Consolidated form state ─────────────────────────────
   const [form, setForm] = useState(BLANK)
-  const fileInputRef    = useRef(null)        // lets us reset <input type="file">
+  const fileInputRef = useRef(null)        // lets us reset <input type="file">
   const setF = (patch) => setForm(prev => ({ ...prev, ...patch }))
 
   // ── Data ────────────────────────────────────────────────
   const [sentNotifications, setSentNotifications] = useState([])
-  const [customerOptions, setCustomerOptions]     = useState([])
-  const [loading, setLoading]                     = useState(false)
+  const [customerOptions, setCustomerOptions] = useState([])
+  const [loading, setLoading] = useState(false)
 
   // ── Delete modal ────────────────────────────────────────
   const [deleteModalVisible, setDeleteModalVisible] = useState(false)
-  const [notifToDelete, setNotifToDelete]           = useState(null)  // { id, title }
+  const [notifToDelete, setNotifToDelete] = useState(null)  // { id, title }
 
   // ── View modal ──────────────────────────────────────────
   const [viewItem, setViewItem] = useState(null)
@@ -95,7 +95,7 @@ const FCMNotification = () => {
 
   // ── Pagination ──────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize]       = useState(5)
+  const [pageSize, setPageSize] = useState(5)
   const paginatedNotifications = sentNotifications.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
@@ -127,7 +127,7 @@ const FCMNotification = () => {
   const fetchCustomers = useCallback(async () => {
     setLoading(true)
     try {
-      const response  = await CustomerData()
+      const response = await CustomerData()
       const customers = response || []
       setCustomerOptions(
         customers
@@ -183,10 +183,10 @@ const FCMNotification = () => {
 
           // ── Resolve image from whichever field name backend uses ──
           const rawImage =
-            n.image            ??
-            n.imageUrl         ??
-            n.imageData        ??
-            n.img              ??
+            n.image ??
+            n.imageUrl ??
+            n.imageData ??
+            n.img ??
             n.notificationImage ??
             null
 
@@ -200,7 +200,7 @@ const FCMNotification = () => {
     }
   }, [customerOptions])
 
-  useEffect(() => { fetchCustomers() },     [fetchCustomers])
+  useEffect(() => { fetchCustomers() }, [fetchCustomers])
   useEffect(() => { fetchNotifications() }, [fetchNotifications])
 
   // ───────────────────────────────────────────────────────
@@ -213,14 +213,14 @@ const FCMNotification = () => {
     }
     const clinicId = localStorage.getItem('HospitalId')
     const branchId = localStorage.getItem('branchId')
-    const tokens   = form.sendAll ? [] : form.selectedCustomers.map((c) => c.value)
+    const tokens = form.sendAll ? [] : form.selectedCustomers.map((c) => c.value)
 
     const payload = {
       clinicId,
       branchId,
-      title:   form.title,
-      body:    form.body,
-      image:   stripDataUrl(form.image),
+      title: form.title,
+      body: form.body,
+      image: stripDataUrl(form.image),
       sendAll: form.sendAll,
       tokens,
     }
@@ -287,13 +287,13 @@ const FCMNotification = () => {
     console.log('[FCM] handleEdit — resolved src:', imgSrc ? imgSrc.slice(0, 60) : null)
 
     setForm({
-      title:             n.title  || '',
-      body:              n.body   || '',
-      image:             imgSrc,                             // null if no image
-      sendAll:           n.sendAll || false,
+      title: n.title || '',
+      body: n.body || '',
+      image: imgSrc,                             // null if no image
+      sendAll: n.sendAll || false,
       selectedCustomers: n.sendAll ? [] : (n.selectedCustomers || []),
-      isEditing:         true,
-      editId:            n._id || n.id,
+      isEditing: true,
+      editId: n._id || n.id,
     })
 
     if (fileInputRef.current) fileInputRef.current.value = ''  // clear file input label
@@ -316,13 +316,13 @@ const FCMNotification = () => {
       boxShadow: s.isFocused ? '0 0 0 2px rgba(24,95,165,0.15)' : 'none',
       '&:hover': { borderColor: '#185fa5' },
     }),
-    multiValue:       (b) => ({ ...b, background: '#e6f1fb', borderRadius: '20px', border: '0.5px solid #b5d4f4' }),
-    multiValueLabel:  (b) => ({ ...b, color: '#0c447c', fontSize: '11px', fontWeight: '500', padding: '1px 6px' }),
+    multiValue: (b) => ({ ...b, background: '#e6f1fb', borderRadius: '20px', border: '0.5px solid #b5d4f4' }),
+    multiValueLabel: (b) => ({ ...b, color: '#0c447c', fontSize: '11px', fontWeight: '500', padding: '1px 6px' }),
     multiValueRemove: (b) => ({ ...b, color: '#185fa5', borderRadius: '0 20px 20px 0', '&:hover': { background: '#b5d4f4', color: '#042c53' } }),
     option: (b, s) => ({ ...b, fontSize: '13px', backgroundColor: s.isSelected ? '#185fa5' : s.isFocused ? '#e6f1fb' : 'transparent', color: s.isSelected ? '#fff' : '#374151' }),
     placeholder: (b) => ({ ...b, fontSize: '13px', color: '#9ca3af' }),
-    menu:        (b) => ({ ...b, borderRadius: '7px', border: '0.5px solid #d0dce9', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', zIndex: 9999 }),
-    menuPortal:  (b) => ({ ...b, zIndex: 9999 }),
+    menu: (b) => ({ ...b, borderRadius: '7px', border: '0.5px solid #d0dce9', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', zIndex: 9999 }),
+    menuPortal: (b) => ({ ...b, zIndex: 9999 }),
   }
 
   // ─────────────────────────────────────────────────────
@@ -330,7 +330,7 @@ const FCMNotification = () => {
   // ─────────────────────────────────────────────────────
   return (
     <>
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
 
       {/* ── Page Header ──────────────────────────────── */}
       <div className="fcm-page-header">
@@ -623,7 +623,7 @@ const FCMNotification = () => {
                     <div className="fcm-section-label" style={{ marginBottom: 8 }}>Customer Data</div>
                     <div className="fcm-customer-grid">
                       {viewItem.customerData.map((cust, i) => {
-                        const name    = Object.keys(cust)[0]
+                        const name = Object.keys(cust)[0]
                         const details = cust[name]
                         return (
                           <div className="fcm-customer-card" key={i}>

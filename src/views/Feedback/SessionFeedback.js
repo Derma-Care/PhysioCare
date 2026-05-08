@@ -6,7 +6,14 @@ import {
 import { ToastContainer } from 'react-toastify';
 import { showCustomToast } from '../../Utils/Toaster';
 import { useHospital } from '../Usecontext/HospitalContext';
-import { getFeedbackDetails, submitSessionFeedback } from './FeedbackAPI';
+import {
+  getFeedbackDetails,
+  getAllSessionFeedback,
+  createSessionFeedback,
+  updateSessionFeedback,
+  deleteSessionFeedback
+} from './FeedbackAPI';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import './SessionFeedback.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -34,37 +41,18 @@ const SessionFeedback = () => {
   const { doctorData, addNotification, notifications, setNotifications, setNotificationCount } = useHospital() || {};
 
   // State for CRUD
-  const [sessions, setSessions] = useState([
-    {
-      id: 's1',
-      patientId: 'p1',
-      patientName: 'John Doe',
-      patientPhone: '9876543210',
-      doctorId: 'd1',
-      doctorName: 'Dr. John Doe',
-      bookingId: "Der-Mai-2026-0001",
-      therapistId: 't1',
-      therapistName: 'Alice Johnson',
-      serviceType: "PACKAGE",
-      service: [
-        { serviceId: "PKG_AUTO", serviceName: "Auto Package" }
-      ],
-      totalSessions: 10,
-      sessionsCompleted: 5,
-      isHalfSessionCompleted: true,
-      isFullSessionCompleted: false,
-      whatWentWell: 'The exercises are helping.',
-      improvements: 'More frequent sessions.',
-      date: '2026-05-06',
-      time: '14:30',
-      clinicId: 'C101'
-    }
-  ]);
+  const [sessions, setSessions] = useState([]);
+
 
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Delete Confirmation
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [sessionIdToDelete, setSessionIdToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Data for Dropdowns
   const [patients, setPatients] = useState([]);
@@ -89,11 +77,11 @@ const SessionFeedback = () => {
     therapistId: '',
     therapistName: '',
     serviceType: '',
-    serviceNames: '',
-    totalSessions: '',
-    sessionsCompleted: '',
-    isHalfSessionCompleted: false,
-    isFullSessionCompleted: false,
+    service: [],
+    totalNoOfSessions: '',
+    noOfSessionsCompleted: '',
+    halfSessionsCompleted: false,
+    fullSessionsCompleted: false,
     bookingId: '',
     rating: '',
     whatWentWell: '',
@@ -132,31 +120,45 @@ const SessionFeedback = () => {
     }
   }, [patients]);
 
+  const fetchFeedbackData = async () => {
+    const hId = localStorage.getItem('HospitalId');
+    const bId = localStorage.getItem('branchId');
+    if (!hId || !bId) return;
+
+    setLoading(true);
+    try {
+      // 1. Fetch Patients needing feedback (for dropdown)
+      const detailsRes = await getFeedbackDetails(hId, bId);
+      const detailsRaw = detailsRes?.data;
+      let patientsList = [];
+      if (Array.isArray(detailsRaw?.data)) patientsList = detailsRaw.data;
+      else if (detailsRaw?.data && typeof detailsRaw.data === 'object') patientsList = [detailsRaw.data];
+      else if (Array.isArray(detailsRaw)) patientsList = detailsRaw;
+      setPatients(patientsList);
+
+      // 2. Fetch All Submitted Feedbacks (for table)
+      const feedbackRes = await getAllSessionFeedback();
+      const feedbackRaw = feedbackRes?.data;
+      let feedbackList = [];
+      if (Array.isArray(feedbackRaw?.data)) feedbackList = feedbackRaw.data;
+      else if (feedbackRaw?.data && typeof feedbackRaw.data === 'object') feedbackList = [feedbackRaw.data];
+      else if (Array.isArray(feedbackRaw)) feedbackList = feedbackRaw;
+      setSessions(feedbackList);
+
+    } catch (error) {
+      console.error('SessionFeedback: Failed to fetch data', error);
+      // showCustomToast('Failed to load feedback records.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchFeedbackData = async () => {
-      const hId = localStorage.getItem('HospitalId');
-      const bId = localStorage.getItem('branchId');
-      if (!hId || !bId) return;
-      try {
-        const res = await getFeedbackDetails(hId, bId);
-        const raw = res?.data;
-        // Handle both array and single object responses
-        let dataList = [];
-        if (Array.isArray(raw?.data)) dataList = raw.data;
-        else if (raw?.data && typeof raw.data === 'object') dataList = [raw.data];
-        else if (Array.isArray(raw)) dataList = raw;
-        setPatients(dataList);
-      } catch (error) {
-        console.error('SessionFeedback: Failed to fetch feedback data', error);
-      }
-    };
     fetchFeedbackData();
   }, []);
 
-  const doctorsList = doctorData?.data || [
-    { doctorId: 'd1', doctorName: 'Dr. John Doe' },
-    { doctorId: 'd2', doctorName: 'Dr. Sarah Smith' }
-  ];
+  const doctorsList = doctorData?.data || [];
+
 
   const handlePatientSelect = (selectedOption) => {
     if (selectedOption) {
@@ -173,10 +175,11 @@ const SessionFeedback = () => {
         therapistName: p.therapistName || '',
         serviceType: p.serviceType || '',
         serviceNames: p.service?.map(s => s.serviceName).join(', ') || '',
-        totalSessions: p.totalNoOfSessions ?? p.totalSessions ?? '',
-        sessionsCompleted: p.noOfSessionsCompleted ?? p.sessionsCompleted ?? '',
-        isHalfSessionCompleted: p.halfSessionsCompleted ?? p.isHalfSessionCompleted ?? false,
-        isFullSessionCompleted: p.fullSessionsCompleted ?? p.isFullSessionCompleted ?? false,
+        service: p.service || [],
+        totalNoOfSessions: p.totalNoOfSessions ?? p.totalSessions ?? '',
+        noOfSessionsCompleted: p.noOfSessionsCompleted ?? p.sessionsCompleted ?? '',
+        halfSessionsCompleted: p.halfSessionsCompleted ?? p.isHalfSessionCompleted ?? false,
+        fullSessionsCompleted: p.fullSessionsCompleted ?? p.isFullSessionCompleted ?? false,
       }));
     } else {
       setForm(prev => ({
@@ -196,14 +199,14 @@ const SessionFeedback = () => {
     const e = {};
     if (!form.patientId) e.patientId = 'Required';
     if (!form.therapistId) e.therapistId = 'Required';
-    if (!form.totalSessions) e.totalSessions = 'Required';
-    if (!form.sessionsCompleted) e.sessionsCompleted = 'Required';
+    if (form.totalNoOfSessions === '') e.totalNoOfSessions = 'Required';
+    if (form.noOfSessionsCompleted === '') e.noOfSessionsCompleted = 'Required';
 
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -211,38 +214,49 @@ const SessionFeedback = () => {
     const now = new Date();
 
     // Derive milestones
-    const ratio = form.sessionsCompleted / form.totalSessions;
+    const total = Number(form.totalNoOfSessions || 0);
+    const completed = Number(form.noOfSessionsCompleted || 0);
+    const ratio = total > 0 ? completed / total : 0;
+
     const isFull = ratio >= 1;
     const isHalf = ratio >= 0.5 && ratio < 1;
 
     const payload = {
       ...form,
-      isHalfSessionCompleted: isHalf,
-      isFullSessionCompleted: isFull,
+      totalNoOfSessions: total,
+      noOfSessionsCompleted: completed,
+      halfSessionsCompleted: isHalf,
+      fullSessionsCompleted: isFull,
       date: now.toISOString().split('T')[0],
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      let res;
       if (isEditing) {
-        setSessions(prev => prev.map(s => s.id === editingId ? { ...payload, id: editingId } : s));
-        showCustomToast('Session feedback updated.', 'success');
+        res = await updateSessionFeedback(editingId, payload);
+        showCustomToast(res?.data?.message || 'Session feedback updated.', 'success');
       } else {
-        const newSession = { ...payload, id: Date.now().toString() };
-        setSessions(prev => [newSession, ...prev]);
-        showCustomToast('Session feedback saved.', 'success');
+        res = await createSessionFeedback(payload);
+        showCustomToast(res?.data?.message || 'Session feedback saved.', 'success');
       }
+      fetchFeedbackData();
       closeForm();
-    }, 800);
+    } catch (error) {
+      console.error("Session Feedback Save Failed", error);
+      showCustomToast(error?.response?.data?.message || 'Failed to save session feedback.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const openAddForm = () => {
     setForm({
       patientId: '', patientName: '', patientPhone: '',
       doctorId: '', doctorName: '', therapistId: '', therapistName: '',
-      serviceType: '', totalSessions: '', sessionsCompleted: '',
-      isHalfSessionCompleted: false, isFullSessionCompleted: false,
+      serviceType: '', service: [], 
+      totalNoOfSessions: '', noOfSessionsCompleted: '',
+      halfSessionsCompleted: false, fullSessionsCompleted: false,
       rating: '',
       whatWentWell: '', improvements: '',
       clinicId: localStorage.getItem('HospitalId') || ''
@@ -257,14 +271,28 @@ const SessionFeedback = () => {
     setForm(session);
     setErrors({});
     setIsEditing(true);
-    setEditingId(session.id);
+    setEditingId(session.sessionFeedbackId || session.id);
     setIsFormVisible(true);
   };
 
   const handleDelete = (id) => {
-    if (window.confirm("Delete this session record?")) {
-      setSessions(prev => prev.filter(s => s.id !== id));
-      showCustomToast('Record deleted.', 'info');
+    setSessionIdToDelete(id);
+    setIsDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      const res = await deleteSessionFeedback(sessionIdToDelete);
+      showCustomToast(res?.data?.message || 'Record deleted.', 'success');
+      fetchFeedbackData();
+      setIsDeleteModalVisible(false);
+    } catch (error) {
+      console.error("Delete Session Feedback Failed", error);
+      showCustomToast(error?.response?.data?.message || 'Failed to delete record.', 'error');
+    } finally {
+      setIsDeleting(false);
+      setSessionIdToDelete(null);
     }
   };
 
@@ -339,7 +367,12 @@ const SessionFeedback = () => {
               </div>
 
               <div className="sf-table-wrapper">
-                {filteredSessions.length === 0 ? (
+                {loading ? (
+                  <div className="sf-loading-state">
+                    <CSpinner color="primary" />
+                    <p>Loading session feedback...</p>
+                  </div>
+                ) : filteredSessions.length === 0 ? (
                   <div className="sf-empty-state">
                     <FontAwesomeIcon icon={faHistory} size="3x" style={{ opacity: 0.2, marginBottom: '1rem' }} />
                     <h6>No Session Records Found</h6>
@@ -354,6 +387,7 @@ const SessionFeedback = () => {
                         <th>Date</th>
                         <th>Patient</th>
                         <th>Doctor / Therapist</th>
+                        <th>Service</th>
                         <th>Progress</th>
                         <th>Rating</th>
                         <th>Milestone</th>
@@ -362,14 +396,18 @@ const SessionFeedback = () => {
                     </thead>
                     <tbody>
                       {filteredSessions.map((s, idx) => (
-                        <tr key={s.id}>
+                        <tr key={s.sessionFeedbackId || s.id || idx}>
                           <td>{idx + 1}</td>
                           <td><span className="sf-booking-badge">{s.bookingId || '—'}</span></td>
-                          <td>{s.date}</td>
+                          <td>{s.date || new Date().toISOString().split('T')[0]}</td>
                           <td>
                             <div className="sf-pat-cell">
-                              <span className="sf-pat-name">{s.patientName}</span>
-                              <span className="sf-pat-phone">{s.patientPhone}</span>
+                              <span className="sf-pat-name">
+                                {(!s.patientName || s.patientName === 'null') ? 'N/A' : s.patientName}
+                              </span>
+                              <span className="sf-pat-phone">
+                                {(!s.patientPhone || s.patientPhone === 'null' || s.mobileNumber === 'null') ? (s.mobileNumber || '—') : s.patientPhone}
+                              </span>
                             </div>
                           </td>
                           <td>
@@ -379,12 +417,22 @@ const SessionFeedback = () => {
                             </div>
                           </td>
                           <td>
+                            <div className="sf-service-cell">
+                              <span className="sf-service-type">{s.serviceType || '—'}</span>
+
+                            </div>
+                          </td>
+                          <td>
                             <div className="sf-progress-wrap">
-                              <span className="sf-prog-text">{s.sessionsCompleted} / {s.totalSessions}</span>
+                              <span className="sf-prog-text">
+                                {s.noOfSessionsCompleted ?? s.sessionsCompleted ?? 0} / {s.totalNoOfSessions ?? s.totalSessions ?? 0}
+                              </span>
                               <div className="sf-prog-bar">
                                 <div
                                   className="sf-prog-fill"
-                                  style={{ width: `${(s.sessionsCompleted / (s.totalSessions || 1)) * 100}%` }}
+                                  style={{
+                                    width: `${Math.min(100, ((s.noOfSessionsCompleted ?? s.sessionsCompleted ?? 0) / (s.totalNoOfSessions ?? s.totalSessions ?? 1)) * 100)}%`
+                                  }}
                                 ></div>
                               </div>
                             </div>
@@ -399,9 +447,9 @@ const SessionFeedback = () => {
                             )}
                           </td>
                           <td>
-                            {s.isFullSessionCompleted ? (
+                            {(s.fullSessionsCompleted || s.isFullSessionCompleted) ? (
                               <span className="sf-badge sf-badge-full">Full Completed</span>
-                            ) : s.isHalfSessionCompleted ? (
+                            ) : (s.halfSessionsCompleted || s.isHalfSessionCompleted) ? (
                               <span className="sf-badge sf-badge-half">Half Completed</span>
                             ) : (
                               <span className="sf-badge sf-badge-none">Ongoing</span>
@@ -411,7 +459,7 @@ const SessionFeedback = () => {
                             <div className="sf-action-btns">
                               <button className="sf-btn-icon sf-btn-view" onClick={() => handleView(s)} title="View"><Eye size={14} /></button>
                               <button className="sf-btn-icon sf-btn-edit" onClick={() => openEditForm(s)} title="Edit"><Edit2 size={14} /></button>
-                              <button className="sf-btn-icon sf-btn-delete" onClick={() => handleDelete(s.id)} title="Delete"><Trash2 size={14} /></button>
+                              <button className="sf-btn-icon sf-btn-delete" onClick={() => handleDelete(s.sessionFeedbackId || s.id)} title="Delete"><Trash2 size={14} /></button>
                             </div>
                           </td>
                         </tr>
@@ -475,7 +523,7 @@ const SessionFeedback = () => {
                     <label className="sf-label">Total Sessions</label>
                     <input
                       type="text" className="sf-input" readOnly
-                      value={form.totalSessions || '0'}
+                      value={form.totalNoOfSessions || '0'}
                       style={{ background: '#f8fafc', color: '#64748b' }}
                     />
                   </CCol>
@@ -483,7 +531,7 @@ const SessionFeedback = () => {
                     <label className="sf-label">Sessions Completed</label>
                     <input
                       type="text" className="sf-input" readOnly
-                      value={form.sessionsCompleted || '0'}
+                      value={form.noOfSessionsCompleted || '0'}
                       style={{ background: '#f8fafc', color: '#64748b' }}
                     />
                   </CCol>
@@ -493,9 +541,9 @@ const SessionFeedback = () => {
                       className="sf-input d-flex align-items-center"
                       style={{ background: '#f0f9ff', color: '#0369a1', fontWeight: 'bold', border: '1px solid #bae6fd' }}
                     >
-                      {form.isFullSessionCompleted
+                      {form.fullSessionsCompleted
                         ? "🏆 Course Completed (100%)"
-                        : form.isHalfSessionCompleted
+                        : form.halfSessionsCompleted
                           ? "📊 Milestone: 50% Achieved"
                           : "⚙️ Treatment in Progress"}
                     </div>
@@ -567,20 +615,20 @@ const SessionFeedback = () => {
           {selectedSession && (
             <div className="sf-report-view">
               <div className="sf-report-section main">
-                <div className="sf-rep-row"><strong>Patient:</strong> <span>{selectedSession.patientName} ({selectedSession.patientPhone})</span></div>
+                <div className="sf-rep-row"><strong>Patient:</strong> <span>{(!selectedSession.patientName || selectedSession.patientName === 'null') ? 'N/A' : selectedSession.patientName} ({(!selectedSession.patientPhone || selectedSession.patientPhone === 'null' || selectedSession.mobileNumber === 'null') ? (selectedSession.mobileNumber || '—') : selectedSession.patientPhone})</span></div>
                 <div className="sf-rep-row"><strong>Booking ID:</strong> <span className="sf-booking-badge">{selectedSession.bookingId || '—'}</span></div>
                 <div className="sf-rep-row">
                   <strong>Progress:</strong>
-                  <span className={`badge ${selectedSession.isFullSessionCompleted ? 'bg-success' : 'bg-primary'}`}>
-                    {selectedSession.sessionsCompleted} / {selectedSession.totalSessions} Sessions
+                  <span className={`badge ${(selectedSession.fullSessionsCompleted || selectedSession.isFullSessionCompleted) ? 'bg-success' : 'bg-primary'}`}>
+                    {selectedSession.noOfSessionsCompleted ?? selectedSession.sessionsCompleted ?? 0} / {selectedSession.totalNoOfSessions ?? selectedSession.totalSessions ?? 0} Sessions
                   </span>
                 </div>
                 <div className="sf-rep-row">
                   <strong>Milestone:</strong>
-                  <span style={{ fontWeight: '700', color: selectedSession.isFullSessionCompleted ? '#166534' : (selectedSession.isHalfSessionCompleted ? '#854d0e' : '#0369a1') }}>
-                    {selectedSession.isFullSessionCompleted
+                  <span style={{ fontWeight: '700', color: (selectedSession.fullSessionsCompleted || selectedSession.isFullSessionCompleted) ? '#166534' : ((selectedSession.halfSessionsCompleted || selectedSession.isHalfSessionCompleted) ? '#854d0e' : '#0369a1') }}>
+                    {(selectedSession.fullSessionsCompleted || selectedSession.isFullSessionCompleted)
                       ? "🏆 Course Completed (100%)"
-                      : selectedSession.isHalfSessionCompleted
+                      : (selectedSession.halfSessionsCompleted || selectedSession.isHalfSessionCompleted)
                         ? "📊 Milestone: 50% Achieved"
                         : "⚙️ Treatment in Progress"}
                   </span>
@@ -611,6 +659,24 @@ const SessionFeedback = () => {
           )}
         </CModalBody>
       </CModal>
+
+      {/* DELETE CONFIRMATION */}
+      <ConfirmationModal
+        isVisible={isDeleteModalVisible}
+        title="Delete Session Record"
+        message="Are you sure you want to delete this session feedback record? This action cannot be undone."
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        confirmColor="danger"
+        isLoading={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          if (!isDeleting) {
+            setIsDeleteModalVisible(false);
+            setSessionIdToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 };

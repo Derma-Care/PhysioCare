@@ -182,18 +182,31 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
     })
 
   useEffect(() => {
-    if (initialData) setFormData(initialData)
-    else setFormData(emptyForm)
-  }, [initialData])
+    if (visible) {
+      if (initialData) setFormData(initialData)
+      else setFormData(emptyForm)
+      setErrors({})
+    }
+  }, [initialData, visible])
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    const error = validateField(field, value, { ...formData, [field]: value }, admins)
-    setErrors((prev) => ({ ...prev, [field]: error }))
+    setErrors((prev) => ({ ...prev, [field]: '' }))
   }
 
   const handleNestedChange = (parent, field, value) => {
     setFormData((prev) => ({ ...prev, [parent]: { ...prev[parent], [field]: value } }))
+    if (errors[parent]?.[field] || errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        if (newErrors[parent]) {
+          newErrors[parent] = { ...newErrors[parent] }
+          delete newErrors[parent][field]
+        }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
   }
 
   const handleBlur = (field, value) => {
@@ -211,21 +224,97 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
   }
 
   const validateForm = () => {
-    const missing = validateMandatoryFields(formData, mandatoryFields)
-    if (missing.length > 0) { showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error'); return false }
-    if (formData.dateOfBirth) {
-      const dob = new Date(formData.dateOfBirth)
-      const today = new Date()
-      let age = today.getFullYear() - dob.getFullYear()
-      if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age -= 1
-      if (age < 18) { showCustomToast('Admin must be at least 18 years old.', 'error'); return false }
+    const newErrors = {}
+    let isValid = true
+
+    const fieldLabels = {
+      fullName: 'Full Name',
+      gender: 'Gender',
+      dateOfBirth: 'Date of Birth',
+      contactNumber: 'Contact Number',
+      emailId: 'Email',
+      governmentId: 'Government ID',
+      dateOfJoining: 'Date of Joining',
+      department: 'Department',
+      profilePicture: 'Profile Image',
+      emergencyContact: 'Emergency Contact',
+      'address.houseNo': 'House Number',
+      'address.street': 'Street',
+      'address.city': 'City',
+      'address.state': 'State',
+      'address.postalCode': 'Postal Code',
+      'address.country': 'Country',
+      'bankAccountDetails.accountNumber': 'Account Number',
+      'bankAccountDetails.accountHolderName': 'Account Holder Name',
+      'bankAccountDetails.bankName': 'Bank Name',
+      'bankAccountDetails.branchName': 'Branch Name',
+      'bankAccountDetails.ifscCode': 'IFSC Code',
+      'bankAccountDetails.panCardNumber': 'PAN Card Number',
     }
-    if (!/^[6-9]\d{9}$/.test(formData.contactNumber)) { showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error'); return false }
-    if (formData.contactNumber === formData.emergencyContact) { showCustomToast('Contact Number and Emergency Contact cannot be the same.', 'error'); return false }
-    if (!emailPattern.test(formData.emailId)) { showCustomToast('Please enter a valid email address.', 'error'); return false }
-    if (admins?.some((t) => t.contactNumber === formData.contactNumber && t.id !== formData.id)) { showCustomToast('Contact number already exists!', 'error'); return false }
-    if (admins?.some((t) => t.emailId === formData.emailId && t.id !== formData.id)) { showCustomToast('Email already exists!', 'error'); return false }
-    return true
+
+    mandatoryFields.forEach((field) => {
+      let value = formData
+      field.split('.').forEach((key) => { value = value?.[key] })
+      if (!value || String(value).trim() === '') {
+        isValid = false
+        const label = fieldLabels[field] || field
+        if (field.includes('.')) {
+          const [parent, child] = field.split('.')
+          if (!newErrors[parent]) newErrors[parent] = {}
+          newErrors[parent][child] = `${label} is required.`
+        } else {
+          newErrors[field] = `${label} is required.`
+        }
+      }
+    })
+
+    const todayStr = new Date().toISOString().split('T')[0]
+
+    if (formData.dateOfBirth) {
+      if (formData.dateOfBirth > todayStr) {
+        newErrors.dateOfBirth = 'Date of Birth cannot be in the future.'
+        isValid = false
+      } else {
+        const dob = new Date(formData.dateOfBirth)
+        const today = new Date()
+        let age = today.getFullYear() - dob.getFullYear()
+        if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age -= 1
+        if (age < 18) { newErrors.dateOfBirth = 'Admin must be at least 18 years old.'; isValid = false }
+      }
+    }
+
+    if (formData.dateOfJoining && formData.dateOfJoining > todayStr) {
+      newErrors.dateOfJoining = 'Joining Date cannot be in the future.'
+      isValid = false
+    }
+
+    if (formData.contactNumber && !/^[6-9]\d{9}$/.test(formData.contactNumber)) {
+      newErrors.contactNumber = 'Invalid contact number (must be 10 digits starting 6-9).'
+      isValid = false
+    }
+
+    if (formData.emailId && !emailPattern.test(formData.emailId)) {
+      newErrors.emailId = 'Invalid email address format.'
+      isValid = false
+    }
+
+    if (formData.contactNumber && formData.emergencyContact && formData.contactNumber === formData.emergencyContact) {
+      newErrors.emergencyContact = 'Emergency contact cannot be same as contact number.'
+      isValid = false
+    }
+
+    if (admins?.some((t) => t.contactNumber === formData.contactNumber && t.id !== formData.id)) {
+      newErrors.contactNumber = 'Contact number already exists!'
+      isValid = false
+    }
+    if (admins?.some((t) => t.emailId === formData.emailId && t.id !== formData.id)) {
+      newErrors.emailId = 'Email already exists!'
+      isValid = false
+    }
+
+    setErrors(newErrors)
+    if (!isValid) showCustomToast('Please correct the highlighted errors.', 'error')
+    return isValid
   }
 
   const handleSubmit = async () => {
@@ -463,7 +552,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
 
                 <div className="af-row">
                   <div className="af-col-third">
-                    <Field label="Emergency Contact" required>
+                    <Field label="Emergency Contact" required error={errors.emergencyContact}>
                       <input
                         className="af-input" type="text" maxLength={10}
                         value={formData.emergencyContact}
@@ -583,7 +672,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
               <FormSection icon={FileText} title="Documents">
                 <div className="af-row">
                   <div className="af-col-third">
-                    <Field label="Profile Image" required>
+                    <Field label="Profile Image" required error={errors.profilePicture}>
                       <input
                         className="af-input" type="file" accept="image/*"
                         onChange={async (e) => {

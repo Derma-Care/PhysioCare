@@ -384,7 +384,7 @@ const PersonalViewDetails = () => {
     const hasErrors = Object.values(errors).some((error) => error !== '')
 
     if (hasErrors) {
-      showCustomToast('Please correct validation errors before submitting.', { position: 'top-right' },'error')
+      showCustomToast('Please correct validation errors before submitting.', { position: 'top-right' }, 'error')
       return
     }
 
@@ -504,7 +504,7 @@ const PersonalViewDetails = () => {
   const handleQualificationUpdateClick = async () => {
     const hasErrors = Object.values(QulErrors).some((error) => error !== '')
     if (hasErrors) {
-      showCustomToast('Please correct validation errors before submitting.', { position: 'top-right' },'error')
+      showCustomToast('Please correct validation errors before submitting.', { position: 'top-right' }, 'error')
       return
     }
 
@@ -536,7 +536,7 @@ const PersonalViewDetails = () => {
       setEditQualificationMode(false)
       fetchAllData(id)
 
-      showCustomToast('Qualification details updated successfully!','success', {
+      showCustomToast('Qualification details updated successfully!', 'success', {
         position: 'top-right',
         autoClose: 3000,
       })
@@ -635,7 +635,7 @@ const PersonalViewDetails = () => {
   const handleUpdateExperience = async (index, id) => {
     const hasErrors = Object.values(expError).some((error) => error !== '')
     if (hasErrors) {
-     showCustomToast('Please correct validation errors before submitting.', { position: 'top-right' },'error')
+      showCustomToast('Please correct validation errors before submitting.', { position: 'top-right' }, 'error')
       return
     }
 
@@ -686,7 +686,7 @@ const PersonalViewDetails = () => {
 
       fetchAllData(id) // Refresh data
 
-      showCustomToast('Experience details updated successfully!','showCustomToast', {
+      showCustomToast('Experience details updated successfully!', 'showCustomToast', {
         position: 'top-right',
         autoClose: 3000,
       })
@@ -734,7 +734,7 @@ const PersonalViewDetails = () => {
         const updatedEditMode = editExperienceMode.filter((_, i) => i !== index)
         setEditExperienceMode(updatedEditMode)
 
-        showCustomToast('Experience details deleted successfully!','success', {
+        showCustomToast('Experience details deleted successfully!', 'success', {
           position: 'top-right',
           autoClose: 3000,
         })
@@ -852,7 +852,7 @@ const PersonalViewDetails = () => {
     setErrors(validationErrors)
 
     if (Object.keys(validationErrors).length > 0) {
-      showCustomToast('Fill all the fields!', { position: 'top-right' },'error')
+      showCustomToast('Fill all the fields!', { position: 'top-right' }, 'error')
       return
     }
 
@@ -889,7 +889,7 @@ const PersonalViewDetails = () => {
         })
 
         setIsAddingNewExperience(false)
-        showCustomToast('Experience Added successfully!','success', {
+        showCustomToast('Experience Added successfully!', 'success', {
           position: 'top-right',
           autoClose: 3000,
         })
@@ -1019,18 +1019,18 @@ const PersonalViewDetails = () => {
       alert('Please fix the errors before submitting.');
       return;
     }
-  
+
     // Ensure course data exists before updating
     const courseData = editedCourse[index] || course[index];
-  
+
     if (!courseData) {
       console.error('No course data available for index:', index);
       alert('Course data is not available for update.');
       return;
     }
-  
+
     const courseFile = CourseFileName?.[index] || null;
-  
+
     // Validate course details and preserve existing data
     const updatedCourseList = [
       {
@@ -1039,52 +1039,52 @@ const PersonalViewDetails = () => {
         duration: courseData.duration || '',
         specialization: courseData.specialization || '',
         yearOfPassing: courseData.yearOfPassing || '',
-  
+
         uploadCourseCertificates: courseFile?.base64File
           ? [courseFile.base64File]
           : courseData.uploadCourseCertificates || null,
-  
+
         uploadCourseCertificateNames: courseFile?.name
           ? [courseFile.name]
           : courseData.uploadCourseCertificateNames || null,
-  
+
         uploadCourseCertificateTypes: courseFile?.type
           ? [courseFile.type]
           : courseData.uploadCourseCertificateTypes || null,
       },
     ];
-  
+
     // Ensure courseList is not empty before API call
     if (!updatedCourseList || updatedCourseList.length === 0) {
       console.error('Error: Course data is empty');
       alert('No course data available to update.');
       return;
     }
-  
+
     // Structure request data
     const CourseData = { courseList: updatedCourseList };
-  
+
     console.log('Course Data Before API Call:', JSON.stringify(CourseData, null, 2));
     console.log('Index:', index);
     console.log('Mobile Number:', id);
-  
+
     try {
       const updatedCourseResponse = await updateCourseData(id, index, CourseData);
-  
+
       if (updatedCourseResponse.success) {
         setCourse((prevCourses) => {
           const updatedCourses = [...prevCourses];
           updatedCourses[index] = CourseData.courseList[0];
           return updatedCourses;
         });
-  
+
         setEditCourseMode((prevModes) => {
           const updatedModes = [...prevModes];
           updatedModes[index] = false;
           return updatedModes;
         });
-  
-        showCustomToast('Course updated successfully!','success', {
+
+        showCustomToast('Course updated successfully!', 'success', {
           position: 'top-right',
           autoClose: 3000,
         });
@@ -1096,7 +1096,7 @@ const PersonalViewDetails = () => {
       // showCustomToast(error.message, { position: 'top-right' },'error')
     }
   };
-  
+
 
   const handleCourseCancelClick = (index) => {
     const newEditCourseMode = [...editCourseMode]
@@ -1138,7 +1138,7 @@ const PersonalViewDetails = () => {
 
         const updatedEditMode = editCourseMode.filter((_, i) => i !== index)
         setEditCourseMode(updatedEditMode)
-        showCustomToast('Course details deleted successfully!', 'success',{
+        showCustomToast('Course details deleted successfully!', 'success', {
           position: 'top-right',
           autoClose: 3000,
         })
@@ -1205,7 +1205,7 @@ const PersonalViewDetails = () => {
     const validationErrors = validateNewCourseForm()
     setCourseError(validationErrors)
     if (Object.keys(validationErrors).length > 0) {
-      showCustomToast('Fill all the fields!', { position: 'top-right' },'error')
+      showCustomToast('Fill all the fields!', { position: 'top-right' }, 'error')
       return
     }
 
@@ -1242,7 +1242,7 @@ const PersonalViewDetails = () => {
         })
 
         setIsAddingNewCourse(false)
-        showCustomToast('Course details added successfully!','success', {
+        showCustomToast('Course details added successfully!', 'success', {
           position: 'top-right',
           autoClose: 3000,
         })
@@ -1395,7 +1395,7 @@ const PersonalViewDetails = () => {
   const handleBankUpdateClick = async () => {
     const hasErrors = Object.values(bankError).some((error) => error !== '')
     if (hasErrors) {
-     showCustomToast('Please correct validation errors before submitting.', { position: 'top-right' },'error')
+      showCustomToast('Please correct validation errors before submitting.', { position: 'top-right' }, 'error')
       return
     }
 
@@ -1416,7 +1416,7 @@ const PersonalViewDetails = () => {
 
       setEditBankMode(false)
       fetchAllData(id)
-     showCustomToast('Bank details updated successfully!','success', {
+      showCustomToast('Bank details updated successfully!', 'success', {
         position: 'top-right',
         autoClose: 3000,
       })
@@ -1487,7 +1487,7 @@ const PersonalViewDetails = () => {
       }))
 
       await fetchAllData(id)
-      showCustomToast('Verification details updated successfully!','success', {
+      showCustomToast('Verification details updated successfully!', 'success', {
         position: 'top-right',
         autoClose: 3000,
       })
@@ -1589,12 +1589,12 @@ const PersonalViewDetails = () => {
               <strong>Services Added : </strong>{' '}
               {appointment.servicesAdded && appointment.servicesAdded.length > 0
                 ? appointment.servicesAdded.map((service, serviceIndex) => (
-                    <div key={`service-${serviceIndex}`}>
-                      <span>
-                        {service.serviceName} - ${service.price}
-                      </span>
-                    </div>
-                  ))
+                  <div key={`service-${serviceIndex}`}>
+                    <span>
+                      {service.serviceName} - ${service.price}
+                    </span>
+                  </div>
+                ))
                 : 'NA'}
             </div>
             <div>
@@ -1760,7 +1760,7 @@ const PersonalViewDetails = () => {
         </CModalFooter>
       </CModal>
 
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
       {Personal ? (
         <>
           <CCard>

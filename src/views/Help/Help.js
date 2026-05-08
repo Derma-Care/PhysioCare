@@ -117,7 +117,7 @@ function Help() {
       <PageLayout branch={mainBranch} />
 
       {/* ── Page Header ── */}
-      <div className="hp-page-header">
+      {/* <div className="hp-page-header">
         <div className="hp-title-group">
           <div className="hp-page-icon">
             <HelpCircle size={20} />
@@ -130,7 +130,7 @@ function Help() {
           </div>
         </div>
 
-        {/* ── Search ── */}
+      
         <div className="hp-search-wrap">
           <Search size={13} className="hp-search-icon" />
           <input
@@ -142,7 +142,7 @@ function Help() {
         </div>
       </div>
 
-      {/* ── Accordion ── */}
+   
       <div className="hp-accordion-wrapper">
         <CAccordion alwaysOpen>
           {filteredHelpTopics.length === 0 ? (
@@ -163,7 +163,7 @@ function Help() {
             ))
           )}
         </CAccordion>
-      </div>
+      </div> */}
 
       {/* ── Contact Support ── */}
       <div className="hp-contact-card">

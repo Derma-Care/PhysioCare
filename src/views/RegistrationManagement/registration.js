@@ -307,7 +307,7 @@ const ClinicRegistration = () => {
       }
 
       const response = await postServiceData(payload)
-      showCustomToast('newClinic Added successfully!', { position: 'top-right' },'success')
+      showCustomToast('newClinic Added successfully!', { position: 'top-right' }, 'success')
 
       fetchData()
       console.log('newClinic added successfully:', response)
@@ -550,12 +550,12 @@ const ClinicRegistration = () => {
       console.log('Updated service:', updatedResponse)
 
       setEditServiceMode(false)
-      showCustomToast('Service Updated successfully!', { position: 'top-right' },'success')
+      showCustomToast('Service Updated successfully!', { position: 'top-right' }, 'success')
 
       fetchData()
     } catch (error) {
       console.error('Error updating service:', error)
-    //  showCustomToast('Failed to update service. Please try again.', { position: 'top-right' },'error')
+      //  showCustomToast('Failed to update service. Please try again.', { position: 'top-right' },'error')
     }
   }
 
@@ -589,7 +589,7 @@ const ClinicRegistration = () => {
     try {
       const result = await deleteServiceData(serviceIdToDelete)
       console.log('Service deleted:', result)
-      showCustomToast('Service deleted successfully!', { position: 'top-right' },'success')
+      showCustomToast('Service deleted successfully!', { position: 'top-right' }, 'success')
 
       fetchData()
     } catch (error) {
@@ -641,7 +641,7 @@ const ClinicRegistration = () => {
 
   return (
     <div style={{ overflow: 'hidden' }}>
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
 
       <div>
         <CForm className="d-flex justify-content-end mb-3">
@@ -649,7 +649,7 @@ const ClinicRegistration = () => {
             <CFormInput
               type="text"
               placeholder="Search by ServiceName, Category"
-              value={searchQuery} 
+              value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ height: '40px' }}
             />
@@ -724,7 +724,7 @@ const ClinicRegistration = () => {
               </CCol>
               <CCol sm={4}>
                 {viewService.clinicAvailableServices &&
-                viewService.clinicAvailableServices.length > 0 ? (
+                  viewService.clinicAvailableServices.length > 0 ? (
                   viewService.clinicAvailableServices.map((service, index) => (
                     <div key={index}>{service.serviceName}</div>
                   ))
@@ -827,7 +827,7 @@ const ClinicRegistration = () => {
                       {clinic}
                     </option>
                   ))}
-                  
+
                 </CFormSelect>
 
                 {errors.typeOfClinic && (
@@ -926,7 +926,7 @@ const ClinicRegistration = () => {
             <CRow className="mb-4">
               <CCol md={6}>
                 <h6>
-                Area <span style={{ color: 'red' }}>*</span>
+                  Area <span style={{ color: 'red' }}>*</span>
                 </h6>
                 <CFormInput
                   type="text"

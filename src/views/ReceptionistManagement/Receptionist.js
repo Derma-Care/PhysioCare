@@ -41,17 +41,17 @@ const ReceptionistManagement = () => {
   // ✅ Add / Edit
   const handleSave = () => {
     if (!formData.name || !formData.email || !formData.phone) {
-      showCustomToast('Please fill required fields','error')
+      showCustomToast('Please fill required fields', 'error')
       return
     }
     if (formData.id) {
       // Edit
       setReceptionists(receptionists.map((r) => (r.id === formData.id ? formData : r)))
-      showCustomToast('Receptionist updated successfully','success')
+      showCustomToast('Receptionist updated successfully', 'success')
     } else {
       // Add
       setReceptionists([{ ...formData, id: Date.now() }, ...receptionists])
-      showCustomToast('Receptionist added successfully','success')
+      showCustomToast('Receptionist added successfully', 'success')
     }
     setFormData({ id: null, name: '', email: '', phone: '', shift: '' })
     setModalVisible(false)
@@ -60,7 +60,7 @@ const ReceptionistManagement = () => {
   // ✅ Delete
   const handleDelete = (id) => {
     setReceptionists(receptionists.filter((r) => r.id !== id))
-    showCustomToast('Receptionist deleted','warning')
+    showCustomToast('Receptionist deleted', 'warning')
   }
 
   // ✅ Filter by search
@@ -73,7 +73,7 @@ const ReceptionistManagement = () => {
 
   return (
     <CContainer className="p-4">
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
       <CRow className="mb-3 align-items-center">
         <CCol md={6}>
           <CInputGroup>

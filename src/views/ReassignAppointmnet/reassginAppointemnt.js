@@ -116,7 +116,7 @@ const ReassignAppointment = () => {
   useEffect(() => {
     handleSearch()
   }, [searchQuery])
-  
+
   const assignPost = async (notificationId, providerMobileNumber) => {
     try {
       const payload = {
@@ -134,7 +134,7 @@ const ReassignAppointment = () => {
 
       setViewService(null)
 
-      showCustomToast(response?.message || 'Reassignment completed successfully!', 'success',{
+      showCustomToast(response?.message || 'Reassignment completed successfully!', 'success', {
         position: 'top-right',
         autoClose: 3000,
       })
@@ -212,8 +212,7 @@ const ReassignAppointment = () => {
           </CInputGroupText>
         </CInputGroup>
       </CForm>
-      {/* {/* <ToastContainer /> */} */}
-
+      {/* <ToastContainer /> */}
       {viewService && (
         <CModal visible={!!viewService} onClose={() => setViewService(null)} size="lg">
           <CModalHeader>

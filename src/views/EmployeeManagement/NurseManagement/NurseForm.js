@@ -193,9 +193,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
 
     if (initialData) {
       const avail = initialData.availability || {}
-
-      // If startDay/endDay already exist (e.g. already stored separately) use them;
-      // otherwise derive them from the days array.
       let startDay = avail.startDay || ''
       let endDay = avail.endDay || ''
 
@@ -208,7 +205,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
       setFormData({
         ...emptyForm,
         ...initialData,
-        // ensure arrays are never undefined
         services: initialData.services || [],
         specializations: initialData.specializations || [],
         expertiseAreas: initialData.expertiseAreas || [],
@@ -231,7 +227,6 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     } else {
       setFormData(emptyForm)
     }
-
     setErrors({})
   }, [initialData, visible])
 

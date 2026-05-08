@@ -213,10 +213,10 @@ export const getNavigation = (permissions = {}) => {
   return allNav.filter(
     (item) =>
       permissions[item.name] ||
-      item.name === 'Patient Management' ||
-      item.name === 'Package Management' ||
-      item.name === 'Patient Feedback' ||
-      item.name === 'Equipment Management',
+
+
+      item.name === 'Patient Feedback'
+    // item.name === 'Equipment Management',
   )
 }
 

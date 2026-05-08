@@ -102,7 +102,7 @@ const DiseasesManagement = () => {
 
   const handleConfirmDelete = async () => {
     try {
-       setDelLoading(true)
+      setDelLoading(true)
       await deleteDiseaseData(diseaseIdToDelete, hospitalIdToDelete)
       showCustomToast('Disease deleted successfully!', { position: 'top-right' }, 'success')
       // fetchData()
@@ -111,9 +111,9 @@ const DiseasesManagement = () => {
       // showCustomToast('Failed to delete disease.', 'error')
       console.error('Delete error:', error)
     }
-     finally {
+    finally {
       setDelLoading(false)
-     }
+    }
     setIsModalVisible(false)
   }
 
@@ -260,9 +260,10 @@ const DiseasesManagement = () => {
       console.error('Update error:', error)
       // showCustomToast('Failed to update disease.', 'error')
     }
-     finally {
+    finally {
       setSaveLoading(false)
-  }}
+    }
+  }
 
   const handleDiseaseEdit = (disease) => {
     setDiseaseToEdit({ ...disease, hospitalId })
@@ -279,7 +280,7 @@ const DiseasesManagement = () => {
 
   return (
     <div>
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
 
       {can('Disease-Management', 'create') && (
         <div
@@ -466,24 +467,24 @@ const DiseasesManagement = () => {
           <CButton color="secondary" onClick={() => setEditDiseaseMode(false)}>
             Cancel
           </CButton>
-         <CButton
-  style={{ backgroundColor: 'var(--color-black)' }}
-  className="text-white"
-  onClick={handleUpdateDisease}
-  disabled={saveloading} // disable when loading
->
-  {saveloading ? (
-    <>
-      <span
-        className="spinner-border spinner-border-sm me-2 text-white"
-        role="status"
-      />
-      Updating...
-    </>
-  ) : (
-    'Update'
-  )}
-</CButton>
+          <CButton
+            style={{ backgroundColor: 'var(--color-black)' }}
+            className="text-white"
+            onClick={handleUpdateDisease}
+            disabled={saveloading} // disable when loading
+          >
+            {saveloading ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2 text-white"
+                  role="status"
+                />
+                Updating...
+              </>
+            ) : (
+              'Update'
+            )}
+          </CButton>
 
         </CModalFooter>
       </CModal>

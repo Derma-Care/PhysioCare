@@ -171,7 +171,7 @@ const FrontDeskForm = ({
 
   /* ── Mandatory field validation ────────────────────────────── */
   const mandatoryFields = [
-    'fullName', 'dateOfBirth', 'contactNumber', 'emailId', 'governmentId',
+    'fullName', 'gender', 'dateOfBirth', 'contactNumber', 'emailId', 'governmentId',
     'dateOfJoining', 'department', 'qualification', 'clinicId', 'profilePicture', 'role',
     'address.houseNo', 'address.street', 'address.city', 'address.state',
     'address.postalCode', 'address.country',
@@ -254,33 +254,121 @@ const FrontDeskForm = ({
   const handleChange = (field, value) => {
     saveScroll()
     setFormData(prev => ({ ...prev, [field]: value }))
-    const error = validateField(field, value, { ...formData, [field]: value }, technicians)
-    setErrors(prev => ({ ...prev, [field]: error }))
+    setErrors(prev => ({ ...prev, [field]: '' }))
   }
 
   const handleNestedChange = (parent, field, value) => {
     saveScroll()
     setFormData(prev => ({ ...prev, [parent]: { ...prev[parent], [field]: value } }))
+    if (errors[parent]?.[field] || errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        if (newErrors[parent]) {
+          newErrors[parent] = { ...newErrors[parent] }
+          delete newErrors[parent][field]
+        }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
   }
 
   /* ── Form validation ────────────────────────────────────────── */
   const validateForm = () => {
-    const missing = validateMandatoryFields(formData, mandatoryFields)
-    if (missing.length) { showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error'); return false }
-    if (formData.dateOfBirth) {
-      const dob = new Date(formData.dateOfBirth)
-      const today = new Date()
-      let age = today.getFullYear() - dob.getFullYear()
-      const beforeBirthday = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-      if (beforeBirthday) age--
-      if (age < 18) { showCustomToast('Staff must be at least 18 years old.', 'error'); return false }
+    const newErrors = {}
+    let isValid = true
+
+    const fieldLabels = {
+      fullName: 'Full Name',
+      gender: 'Gender',
+      dateOfBirth: 'Date of Birth',
+      contactNumber: 'Contact Number',
+      emailId: 'Email',
+      governmentId: 'Government ID',
+      dateOfJoining: 'Date of Joining',
+      department: 'Department',
+      qualification: 'Qualification',
+      profilePicture: 'Profile Image',
+      yearOfExperience: 'Years of Experience',
+      vaccinationStatus: 'Vaccination Status',
+      'address.houseNo': 'House Number',
+      'address.street': 'Street',
+      'address.city': 'City',
+      'address.state': 'State',
+      'address.postalCode': 'Postal Code',
+      'address.country': 'Country',
+      'bankAccountDetails.accountNumber': 'Account Number',
+      'bankAccountDetails.accountHolderName': 'Account Holder Name',
+      'bankAccountDetails.bankName': 'Bank Name',
+      'bankAccountDetails.branchName': 'Branch Name',
+      'bankAccountDetails.ifscCode': 'IFSC Code',
+      'bankAccountDetails.panCardNumber': 'PAN Card Number',
     }
-    if (!/^[6-9]\d{9}$/.test(formData.contactNumber)) { showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error'); return false }
-    if (formData.contactNumber === formData.emergencyContact) { showCustomToast('Contact & Emergency Contact cannot be the same.', 'error'); return false }
-    if (!emailPattern.test(formData.emailId)) { showCustomToast('Please enter a valid email address.', 'error'); return false }
-    if (receptionist?.some(t => t.contactNumber === formData.contactNumber && t.id !== formData.id)) { showCustomToast('Contact number already exists!', 'error'); return false }
-    if (receptionist?.some(t => t.emailId === formData.emailId && t.id !== formData.id)) { showCustomToast('Email already exists!', 'error'); return false }
-    return true
+
+    mandatoryFields.forEach((field) => {
+      let value = formData
+      field.split('.').forEach((key) => { value = value?.[key] })
+      if (!value || String(value).trim() === '') {
+        isValid = false
+        const label = fieldLabels[field] || field
+        if (field.includes('.')) {
+          const [parent, child] = field.split('.')
+          if (!newErrors[parent]) newErrors[parent] = {}
+          newErrors[parent][child] = `${label} is required.`
+        } else {
+          newErrors[field] = `${label} is required.`
+        }
+      }
+    })
+
+    const todayStr = new Date().toISOString().split('T')[0]
+
+    if (formData.dateOfBirth) {
+      if (formData.dateOfBirth > todayStr) {
+        newErrors.dateOfBirth = 'Date of Birth cannot be in the future.'
+        isValid = false
+      } else {
+        const dob = new Date(formData.dateOfBirth)
+        const today = new Date()
+        let age = today.getFullYear() - dob.getFullYear()
+        const before = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+        if (before) age--
+        if (age < 18) { newErrors.dateOfBirth = 'Staff must be at least 18 years old.'; isValid = false }
+      }
+    }
+
+    if (formData.dateOfJoining && formData.dateOfJoining > todayStr) {
+      newErrors.dateOfJoining = 'Joining Date cannot be in the future.'
+      isValid = false
+    }
+
+    if (formData.contactNumber && !/^[6-9]\d{9}$/.test(formData.contactNumber)) {
+      newErrors.contactNumber = 'Invalid contact number (must be 10 digits starting 6-9).'
+      isValid = false
+    }
+
+    if (formData.emailId && !emailPattern.test(formData.emailId)) {
+      newErrors.emailId = 'Invalid email address format.'
+      isValid = false
+    }
+
+    if (formData.contactNumber && formData.emergencyContact && formData.contactNumber === formData.emergencyContact) {
+      newErrors.emergencyContact = 'Emergency contact cannot be same as contact number.'
+      isValid = false
+    }
+
+    if (receptionist?.some(t => t.contactNumber === formData.contactNumber && t.id !== formData.id)) {
+      newErrors.contactNumber = 'Contact number already exists!'
+      isValid = false
+    }
+    if (receptionist?.some(t => t.emailId === formData.emailId && t.id !== formData.id)) {
+      newErrors.emailId = 'Email already exists!'
+      isValid = false
+    }
+
+    setErrors(newErrors)
+    if (!isValid) showCustomToast('Please correct the highlighted errors.', 'error')
+    return isValid
   }
 
   /* ── Submit ─────────────────────────────────────────────────── */
@@ -418,7 +506,7 @@ const FrontDeskForm = ({
             <CForm>
               {/* Basic Info */}
               <FormSection icon={User} title="Basic Information">
-                {/* <div className="fdf-row">
+                <div className="fdf-row">
                   <div className="fdf-col-half">
                     <Field label="Clinic ID" required>
                       <input className="fdf-input fdf-input-disabled" value={clinicId} disabled />
@@ -429,7 +517,7 @@ const FrontDeskForm = ({
                       <input className="fdf-input fdf-input-disabled" value={formData.role} disabled />
                     </Field>
                   </div>
-                </div> */}
+                </div>
 
                 <div className="fdf-row">
                   <div className="fdf-col-third">
@@ -442,8 +530,15 @@ const FrontDeskForm = ({
                     </Field>
                   </div>
                   <div className="fdf-col-third">
-                    <Field label="Gender" required>
-                      <select className="fdf-input" value={formData.gender} onChange={e => handleChange('gender', e.target.value)}>
+                    <Field label="Gender" required error={errors.gender}>
+                      <select
+                        className="fdf-input"
+                        value={formData.gender}
+                        onChange={e => {
+                          handleChange('gender', e.target.value)
+                          if (errors.gender) setErrors(p => ({ ...p, gender: '' }))
+                        }}
+                      >
                         <option value="">Select Gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
@@ -452,7 +547,7 @@ const FrontDeskForm = ({
                     </Field>
                   </div>
                   <div className="fdf-col-third">
-                    <Field label="Date of Birth" required>
+                    <Field label="Date of Birth" required error={errors.dateOfBirth}>
                       <input
                         className="fdf-input" type="date"
                         value={formData.dateOfBirth}
@@ -557,7 +652,7 @@ const FrontDeskForm = ({
 
                 <div className="fdf-row">
                   <div className="fdf-col-third">
-                    <Field label="Qualification" required>
+                    <Field label="Qualification" required error={errors.qualification}>
                       <input className="fdf-input" value={formData.qualification} onChange={e => handleChange('qualification', e.target.value)} />
                     </Field>
                   </div>
@@ -574,7 +669,7 @@ const FrontDeskForm = ({
                     </Field>
                   </div>
                   <div className="fdf-col-third">
-                    <Field label="Emergency Contact">
+                    <Field label="Emergency Contact" error={errors.emergencyContact}>
                       <input
                         className="fdf-input" type="text" maxLength={10}
                         value={formData.emergencyContact}
@@ -698,7 +793,7 @@ const FrontDeskForm = ({
               <FormSection icon={FileText} title="Documents">
                 <div className="fdf-row">
                   <div className="fdf-col-third">
-                    <Field label="Profile Image" required>
+                    <Field label="Profile Image" required error={errors.profilePicture}>
                       <input
                         className="fdf-input" type="file" accept="image/*"
                         onChange={async e => {

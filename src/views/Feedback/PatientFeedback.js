@@ -15,6 +15,13 @@ import Select from 'react-select';
 import { Edit2, Eye, Trash2 } from 'lucide-react';
 import { getAllPhysios } from '../EmployeeManagement/NurseManagement/NurseAPI';
 import { getAllFrontDeskAPI } from '../EmployeeManagement/FrontDesk/FrontDeskAPI';
+import {
+  getAllOverallFeedback,
+  createOverallFeedback,
+  updateOverallFeedback,
+  deleteOverallFeedback
+} from './FeedbackAPI';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const RATING_OPTIONS = [
   { id: '1', emoji: '😡', label: '1', className: 'active-1' },
@@ -39,6 +46,11 @@ const PatientFeedback = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Delete Confirmation Modal
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [feedbackIdToDelete, setFeedbackIdToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // View Modal
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -67,8 +79,24 @@ const PatientFeedback = () => {
 
   const [errors, setErrors] = useState({});
 
-  // Fetch Patients on mount
+  const fetchFeedbacks = async () => {
+    setLoading(true);
+    try {
+      const res = await getAllOverallFeedback();
+      if (res?.data?.data) setFeedbacks(res.data.data);
+      else if (res?.data) setFeedbacks(res.data);
+      else if (Array.isArray(res)) setFeedbacks(res);
+    } catch (error) {
+      console.error("Failed to fetch feedbacks", error);
+      showCustomToast('Failed to load feedbacks.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch Data on mount
   useEffect(() => {
+    fetchFeedbacks();
     const fetchPatients = async () => {
       try {
         const data = await CustomerData();
@@ -170,7 +198,7 @@ const PatientFeedback = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!validateForm()) return;
 
@@ -188,21 +216,23 @@ const PatientFeedback = () => {
       date: new Date().toISOString()
     };
 
-    setTimeout(() => {
-      setLoading(false);
-
+    try {
+      let res;
       if (isEditing) {
-        console.log("PUT /api/feedback Payload:", { id: editingId, ...payload });
-        setFeedbacks(prev => prev.map(f => f.id === editingId ? { ...payload, id: editingId } : f));
-        showCustomToast('Feedback updated successfully.', 'success');
+        res = await updateOverallFeedback(editingId, payload);
+        showCustomToast(res?.data?.message || 'Feedback updated successfully.', 'success');
       } else {
-        console.log("POST /api/feedback Payload:", payload);
-        const newFeedback = { ...payload, id: Date.now().toString() };
-        setFeedbacks(prev => [newFeedback, ...prev]);
-        showCustomToast('Feedback submitted successfully.', 'success');
+        res = await createOverallFeedback(payload);
+        showCustomToast(res?.data?.message || 'Feedback submitted successfully.', 'success');
       }
+      fetchFeedbacks();
       closeForm();
-    }, 800);
+    } catch (error) {
+      console.error("Feedback Submission Failed", error);
+      showCustomToast(error?.response?.data?.message || 'Failed to save feedback.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const openAddForm = () => {
@@ -233,15 +263,28 @@ const PatientFeedback = () => {
     });
     setErrors({});
     setIsEditing(true);
-    setEditingId(feedback.id);
+    setEditingId(feedback.patientFeedbackId || feedback.id);
     setIsFormVisible(true);
   };
 
   const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this feedback?")) {
-      console.log("DELETE /api/feedback Payload ID:", id);
-      setFeedbacks(prev => prev.filter(f => f.id !== id));
-      showCustomToast('Feedback deleted.', 'success');
+    setFeedbackIdToDelete(id);
+    setIsDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      const res = await deleteOverallFeedback(feedbackIdToDelete);
+      showCustomToast(res?.data?.message || 'Feedback deleted.', 'success');
+      fetchFeedbacks();
+      setIsDeleteModalVisible(false);
+    } catch (error) {
+      console.error("Failed to delete feedback", error);
+      showCustomToast(error?.response?.data?.message || 'Failed to delete feedback.', 'error');
+    } finally {
+      setIsDeleting(false);
+      setFeedbackIdToDelete(null);
     }
   };
 
@@ -379,7 +422,7 @@ const PatientFeedback = () => {
                     <p>Click "Add Feedback" to create a new entry.</p>
                   </div>
                 ) : (
-                  <table className="pf-table">
+                  <table className="pf-table pink-table">
                     <thead>
                       <tr>
                         <th>S.No</th>
@@ -399,7 +442,7 @@ const PatientFeedback = () => {
                         if (f.receptionistFeedback) ratedEntities.push('Receptionist');
 
                         return (
-                          <tr key={f.id}>
+                          <tr key={f.patientFeedbackId || f.id || index}>
                             <td>{index + 1}</td>
                             <td>{new Date(f.date).toLocaleDateString()}</td>
                             <td>{f.patientName}</td>
@@ -413,7 +456,7 @@ const PatientFeedback = () => {
                                 <button className="pf-btn-icon pf-btn-edit" onClick={() => openEditForm(f)} title="Edit">
                                   <Edit2 size={14} />
                                 </button>
-                                <button className="pf-btn-icon pf-btn-delete" onClick={() => handleDelete(f.id)} title="Delete">
+                                <button className="pf-btn-icon pf-btn-delete" onClick={() => handleDelete(f.patientFeedbackId || f.id)} title="Delete">
                                   <Trash2 size={14} />
                                 </button>
                               </div>
@@ -739,6 +782,24 @@ const PatientFeedback = () => {
           </CButton>
         </CModalFooter>
       </CModal>
+
+      {/* DELETE CONFIRMATION */}
+      <ConfirmationModal
+        isVisible={isDeleteModalVisible}
+        title="Delete Feedback"
+        message="Are you sure you want to delete this feedback? This action cannot be undone."
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        confirmColor="danger"
+        isLoading={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          if (!isDeleting) {
+            setIsDeleteModalVisible(false);
+            setFeedbackIdToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 };

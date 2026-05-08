@@ -292,7 +292,7 @@ const CustomerManagement = () => {
 
   return (
     <div className="cm-wrapper">
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
       <ConfirmationModal
         isVisible={isModalVisible}
         title="Delete Patient"
@@ -318,17 +318,17 @@ const CustomerManagement = () => {
               </div>
             </div>
             <div
-  className="cm-search-wrapper"
-  style={{ marginLeft: "auto" }}  // adjust value as needed
->
-  <input
-    type="text"
-    placeholder="Search..."
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    className="cm-search-input"
-  />
-</div>
+              className="cm-search-wrapper"
+              style={{ marginLeft: "auto" }}  // adjust value as needed
+            >
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="cm-search-input"
+              />
+            </div>
             {can('Customer Management', 'create') && (
               <button className="cm-add-btn" onClick={() => { setIsAdding(true); resetForm() }}>
                 <UserPlus size={15} /> Add New Patient
@@ -379,19 +379,19 @@ const CustomerManagement = () => {
                         <CTableDataCell className="cm-td">{customer?.address?.city || '-'}</CTableDataCell>
                         <CTableDataCell className="cm-td">
                           <div className="cm-actions">
-                            {can('Customer Management', 'read') && (
+                            {can('Patient Management', 'read') && (
                               <button className="cm-action-btn view" title="View"
                                 onClick={() => navigate('/patient-management/view', { state: { patientInfo: customer } })}>
                                 <Eye size={15} />
                               </button>
                             )}
-                            {can('Customer Management', 'update') && (
+                            {can('Patient Management', 'update') && (
                               <button className="cm-action-btn edit" title="Edit"
                                 onClick={() => handleEditCustomer(customer)}>
                                 <Edit2 size={15} />
                               </button>
                             )}
-                            {can('Customer Management', 'delete') && (
+                            {can('Patient Management', 'delete') && (
                               <button className="cm-action-btn delete" title="Delete"
                                 onClick={() => { setCustomerIdToDelete(customer?.customerId); setIsModalVisible(true) }}>
                                 <Trash2 size={15} />

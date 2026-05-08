@@ -234,7 +234,7 @@ const CategoryManagement = () => {
       }
 
       const response = await postCategoryData(payload)
-      showCustomToast('Category added successfully!', { position: 'top-right' },'success')
+      showCustomToast('Category added successfully!', { position: 'top-right' }, 'success')
       fetchData()
       setModalVisible(false)
     } catch (error) {
@@ -253,7 +253,7 @@ const CategoryManagement = () => {
 
   const handleUpdateCategory = async () => {
     if (!updatedCategory.categoryName.trim()) {
-     showCustomToast('Category name is required', { position: 'top-right' },'error')
+      showCustomToast('Category name is required', { position: 'top-right' }, 'error')
       return
     }
 
@@ -267,7 +267,7 @@ const CategoryManagement = () => {
       const response = await updateCategoryData(categoryToEdit.categoryId, formData)
 
       console.log('Category updated successfully:', response)
-      showCustomToast('Category updated successfully!', { position: 'top-right' },'success')
+      showCustomToast('Category updated successfully!', { position: 'top-right' }, 'success')
       setEditCategoryMode(false)
       fetchData()
     } catch (error) {
@@ -310,7 +310,7 @@ const CategoryManagement = () => {
     try {
       await deleteCategoryData(categoryIdToDelete)
       setIsModalVisible(false)
-      showCustomToast('Category deleted successfully!', { position: 'top-right' },'success')
+      showCustomToast('Category deleted successfully!', { position: 'top-right' }, 'success')
       fetchData()
     } catch (error) {
       alert('Failed to delete category.')
@@ -332,7 +332,7 @@ const CategoryManagement = () => {
 
   return (
     <div style={{ overflow: 'hidden' }}>
-      {/* {/* <ToastContainer /> */} */}
+      {/* <ToastContainer /> */}
       <div>
         <CForm className="d-flex justify-content-end mb-3">
           <CInputGroup className="mb-3" style={{ marginRight: '20px', width: '400px' }}>
