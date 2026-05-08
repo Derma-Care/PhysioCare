@@ -90,6 +90,7 @@ const AttendanceTracker = () => {
   const [durationMinutes, setDurationMinutes] = useState(0);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [address, setAddress] = useState("Fetching...");
+  const [coords, setCoords] = useState({ latitude: "", longitude: "" });
 
   const [data, setData] = useState([]);
   const [monthlyData, setMonthlyData] = useState([]);
@@ -203,9 +204,12 @@ const AttendanceTracker = () => {
     navigator.geolocation &&
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
+          const lat = pos.coords.latitude.toString();
+          const lon = pos.coords.longitude.toString();
+          setCoords({ latitude: lat, longitude: lon });
           try {
             const res = await axios.get(
-              `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
             );
             setAddress(res.data.display_name);
           } catch {
@@ -226,7 +230,9 @@ const AttendanceTracker = () => {
         userId,
         date: dateStr,
         loginTime: time,
-        loginLocation: address
+        loginLocation: address,
+        loginLatitude: coords.latitude,
+        loginLongtitude: coords.longitude
       };
 
       const res = await axios.put(`${BASE_URL}/updateUserAttendence`, payload);
@@ -262,7 +268,9 @@ const AttendanceTracker = () => {
         userId,
         date: dateStr,
         logoutTime: time,
-        logoutLocation: address
+        logoutLocation: address,
+        logoutLatitude: coords.latitude,
+        logoutLongtitude: coords.longitude
       };
 
       const res = await axios.put(`${BASE_URL}/updateUserAttendence`, payload);
@@ -316,7 +324,9 @@ const AttendanceTracker = () => {
           {
             activity,
             duration: durationStr,
-            location: address
+            location: address,
+            latitude: coords.latitude,
+            longtitude: coords.longitude
           }
         ]
       };
