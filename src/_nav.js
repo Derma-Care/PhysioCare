@@ -206,7 +206,7 @@ export const getNavigation = (permissions = {}) => {
 
   ]
 
-  // Only include items if permission exists
+
   if (!permissions || typeof permissions !== 'object') return []
 
   // return allNav.filter((item) => permissions[item.name])
