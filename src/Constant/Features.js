@@ -14,7 +14,7 @@ export const features = [
   'OtherStaff',
   'Appointments',
   'Reports Management',
-  'Disease-Management',
+  // 'Disease-Management',
   'Therapy Management',
   // 'Exercise Management',
   'Program Management',
@@ -22,7 +22,7 @@ export const features = [
 
   'Tests',
   // 'Treatments',
-  'Therapy Management',
+  // 'Therapy Management',
   'Payouts',
   'Help',
   'Customer Management',

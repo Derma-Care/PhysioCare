@@ -70,44 +70,6 @@ export default function PatientViewModal({ visible, data, onClose }) {
             <CCardBody>
               <h6>Complaint Details</h6>
               <p>{record?.complaints?.complaintDetails || "N/A"}</p>
-
-              <h6 className="mt-3">Therapy Q&A</h6>
-
-              {Object.entries(record?.complaints?.theraphyAnswers || {}).length > 0 ? (
-                Object.entries(record.complaints.theraphyAnswers).map(([part, questions]) => (
-                  <div key={part}>
-                    <h6 style={{ textTransform: "capitalize" }}>{part}</h6>
-
-                    {questions?.map((q, i) => (
-                      <div key={i} style={{ background: "#f8f9fa", padding: "10px", marginBottom: "6px" }}>
-                        <p><b>Q:</b> {q?.question || "N/A"}</p>
-                        <p><b>A:</b> {q?.answer || "N/A"}</p>
-                      </div>
-                    ))}
-                  </div>
-                ))
-              ) : (
-                <p>No Q&A available</p>
-              )}
-            </CCardBody>
-          </CCard>
-
-          {/* 🖼️ IMAGE (UNCHANGED) */}
-          <CCard className="mb-3">
-            <CCardBody>
-              <h6>Pain Assessment Image</h6>
-
-              {record?.complaints?.painAssessmentImage ? (
-                <div style={{ textAlign: "center" }}>
-                  <img
-                    src={`data:image/jpeg;base64,${record?.complaints?.painAssessmentImage}`}
-                    style={{ width: "250px", borderRadius: "10px", cursor: "pointer" }}
-                    onClick={() => handleImageClick(record?.complaints?.painAssessmentImage)}
-                  />
-                </div>
-              ) : (
-                <p>No image available</p>
-              )}
             </CCardBody>
           </CCard>
           {/* 🖼️ REPORT IMAGE */}
@@ -174,6 +136,41 @@ export default function PatientViewModal({ visible, data, onClose }) {
     <p><b>Range of Motion:</b> {record?.assessment?.rangeOfMotion || "N/A"}</p>
     <p><b>Special Tests:</b> {record?.assessment?.specialTests || "N/A"}</p>
     <p><b>Observations:</b> {record?.assessment?.observations || "N/A"}</p>
+
+    <hr />
+    <h6 className="mt-3">Therapy Q&A</h6>
+
+    {Object.entries(record?.complaints?.theraphyAnswers || {}).length > 0 ? (
+      Object.entries(record.complaints.theraphyAnswers).map(([part, questions]) => (
+        <div key={part}>
+          <h6 style={{ textTransform: "capitalize" }}>{part}</h6>
+
+          {questions?.map((q, i) => (
+            <div key={i} style={{ background: "#f8f9fa", padding: "10px", marginBottom: "6px" }}>
+              <p><b>Q:</b> {q?.question || "N/A"}</p>
+              <p><b>A:</b> {q?.answer || "N/A"}</p>
+            </div>
+          ))}
+        </div>
+      ))
+    ) : (
+      <p>No Q&A available</p>
+    )}
+
+    <hr />
+    <h6>Pain Assessment Image</h6>
+
+    {record?.complaints?.painAssessmentImage ? (
+      <div style={{ textAlign: "center" }}>
+        <img
+          src={`data:image/jpeg;base64,${record?.complaints?.painAssessmentImage}`}
+          style={{ width: "250px", borderRadius: "10px", cursor: "pointer" }}
+          onClick={() => handleImageClick(record?.complaints?.painAssessmentImage)}
+        />
+      </div>
+    ) : (
+      <p>No image available</p>
+    )}
 
   </CCardBody>
 </CCard>

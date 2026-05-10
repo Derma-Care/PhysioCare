@@ -501,25 +501,45 @@ const AppointmentDetails = () => {
             </div>
           )}
 
-          {appointment?.partImage && (
+          {(appointment?.partImage || (appointment?.theraphyAnswers && Object.keys(appointment.theraphyAnswers).length > 0)) && (
             <div style={{ marginTop: '24px' }}>
               <SectionHeading icon={Activity} title="Pain Assessment / Area Mapping" />
               <div style={{
                 border: `1px solid ${tokens.border}`,
                 borderRadius: tokens.radius,
                 padding: '16px',
-                textAlign: 'center',
                 backgroundColor: '#fff',
                 boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)'
               }}>
-                <img
-                  src={`data:image/png;base64,${appointment.partImage}`}
-                  alt="Pain Area Mapping"
-                  style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: '8px' }}
-                />
-                <div style={{ marginTop: '12px', fontSize: '12px', color: tokens.muted }}>
-                  Visual representation of reported pain areas and assessment markings.
-                </div>
+                {appointment?.partImage && (
+                  <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                    <img
+                      src={`data:image/png;base64,${appointment.partImage}`}
+                      alt="Pain Area Mapping"
+                      style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: '8px' }}
+                    />
+                    <div style={{ marginTop: '12px', fontSize: '12px', color: tokens.muted }}>
+                      Visual representation of reported pain areas and assessment markings.
+                    </div>
+                  </div>
+                )}
+
+                {appointment?.theraphyAnswers && Object.entries(appointment.theraphyAnswers).length > 0 && (
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: tokens.primary, marginBottom: '8px' }}>Therapy Q&A</div>
+                    {Object.entries(appointment.theraphyAnswers).map(([part, questions]) => (
+                      <div key={part} style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'capitalize', color: tokens.muted, marginBottom: '4px' }}>{part}</div>
+                        {questions?.map((q, i) => (
+                          <div key={i} style={{ backgroundColor: tokens.surface, padding: '8px 12px', borderRadius: tokens.radiusSm, marginBottom: '4px' }}>
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: tokens.black }}>Q: {q?.question || 'N/A'}</div>
+                            <div style={{ fontSize: '12px', color: tokens.black }}>A: {q?.answer || 'N/A'}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

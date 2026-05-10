@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable react/prop-types */
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import front from '../../assets/body_front.png'
 import back from '../../assets/body_back.png'
 import BodySvg from './BodySvg'
@@ -10,10 +10,16 @@ import { Spinner } from 'react-bootstrap'
 import LoadingIndicator from '../../Utils/loader'
 import { showCustomToast } from '../../Utils/Toaster'
 import { COLORS } from '../../Constant/Themes'
-export default function BodyAssessment({ onPartClick }) {
+export default function BodyAssessment({ onPartClick, initialSelected = [], initialAnswers = {}, initialImage = null }) {
   const [view, setView] = useState('front')
   const [selected, setSelected] = useState([])
   const [modalPart, setModalPart] = useState(null)
+
+  useEffect(() => {
+    if (initialSelected && initialSelected.length > 0 && selected.length === 0) {
+      setSelected(initialSelected)
+    }
+  }, [initialSelected])
   const [answerData, setAnswerData] = useState([])
   const [points, setPoints] = useState([])
   const [previewImage, setPreviewImage] = useState(null)
@@ -95,7 +101,9 @@ export default function BodyAssessment({ onPartClick }) {
   console.log(answerData)
   // ✅ SEND TO PARENT
   const sendToParent = async () => {
-    if (selected.length === 0) {
+    // In edit mode: if user hasn't selected new parts, use existing initialSelected
+    const effectiveSelected = selected.length > 0 ? selected : (initialSelected && initialSelected.length > 0 ? initialSelected : [])
+    if (effectiveSelected.length === 0) {
       showCustomToast("Please select at least one body part", "error");
       return;
     }
@@ -115,6 +123,14 @@ export default function BodyAssessment({ onPartClick }) {
     })
 
     try {
+      if (points.length === 0 && initialImage) {
+        // Edit mode with no new selections - reuse existing image & parts
+        setFinalImage(initialImage);
+        setModalPart([...effectiveSelected])
+        handleClear()
+        return;
+      }
+
       const [fImg, bImg] = await Promise.all([loadImage(front), loadImage(back)])
 
       ctx.drawImage(fImg, 0, 0, 300, 550)
@@ -128,11 +144,12 @@ export default function BodyAssessment({ onPartClick }) {
         ctx.fill()
       })
 
-      const base64 = canvas.toDataURL("image/png")
+      // We only want the base64 part, not the prefix, because BookAppointmentModal prepends it later
+      const base64 = canvas.toDataURL("image/png").split(',')[1]
 
       setPreviewImage(base64)
       setFinalImage(base64);
-      setModalPart([...selected])
+      setModalPart([...effectiveSelected])
       handleClear()
     } catch (error) {
       console.error("Error opening assessment modal:", error)
@@ -228,6 +245,7 @@ export default function BodyAssessment({ onPartClick }) {
             partId={modalPart}
             onClose={() => setModalPart(null)}
             onSave={handleSaveAnswers}
+            initialAnswers={initialAnswers}
           />
         )}
       </div>

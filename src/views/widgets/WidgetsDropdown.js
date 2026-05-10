@@ -81,6 +81,19 @@ const WidgetsDropdown = (props) => {
   const [printData, setPrintData] = useState(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [confirmData, setConfirmData] = useState({ bookingId: null, paymentType: '' })
+  const [openPayDropdown, setOpenPayDropdown] = useState(null)
+  const payDropdownRef = useRef(null)
+
+  // ── Close payment dropdown when clicking outside ────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      if (payDropdownRef.current && !payDropdownRef.current.contains(e.target)) {
+        setOpenPayDropdown(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const statusLabelMap = {
     'In-Progress': 'Active',
@@ -575,41 +588,48 @@ const WidgetsDropdown = (props) => {
                           <CTableDataCell className="wd-td">
                             {item.slot || item.servicetime}
                           </CTableDataCell>
-                          <CTableDataCell className="wd-td">
+                          <CTableDataCell className="wd-td" style={{ position: 'relative', overflow: 'visible' }}>
                             {item.status?.toLowerCase() === 'pending' ? (
-                              editingPaymentId === item.bookingId ? (
-                                <select
-                                  className="wd-fu-select"
-                                  defaultValue=""
-                                  onChange={(e) => {
-                                    const mode = e.target.value
-                                    if (mode) {
-                                      setConfirmData({ bookingId: item.bookingId, paymentType: mode })
-                                      setShowConfirm(true)
-                                    }
-                                  }}
+                              <div
+                                className="wd-pay-dropdown"
+                                ref={openPayDropdown === item.bookingId ? payDropdownRef : null}
+                              >
+                                <button
+                                  className="wd-pay-trigger"
+                                  onClick={() => setOpenPayDropdown(openPayDropdown === item.bookingId ? null : item.bookingId)}
                                 >
-                                  <option value="">Select</option>
-                                  {paymentOptions.map((pay) => (
-                                    <option key={pay} value={pay}>
-                                      {pay}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (
-                                <span
-                                  className="wd-status-badge"
-                                  onClick={() => setEditingPaymentId(item.bookingId)}
-                                  style={{
-                                    cursor: 'pointer',
-                                    background: statusStyle.bg,
-                                    color: statusStyle.color,
-                                    border: `0.5px solid ${statusStyle.border}`,
-                                  }}
-                                >
-                                  {statusKey}
-                                </span>
-                              )
+                                  <span className="wd-pay-dot" />
+                                  Confirm Payment
+                                  <svg className={`wd-pay-chevron${openPayDropdown === item.bookingId ? ' open' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <polyline points="6 9 12 15 18 9" />
+                                  </svg>
+                                </button>
+                                {openPayDropdown === item.bookingId && (
+                                  <div className="wd-pay-menu">
+                                    {[
+                                      { label: 'Cash', icon: '💵', desc: 'Physical currency' },
+                                      { label: 'Card', icon: '💳', desc: 'Debit / Credit' },
+                                      { label: 'UPI',  icon: '📲', desc: 'GPay / PhonePe' },
+                                    ].map((opt) => (
+                                      <button
+                                        key={opt.label}
+                                        className="wd-pay-option"
+                                        onClick={() => {
+                                          setOpenPayDropdown(null)
+                                          setConfirmData({ bookingId: item.bookingId, paymentType: opt.label })
+                                          setShowConfirm(true)
+                                        }}
+                                      >
+                                        <span className="wd-pay-opt-icon">{opt.icon}</span>
+                                        <span className="wd-pay-opt-text">
+                                          <span className="wd-pay-opt-label">{opt.label}</span>
+                                          <span className="wd-pay-opt-desc">{opt.desc}</span>
+                                        </span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             ) : (
                               <span
                                 className="wd-status-badge"
@@ -791,9 +811,12 @@ const WidgetsDropdown = (props) => {
         .wd-table-wrapper {
           border: 0.5px solid #d0dce9;
           border-radius: 10px;
-          overflow: hidden;
+          overflow: visible;
           margin-bottom: 12px;
         }
+        /* Restore rounded corners on first/last rows since overflow:visible removes clip */
+        .wd-table thead tr:first-child th:first-child { border-top-left-radius: 10px; }
+        .wd-table thead tr:first-child th:last-child  { border-top-right-radius: 10px; }
         .wd-table { margin-bottom: 0 !important; font-size: 13px; }
 
         /* ── Table header ────────────────────────── */
@@ -873,17 +896,106 @@ const WidgetsDropdown = (props) => {
         .wd-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
         .wd-action-btn:active { transform: scale(0.94); }
 
-        /* ── Empty state ─────────────────────────── */
-        .wd-empty {
+        /* ── Custom payment dropdown ─────────────── */
+        .wd-pay-dropdown {
+          position: relative;
+          display: inline-block;
+        }
+        .wd-pay-trigger {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 11px;
+          border-radius: 20px;
+          border: 1px solid #f0d080;
+          background: #fffbea;
+          color: #92680a;
+          font-size: 11.5px;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.15s;
+          outline: none;
+        }
+        .wd-pay-trigger:hover {
+          background: #fff3c4;
+          border-color: #e6b800;
+          box-shadow: 0 2px 8px rgba(230,184,0,0.2);
+        }
+        .wd-pay-dot {
+          width: 7px; height: 7px;
+          border-radius: 50%;
+          background: #f59e0b;
+          flex-shrink: 0;
+          animation: pulse-dot 1.5s infinite;
+        }
+        @keyframes pulse-dot {
+          0%,100% { opacity:1; transform:scale(1); }
+          50%      { opacity:0.5; transform:scale(1.4); }
+        }
+        .wd-pay-chevron {
+          width: 13px; height: 13px;
+          transition: transform 0.2s;
+          flex-shrink: 0;
+        }
+        .wd-pay-chevron.open { transform: rotate(180deg); }
+
+        .wd-pay-menu {
+          position: absolute;
+          top: calc(100% + 6px);
+          left: 0;
+          z-index: 999;
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+          min-width: 190px;
+          padding: 6px;
+          animation: wd-dropdown-in 0.15s ease;
+        }
+        @keyframes wd-dropdown-in {
+          from { opacity:0; transform:translateY(-6px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        .wd-pay-option {
           display: flex;
-          flex-direction: column;
           align-items: center;
           gap: 10px;
-          padding: 40px 0;
-          color: #9ca3af;
-          font-size: 14px;
+          width: 100%;
+          padding: 8px 10px;
+          border: none;
+          background: transparent;
+          border-radius: 8px;
+          cursor: pointer;
+          text-align: left;
+          transition: background 0.12s;
         }
-        .wd-empty-icon { color: #d0dce9; }
+        .wd-pay-option:hover { background: #f0f5fb; }
+        .wd-pay-opt-icon {
+          font-size: 18px;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #f0f5fb;
+          border-radius: 8px;
+          flex-shrink: 0;
+        }
+        .wd-pay-opt-text {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+        }
+        .wd-pay-opt-label {
+          font-size: 12.5px;
+          font-weight: 600;
+          color: #1a2e44;
+        }
+        .wd-pay-opt-desc {
+          font-size: 10.5px;
+          color: #9ca3af;
+        }
       `}</style>
     </>
   )

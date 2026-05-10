@@ -24,13 +24,13 @@ import CIcon from '@coreui/icons-react'
 import { cilArrowRight, cilChevronBottom, cilChevronTop } from '@coreui/icons'
 import { useNavigate } from 'react-router-dom'
 import Pagination from '../../Utils/Pagination'
-import { Eye, Search } from "lucide-react";
+import { Eye, Pencil, Search, Trash2 } from "lucide-react";
 import {
   getBookingsTodayFollowUps,
   getUpcomingFollowUps,
   getDateRangeFollowUps,
 } from '../../APIs/GetFollowUpApi'
-import { bookingUpdate } from './appointmentAPI'
+import { bookingUpdate, deleteBookingData } from './appointmentAPI'
 import LoadingIndicator from '../../Utils/loader'
 import capitalizeWords from '../../Utils/capitalizeWords'
 import BookAppointmentModal from './BookAppointmentModal '
@@ -38,6 +38,9 @@ import axios from 'axios'
 import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import { BASE_URL } from '../../baseUrl'
 import { ToastContainer } from 'react-toastify'
+import { useHospital } from '../Usecontext/HospitalContext'
+import ConfirmationModal from '../../components/ConfirmationModal'
+import { showCustomToast } from '../../Utils/Toaster'
 
 /* ─── Status list ─────────────────────────────────────────────────────── */
 const followUpStatus = [
@@ -176,6 +179,10 @@ export default function FollowupDashboard() {
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [showAllSlots, setShowAllSlots] = useState(false)
   const [expandedRow, setExpandedRow] = useState(null)
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false)
+  const [bookingIdToDelete, setBookingIdToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [editData, setEditData] = useState(null)
   /* ══════════════════════════════════════════════════════════════════
      INITIAL LOAD
   ══════════════════════════════════════════════════════════════════ */
@@ -254,6 +261,40 @@ export default function FollowupDashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const { user } = useHospital()
+  const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
+
+  const handleDelete = (bookingId) => {
+    setBookingIdToDelete(bookingId)
+    setIsDeleteModalVisible(true)
+  }
+
+  const confirmDelete = async () => {
+    try {
+      setIsDeleting(true)
+      await deleteBookingData(bookingIdToDelete)
+      showCustomToast('Appointment deleted successfully', 'success')
+
+      // Refresh data
+      if (activeCard === 'today') await getTodayFollowUps()
+      else if (activeCard === 'upcoming') await getUpcomingAppointments()
+      else await getInitialCounts()
+
+    } catch (error) {
+      console.error('Delete failed:', error)
+      showCustomToast('Failed to delete appointment', 'error')
+    } finally {
+      setIsDeleting(false)
+      setIsDeleteModalVisible(false)
+      setBookingIdToDelete(null)
+    }
+  }
+
+  const handleEdit = (row) => {
+    setEditData(row)
+    setVisible(true)
   }
 
   const fetchSlots = async (doctorId, branchId) => {
@@ -515,7 +556,7 @@ export default function FollowupDashboard() {
               </select>
             </div>
 
-            {(role === 'admin' || role === 'receptionist') && (
+            {can('Appointments', 'create') && (
               <button
                 style={{ ...filterBtnActive, alignSelf: 'flex-end' }}
                 onClick={() => setVisible(true)}
@@ -526,7 +567,14 @@ export default function FollowupDashboard() {
           </div>
         </div>
 
-        <BookAppointmentModal visible={visible} onClose={() => setVisible(false)} />
+        <BookAppointmentModal
+          visible={visible}
+          onClose={() => {
+            setVisible(false)
+            setEditData(null)
+          }}
+          editData={editData}
+        />
         <CInputGroup style={{ maxWidth: "300px" }} className="mb-3">
 
           {/* Input */}
@@ -681,8 +729,30 @@ export default function FollowupDashboard() {
                               }
                               title="View"
                             >
-                              <Eye size="sm" />
+                              <Eye size={16} />
                             </button>
+
+                            {/* Update Button */}
+                            {can('Appointments', 'update') && (
+                              <button
+                                className="wd-action-btn edit"
+                                onClick={() => handleEdit(row)}
+                                title="Edit"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                            )}
+
+                            {/* Delete Button */}
+                            {can('Appointments', 'delete') && (
+                              <button
+                                className="wd-action-btn delete"
+                                onClick={() => handleDelete(row.bookingId)}
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
 
                             {/* Session Button */}
                             {(row.visitType?.toLowerCase() === 'session' ||
@@ -786,6 +856,22 @@ export default function FollowupDashboard() {
             onPageSizeChange={size => { setPageSize(size); setCurrentPage(1) }}
           />
         )}
+
+        <ConfirmationModal
+          isVisible={isDeleteModalVisible}
+          title="Delete Appointment"
+          message="Are you sure you want to delete this appointment? This action cannot be undone."
+          isLoading={isDeleting}
+          confirmText="Yes, Delete"
+          cancelText="Cancel"
+          confirmColor="danger"
+          cancelColor="secondary"
+          onConfirm={confirmDelete}
+          onCancel={() => {
+            setIsDeleteModalVisible(false)
+            setBookingIdToDelete(null)
+          }}
+        />
       </CContainer>
 
       {/* ── REASON / RESCHEDULE MODAL ─────────────────────────────────── */}
@@ -1021,6 +1107,8 @@ export default function FollowupDashboard() {
           cursor: pointer; transition: filter 0.12s, transform 0.1s; flex-shrink: 0;
         }
         .wd-action-btn.view { background: #e6f1fb; color: #185fa5; }
+        .wd-action-btn.edit { background: #eaf3de; color: #3b6d11; }
+        .wd-action-btn.delete { background: #fcebeb; color: #a32d2d; }
         .wd-action-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
         .wd-action-btn:active { transform: scale(0.94); }
 

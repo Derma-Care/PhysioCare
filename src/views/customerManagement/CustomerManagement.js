@@ -219,14 +219,14 @@ const CustomerManagement = () => {
     if (!formData.title.trim()) errs.title = 'Title is required'
     if (!formData.firstName.trim()) errs.firstName = 'First name is required'
     if (!/^[1-9]\d{9}$/.test(formData.mobileNumber)) errs.mobileNumber = 'Valid 10-digit number required'
-    if (!emailPattern.test(formData.email)) errs.email = 'Valid email required'
-    if (!formData.dateOfBirth.trim()) errs.dateOfBirth = 'Date of birth required'
-    else {
+    if (formData.email && formData.email.trim() && !emailPattern.test(formData.email)) errs.email = 'Valid email required'
+    
+    if (formData.dateOfBirth && formData.dateOfBirth.trim()) {
       const d = new Date(formData.dateOfBirth)
       if (isNaN(d) || d > new Date()) errs.dateOfBirth = 'Invalid date of birth'
     }
+    
     if (!formData.gender) errs.gender = 'Gender required'
-    if (!formData.address.houseNo?.trim()) errs.houseNo = 'House number required'
     if (!formData.address.street?.trim()) errs.street = 'Street required'
     if (!formData.address.city?.trim()) errs.city = 'City required'
     if (!formData.address.state?.trim()) errs.state = 'State required'
@@ -329,7 +329,7 @@ const CustomerManagement = () => {
                 className="cm-search-input"
               />
             </div>
-            {can('Customer Management', 'create') && (
+            {can('Patient Management', 'create') && (
               <button className="cm-add-btn" onClick={() => { setIsAdding(true); resetForm() }}>
                 <UserPlus size={15} /> Add New Patient
               </button>
@@ -479,7 +479,7 @@ const CustomerManagement = () => {
                 </CFormSelect>
               </Field>
 
-              <Field label="Date of Birth" required error={formErrors.dateOfBirth}>
+              <Field label="Date of Birth" error={formErrors.dateOfBirth}>
                 <CFormInput
                   type="date"
                   name="dateOfBirth"
@@ -488,7 +488,12 @@ const CustomerManagement = () => {
                   max={new Date().toISOString().split('T')[0]}
                   onChange={(e) => {
                     handleInputChange(e)
-                    const dob = new Date(e.target.value)
+                    const dobStr = e.target.value
+                    if (!dobStr) {
+                      setFormData((p) => ({ ...p, age: '' }))
+                      return
+                    }
+                    const dob = new Date(dobStr)
                     if (!isNaN(dob)) {
                       const age = Math.abs(new Date(Date.now() - dob).getUTCFullYear() - 1970)
                       setFormData((p) => ({ ...p, age: age.toString() }))
@@ -503,7 +508,7 @@ const CustomerManagement = () => {
                 <CFormInput value={formData.age || ''} className="cm-input cm-input-readonly" readOnly placeholder="Auto-calculated" />
               </Field>
 
-              <Field label="Email" required error={formErrors.email}>
+              <Field label="Email" error={formErrors.email}>
                 <CFormInput
                   type="email"
                   name="email"
@@ -532,7 +537,7 @@ const CustomerManagement = () => {
             {/* Section 2 – Address */}
             <SectionHead icon="📍" text="Address Details" />
             <div className="cm-grid cm-grid-4">
-              <Field label="House / Bldg / Apt" required error={formErrors.houseNo}>
+              <Field label="House / Bldg / Apt" error={formErrors.houseNo}>
                 <CFormInput
                   value={formData.address.houseNo}
                   className={`cm-input${formErrors.houseNo ? ' is-invalid' : ''}`}

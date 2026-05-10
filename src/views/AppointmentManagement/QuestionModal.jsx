@@ -24,11 +24,32 @@ export default function QuestionModal({
   partId,
   onClose,
   onSave,
+  initialAnswers = {}
 }) {
 
   const partIds = Array.isArray(partId) ? partId : [partId];
 
   const [answers, setAnswers] = useState({});
+  
+  useEffect(() => {
+    if (initialAnswers && Object.keys(initialAnswers).length > 0) {
+      const flatAnswers = {};
+      Object.keys(initialAnswers).forEach(part => {
+        const arr = initialAnswers[part];
+        if (Array.isArray(arr)) {
+          arr.forEach(q => {
+            // For multi-select, answer might be a string separated by commas.
+            // But state expects an array for multi-select. We handle that in mapping if needed,
+            // or just split it. Actually the value in Select checkbox is checked with `.includes(opt)`,
+            // so if it's a string from backend, we should convert it to an array.
+            flatAnswers[`${part}_${q.questionId}`] = q.answer && q.answer.includes(',') ? q.answer.split(', ').map(s=>s.trim()) : q.answer;
+          });
+        }
+      });
+      setAnswers(flatAnswers);
+    }
+  }, [initialAnswers]);
+
   console.log(partIds)
   const [loadingQuestions, setLoadingQuestions] = useState(false)
   const [questionsByPart, setQuestionsByPart] = useState({});

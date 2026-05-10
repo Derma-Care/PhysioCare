@@ -313,12 +313,15 @@ export default function PackagesManagement() {
                     )}
                   </CTableDataCell>
 
-                  <CTableDataCell className="pm-td">
+                  {/* <CTableDataCell className="pm-td">
                     <div className="pm-prog-tags">
                       {safeArray(item.programs).map((p, i) => (
                         <span key={i} className="pm-prog-tag">{p?.programName || "—"}</span>
                       ))}
                     </div>
+                  </CTableDataCell> */}
+                  <CTableDataCell className="pg-td">
+                    <span className="pg-count-badge">{item.noOfPrograms ?? 0} program</span>
                   </CTableDataCell>
 
                   <CTableDataCell className="pm-td">
@@ -757,6 +760,10 @@ export default function PackagesManagement() {
           height: 36px; font-size: 13px !important;
           border: 0.5px solid #ced4da !important; border-radius: 7px !important;
           transition: border-color 0.15s, box-shadow 0.15s !important;
+        }
+            .pg-count-badge {
+          background: #e6f1fb; color: #185fa5; border: 0.5px solid #b5d4f4;
+          border-radius: 20px; font-size: 11px; font-weight: 600; padding: 2px 10px;
         }
         .pm-input:focus {
           border-color: #185fa5 !important; box-shadow: 0 0 0 2px rgba(24,95,165,0.15) !important;
