@@ -306,49 +306,60 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
     setErrors((prev) => {
       const e = { ...prev }
-      if (name === 'name') { value?.trim() ? delete e.name : (e.name = 'Name is required') }
+      if (name === 'title' && value) delete e.title
+      if (name === 'name' && value?.trim()) delete e.name
+      if (name === 'gender' && value) delete e.gender
+      if (name === 'dob' && value) delete e.dob
+      if (name === 'problem' && value?.trim()) delete e.problem
+      if (name === 'symptomsDuration' && value) delete e.symptomsDuration
+      if (name === 'unit' && value) delete e.unit
+      if (name === 'paymentType' && value) delete e.paymentType
       if (name === 'patientMobileNumber') {
         const v = value.replace(/\D/g, '').replace(/^0/, '')
-        if (!v) e.patientMobileNumber = 'Mobile required'
-        else if (!/^[6-9]\d{9}$/.test(v)) e.patientMobileNumber = 'Invalid mobile number'
-        else delete e.patientMobileNumber
+        if (/^[6-9]\d{9}$/.test(v)) delete e.patientMobileNumber
+        else if (!v) e.patientMobileNumber = 'Mobile required'
+        else e.patientMobileNumber = 'Invalid mobile number'
       }
-      if (name === 'gender') { value ? delete e.gender : (e.gender = 'Select gender') }
-      if (name === 'dob') { value ? delete e.dob : (e.dob = 'DOB required') }
-      if (name === 'problem') { value?.trim() ? delete e.problem : (e.problem = 'Problem required') }
-      if (name === 'symptomsDuration') { value ? delete e.symptomsDuration : (e.symptomsDuration = 'Duration required') }
-      if (name === 'unit') { value ? delete e.unit : (e.unit = 'Select unit') }
       return e
     })
   }
 
   const handleNestedChange = async (section, field, value) => {
     setBookingDetails((p) => ({ ...p, [section]: { ...p[section], [field]: value } }))
+    // Clear address field errors as soon as a value is entered
+    if (section === 'address') {
+      setErrors((p) => {
+        if (!p.address) return p
+        const addrErrs = { ...p.address }
+        if (value?.trim()) delete addrErrs[field]
+        return { ...p, address: addrErrs }
+      })
+    }
     if (section === 'address' && field === 'postalCode') {
-      if (value) setErrors((p) => { const e = { ...p }; if (e.address) delete e.address.postalCode; return e })
       if (/^\d{6}$/.test(value)) {
         try {
           const data = await (await fetch(`https://api.postalpincode.in/pincode/${value}`)).json()
           if (data[0].Status === 'Success') {
             const po = data[0].PostOffice[0]
-
             setBookingDetails((p) => ({
               ...p, address: { ...p.address, city: po.District, state: po.State, postalCode: value },
             }))
             setPostOffices(data[0].PostOffice)
             setIsManualAddress(false)
-          }
-          else {
-            // ❗ PIN not found
+            // Auto-cleared city/state errors since API filled them
+            setErrors((p) => {
+              const addrErrs = { ...(p.address || {}) }
+              delete addrErrs.city; delete addrErrs.state
+              return { ...p, address: addrErrs }
+            })
+          } else {
             setPostOffices([])
-            setIsManualAddress(true) // ✅ allow manual entry
+            setIsManualAddress(true)
           }
         } catch {
           setIsManualAddress(true)
         }
-
-      }
-      else {
+      } else {
         setIsManualAddress(false)
       }
     }
@@ -461,15 +472,76 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     setPostOffices([]); setSelectedPO(null); setOriginalConsultationFee('')
   }
 
-  // ── Validation ────────────────────────────────────────────────────────────
+  // ── Per-tab validation ────────────────────────────────────────────────────
+  const validateTab = (tabId) => {
+    const e = {}
+
+    if (tabId === 'visit') {
+      // No required fields on visit-type tab
+    }
+
+    if (tabId === 'contact') {
+      if (!selectedBooking) {
+        if (!bookingDetails.title) e.title = 'Select title'
+        if (!bookingDetails.name?.trim()) e.name = 'Name is required'
+        if (!bookingDetails.dob) e.dob = 'DOB required'
+        if (!bookingDetails.gender) e.gender = 'Select gender'
+        if (!bookingDetails.patientMobileNumber) e.patientMobileNumber = 'Mobile required'
+        else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber))
+          e.patientMobileNumber = 'Invalid mobile number'
+        // Address fields
+        const addr = bookingDetails.address || {}
+        const addrErrs = {}
+        if (!addr.houseNo?.trim()) addrErrs.houseNo = 'House No. is required'
+        if (!addr.street?.trim()) addrErrs.street = 'Street is required'
+        if (!addr.postalCode) addrErrs.postalCode = 'Postal code required'
+        // City & State are mandatory only when API couldn't auto-fill (manual address mode)
+        if (isManualAddress && !addr.city?.trim()) addrErrs.city = 'City is required'
+        if (isManualAddress && !addr.state?.trim()) addrErrs.state = 'State is required'
+        if (Object.keys(addrErrs).length > 0) e.address = addrErrs
+      }
+    }
+
+    if (tabId === 'booking') {
+      if (!bookingDetails.branchId) e.branchname = 'Select branch'
+      if (!bookingDetails.doctorId) e.doctorName = 'Select doctor'
+      if (bookingDetails.foc === 'FOC' && !bookingDetails.focReason?.trim()) e.focReason = 'Enter FOC reason'
+    }
+
+    if (tabId === 'slots') {
+      if (!bookingDetails.servicetime) e.slot = 'Select a time slot'
+    }
+
+    if (tabId === 'medical') {
+      if (appointmentType?.toLowerCase().trim() !== 'services') {
+        if (!bookingDetails.problem?.trim()) e.problem = 'Problem required'
+        if (!bookingDetails.symptomsDuration) e.symptomsDuration = 'Duration required'
+        if (!bookingDetails.unit) e.unit = 'Select unit'
+      }
+    }
+
+    if (tabId === 'payment') {
+      if (!bookingDetails.paymentType) e.paymentType = 'Select payment type'
+    }
+
+    // assessment tab — optional, no required fields
+
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  // ── Full (submit-time) validation ─────────────────────────────────────────
   const validate = () => {
     const e = {}
-    if (!bookingDetails.name?.trim()) e.name = 'Name is required'
-    if (!selectedBooking && !bookingDetails.dob) e.dob = 'DOB required'
-    if (!bookingDetails.gender) e.gender = 'Select gender'
-    if (!bookingDetails.patientMobileNumber) e.patientMobileNumber = 'Mobile required'
-    else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber))
-      e.patientMobileNumber = 'Invalid mobile number'
+    if (!selectedBooking) {
+      if (!bookingDetails.title) e.title = 'Select title'
+      if (!bookingDetails.name?.trim()) e.name = 'Name is required'
+      if (!bookingDetails.dob) e.dob = 'DOB required'
+      if (!bookingDetails.gender) e.gender = 'Select gender'
+      if (!bookingDetails.patientMobileNumber) e.patientMobileNumber = 'Mobile required'
+      else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber))
+        e.patientMobileNumber = 'Invalid mobile number'
+    }
     if (appointmentType?.toLowerCase().trim() !== 'services') {
       if (!bookingDetails.problem?.trim()) e.problem = 'Problem required'
       if (!bookingDetails.symptomsDuration) e.symptomsDuration = 'Duration required'
@@ -480,9 +552,16 @@ const BookAppointmentModal = ({ visible, onClose }) => {
     if (!bookingDetails.doctorId) e.doctorName = 'Select doctor'
     if (!bookingDetails.servicetime) e.slot = 'Select slot'
     if (!bookingDetails.paymentType) e.paymentType = 'Select payment type'
-    // if (!part || part.length === 0) e.part = 'Select body part'
-    if (!markedImage) e.markedImage = 'Mark image required'
-    if (!bookingDetails.address?.postalCode) e.address = { postalCode: 'Postal code required' }
+    if (!selectedBooking) {
+      const addr = bookingDetails.address || {}
+      const addrErrs = {}
+      if (!addr.houseNo?.trim()) addrErrs.houseNo = 'House No. is required'
+      if (!addr.street?.trim()) addrErrs.street = 'Street is required'
+      if (!addr.postalCode) addrErrs.postalCode = 'Postal code required'
+      if (isManualAddress && !addr.city?.trim()) addrErrs.city = 'City is required'
+      if (isManualAddress && !addr.state?.trim()) addrErrs.state = 'State is required'
+      if (Object.keys(addrErrs).length > 0) e.address = addrErrs
+    }
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -499,19 +578,31 @@ const BookAppointmentModal = ({ visible, onClose }) => {
       const combinedName = `${bookingDetails.title}${bookingDetails.name}`
       const combinedDuration = `${bookingDetails.symptomsDuration} ${unit}`
       let customerData = null
+
       if (!selectedBooking && onboardToCustomer) {
-        const d = new Date(bookingDetails.dob)
-        const r = await addCustomer({
-          fullName: combinedName, mobileNumber: bookingDetails.mobileNumber, gender: bookingDetails.gender,
-          dateOfBirth: `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`,
-          age: bookingDetails.age,
-          hospitalId: localStorage.getItem('HospitalId') || '',
-          hospitalName: localStorage.getItem('HospitalName') || '',
-          branchId: localStorage.getItem('branchId') || '',
-          address,
-        })
-        customerData = r?.data?.data
+        try {
+          const d = new Date(bookingDetails.dob)
+          const r = await addCustomer({
+            fullName: combinedName, mobileNumber: bookingDetails.mobileNumber, gender: bookingDetails.gender,
+            dateOfBirth: `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`,
+            age: bookingDetails.age,
+            hospitalId: localStorage.getItem('HospitalId') || '',
+            hospitalName: localStorage.getItem('HospitalName') || '',
+            branchId: localStorage.getItem('branchId') || '',
+            address,
+          })
+          customerData = r?.data?.data
+        } catch (customerErr) {
+          const msg =
+            customerErr?.response?.data?.message ||
+            customerErr?.response?.data?.error ||
+            'Mobile number already exists. Please search for the existing patient.'
+          showCustomToast(msg, 'error')
+          setSaveLoading(false)
+          return
+        }
       }
+
       await postBooking({
         ...rest, name: combinedName, symptomsDuration: combinedDuration,
         patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
@@ -531,11 +622,16 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
     } catch (err) {
       console.error(err)
-      showCustomToast('Failed to submit booking.', 'error')
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        'Failed to submit booking.'
+      showCustomToast(msg, 'error')
     } finally {
       setSaveLoading(false)
     }
   }
+
 
   const handleFollowUpSubmit = async () => {
     if (!selectedBooking) {
@@ -569,13 +665,32 @@ const BookAppointmentModal = ({ visible, onClose }) => {
 
   const goNext = () => {
     const currentTabId = visibleTabs[currentTab]?.id
-    if (currentTabId === 'slots' && selectedSlots.length === 0) {
-      showCustomToast('Please select an available slot before proceeding.', 'error')
+    if (!validateTab(currentTabId)) {
+      showCustomToast('Please fill in all required fields before proceeding.', 'error')
       return
     }
     setCurrentTab((t) => Math.min(t + 1, visibleTabs.length - 1))
   }
   const goPrev = () => setCurrentTab((t) => Math.max(t - 1, 0))
+
+  // Guard direct tab clicks — allow going back freely, validate before jumping forward
+  const handleTabClick = (idx) => {
+    if (idx <= currentTab) {
+      setErrors({})
+      setCurrentTab(idx)
+      return
+    }
+    // Validate every tab between current and target
+    for (let i = currentTab; i < idx; i++) {
+      const tabId = visibleTabs[i]?.id
+      if (!validateTab(tabId)) {
+        showCustomToast('Please fill in all required fields before jumping ahead.', 'error')
+        setCurrentTab(i)
+        return
+      }
+    }
+    setCurrentTab(idx)
+  }
 
   const { minDate, maxDate } = React.useMemo(() => {
     const today = new Date()
@@ -639,10 +754,11 @@ const BookAppointmentModal = ({ visible, onClose }) => {
           <CRow className="g-3">
             <CCol md={2}>
               <CFormLabel style={labelStyle}>Title <span className="text-danger">*</span></CFormLabel>
-              <CFormSelect name="title" value={bookingDetails.title} onChange={handleBookingChange} style={selectStyle(false)}>
+              <CFormSelect name="title" value={bookingDetails.title} onChange={handleBookingChange} style={selectStyle(errors.title)}>
                 <option value="">Title</option>
                 {['Mr.', 'Mrs.', 'Miss.', 'Ms.', 'Dr.', 'Prof.'].map((t) => <option key={t}>{t}</option>)}
               </CFormSelect>
+              <ErrMsg msg={errors.title} />
             </CCol>
             <CCol md={6}>
               <CFormLabel style={labelStyle}>Name <span className="text-danger">*</span></CFormLabel>
@@ -681,13 +797,23 @@ const BookAppointmentModal = ({ visible, onClose }) => {
             <CCol md={12}>
               <p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Address</p>
               <CRow className="g-3">
-                {['houseNo', 'street', 'landmark'].map((field) => (
-                  <CCol md={4} key={field}>
-                    <CFormLabel style={labelStyle} className="text-capitalize">{field}</CFormLabel>
-                    <CFormInput value={bookingDetails.address?.[field] || ''} style={inputStyle(false)}
-                      onChange={(e) => handleNestedChange('address', field, e.target.value)} />
-                  </CCol>
-                ))}
+                {['houseNo', 'street', 'landmark'].map((field) => {
+                  const isRequired = field === 'houseNo' || field === 'street'
+                  const fieldLabel = field === 'houseNo' ? 'House No' : field === 'street' ? 'Street' : 'Landmark'
+                  return (
+                    <CCol md={4} key={field}>
+                      <CFormLabel style={labelStyle}>
+                        {fieldLabel} {isRequired && <span className="text-danger">*</span>}
+                      </CFormLabel>
+                      <CFormInput
+                        value={bookingDetails.address?.[field] || ''}
+                        style={inputStyle(errors.address?.[field])}
+                        onChange={(e) => handleNestedChange('address', field, e.target.value)}
+                      />
+                      {isRequired && <ErrMsg msg={errors.address?.[field]} />}
+                    </CCol>
+                  )
+                })}
                 <CCol md={4}>
                   <CFormLabel style={labelStyle}>Postal Code <span className="text-danger">*</span></CFormLabel>
                   <CFormInput type="text" maxLength={6} value={bookingDetails.address?.postalCode || ''}
@@ -722,24 +848,28 @@ const BookAppointmentModal = ({ visible, onClose }) => {
                   </CCol>
                 )}
                 <CCol md={4}>
-                  <CFormLabel style={labelStyle}>City</CFormLabel>
-                  {/* <CFormInput value={bookingDetails.address?.city || ''} readOnly style={inputStyle(false)} /> */}
+                  <CFormLabel style={labelStyle}>
+                    City {isManualAddress && <span className="text-danger">*</span>}
+                  </CFormLabel>
                   <CFormInput
                     value={bookingDetails.address?.city || ''}
                     readOnly={!isManualAddress}
                     onChange={(e) => handleNestedChange('address', 'city', e.target.value)}
-                    style={inputStyle(false)}
+                    style={inputStyle(isManualAddress && errors.address?.city)}
                   />
+                  {isManualAddress && <ErrMsg msg={errors.address?.city} />}
                 </CCol>
                 <CCol md={4}>
-                  <CFormLabel style={labelStyle}>State</CFormLabel>
-                  {/* <CFormInput value={bookingDetails.address?.state || ''} readOnly style={inputStyle(false)} /> */}
+                  <CFormLabel style={labelStyle}>
+                    State {isManualAddress && <span className="text-danger">*</span>}
+                  </CFormLabel>
                   <CFormInput
                     value={bookingDetails.address?.state || ''}
                     readOnly={!isManualAddress}
                     onChange={(e) => handleNestedChange('address', 'state', e.target.value)}
-                    style={inputStyle(false)}
+                    style={inputStyle(isManualAddress && errors.address?.state)}
                   />
+                  {isManualAddress && <ErrMsg msg={errors.address?.state} />}
                 </CCol>
               </CRow>
             </CCol>
@@ -1174,7 +1304,7 @@ const BookAppointmentModal = ({ visible, onClose }) => {
               const isActive = idx === currentTab
               const isComplete = idx < currentTab
               return (
-                <button key={tab.id} onClick={() => setCurrentTab(idx)}
+                <button key={tab.id} onClick={() => handleTabClick(idx)}
                   style={{
                     padding: '9px 12px', fontSize: FS,
                     fontWeight: isActive ? '600' : '400',

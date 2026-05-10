@@ -9,6 +9,7 @@ import {
   faUserTie,
   faShieldHalved,
   faUsers,
+  faPersonWalking,
 } from '@fortawesome/free-solid-svg-icons'
 import { useHospital } from '../Usecontext/HospitalContext'
 
@@ -19,6 +20,7 @@ const EmployeeManagement = () => {
   const iconMap = {
     doctor: faUserDoctor,
     nurse: faHandsHelping,
+    therapist: faPersonWalking,
     admin: faUserAlt,
     frontDesk: faUserTie,
     security: faShieldHalved,
@@ -29,6 +31,7 @@ const EmployeeManagement = () => {
   const accentMap = {
     doctor: { accent: '#185fa5', bg: '#e6f1fb', border: '#b5d4f4' },
     nurse: { accent: '#3b6d11', bg: '#eaf3de', border: '#c0dd97' },
+    therapist: { accent: '#0d7490', bg: '#e0f7fa', border: '#80deea' },
     admin: { accent: '#92680a', bg: '#fff8e1', border: '#f0d080' },
     frontDesk: { accent: '#5b21b6', bg: '#f3f0ff', border: '#c4b5fd' },
     security: { accent: '#a32d2d', bg: '#fcebeb', border: '#f4b5b5' },
