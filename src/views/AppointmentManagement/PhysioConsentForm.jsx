@@ -13,6 +13,7 @@ import UploadButton from "../ConsentForms/UploadButton";
 import { bookingUpdate } from "./appointmentAPI";
 import { showCustomToast } from "../../Utils/Toaster";
 import { COLORS } from "../../Constant/Themes";
+import FullScreenLoader from "../../Utils/FullScreenLoader";
 
 const ConsentForm = () => {
   const location = useLocation();
@@ -30,7 +31,7 @@ const ConsentForm = () => {
     name: booking?.name || "",
     age: booking?.age || "",
     gender: booking?.gender || "",
-    contact: booking?.mobileNumber || "",
+    contact: booking?.mobileNumber || booking?.patientMobileNumber || "",
     doctor: booking?.doctorName || "",
     uhid: booking?.patientId || "",
   };
@@ -165,6 +166,7 @@ const ConsentForm = () => {
 
   return (
     <>
+      {loadingSubmit && <FullScreenLoader message="Generating PDF & Uploading..." />}
       {hasConsentFile ? (
         <div className="preview-box">
           <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">

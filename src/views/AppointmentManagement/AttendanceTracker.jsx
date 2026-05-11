@@ -252,13 +252,17 @@ const AttendanceTracker = () => {
       const payload = {
         userId,
         date: dateStr,
-        loginTime: time,
-        loginLocation: loginAddr,
-        loginLatitude: loginCoords.latitude,
-        loginLongtitude: loginCoords.longitude
+        login: {
+          time: time,
+          latitude: loginCoords.latitude,
+          longitude: loginCoords.longitude
+        },
+        // loginLocation: loginAddr,
+        // loginLatitude: loginCoords.latitude,
+        // loginLongtitude: loginCoords.longitude
       };
 
-      const res = await axios.put(`${BASE_URL}/updateUserAttendence`, payload);
+      const res = await axios.post(`${BASE_URL}/saveUserAttendence`, payload);
       if (res.data.success) {
         setLoggedIn(true);
         setLoginTime(time);
@@ -291,7 +295,7 @@ const AttendanceTracker = () => {
         userId,
         date: dateStr,
         logoutTime: time,
-        logoutLocation: address,
+        // logoutLocation: address,
         logoutLatitude: coords.latitude,
         logoutLongtitude: coords.longitude
       };
@@ -841,7 +845,7 @@ const AttendanceTracker = () => {
         <div style={styles.card} >
           <div style={styles.cardHeader}>
             <span style={styles.cardTitle}>Today's activities</span>
-            {!loggedOut && (
+            {loggedIn && !loggedOut && (
               <button
                 style={styles.btnBlue}
                 onClick={() => setShowModal(true)}
@@ -851,7 +855,7 @@ const AttendanceTracker = () => {
             )}
           </div>
           <div style={{ padding: isMobile ? "0 4px" : 0 }}>
-           {loadingDaily ? (
+            {loadingDaily ? (
               <div style={{ padding: isMobile ? '1rem' : '0' }}>
                 {[...Array(4)].map((_, i) => (
                   <div key={i} style={{
