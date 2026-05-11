@@ -61,6 +61,8 @@ export default function PackagesManagement() {
     startOfferDate: "",
     endOfferDate: "",
     discountPercentage: "",
+    packageAmount: "",
+    discountAmount: "",
   })
   const [errors, setErrors] = useState({})
 
@@ -102,6 +104,7 @@ export default function PackagesManagement() {
       const options = safeArray(res?.data?.data).map((item) => ({
         value: item.id,
         label: item.programName,
+        totalPrice: item.totalPrice || item.total || item.totalSessionCost || 0,
       }))
       setExerciseOptions(options)
     } catch (error) {
@@ -147,6 +150,8 @@ export default function PackagesManagement() {
       startOfferDate: form.startOfferDate,
       endOfferDate: form.endOfferDate,
       discountPercentage: Number(form.discountPercentage),
+      packageAmount: Number(form.packageAmount),
+      discountAmount: Number(form.discountAmount),
     }
     try {
       if (editId) {
@@ -176,6 +181,8 @@ export default function PackagesManagement() {
       startOfferDate: item.startOfferDate || "",
       endOfferDate: item.endOfferDate || "",
       discountPercentage: item.discountPercentage || "",
+      packageAmount: item.packageAmount || "",
+      discountAmount: item.discountAmount || "",
     })
     setModal(true)
   }
@@ -195,6 +202,7 @@ export default function PackagesManagement() {
     setForm({
       packageName: "", programIds: [], programs: [],
       offerType: "", startOfferDate: "", endOfferDate: "", discountPercentage: "",
+      packageAmount: "", discountAmount: "",
     })
     setEditId(null)
     setModal(false)
@@ -254,6 +262,27 @@ export default function PackagesManagement() {
       boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 9999,
     }),
   }
+
+  // ── Calculation Logic ──
+  const updateDiscount = (updates) => {
+    setForm((prev) => {
+      const newForm = { ...prev, ...updates };
+      const pkgAmt = Number(newForm.packageAmount) || 0;
+
+      if ("discountPercentage" in updates) {
+        const pct = Number(updates.discountPercentage) || 0;
+        newForm.discountAmount = pkgAmt > 0 ? ((pkgAmt * pct) / 100).toFixed(2).replace(/\.00$/, "") : "0";
+      } else if ("discountAmount" in updates) {
+        const amt = Number(updates.discountAmount) || 0;
+        newForm.discountPercentage = pkgAmt > 0 ? ((amt / pkgAmt) * 100).toFixed(2).replace(/\.00$/, "") : "0";
+      } else if ("packageAmount" in updates) {
+        const pct = Number(newForm.discountPercentage) || 0;
+        newForm.discountAmount = pkgAmt > 0 ? ((pkgAmt * pct) / 100).toFixed(2).replace(/\.00$/, "") : "0";
+      }
+
+      return newForm;
+    });
+  };
 
   return (
     <>
@@ -395,9 +424,15 @@ export default function PackagesManagement() {
                     styles={selectStyles}
                     placeholder="Select programs..."
                     value={form.programs}
-                    onChange={(val) =>
-                      setForm({ ...form, programs: val || [], programIds: val ? val.map((v) => v.value) : [] })
-                    }
+                    onChange={(val) => {
+                      const selected = val || [];
+                      const total = selected.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0);
+                      updateDiscount({
+                        programs: selected,
+                        programIds: selected.map((v) => v.value),
+                        packageAmount: total || "",
+                      });
+                    }}
                   />
                   <CFormText className="pm-err-msg">{errors.programIds}</CFormText>
                 </div>
@@ -417,11 +452,44 @@ export default function PackagesManagement() {
 
               <CCol md={6}>
                 <div className="pm-field">
+                  <CFormLabel className="pm-label">Package Amount</CFormLabel>
+                  <CFormInput
+                    className="pm-input" type="number" placeholder="0"
+                    value={form.packageAmount}
+                    onChange={(e) => updateDiscount({ packageAmount: e.target.value })}
+                  />
+                </div>
+              </CCol>
+
+              <CCol md={6}>
+                <div className="pm-field">
                   <CFormLabel className="pm-label">Discount %</CFormLabel>
                   <CFormInput
                     className="pm-input" type="number" min={0} max={100} placeholder="0"
                     value={form.discountPercentage}
-                    onChange={(e) => setForm({ ...form, discountPercentage: Math.max(0, e.target.value) })}
+                    onChange={(e) => updateDiscount({ discountPercentage: Math.max(0, e.target.value) })}
+                  />
+                </div>
+              </CCol>
+
+              <CCol md={6}>
+                <div className="pm-field">
+                  <CFormLabel className="pm-label">Discount Amount</CFormLabel>
+                  <CFormInput
+                    className="pm-input" type="number" placeholder="0"
+                    value={form.discountAmount}
+                    onChange={(e) => updateDiscount({ discountAmount: e.target.value })}
+                  />
+                </div>
+              </CCol>
+
+              <CCol md={6}>
+                <div className="pm-field">
+                  <CFormLabel className="pm-label">Final Amount</CFormLabel>
+                  <CFormInput
+                    className="pm-input" type="number" readOnly placeholder="0"
+                    value={(Number(form.packageAmount) || 0) - (Number(form.discountAmount) || 0)}
+                    style={{ backgroundColor: "#f0f5fb", fontWeight: "600", color: "#0c447c" }}
                   />
                 </div>
               </CCol>
@@ -466,7 +534,7 @@ export default function PackagesManagement() {
         onClose={() => { setViewModal(false); setSelectedPackage(null); setViewError(null) }}
         size="lg"
         alignment="center"
-        className="pm-custom-modal"
+        className="pm-custom-modal" backdrop="static"
       >
         <CModalHeader className="pm-modal-header">
           <CModalTitle className="pm-modal-title">Package Details</CModalTitle>
@@ -535,6 +603,29 @@ export default function PackagesManagement() {
                 <div className="pv-summary-card">
                   <span className="pv-summary-label">End date</span>
                   <span className="pv-summary-value">{selectedPackage.endOfferDate || "—"}</span>
+                </div>
+              </div>
+
+              {/* ── Pricing section ── */}
+              <div className="pv-section-label">Pricing</div>
+              <div className="pv-summary-grid">
+                <div className="pv-summary-card">
+                  <span className="pv-summary-label">Package Amount</span>
+                  <span className="pv-summary-value">₹{selectedPackage.packageAmount || "0"}</span>
+                </div>
+                <div className="pv-summary-card">
+                  <span className="pv-summary-label">Discount %</span>
+                  <span className="pv-summary-value">{selectedPackage.discountPercentage || "0"}%</span>
+                </div>
+                <div className="pv-summary-card">
+                  <span className="pv-summary-label">Discount Amount</span>
+                  <span className="pv-summary-value">₹{selectedPackage.discountAmount || "0"}</span>
+                </div>
+                <div className="pv-summary-card pv-summary-card--highlight">
+                  <span className="pv-summary-label">Final Amount</span>
+                  <span className="pv-summary-value">
+                    ₹{(Number(selectedPackage.packageAmount) || 0) - (Number(selectedPackage.discountAmount) || 0)}
+                  </span>
                 </div>
               </div>
 
@@ -842,6 +933,45 @@ export default function PackagesManagement() {
           border-color: #eef2f7 !important; vertical-align: middle !important;
         }
         .pm-no-data { text-align: center; color: #9ca3af; font-size: 13px; padding: 16px 0; }
+
+        /* ── PACKAGE VIEW STYLES ── */
+        .pv-summary-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+        .pv-summary-icon   { width: 32px; height: 32px; border-radius: 8px; background: #e6f1fb; color: #185fa5; display: flex; align-items: center; justify-content: center; }
+        .pv-summary-name   { font-size: 16px; font-weight: 700; color: #0c447c; margin: 0; }
+        .pv-discount-badge { background: #eaf3de; color: #3b6d11; border: 0.5px solid #c0dd97; border-radius: 20px; font-size: 10px; font-weight: 600; padding: 1px 8px; }
+        .pv-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+        .pv-summary-card { background: #fff; border: 0.5px solid #d0dce9; border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; }
+        .pv-summary-card--highlight { background: #e6f1fb; border: 1px solid #185fa5; }
+        .pv-summary-card--highlight .pv-summary-label { color: #185fa5; }
+        .pv-summary-card--highlight .pv-summary-value { color: #0c447c; font-weight: 700; }
+        .pv-summary-label { font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.02em; }
+        .pv-summary-value { font-size: 13px; font-weight: 600; color: #0c447c; }
+        .pv-section-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin: 18px 0 8px 0; border-left: 3px solid #185fa5; padding-left: 8px; }
+        .pv-acc-item { border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; margin-bottom: 8px; background: #fff; }
+        .pv-acc-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; user-select: none; transition: background 0.15s; }
+        .pv-acc-head--prog { background: #f8fafc; }
+        .pv-acc-head:hover { background: #f1f5f9; }
+        .pv-acc-head span  { font-size: 13px; font-weight: 600; color: #0c447c; }
+        .pv-acc-head-right { display: flex; align-items: center; gap: 10px; }
+        .pv-acc-arrow      { font-size: 12px; color: #94a3b8; transition: transform 0.2s; }
+        .pv-therapy-count  { font-size: 11px; font-weight: 600; color: #185fa5; background: #e6f1fb; padding: 2px 8px; border-radius: 20px; }
+        .pv-acc-body { padding: 12px 16px; border-top: 0.5px solid #f1f5f9; }
+        .pv-therapy-item { border: 0.5px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 6px; }
+        .pv-therapy-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; background: #fff; cursor: pointer; user-select: none; }
+        .pv-therapy-head:hover { background: #f8fafc; }
+        .pv-therapy-head span  { font-size: 12px; font-weight: 600; color: #1e293b; }
+        .pv-ex-count { font-size: 10px; font-weight: 600; color: #64748b; }
+        .pv-therapy-body { padding: 10px 12px; background: #f8fafc; border-top: 0.5px solid #f1f5f9; }
+        .pv-ex-table-wrap { border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: #fff; }
+        .pv-ex-table { margin-bottom: 0 !important; }
+        .pv-ex-th { background: #f8fafc !important; color: #64748b !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; padding: 8px 12px !important; border-bottom: 1px solid #e2e8f0 !important; }
+        .pv-ex-td { font-size: 12px !important; color: #334155 !important; padding: 8px 12px !important; vertical-align: middle !important; border-bottom: 0.5px solid #f1f5f9 !important; }
+        .pv-ex-tr:last-child .pv-ex-td { border-bottom: none !important; }
+        .pv-ex-name { font-weight: 600; color: #0f172a; }
+        .pv-ex-notes { color: #64748b; font-style: italic; }
+        .pv-price { font-weight: 700; color: #185fa5; }
+        .pv-no-data { text-align: center; color: #94a3b8; font-size: 12px; padding: 12px 0; font-style: italic; }
+        .pv-no-data--padded { padding: 32px 0; }
       `}</style>
     </>
   )

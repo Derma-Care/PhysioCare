@@ -1462,7 +1462,7 @@ export default function ExerciseTable() {
                 )}
                 <div className="ex-summary-card" style={{ borderColor: "#b5d4f4", background: "#e6f1fb" }}>
                   <span className="ex-summary-label">Total Cost</span>
-                  <span className="ex-summary-value" style={{ color: "#0c447c", fontSize: 16 }}>₹{calcTotal(viewData)}</span>
+                  <span className="ex-summary-value" style={{ color: "#0c447c", fontSize: 16 }}>₹{viewData.totalPrice}</span>
                 </div>
               </div>
 

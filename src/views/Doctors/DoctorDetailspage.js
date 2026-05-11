@@ -88,9 +88,11 @@ const Btn = ({ onClick, children, variant = 'primary', style = {}, disabled = fa
 
 const Divider = () => <hr style={{ border: 'none', borderTop: `1px solid ${t.border}`, margin: '20px 0' }} />
 
-const FormField = ({ label, children, error }) => (
+const FormField = ({ label, children, error, required = false }) => (
   <div style={{ marginBottom: '14px' }}>
-    <label style={{ fontSize: '11px', fontWeight: '700', color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '5px' }}>{label}</label>
+    <label style={{ fontSize: '11px', fontWeight: '700', color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '5px' }}>
+      {label} {required && <span style={{ color: t.danger, marginLeft: '2px' }}>*</span>}
+    </label>
     {children}
     {error && <small style={{ color: t.danger, fontSize: '11px', marginTop: '3px', display: 'block' }}>{error}</small>}
   </div>
@@ -346,7 +348,11 @@ const DoctorDetailsPage = () => {
     if (!/^[A-Za-z,\s\-]+$/.test(formData.availableDays)) newErrors.availableDays = 'Days should contain only letters, commas, spaces, and hyphens.'
     if (formData.availableTimes?.trim() === '') newErrors.availableTimes = 'Please enter available timings.'
     if (!/^\d+$/.test(formData.doctorFees?.inClinicFee)) newErrors.inClinicFee = 'In-Clinic Fee should contain only numbers.'
-    if (!/^\d+$/.test(formData.doctorFees?.vedioConsultationFee)) newErrors.vedioConsultationFee = 'Video Consultation Fee should contain only numbers.'
+    if (!formData.doctorLicence?.trim()) newErrors.doctorLicence = 'License number is required.'
+    if (!formData.qualification?.trim()) newErrors.qualification = 'Qualification is required.'
+    if (!formData.profileDescription?.trim()) newErrors.profileDescription = 'Profile description is required.'
+    if (!formData.doctorSignature) newErrors.doctorSignature = 'Signature is required.'
+    if (!formData.branch?.length) newErrors.branch = 'Select at least one branch.'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -658,60 +664,60 @@ const DoctorDetailsPage = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
               {/* Left col */}
               <div>
-                <FormField label="License No" error={errors.doctorLicence}>
+                <FormField label="License No" error={errors.doctorLicence} required>
                   {isEditing
-                    ? <CFormInput value={formData.doctorLicence} onChange={e => { setFormData(p => ({ ...p, doctorLicence: e.target.value })); setErrors(p => ({ ...p, doctorLicence: '' })) }} style={{ fontSize: '13px' }} />
+                    ? <CFormInput value={formData.doctorLicence} invalid={!!errors.doctorLicence} onChange={e => { setFormData(p => ({ ...p, doctorLicence: e.target.value })); setErrors(p => ({ ...p, doctorLicence: '' })) }} style={{ fontSize: '13px' }} />
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.doctorLicence || '—'}</div>}
                 </FormField>
 
-                <FormField label="Name" error={errors.doctorName}>
+                <FormField label="Name" error={errors.doctorName} required>
                   {isEditing
-                    ? <CFormInput value={formData.doctorName} onChange={e => { const c = e.target.value.replace(/[^A-Za-z\s.]/g, ''); setFormData(p => ({ ...p, doctorName: c })); setErrors(p => ({ ...p, doctorName: '' })) }} style={{ fontSize: '13px' }} />
+                    ? <CFormInput value={formData.doctorName} invalid={!!errors.doctorName} onChange={e => { const c = e.target.value.replace(/[^A-Za-z\s.]/g, ''); setFormData(p => ({ ...p, doctorName: c })); setErrors(p => ({ ...p, doctorName: '' })) }} style={{ fontSize: '13px' }} />
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.doctorName || '—'}</div>}
                 </FormField>
 
-                <FormField label="Email" error={errors.doctorEmail}>
+                <FormField label="Email" error={errors.doctorEmail} required>
                   {isEditing
-                    ? <CFormInput value={formData.doctorEmail} onChange={e => { setFormData(p => ({ ...p, doctorEmail: e.target.value })); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) setErrors(p => ({ ...p, doctorEmail: 'Enter a valid email.' })); else setErrors(p => ({ ...p, doctorEmail: '' })) }} style={{ fontSize: '13px' }} />
+                    ? <CFormInput value={formData.doctorEmail} invalid={!!errors.doctorEmail} onChange={e => { setFormData(p => ({ ...p, doctorEmail: e.target.value })); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) setErrors(p => ({ ...p, doctorEmail: 'Enter a valid email.' })); else setErrors(p => ({ ...p, doctorEmail: '' })) }} style={{ fontSize: '13px' }} />
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.doctorEmail || '—'}</div>}
                 </FormField>
 
-                <FormField label="Qualification" error={errors.qualification}>
+                <FormField label="Qualification" error={errors.qualification} required>
                   {isEditing
-                    ? <CFormInput value={formData.qualification} onChange={e => { setFormData(p => ({ ...p, qualification: e.target.value })); setErrors(p => ({ ...p, qualification: '' })) }} style={{ fontSize: '13px' }} />
+                    ? <CFormInput value={formData.qualification} invalid={!!errors.qualification} onChange={e => { setFormData(p => ({ ...p, qualification: e.target.value })); setErrors(p => ({ ...p, qualification: '' })) }} style={{ fontSize: '13px' }} />
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.qualification || '—'}</div>}
                 </FormField>
 
-                <FormField label="Specialization" error={errors.specialization}>
+                <FormField label="Specialization" error={errors.specialization} required>
                   {isEditing
-                    ? <CFormInput value={formData.specialization} onChange={e => { const c = e.target.value.replace(/[^A-Za-z\s]/g, ''); setFormData(p => ({ ...p, specialization: c })); setErrors(p => ({ ...p, specialization: '' })) }} style={{ fontSize: '13px' }} />
+                    ? <CFormInput value={formData.specialization} invalid={!!errors.specialization} onChange={e => { const c = e.target.value.replace(/[^A-Za-z\s]/g, ''); setFormData(p => ({ ...p, specialization: c })); setErrors(p => ({ ...p, specialization: '' })) }} style={{ fontSize: '13px' }} />
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.specialization || '—'}</div>}
                 </FormField>
 
-                <FormField label="Experience" error={errors.experience}>
+                <FormField label="Experience" error={errors.experience} required>
                   {isEditing
-                    ? <CFormInput value={formData.experience} onChange={e => { const c = e.target.value.replace(/[^0-9]/g, ''); setFormData(p => ({ ...p, experience: c })); setErrors(p => ({ ...p, experience: '' })) }} style={{ fontSize: '13px' }} />
+                    ? <CFormInput value={formData.experience} invalid={!!errors.experience} onChange={e => { const c = e.target.value.replace(/[^0-9]/g, ''); setFormData(p => ({ ...p, experience: c })); setErrors(p => ({ ...p, experience: '' })) }} style={{ fontSize: '13px' }} />
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.experience ? `${doctorData.experience} Years` : '—'}</div>}
                 </FormField>
               </div>
 
               {/* Right col */}
               <div>
-                <FormField label="Languages Known" error={errors.languages}>
+                <FormField label="Languages Known" error={errors.languages} required>
                   {isEditing
-                    ? <CFormInput value={formData.languages?.join(', ') || ''} onChange={e => { const c = e.target.value.replace(/[^A-Za-z,\s]/g, ''); setFormData(p => ({ ...p, languages: c.split(',').map(l => l.trim()) })); setErrors(p => ({ ...p, languages: '' })) }} style={{ fontSize: '13px' }} />
+                    ? <CFormInput value={formData.languages?.join(', ') || ''} invalid={!!errors.languages} onChange={e => { const c = e.target.value.replace(/[^A-Za-z,\s]/g, ''); setFormData(p => ({ ...p, languages: c.split(',').map(l => l.trim()) })); setErrors(p => ({ ...p, languages: '' })) }} style={{ fontSize: '13px' }} />
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.languages?.join(', ') || '—'}</div>}
                 </FormField>
 
-                <FormField label="Contact" error={errors.doctorMobileNumber}>
+                <FormField label="Contact" error={errors.doctorMobileNumber} required>
                   {isEditing
-                    ? <CFormInput value={formData.doctorMobileNumber} onChange={e => { const c = e.target.value.replace(/[^0-9]/g, ''); setFormData(p => ({ ...p, doctorMobileNumber: c })); setErrors(p => ({ ...p, doctorMobileNumber: '' })) }} style={{ fontSize: '13px' }} />
+                    ? <CFormInput value={formData.doctorMobileNumber} invalid={!!errors.doctorMobileNumber} onChange={e => { const c = e.target.value.replace(/[^0-9]/g, ''); setFormData(p => ({ ...p, doctorMobileNumber: c })); setErrors(p => ({ ...p, doctorMobileNumber: '' })) }} style={{ fontSize: '13px' }} />
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.doctorMobileNumber || '—'}</div>}
                 </FormField>
 
-                <FormField label="Gender" error={errors.gender}>
+                <FormField label="Gender" error={errors.gender} required>
                   {isEditing
-                    ? <select className="form-select" style={{ fontSize: '13px' }} value={formData.gender} onChange={e => { setFormData(p => ({ ...p, gender: e.target.value })); setErrors(p => ({ ...p, gender: '' })) }}>
+                    ? <select className={`form-select ${errors.gender ? 'is-invalid' : ''}`} style={{ fontSize: '13px' }} value={formData.gender} onChange={e => { setFormData(p => ({ ...p, gender: e.target.value })); setErrors(p => ({ ...p, gender: '' })) }}>
                       <option value="">Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
@@ -720,22 +726,22 @@ const DoctorDetailsPage = () => {
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.gender || '—'}</div>}
                 </FormField>
 
-                <FormField label="Available Days" error={errors.availableDays}>
+                <FormField label="Available Days" error={errors.availableDays} required>
                   {isEditing
-                    ? <CFormInput value={formData.availableDays} onChange={e => { const c = e.target.value.replace(/[^A-Za-z,\s\-]/g, ''); setFormData(p => ({ ...p, availableDays: c })); setErrors(p => ({ ...p, availableDays: '' })) }} style={{ fontSize: '13px' }} />
+                    ? <CFormInput value={formData.availableDays} invalid={!!errors.availableDays} onChange={e => { const c = e.target.value.replace(/[^A-Za-z,\s\-]/g, ''); setFormData(p => ({ ...p, availableDays: c })); setErrors(p => ({ ...p, availableDays: '' })) }} style={{ fontSize: '13px' }} />
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.availableDays || '—'}</div>}
                 </FormField>
 
-                <FormField label="Available Timings" error={errors.availableTimes}>
+                <FormField label="Available Timings" error={errors.availableTimes} required>
                   {isEditing
-                    ? <CFormInput name="availableTimes" value={formData.availableTimes} onChange={handleInputChange} style={{ fontSize: '13px' }} />
+                    ? <CFormInput name="availableTimes" value={formData.availableTimes} invalid={!!errors.availableTimes} onChange={handleInputChange} style={{ fontSize: '13px' }} />
                     : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.availableTimes || '—'}</div>}
                 </FormField>
 
-                <FormField label="Branch">
+                <FormField label="Branch" required>
                   {isEditing
                     ? <>
-                      <Select isMulti options={branchOptions} value={branchOptions.filter(opt => Array.isArray(formData.branch) && formData.branch.some(b => b.branchId?.toString() === opt.value?.toString()))} onChange={selected => { const updatedBranches = selected.map(opt => ({ branchId: opt.value, branchName: opt.label })); setFormData(p => ({ ...p, branch: updatedBranches })) }} placeholder="Select branches..." />
+                      <Select isMulti options={branchOptions} styles={{ control: (base) => ({ ...base, borderColor: errors.branch ? t.danger : t.border }) }} value={branchOptions.filter(opt => Array.isArray(formData.branch) && formData.branch.some(b => b.branchId?.toString() === opt.value?.toString()))} onChange={selected => { const updatedBranches = selected.map(opt => ({ branchId: opt.value, branchName: opt.label })); setFormData(p => ({ ...p, branch: updatedBranches })) }} placeholder="Select branches..." />
                       {Array.isArray(formData.branch) && formData.branch.length > 0 && (
                         <div style={{ marginTop: '6px', fontSize: '12px', color: t.textMuted }}>
                           {formData.branch.map((b, idx) => <span key={idx} style={{ display: 'inline-block', background: t.surface, border: `1px solid ${t.border}`, borderRadius: '4px', padding: '2px 8px', marginRight: '4px', marginTop: '4px' }}>{b.branchName}</span>)}
@@ -756,9 +762,9 @@ const DoctorDetailsPage = () => {
             {/* ── Fees ── */}
             <SectionHeading title="Consultation Fees" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px', marginBottom: '8px' }}>
-              <FormField label="In-Clinic Fee (₹)" error={errors.inClinicFee}>
+              <FormField label="In-Clinic Fee (₹)" error={errors.inClinicFee} required>
                 {isEditing
-                  ? <CFormInput value={formData?.doctorFees?.inClinicFee || ''} onChange={e => { const c = e.target.value.replace(/[^0-9]/g, ''); setFormData(p => ({ ...p, doctorFees: { ...p.doctorFees, inClinicFee: c } })); setErrors(p => ({ ...p, inClinicFee: '' })) }} style={{ fontSize: '13px' }} />
+                  ? <CFormInput value={formData?.doctorFees?.inClinicFee || ''} invalid={!!errors.inClinicFee} onChange={e => { const c = e.target.value.replace(/[^0-9]/g, ''); setFormData(p => ({ ...p, doctorFees: { ...p.doctorFees, inClinicFee: c } })); setErrors(p => ({ ...p, inClinicFee: '' })) }} style={{ fontSize: '13px' }} />
                   : <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--color-bgcolor)', padding: '4px 0' }}>₹{formData?.doctorFees?.inClinicFee || 'N/A'}</div>}
               </FormField>
               {/* <FormField label="Video Consultation Fee (₹)" error={errors.vedioConsultationFee}>
@@ -778,9 +784,9 @@ const DoctorDetailsPage = () => {
                 : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.associationsOrMemberships || '—'}</div>}
             </FormField>
 
-            <FormField label="Profile Description">
+            <FormField label="Profile Description" error={errors.profileDescription} required>
               {isEditing
-                ? <CFormInput name="profileDescription" value={formData.profileDescription} onChange={e => setFormData(p => ({ ...p, profileDescription: e.target.value }))} style={{ fontSize: '13px' }} />
+                ? <CFormInput name="profileDescription" value={formData.profileDescription} invalid={!!errors.profileDescription} onChange={e => { setFormData(p => ({ ...p, profileDescription: e.target.value })); setErrors(p => ({ ...p, profileDescription: '' })) }} style={{ fontSize: '13px' }} />
                 : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.profileDescription || '—'}</div>}
             </FormField>
 
@@ -814,7 +820,7 @@ const DoctorDetailsPage = () => {
 
             {/* ── Signature ── */}
             <SectionHeading title="Doctor Signature" />
-            <FormField label="Signature" error={errors.doctorSignature}>
+            <FormField label="Signature" error={errors.doctorSignature} required>
               {isEditing && (
                 <CFormInput type="file" accept="image/jpeg, image/png" style={{ fontSize: '13px', marginBottom: '10px' }}
                   onChange={e => {

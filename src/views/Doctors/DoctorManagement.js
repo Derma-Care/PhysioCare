@@ -351,7 +351,7 @@ const DoctorManagement = () => {
   }
 
   /* ─── Chip input ────────────────────────────────── */
-  const ChipSection = ({ label, items, onAdd, onlyAlpha = false }) => {
+  const ChipSection = ({ label, items, onAdd, onlyAlpha = false, required = false }) => {
     const [input, setInput] = useState('')
     const handleAdd = () => {
       const t = input.trim()
@@ -364,7 +364,7 @@ const DoctorManagement = () => {
     }
     return (
       <div className="chip-section">
-        <label className="dm-label">{label}</label>
+        <label className="dm-label">{label} {required && <span className="req">*</span>}</label>
         <div className="chip-input-row">
           <CFormInput
             className="dm-chip-input"
@@ -709,7 +709,7 @@ const DoctorManagement = () => {
               <CCol md={6} key={field}>
                 <label className="dm-label">{lbl} <span className="req">*</span></label>
                 <CFormSelect
-                  className="dm-select-native"
+                  className={`dm-select-native ${formErrors[field] ? 'is-invalid' : ''}`}
                   value={field === 'startDay' ? startDay : endDay}
                   onChange={(e) => {
                     availableDays(e.target.value, type)
@@ -726,7 +726,7 @@ const DoctorManagement = () => {
               <CCol md={6} key={field}>
                 <label className="dm-label">{lbl} <span className="req">*</span></label>
                 <CFormSelect
-                  className="dm-select-native"
+                  className={`dm-select-native ${formErrors.availableTimes ? 'is-invalid' : ''}`}
                   value={field === 'startTime' ? startTime : endTime}
                   onChange={(e) => {
                     handleTimeChange(e.target.value, type)
@@ -770,6 +770,7 @@ const DoctorManagement = () => {
                 className="dm-input"
                 type="number"
                 value={form.doctorFees.inClinicFee}
+                invalid={!!formErrors.inClinicFee}
                 onChange={(e) => {
                   setForm((p) => ({ ...p, doctorFees: { ...p.doctorFees, inClinicFee: e.target.value } }))
                   if (Number(e.target.value) > 0) clearFieldError('inClinicFee')
@@ -864,7 +865,7 @@ const DoctorManagement = () => {
           <div style={{ marginTop: 12 }}>
             <ChipSection label="Area of Expertise" items={form.focusAreas}
               onAdd={(items) => { const v = items.filter((i) => !/^\d+$/.test(i.trim())); setForm((p) => ({ ...p, focusAreas: v })) }} />
-            <ChipSection label="Languages Known" items={form.languages} onlyAlpha
+            <ChipSection label="Languages Known" items={form.languages} onlyAlpha required
               onAdd={(items) => {
                 const v = items.filter((i) => /^[A-Za-z\s]+$/.test(i.trim()));
                 setForm((p) => ({ ...p, languages: v }));

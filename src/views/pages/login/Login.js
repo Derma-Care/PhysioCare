@@ -380,7 +380,7 @@ const Login = () => {
                           className="w-100 mt-4"
                           style={{ backgroundColor: COLORS.primary, color: "white" }}
                         >
-                          {isLoading ? <CSpinner size="sm" /> : "Login"}
+                          {isLoading ? <CSpinner size="sm" style={{ color: "white" }} /> : "Login"}
                         </CButton>
                       </CForm>
                     )}

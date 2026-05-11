@@ -44,7 +44,7 @@ export const doctorAvailableUrl = 'doctorId'
 export const getDoctorByClinicId = 'getDoctorsByHospitalIdAndBranchId'
 
 export const getAllBookedServices = `customer/getAllBookedServices`
-export const Booking_service_Url = `http://localhost:8083/api`
+export const Booking_service_Url = `${wifiUrl}/api`
 export const deleteBookings = `customer/deleteService`
 export const geteBookingBy_ClinicId = `customer/getAllBookedServicesByClinicId`
 
