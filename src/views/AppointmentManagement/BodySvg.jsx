@@ -158,7 +158,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
           y="280"
           width="30"
           height="20"
-          stroke="red"
+          // stroke="red"
           fill={getColor("leftWrist")}
           transform="rotate(-15 172.5 260)"
           onClick={(e) => onClickPart("leftWrist", e)}
@@ -241,7 +241,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
           cy="540"
           rx="15"
           ry="30"
-          stroke="red"
+          // stroke="red"
           fill={getColor('leftFoot')}
           onClick={(e) => onClickPart('leftFoot', e)}
         />
@@ -251,7 +251,7 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
           cy="535"
           rx="15"
           ry="35"
-          stroke="red"
+          // stroke="red"
           fill={getColor('rightFoot')}
           onClick={(e) => onClickPart('rightFoot', e)}
         />
