@@ -318,39 +318,84 @@ export default function ProgramPayment() {
 
     switch (type) {
       case "package":
-        const packageSource = (fullPaymentData && fullPaymentData.therapyWithSessions && fullPaymentData.therapyWithSessions.length > 0 && fullPaymentData.therapyWithSessions[0].packageId) 
-          ? fullPaymentData.therapyWithSessions 
+        const packageSource = (fullPaymentData && fullPaymentData.therapyWithSessions && fullPaymentData.therapyWithSessions.length > 0 && fullPaymentData.therapyWithSessions[0].packageId)
+          ? fullPaymentData.therapyWithSessions
           : apiData;
-        return packageSource.map(p => ({ 
-          label: p.packageName || p.name || p.programName || "Package", 
-          value: p.packageId, 
-          price: calculateUnpaidAmount(p, "package") 
+        return packageSource.map(p => ({
+          label: p.packageName || p.name || p.programName || "Package",
+          value: p.packageId,
+          price: calculateUnpaidAmount(p, "package")
         }));
       case "program":
-        return programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({ 
-          label: p.programName || p.name || p.packageName || "-", 
-          value: p.programId, 
-          price: calculateUnpaidAmount(p, "program") 
+        return programs.filter(p => p.paymentStatus?.toLowerCase() !== "paid").map(p => ({
+          label: p.programName || p.name || p.packageName || "-",
+          value: p.programId,
+          price: calculateUnpaidAmount(p, "program")
         }));
       case "therapy":
-        return programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({ 
-          label: t.therapyName || t.name || "-", 
-          value: t.therapyId, 
-          price: calculateUnpaidAmount(t, "therapy") 
+        return programs.flatMap(p => (p.therapyData || []).filter(t => t.paymentStatus?.toLowerCase() !== "paid").map(t => ({
+          label: t.therapyName || t.name || "-",
+          value: t.therapyId,
+          price: calculateUnpaidAmount(t, "therapy")
         })));
       case "exercise":
       case "activity":
-        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({ 
-          label: ex.exerciseName || ex.name || "-", 
-          value: ex.exerciseId || ex.therapyExercisesId, 
-          price: calculateUnpaidAmount(ex, "activity") 
+        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).filter(ex => ex.paymentStatus?.toLowerCase() !== "paid").map(ex => ({
+          label: ex.exerciseName || ex.name || "-",
+          value: ex.exerciseId || ex.therapyExercisesId,
+          price: calculateUnpaidAmount(ex, "activity")
         }))));
       case "session":
-        return programs.flatMap(p => (p.therapyData || []).flatMap(t => (t.exercises || []).flatMap(ex => (ex.sessions || []).filter(s => s.paymentStatus?.toLowerCase() !== "paid").map(s => ({
-          label: `${s.sessionId} - ${s.date || "-"}`,
-          value: s.sessionId,
-          price: Number(ex.totalPricePerSession || ex.pricePerSession || 0)
-        })))));
+        return programs.flatMap(p =>
+          (p.therapyData || []).flatMap(t =>
+            (t.exercises || []).flatMap(ex =>
+              (ex.sessions || [])
+                .filter(
+                  s =>
+                    s.paymentStatus?.toLowerCase() !== "paid"
+                )
+                .map(s => ({
+                  label: (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        lineHeight: "1.3",
+                        padding: "2px 0",
+                      }}
+                    >
+                      {/* Exercise Name */}
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          color: COLORS.primary,
+                        }}
+                      >
+                        {ex.exerciseName}
+                      </span>
+
+                      {/* Session Details */}
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          color: "#64748b",
+                        }}
+                      >
+                        {s.sessionId} • {s.date || "-"}
+                      </span>
+                    </div>
+                  ),
+                  value: s.sessionId,
+                  price: Number(
+                    ex.totalPricePerSession ||
+                    ex.pricePerSession ||
+                    0
+                  ),
+                }))
+            )
+          )
+        )
       default: return [];
     }
   };
@@ -439,11 +484,17 @@ export default function ProgramPayment() {
           program?.therapyData?.flatMap(therapy =>
             therapy?.exercises?.flatMap(exercise =>
               exercise?.sessions?.map(session => ({
+                exerciseName: exercise.exerciseName,
                 sessionId: session.sessionId,
                 date: session.date,
                 status: session.status,
                 paymentStatus: session.paymentStatus,
-                price: exercise.totalPrice || (exercise.totalSessionCost / (exercise.noOfSessions || 1)) || exercise.pricePerSession || 0
+                price:
+                  exercise.totalPrice ||
+                  (exercise.totalSessionCost /
+                    (exercise.noOfSessions || 1)) ||
+                  exercise.pricePerSession ||
+                  0,
               })) || []
             ) || []
           ) || []
@@ -481,7 +532,7 @@ export default function ProgramPayment() {
       setPaymentAmount(0);
       setFinalAmount(0);
     } else {
-      setPaymentType("full"); 
+      setPaymentType("full");
       setPaymentPercent(100);
 
       // If switching back to root type, pre-select everything by default
@@ -720,6 +771,14 @@ export default function ProgramPayment() {
   };
 
   const handleSubmit = async () => {
+    if (Number(paymentPercent) < 50 && !discountIssuedBy.trim()) {
+      showCustomToast(
+        "Approval is required for payments below 50%",
+        "error"
+      )
+      setSubmitLoading(false)
+      return
+    }
     try {
       setSubmitLoading(true);
       let payload, url, method;
@@ -828,7 +887,15 @@ export default function ProgramPayment() {
       zIndex: 9999,
       overflow: "hidden",
     }),
-    menuList: (base) => ({ ...base, padding: "4px" }),
+    menuList: (base) => ({
+      ...base,
+      padding: "4px",
+      maxHeight: "220px", // around 5 items
+      overflowY: "auto",
+
+      /* scrollbar */
+      scrollbarWidth: "thin",
+    }),
   };
 
   const primaryBtn = {
@@ -959,14 +1026,20 @@ export default function ProgramPayment() {
               <CTable className="mb-0" style={{ fontSize: "12px" }}>
                 <CTableHead>
                   <CTableRow>
-                    {["Session ID", "Date", "Status", "Payment Status"].map(h => (
+                    {["Activity Name", "Session ID", "Date", "Status", "Payment Status"].map(h => (
                       <CTableHeaderCell key={h} style={thStyle}>{h}</CTableHeaderCell>
                     ))}
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
                   {formattedData.map((session, i) => (
-                    <CTableRow key={session.sessionId || i} style={{ fontSize: "12px" }}>
+                    <CTableRow
+                      key={session.sessionId || i}
+                      style={{ fontSize: "12px" }}
+                    >
+                      <CTableDataCell style={tdStyle}>
+                        {session?.exerciseName || "-"}
+                      </CTableDataCell>
                       <CTableDataCell style={tdStyle}>{session?.sessionId}</CTableDataCell>
                       <CTableDataCell style={tdStyle}>{session?.date}</CTableDataCell>
                       <CTableDataCell style={tdStyle}>{session?.status}</CTableDataCell>
@@ -1142,26 +1215,109 @@ export default function ProgramPayment() {
 
               <CCol md={2}>
                 <CFormLabel style={labelStyle}>Payment Amount</CFormLabel>
+
                 <CFormInput
                   value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  style={inputStyle}
+                  onChange={(e) => {
+                    const amount = Number(e.target.value || 0)
+
+                    setPaymentAmount(amount)
+
+                    const total = Number(totalForSelection || 0)
+
+                    // auto percentage calculation
+                    const percent =
+                      total > 0
+                        ? ((amount / total) * 100).toFixed(2)
+                        : 0
+
+                    setPaymentPercent(percent)
+
+                    // auto payment type
+                    if (percent < 100) {
+                      setPaymentType("partial")
+                    } else {
+                      setPaymentType("full")
+                    }
+                  }}
+                  style={{
+                    ...inputStyle,
+                    // border:
+                    //   paymentPercent < 50
+                    //     ? "1px solid #ef4444"
+                    //     : inputStyle.border,
+                  }}
+                  disabled={
+                    String(selectedType).toLowerCase() !==
+                    String(backendServiceType).toLowerCase()
+                  }
                 />
+
+                {/* Approval Warning */}
+                {/* {paymentPercent < 50 && (
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "11px",
+                      color: "#dc2626",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Approval required below 50%
+                  </div>
+                )} */}
               </CCol>
 
               <CCol md={2}>
                 <CFormLabel style={labelStyle}>Payment %</CFormLabel>
+
                 <CFormInput
                   value={paymentPercent}
                   onChange={(e) => {
-                    const percent = Number(e.target.value || 0);
-                    setPaymentPercent(percent);
-                    const total = selectedValue.reduce((sum, item) => sum + (item.price || 0), 0);
-                    const amount = (total * percent) / 100;
-                    setPaymentAmount(amount.toFixed(2));
+                    const percent = Number(e.target.value || 0)
+
+                    setPaymentPercent(percent)
+
+                    const total = Number(totalForSelection || 0)
+
+                    // auto amount calculation
+                    const amount = (total * percent) / 100
+
+                    setPaymentAmount(amount.toFixed(2))
+
+                    // auto payment type
+                    if (percent < 100) {
+                      setPaymentType("partial")
+                    } else {
+                      setPaymentType("full")
+                    }
                   }}
-                  style={inputStyle}
+                  style={{
+                    ...inputStyle,
+                    // border:
+                    //   paymentPercent < 50
+                    //     ? "1px solid #ef4444"
+                    //     : inputStyle.border,
+                  }}
+                  disabled={
+                    String(selectedType).toLowerCase() !==
+                    String(backendServiceType).toLowerCase()
+                  }
                 />
+
+                {/* Approval Warning */}
+                {/* {paymentPercent < 50 && (
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "11px",
+                      color: "#dc2626",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Approval required below 50%
+                  </div>
+                )} */}
               </CCol>
 
               {!isFollowUpPayment && (
@@ -1198,12 +1354,46 @@ export default function ProgramPayment() {
 
             <CRow className="g-3 mt-2">
               <CCol md={3}>
-                <CFormLabel style={labelStyle}>Approved By</CFormLabel>
+                <CFormLabel style={labelStyle}>
+                  Approved By
+                  {paymentPercent < 50 && (
+                    <span style={{ color: "#dc2626" }}> *</span>
+                  )}
+                </CFormLabel>
+
                 <CFormInput
                   value={discountIssuedBy}
                   onChange={(e) => setDiscountIssuedBy(e.target.value)}
-                  style={inputStyle}
+                  placeholder={
+                    paymentPercent < 50
+                      ? "Approval required below 50%"
+                      : "Enter approved person"
+                  }
+                  style={{
+                    ...inputStyle,
+                    border:
+                      paymentPercent < 50 && !discountIssuedBy
+                        ? "1px solid #dc2626"
+                        : inputStyle.border,
+                    background:
+                      paymentPercent < 50
+                        ? "#fef2f2"
+                        : "#fff",
+                  }}
                 />
+
+                {paymentPercent < 50 && !discountIssuedBy && (
+                  <div
+                    style={{
+                      color: "#dc2626",
+                      fontSize: "11px",
+                      marginTop: "4px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Approval is required for payments below 50%
+                  </div>
+                )}
               </CCol>
 
               <CCol md={3}>

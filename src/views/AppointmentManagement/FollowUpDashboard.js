@@ -24,7 +24,7 @@ import CIcon from '@coreui/icons-react'
 import { cilArrowRight, cilChevronBottom, cilChevronTop } from '@coreui/icons'
 import { useNavigate } from 'react-router-dom'
 import Pagination from '../../Utils/Pagination'
-import { Eye, Pencil, Search, Trash2 } from "lucide-react";
+import { Eye, Pencil, Search, Trash2, X } from "lucide-react";
 import {
   getBookingsTodayFollowUps,
   getUpcomingFollowUps,
@@ -531,18 +531,102 @@ export default function FollowupDashboard() {
 
             <div className="wd-date-group">
               <label className="wd-date-label">From</label>
-              <input
-                type="date" value={fromDate} className="wd-date-input"
-                onChange={e => { setFromDate(e.target.value); setCurrentPage(1) }}
-              />
+
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="date"
+                  value={fromDate}
+                  className="wd-date-input"
+                  onChange={(e) => setFromDate(e.target.value)}
+                  style={{ paddingRight: '30px' }}
+                />
+
+                {fromDate && (
+                  <X
+                    size={14}
+                    onClick={async () => {
+                      setFromDate('')
+
+                      // if both dates empty show full data
+                      if (!toDate) {
+                        if (activeCard === 'upcoming') {
+                          await getUpcomingAppointments()
+                        } else {
+                          await getTodayFollowUps()
+                        }
+                      }
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      cursor: 'pointer',
+                      color: '#94a3b8',
+                    }}
+                  />
+                )}
+              </div>
             </div>
 
             <div className="wd-date-group">
               <label className="wd-date-label">To</label>
-              <input
-                type="date" value={toDate} className="wd-date-input"
-                onChange={e => { setToDate(e.target.value); setCurrentPage(1) }}
-              />
+
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="date"
+                  value={toDate}
+                  className="wd-date-input"
+                  onChange={(e) => setToDate(e.target.value)}
+                  style={{ paddingRight: '30px' }}
+                />
+                {toDate && (
+                  <X
+                    size={14}
+                    onClick={async () => {
+                      setToDate('')
+
+                      // if both dates empty show full data
+                      if (!fromDate) {
+                        if (activeCard === 'upcoming') {
+                          await getUpcomingAppointments()
+                        } else {
+                          await getTodayFollowUps()
+                        }
+                      }
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      cursor: 'pointer',
+                      color: '#94a3b8',
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Search Button */}
+            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+              <button
+                onClick={getDateRangeAppointments}
+                style={{
+                  height: '30px',
+                  width: '30px',
+                  border: '1px solid #dbdddfff',
+                  borderRadius: '6px',
+                  background: '#fff',
+                  color: '#185fa5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <Search size={16} />
+              </button>
             </div>
 
 
@@ -575,34 +659,35 @@ export default function FollowupDashboard() {
           }}
           editData={editData}
         />
-        <CInputGroup style={{ maxWidth: "300px" }} className="mb-3">
-
-          {/* Input */}
+        <div style={{ position: 'relative', maxWidth: '300px' }} className="mb-3">
           <CFormInput
-            placeholder="Search..."
+            placeholder="Search bookings, patients..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ paddingLeft: '35px', paddingRight: searchQuery ? '35px' : '10px' }}
           />
-
-          {/* Search Button */}
-          <CButton
-            // style={{
-            //   backgroundColor: "var(--color-bgcolor)",
-            //   color: "#fff",
-            //   border: "none"
-            // }}
-            onClick={() => {
-              setSelectedServiceTypes([]);
-              setSelectedConsultationTypes([]);
-              setFilterTypes([]);
-              setStatusFilters([]);
-              // You can trigger search logic here if needed
+          <Search
+            size={18}
+            style={{
+              position: 'absolute', left: '10px', top: '50%',
+              transform: 'translateY(-50%)', color: '#94a3b8'
             }}
-          >
-            {/* <Search size={16} /> */}
-          </CButton>
-
-        </CInputGroup>
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute', right: '10px', top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none', border: 'none',
+                color: '#94a3b8', cursor: 'pointer',
+                padding: '4px', display: 'flex', alignItems: 'center'
+              }}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
 
         {/* ── TABLE ─────────────────────────────────────────────────── */}
         <div className="wd-table-wrapper" style={{ overflowX: 'auto' }}>

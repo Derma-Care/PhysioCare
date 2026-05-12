@@ -45,7 +45,7 @@ export const getUpcomingFollowUps = () => {
   const clinicid = localStorage.getItem("HospitalId")
   const branchId = localStorage.getItem("branchId")
 
-  return http.get(`${BASE_URL}/upcoming/${clinicid}/${branchId}/1`)
+  return http.get(`${BASE_URL}/upcoming/${clinicid}/${branchId}/2`)
 }
 
 

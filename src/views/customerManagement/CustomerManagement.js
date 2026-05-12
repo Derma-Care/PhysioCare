@@ -220,12 +220,12 @@ const CustomerManagement = () => {
     if (!formData.firstName.trim()) errs.firstName = 'First name is required'
     if (!/^[1-9]\d{9}$/.test(formData.mobileNumber)) errs.mobileNumber = 'Valid 10-digit number required'
     if (formData.email && formData.email.trim() && !emailPattern.test(formData.email)) errs.email = 'Valid email required'
-    
+
     if (formData.dateOfBirth && formData.dateOfBirth.trim()) {
       const d = new Date(formData.dateOfBirth)
       if (isNaN(d) || d > new Date()) errs.dateOfBirth = 'Invalid date of birth'
     }
-    
+
     if (!formData.gender) errs.gender = 'Gender required'
     if (!formData.address.street?.trim()) errs.street = 'Street required'
     if (!formData.address.city?.trim()) errs.city = 'City required'
@@ -566,6 +566,7 @@ const CustomerManagement = () => {
                   onChange={(e) => {
                     const po = postOffices.find((p) => p.Name === e.target.value)
                     setSelectedPO(po)
+                    setFormErrors((prev) => ({ ...prev, postOffice: '' }))
                     if (po) {
                       handleNestedChange('address', 'city', po.Name || '')
                       handleNestedChange('address', 'state', po.State || '')
@@ -598,6 +599,7 @@ const CustomerManagement = () => {
                 <CFormInput
                   value={formData.address.city}
                   className={`cm-input${formErrors.city ? ' is-invalid' : ''}`}
+                  readOnly={postOffices.length > 0}
                   onChange={(e) => {
                     if (/^[a-zA-Z\s]*$/.test(e.target.value))
                       handleNestedChange('address', 'city', e.target.value)
@@ -610,6 +612,7 @@ const CustomerManagement = () => {
                 <CFormInput
                   value={formData.address.state}
                   className={`cm-input${formErrors.state ? ' is-invalid' : ''}`}
+                  readOnly={postOffices.length > 0}
                   onChange={(e) => {
                     if (/^[a-zA-Z\s]*$/.test(e.target.value))
                       handleNestedChange('address', 'state', e.target.value)
