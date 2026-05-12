@@ -3,6 +3,7 @@ import CIcon from "@coreui/icons-react";
 import { CButton } from "@coreui/react";
 import React, { useRef, useState } from "react";
 import SignaturePad from "react-signature-canvas";
+import { validateField } from "../../Utils/Validators";
 
 const PatientRegistration = ({ booking, vitals }) => {
   const data = {
@@ -16,6 +17,30 @@ const PatientRegistration = ({ booking, vitals }) => {
 
   const signRef = useRef();
   const [signature, setSignature] = useState("");
+  const [emergencyData, setEmergencyData] = useState({
+    fullName: "",
+    relationship: "",
+    phone: "",
+    address: ""
+  });
+  const [phoneError, setPhoneError] = useState("");
+
+  const handleEmergencyChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === "phone") {
+      // Reject non-numeric characters
+      if (value !== "" && !/^\d+$/.test(value)) return;
+      
+      // Restrict to 10 digits
+      if (value.length > 10) return;
+      
+      const error = validateField("emergencyContact", value, { contactNumber: data.phone });
+      setPhoneError(error);
+    }
+    
+    setEmergencyData(prev => ({ ...prev, [name]: value }));
+  };
 
   const clearSignature = () => {
     signRef.current.clear();
@@ -78,15 +103,25 @@ const PatientRegistration = ({ booking, vitals }) => {
           <tbody>
             <tr>
               <td><strong>Full Name:</strong></td>
-              <td><input type="text" className="hideboder" /></td>
+              <td><input type="text" name="fullName" value={emergencyData.fullName} onChange={handleEmergencyChange} className="hideboder" /></td>
               <td><strong>Relationship:</strong></td>
-              <td><input type="text" className="hideboder" /></td>
+              <td><input type="text" name="relationship" value={emergencyData.relationship} onChange={handleEmergencyChange} className="hideboder" /></td>
             </tr>
             <tr>
               <td><strong>Phone Number:</strong></td>
-              <td><input type="text" className="hideboder" /></td>
+              <td>
+                <input 
+                  type="text" 
+                  name="phone" 
+                  value={emergencyData.phone} 
+                  onChange={handleEmergencyChange} 
+                  className="hideboder" 
+                  maxLength={10}
+                />
+                {phoneError && <div style={{ color: "red", fontSize: "10px", marginTop: "2px" }}>{phoneError}</div>}
+              </td>
               <td><strong>Address:</strong></td>
-              <td><input type="text" className="hideboder" /></td>
+              <td><input type="text" name="address" value={emergencyData.address} onChange={handleEmergencyChange} className="hideboder" /></td>
             </tr>
           </tbody>
         </table>
