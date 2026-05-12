@@ -13,7 +13,7 @@ export const features = [
   'Security',
   'OtherStaff',
   'Appointments',
-  'Reports Management',
+  'LabReport Management',
   // 'Disease-Management',
   'Therapy Management',
   // 'Exercise Management',
