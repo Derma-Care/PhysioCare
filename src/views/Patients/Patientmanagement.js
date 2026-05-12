@@ -12,13 +12,13 @@ import { BASE_URL, wifiUrl } from '../../baseUrl'
 import { http } from '../../Utils/Interceptors'
 import {
   User, CalendarDays, FileText, ClipboardList,
-  Stethoscope, CreditCard, RefreshCw, AlertCircle, Activity, MapPin, Eye, Clock,
+  Stethoscope, CreditCard, RefreshCw, AlertCircle, Activity, MapPin, Eye, Clock, ChevronRight
 } from 'lucide-react'
 
 import { useNavigate } from 'react-router-dom'
 import LoadingIndicator from '../../Utils/loader'
 
-const TAB_KEYS = { INFO: 1, APPOINTMENTS: 2, REPORTS: 3, HISTORY: 4 }
+const TAB_KEYS = { INFO: 1, APPOINTMENTS: 2, REPORTS: 3, HISTORY: 4, PLAN: 5 }
 
 
 const PatientManagement = () => {
@@ -40,6 +40,9 @@ const PatientManagement = () => {
   const [reportLoading, setReportLoading] = useState(false)
   const [viewModal, setViewModal] = useState(false)
   const [selectedHistory, setSelectedHistory] = useState(null)
+  const [planData, setPlanData] = useState([])
+  const [planLoading, setPlanLoading] = useState(false)
+  const [selectedPlanBookingId, setSelectedPlanBookingId] = useState('')
 
   const getValue = (val) => (val !== undefined && val !== null && val !== '' ? val : '—')
 
@@ -113,6 +116,40 @@ const PatientManagement = () => {
     finally { setReportLoading(false) }
   }
 
+  const fetchPatientPlan = async (bookingId) => {
+    if (!bookingId) return;
+    try {
+      setPlanLoading(true)
+      setPlanData([])
+      const res = await fetch(`${wifiUrl}/api/physiotherapy-doctor/payment/${bookingId}`)
+      const data = await res.json()
+      if (data.success && data.data) {
+        // The user's JSON structure has direct data array or nested in data.data
+        // Based on the provided snippet, it looks like data.data is what we want
+        // But if it's already normalized in payment API, it's under therapyWithSessions
+        const rawData = data.data.therapyWithSessions || data.data || []
+        
+        // Ensure it's a flat list of exercises as expected by the new UI
+        const normalized = rawData.flatMap(item => {
+          if (item.exerciseId) return [item]; // Flat exercise
+          if (item.exercises) return item.exercises; // Therapy level
+          if (item.therapyData) return item.therapyData.flatMap(t => t.exercises || []); // Program level
+          if (item.programs || item.therapySessions) {
+            const containers = item.programs || item.therapySessions;
+            return containers.flatMap(c => (c.therapyData || []).flatMap(t => t.exercises || []));
+          }
+          return [];
+        });
+        setPlanData(normalized)
+      }
+    } catch (err) {
+      console.error("Plan Fetch Error:", err)
+      setPlanData([])
+    } finally {
+      setPlanLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (activeKey === TAB_KEYS.APPOINTMENTS && selectedPatient?.patientId)
       fetchAppointments(selectedPatient.patientId)
@@ -128,6 +165,14 @@ const PatientManagement = () => {
     if (activeKey === TAB_KEYS.REPORTS && selectedAppointment?.bookingId)
       fetchReportByBookingId()
   }, [activeKey, selectedAppointment])
+
+  useEffect(() => {
+    if (activeKey === TAB_KEYS.PLAN && appointments.length > 0) {
+      const firstBookingId = selectedPlanBookingId || appointments[0].bookingId;
+      if (!selectedPlanBookingId) setSelectedPlanBookingId(firstBookingId);
+      fetchPatientPlan(firstBookingId);
+    }
+  }, [activeKey, appointments])
 
   useEffect(() => {
     if (selectedPatient?.patientId) {
@@ -157,6 +202,7 @@ const PatientManagement = () => {
     { key: TAB_KEYS.INFO, label: 'Patient Info', icon: User },
     { key: TAB_KEYS.APPOINTMENTS, label: 'Appointments', icon: CalendarDays },
     { key: TAB_KEYS.REPORTS, label: 'Reports', icon: FileText },
+    { key: TAB_KEYS.PLAN, label: 'Patient Plan', icon: Activity },
     // { key: TAB_KEYS.HISTORY, label: 'History', icon: ClipboardList },
   ]
 
@@ -627,6 +673,153 @@ const PatientManagement = () => {
           </div>
         )} */}
 
+        {/* ── Tab 5: Patient Plan ── */}
+        {activeKey === TAB_KEYS.PLAN && (
+          <div>
+            {/* Booking Selector */}
+            <div style={{ marginBottom: 20 }}>
+              <label className="pm2-select-label">Select Booking ID</label>
+              <div style={{ position: 'relative', maxWidth: 360 }}>
+                <select
+                  className="pm2-select"
+                  value={selectedPlanBookingId}
+                  onChange={(e) => {
+                    setSelectedPlanBookingId(e.target.value);
+                    fetchPatientPlan(e.target.value);
+                  }}
+                  style={{ paddingRight: '30px' }}
+                >
+                  {appointments.length === 0 ? (
+                    <option value="">No bookings available</option>
+                  ) : (
+                    <>
+                      <option value="" disabled>Select Booking ID</option>
+                      {appointments.map((appt, i) => (
+                        <option key={i} value={appt.bookingId}>
+                          {appt.bookingId} — {appt.serviceDate} — {appt.doctorName}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+                <ChevronRight 
+                  size={14} 
+                  style={{ 
+                    position: 'absolute', right: 10, top: '50%', 
+                    transform: 'translateY(-50%) rotate(90deg)',
+                    pointerEvents: 'none', color: '#6b7280'
+                  }} 
+                />
+              </div>
+            </div>
+
+            {/* Plan Summary */}
+            {!planLoading && planData.length > 0 && (
+              <div style={{ 
+                display: 'flex', gap: 15, marginBottom: 20, 
+                background: '#f8fafc', padding: '15px', borderRadius: '10px',
+                border: '1px solid #e2e8f0', maxWidth: 360
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Total Sessions</div>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#185fa5' }}>
+                    {planData.reduce((sum, ex) => sum + (ex.totalSessionCount || ex.sessions?.length || 0), 0)}
+                  </div>
+                </div>
+                <div style={{ width: '1px', background: '#e2e8f0' }}></div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Completed</div>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#16a34a' }}>
+                    {planData.reduce((sum, ex) => sum + (ex.totalSessionCompleted || ex.sessions?.filter(s => s.status === 'Completed').length || 0), 0)}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Plan Content */}
+            {planLoading ? (
+              <div className="pm2-center">
+                <LoadingIndicator message="Fetching Patient Plan..." />
+              </div>
+            ) : planData.length > 0 ? (
+              <div className="pm-accordion-wrapper" style={{ padding: 0 }}>
+                <CAccordion className="pm-accordion" alwaysOpen>
+                  {planData.map((exercise, idx) => (
+                    <CAccordionItem itemKey={idx} key={idx}>
+                      <CAccordionHeader>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', paddingRight: 20, alignItems: 'center' }}>
+                          <span style={{ fontWeight: 600 }}>{exercise.exerciseName}</span>
+                          <div style={{ display: 'flex', gap: 10 }}>
+                            <span className="pm-tag" style={{ background: '#e6f1fb', color: '#185fa5' }}>
+                              Total: {exercise.totalSessionCount || (exercise.sessions?.length || 0)}
+                            </span>
+                            <span className="pm-tag" style={{ background: '#eaf3de', color: '#3b6d11' }}>
+                              Completed: {exercise.totalSessionCompleted || (exercise.sessions?.filter(s => s.status === 'Completed').length || 0)}
+                            </span>
+                          </div>
+                        </div>
+                      </CAccordionHeader>
+                      <CAccordionBody style={{ padding: '0 1px' }}>
+                        <CTable align="middle" className="mb-0 pm2-table" hover>
+                          <CTableHead>
+                            <CTableRow>
+                              <CTableHeaderCell className="pm2-th">Session No</CTableHeaderCell>
+                              <CTableHeaderCell className="pm2-th">Date</CTableHeaderCell>
+                              <CTableHeaderCell className="pm2-th">Payment</CTableHeaderCell>
+                              <CTableHeaderCell className="pm2-th">Status</CTableHeaderCell>
+                            </CTableRow>
+                          </CTableHead>
+                          <CTableBody>
+                            {(exercise.sessions || []).map((session, sIdx) => (
+                              <CTableRow key={sIdx} className="pm2-tr">
+                                <CTableDataCell className="pm2-td" style={{ fontWeight: 600 }}>
+                                  #{session.sessionNo || (sIdx + 1)}
+                                </CTableDataCell>
+                                <CTableDataCell className="pm2-td">
+                                  {session.date || "—"}
+                                </CTableDataCell>
+                                <CTableDataCell className="pm2-td">
+                                  <span 
+                                    className="badge" 
+                                    style={{ 
+                                      background: session.paymentStatus?.toLowerCase() === 'paid' ? '#eaf3de' : '#fcebeb',
+                                      color: session.paymentStatus?.toLowerCase() === 'paid' ? '#3b6d11' : '#a32d2d',
+                                      fontSize: '10px'
+                                    }}
+                                  >
+                                    {session.paymentStatus || 'Unpaid'}
+                                  </span>
+                                </CTableDataCell>
+                                <CTableDataCell className="pm2-td">
+                                  <span 
+                                    className="badge" 
+                                    style={{ 
+                                      background: session.status?.toLowerCase() === 'completed' ? '#e6f1fb' : '#fff3cd',
+                                      color: session.status?.toLowerCase() === 'completed' ? '#185fa5' : '#856404',
+                                      fontSize: '10px'
+                                    }}
+                                  >
+                                    {session.status || 'Pending'}
+                                  </span>
+                                </CTableDataCell>
+                              </CTableRow>
+                            ))}
+                          </CTableBody>
+                        </CTable>
+                      </CAccordionBody>
+                    </CAccordionItem>
+                  ))}
+                </CAccordion>
+              </div>
+            ) : (
+              <div className="pm2-empty">
+                <Activity size={36} className="pm2-empty-icon" />
+                <p>No exercise plan found for this booking.</p>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
 
@@ -756,10 +949,11 @@ const PatientManagement = () => {
 }
   /* Accordion Container */
 .pm-accordion .accordion-item {
-  border: 0.5px solid #d0dce9;
+  border: 1px solid #b5d4f4;
   border-radius: 10px;
   margin-bottom: 10px;
   overflow: hidden;
+  background: #fff;
 }
 .pm-accordion-wrapper {
   padding: 10px;
@@ -774,245 +968,248 @@ const PatientManagement = () => {
   box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
-/* Header */
-.pm-accordion .accordion-button {
-  background: #185fa5;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 12px 16px;
-}
-
-/* Arrow */
-.pm-accordion .accordion-button::after {
-  filter: brightness(0) invert(1);
-}
-
-/* Body */
-.pm-accordion .accordion-body {
-  background: #fff;
-  padding: 16px;
-}
-
-/* Grid */
-.pm-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.pm-grid-2 {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-/* Tags */
-.pm-tag-wrap {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.pm-tag {
-  background: #e6f1fb;
-  color: #185fa5;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-}
-
-/* Session Card */
-.pm-session-card {
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-
-.pm-session-header {
-  display: flex;
-  justify-content: space-between;
-  font-weight: 600;
-}
-
-.pm-price {
-  color: #185fa5;
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-  .pm-grid-3,
-  .pm-grid-2 {
-    grid-template-columns: 1fr;
-  }
-}
-/* TABLE */
-.pm-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  font-family: inherit;
-}
-.pm-action-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-/* View (Blue) */
-.pm-action-btn.view {
-  background: #e6f1fb;
-  color: #185fa5;
-}
-
-/* Hover */
-.pm-action-btn:hover {
-  transform: scale(1.08);
-  filter: brightness(0.95);
-}
-
-/* HEADER */
-.pm-thead th {
-  font-size: 12px;
-  font-weight: 500;           /* reduce bold */
-  padding: 6px 10px;          /* compact */
-  background: var(--color-bgcolor);
-  color: #fff;
-  text-transform: none;       /* IMPORTANT */
-  letter-spacing: normal;
-}
-
-/* ROW */
-.pm-table tr {
-  height: 32px;               /* reduce row height */
-}
-
-/* CELL */
-.pm-table td {
-  padding: 6px 10px;
-  font-size: 13px;
-  font-weight: 400;
-  color: #374151;
-}
-
-/* BOOKING ID */
-.pm-bold {
-  font-weight: 600;
-  color: var(--color-bgcolor);
-}
-
-/* TAG */
-.pm-tag {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(0,0,0,0.05);
-}
-
-/* BUTTON */
-.pm-action-btn {
-  padding: 3px 8px;
-  font-size: 12px;
-  border-radius: 5px;
-}
-
-  .rp-table th {
-    text-align: left;
-    padding: 12px 14px;
-    font-weight: 600;
-    color: #ffffff;
-    font-size: 13px;
-    letter-spacing: 0.5px;
-  }
-    .rp-table tbody tr {
-    border-bottom: 1px solid #eee;
-    transition: all 0.2s ease-in-out;
-  }
-
-  .rp-table tbody tr:hover {
-    background-color: #f9f9f9;
-  }
-    .rp-table td {
-    padding: 12px 14px;
-    color: #333;
-    font-weight: 500;
-  }
-    .pm2-view-btn {
-    padding: 6px 10px;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    cursor: pointer;
-    font-weight: 500;
-    background-color: #185fa5;
-    color: #fff;
-    transition: all 0.2s ease-in-out;
-  }
-
-  .pm2-view-btn:hover {
-    opacity: 0.9;
-    transform: scale(1.05);
-  }
-    .rp-table td b {
-    color: var(--color-bgcolor);
-  }
-    .pm2-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 200px;
-  }
-    .pm2-empty {
-    text-align: center;
-    padding: 40px 0;
-    color: #777;
-    font-size: 14px;
-  }
-    .rp-table tbody tr:nth-child(even) {
-    background-color: #fafafa;
-  }
-
-          /* View details button */
-          .pm2-view-detail-btn {
-            display: inline-flex; align-items: center; gap: 5px;
-            background: #185fa5; color: #fff; border: none;
-            padding: 6px 14px; border-radius: 7px;
-            font-size: 12px; font-weight: 600;
-            cursor: pointer; transition: filter 0.15s;
+          /* Header */
+          .pm-accordion .accordion-button {
+            background: #fff;
+            color: #185fa5;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 12px 16px;
+            border-bottom: 1px solid #b5d4f4;
           }
-          .pm2-view-detail-btn:hover { filter: brightness(0.9); }
 
-          /* Mini section title inside card body */
-          .pm2-mini-section-title {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 11px; font-weight: 700; color: #185fa5;
+          /* Arrow */
+          .pm-accordion .accordion-button::after {
+            filter: none;
+          }
+
+          /* Body */
+          .pm-accordion .accordion-body {
+            background: #fff;
+            padding: 16px;
+          }
+
+          /* Grid */
+          .pm-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+          }
+
+          .pm-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+
+          /* Tags */
+          .pm-tag-wrap {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+          }
+
+          .pm-tag {
+            background: #e6f1fb;
+            color: #185fa5;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+          }
+
+          /* Session Card */
+          .pm-session-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
             margin-bottom: 10px;
           }
 
-          /* Table */
-          .pm2-table-wrapper {
-            border: 0.5px solid #d0dce9; border-radius: 10px;
-            overflow: hidden; overflow-x: auto; margin-bottom: 12px;
+          .pm-session-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
           }
-          .pm2-table { margin-bottom: 0 !important; font-size: 13px; }
+
+          .pm-price {
+            color: #185fa5;
+          }
+
+          /* Mobile */
+          @media (max-width: 768px) {
+            .pm-grid-3,
+            .pm-grid-2 {
+              grid-template-columns: 1fr;
+            }
+          }
+          /* TABLE */
+          .pm-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            font-family: inherit;
+          }
+          .pm-action-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+          }
+
+          /* View (Blue) */
+          .pm-action-btn.view {
+            background: #e6f1fb;
+            color: #185fa5;
+          }
+
+          /* Hover */
+          .pm-action-btn:hover {
+            transform: scale(1.08);
+            filter: brightness(0.95);
+          }
+
+          /* HEADER */
+          .pm-thead th {
+            font-size: 12px;
+            font-weight: 500;           /* reduce bold */
+            padding: 6px 10px;          /* compact */
+            background: var(--color-bgcolor);
+            color: #fff;
+            text-transform: none;       /* IMPORTANT */
+            letter-spacing: normal;
+          }
+
+          /* ROW */
+          .pm-table tr {
+            height: 32px;               /* reduce row height */
+          }
+
+          /* CELL */
+          .pm-table td {
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 400;
+            color: #374151;
+          }
+
+          /* BOOKING ID */
+          .pm-bold {
+            font-weight: 600;
+            color: var(--color-bgcolor);
+          }
+
+          /* TAG */
+          .pm-tag {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.05);
+          }
+
+          /* BUTTON */
+          .pm-action-btn {
+            padding: 3px 8px;
+            font-size: 12px;
+            border-radius: 5px;
+          }
+
+            .rp-table th {
+              text-align: left;
+              padding: 12px 14px;
+              font-weight: 600;
+              color: #ffffff;
+              font-size: 13px;
+              letter-spacing: 0.5px;
+            }
+              .rp-table tbody tr {
+              border-bottom: 1px solid #eee;
+              transition: all 0.2s ease-in-out;
+            }
+
+            .rp-table tbody tr:hover {
+              background-color: #f9f9f9;
+            }
+              .rp-table td {
+              padding: 12px 14px;
+              color: #333;
+              font-weight: 500;
+            }
+              .pm2-view-btn {
+              padding: 6px 10px;
+              border: none;
+              border-radius: 6px;
+              font-size: 13px;
+              cursor: pointer;
+              font-weight: 500;
+              background-color: #185fa5;
+              color: #fff;
+              transition: all 0.2s ease-in-out;
+            }
+
+            .pm2-view-btn:hover {
+              opacity: 0.9;
+              transform: scale(1.05);
+            }
+              .rp-table td b {
+              color: var(--color-bgcolor);
+            }
+              .pm2-center {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 200px;
+            }
+              .pm2-empty {
+              text-align: center;
+              padding: 40px 0;
+              color: #777;
+              font-size: 14px;
+            }
+              .rp-table tbody tr:nth-child(even) {
+              background-color: #fafafa;
+            }
+
+                    /* View details button */
+                    .pm2-view-detail-btn {
+                      display: inline-flex; align-items: center; gap: 5px;
+                      background: #185fa5; color: #fff; border: none;
+                      padding: 6px 14px; border-radius: 7px;
+                      font-size: 12px; font-weight: 600;
+                      cursor: pointer; transition: filter 0.15s;
+                    }
+                    .pm2-view-detail-btn:hover { filter: brightness(0.9); }
+
+                    /* Mini section title inside card body */
+                    .pm2-mini-section-title {
+                      display: flex; align-items: center; gap: 6px;
+                      font-size: 11px; font-weight: 700; color: #185fa5;
+                      margin-bottom: 10px;
+                    }
+
+                    /* Table */
+                    .pm2-table-wrapper {
+                      border: 1px solid #b5d4f4; border-radius: 10px;
+                      overflow: hidden; overflow-x: auto; margin-bottom: 12px;
+                    }
+          .pm2-table { margin-bottom: 0 !important; font-size: 13px; border-collapse: separate; border-spacing: 0; }
           .pm2-th {
             background: #185fa5 !important; color: #fff !important;
             font-size: 12px !important; font-weight: 600 !important;
-            padding: 10px 14px !important; white-space: nowrap; border: none !important;
+            padding: 10px 14px !important; white-space: nowrap; border-bottom: 0.5px solid #d0dce9 !important;
           }
           .pm2-tr:hover { background: #f0f5fb !important; }
           .pm2-td {
             padding: 10px 14px !important; vertical-align: middle !important;
             font-size: 13px; color: #374151;
             border-bottom: 0.5px solid #eef2f7 !important; border-top: none !important;
+            border-right: 0.5px solid #eef2f7 !important;
           }
+          .pm2-td:last-child { border-right: none !important; }
           .pm2-muted { color: #6b7280; }
           .pm2-bold  { font-weight: 600; color: #0c447c; }
 
