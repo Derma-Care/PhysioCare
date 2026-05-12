@@ -109,7 +109,7 @@ export const getNavigation = (permissions = {}) => {
     {
       component: CNavItem,
       to: '/report-management',
-      name: 'Reports Management', //report management
+      name: 'LabReport Management', //report management
       as: NavLink,
       icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
     },
