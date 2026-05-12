@@ -230,6 +230,19 @@ export default function ProgramPayment() {
         }))
       }];
     }
+
+    // Fallback for list of exercises (direct exercises, common for EXERCISE service type)
+    if (sourceData[0]?.exerciseId || sourceData[0]?.sessions) {
+      return [{
+        programId: "DEFAULT_PROG", programName: "-",
+        therapyData: [{
+          therapyId: "DEFAULT_THERAPY",
+          therapyName: "-",
+          exercises: sourceData
+        }]
+      }];
+    }
+
     return [];
   };
 

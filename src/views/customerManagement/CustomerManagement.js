@@ -20,9 +20,9 @@ import {
 } from './CustomerManagementAPI'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import { Edit2, Eye, Trash2, UserPlus, Users } from 'lucide-react'
+import { Edit2, Eye, Search, Trash2, UserPlus, Users, X } from 'lucide-react'
 import LoadingIndicator from '../../Utils/loader'
-import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
+// import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { useHospital } from '../Usecontext/HospitalContext'
 import { emailPattern } from '../../Constant/Constants'
@@ -67,7 +67,7 @@ const CustomerManagement = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [customerIdToDelete, setCustomerIdToDelete] = useState(null)
   const [formErrors, setFormErrors] = useState({})
-  const { searchQuery, setSearchQuery } = useGlobalSearch()
+  const [searchQuery, setSearchQuery] = useState('')
   const [isAdding, setIsAdding] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [saveloading, setSaveLoading] = useState(false)
@@ -317,17 +317,20 @@ const CustomerManagement = () => {
                 <p className="cm-page-sub">{filteredData.length} Patient{filteredData.length !== 1 ? 's' : ''} found</p>
               </div>
             </div>
-            <div
-              className="cm-search-wrapper"
-              style={{ marginLeft: "auto" }}  // adjust value as needed
-            >
+            <div className="cm-search-wrapper">
+              <Search size={14} className="cm-search-icon-left" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search patients..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="cm-search-input"
               />
+              {searchQuery && (
+                <button className="cm-search-clear" onClick={() => setSearchQuery('')}>
+                  <X size={14} />
+                </button>
+              )}
             </div>
             {can('Patient Management', 'create') && (
               <button className="cm-add-btn" onClick={() => { setIsAdding(true); resetForm() }}>
@@ -798,6 +801,52 @@ const CustomerManagement = () => {
         .cm-input:focus { border-color: #185fa5; box-shadow: 0 0 0 2px rgba(24,95,165,0.15); }
         .cm-input.is-invalid { border-color: #e24b4a !important; }
         .cm-input-readonly { background: #f0f5fb !important; color: #6b7280 !important; cursor: not-allowed; }
+
+        /* Search Styles */
+        .cm-search-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          margin-left: auto;
+          min-width: 220px;
+        }
+        .cm-search-icon-left {
+          position: absolute;
+          left: 12px;
+          color: #9ca3af;
+          pointer-events: none;
+        }
+        .cm-search-input {
+          width: 100%;
+          height: 36px;
+          padding: 0 32px 0 34px;
+          border: 0.5px solid #d0dce9;
+          border-radius: 8px;
+          font-size: 13px;
+          outline: none;
+          transition: all 0.15s;
+        }
+        .cm-search-input:focus {
+          border-color: #185fa5;
+          box-shadow: 0 0 0 2px rgba(24,95,165,0.08);
+        }
+        .cm-search-clear {
+          position: absolute;
+          right: 10px;
+          background: none;
+          border: none;
+          color: #9ca3af;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          padding: 2px;
+          border-radius: 4px;
+          transition: all 0.15s;
+        }
+        .cm-search-clear:hover {
+          color: #ef4444;
+          background: #fee2e2;
+        }
         select.cm-input { height: 36px; }
         textarea.cm-input { height: auto; padding: 8px 10px; }
 

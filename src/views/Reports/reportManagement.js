@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom'
 import LoadingIndicator from '../../Utils/loader'
 import { useHospital } from '../Usecontext/HospitalContext'
 import Pagination from '../../Utils/Pagination'
-import { ClipboardList, SlidersHorizontal } from 'lucide-react'
+import { ClipboardList, SlidersHorizontal, Search, Calendar, X } from 'lucide-react'
 
 const normalize = (value) => value?.toLowerCase().trim()
 
@@ -36,7 +36,8 @@ const ReportsManagement = () => {
   const [filteredData, setFilteredData] = useState([])
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState(null)
-  const [filterTypes, setFilterTypes]   = useState([])
+  const [searchTerm, setSearchTerm]   = useState('')
+  const [dateFilter, setDateFilter]   = useState('')
   const [statusFilter, setStatusFilter] = useState('All Status')
   const [currentPage, setCurrentPage]   = useState(1)
   const [pageSize, setPageSize]         = useState(10)
@@ -82,27 +83,18 @@ const ReportsManagement = () => {
     if (statusFilter === 'Active')
       result = result.filter((b) => ['active', 'in-progress'].includes(normalize(b.status)))
 
-    if (filterTypes.length === 1) {
-      const type = filterTypes[0]
-      if (type === 'Tele Consultation') {
-        result = result.filter(
-          (b) =>
-            normalize(b.consultationType) === 'tele consultation' ||
-            normalize(b.consultationType) === 'online consultation',
-        )
-      } else {
-        const mapped = consultationTypeMap[type]
-        if (mapped) result = result.filter((b) => normalize(b.consultationType) === mapped)
-      }
+    if (searchTerm.trim()) {
+      const q = normalize(searchTerm)
+      result = result.filter((b) => normalize(b.name).includes(q))
+    }
+
+    if (dateFilter) {
+      result = result.filter((b) => b.serviceDate === dateFilter)
     }
 
     setFilteredData(result)
     setCurrentPage(1)
-  }, [bookings, filterTypes, statusFilter])
-
-  const toggleFilter = (type) => {
-    setFilterTypes((prev) => (prev.includes(type) ? [] : [type]))
-  }
+  }, [bookings, searchTerm, dateFilter, statusFilter])
 
   const pagedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
@@ -126,16 +118,38 @@ const ReportsManagement = () => {
 
         {/* ── Filters ─────────────────────────── */}
         <div className="rp-filter-group">
-          {/* Consultation type pills */}
-          {['Service & Treatment', 'In-clinic', 'Tele Consultation'].map((label) => (
-            <button
-              key={label}
-              className={`rp-filter-pill${filterTypes.includes(label) ? ' active' : ''}`}
-              onClick={() => toggleFilter(label)}
-            >
-              {label}
-            </button>
-          ))}
+          {/* Name Search */}
+          <div className="rp-search-wrap">
+            <Search size={14} className="rp-search-icon" />
+            <input
+              type="text"
+              placeholder="Search by name..."
+              className="rp-search-input"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button className="rp-clear-btn" onClick={() => setSearchTerm('')}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Date Filter */}
+          <div className="rp-search-wrap">
+            <Calendar size={14} className="rp-search-icon" />
+            <input
+              type="date"
+              className="rp-search-input rp-date-input"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+            />
+            {dateFilter && (
+              <button className="rp-clear-btn" onClick={() => setDateFilter('')}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
 
           {/* Status dropdown */}
           <div className="rp-select-wrap">
@@ -305,25 +319,56 @@ const ReportsManagement = () => {
           display: flex;
           align-items: center;
           flex-wrap: wrap;
-          gap: 8px;
+          gap: 12px;
         }
-        .rp-filter-pill {
-          background: #fff;
+
+        /* Search & Date wraps */
+        .rp-search-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+          min-width: 180px;
+        }
+        .rp-search-icon {
+          position: absolute;
+          left: 12px;
+          color: #9ca3af;
+          pointer-events: none;
+        }
+        .rp-search-input {
+          width: 100%;
+          padding: 7px 32px 7px 34px;
+          font-size: 13px;
           color: #374151;
+          background: #fff;
           border: 0.5px solid #d0dce9;
-          border-radius: 20px;
-          padding: 6px 14px;
-          font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
+          border-radius: 8px;
+          outline: none;
           transition: all 0.15s;
-          white-space: nowrap;
         }
-        .rp-filter-pill:hover  { border-color: #185fa5; color: #185fa5; }
-        .rp-filter-pill.active {
-          background: #185fa5;
-          color: #fff;
+        .rp-search-input:focus {
           border-color: #185fa5;
+          box-shadow: 0 0 0 2px rgba(24,95,165,0.08);
+        }
+        .rp-date-input {
+          cursor: pointer;
+        }
+        .rp-clear-btn {
+          position: absolute;
+          right: 10px;
+          background: none;
+          border: none;
+          color: #9ca3af;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          padding: 2px;
+          border-radius: 4px;
+          transition: all 0.15s;
+        }
+        .rp-clear-btn:hover {
+          color: #ef4444;
+          background: #fee2e2;
         }
 
         /* Status select */

@@ -158,7 +158,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
   // ── Slot filtering / sorting ──────────────────────────────────────────────
   const now = new Date()
-  
+
   // Inject editData's date into slotsForSelectedDate if missing
   let adjustedSlotsForDate = [...(slotsForSelectedDate || [])]
   if (editData && editData.serviceDate) {
@@ -191,7 +191,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       if (meridian === 'PM' && hours !== 12) hours += 12
       if (meridian === 'AM' && hours === 12) hours = 0
       slotDate.setHours(hours, minutes, 0, 0)
-      
+
       if (editData && new Date(selectedDate).toDateString() === new Date(editData.serviceDate).toDateString() && slotObj.slot === (editData.servicetime || editData.time)) {
         return true
       }
@@ -273,7 +273,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       const parts = (editData.patientAddress || '').split(',')
       const docId = editData.doctorId || ''
       const fullName = editData.name || ''
-      
+
       // Split Title and Name
       const TITLES = ['Mr.', 'Mrs.', 'Miss.', 'Ms.', 'Dr.', 'Prof.', 'Rev.', 'Capt.', 'Col.']
       let title = '', name = fullName
@@ -309,16 +309,16 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
           country: parts[6]?.trim() || 'India',
         },
       })
-      
+
       if (editData.serviceDate) {
         setSelectedDate(editData.serviceDate)
       }
-      
+
       setVisitType(editData.visitType || 'first')
       setMarkedImage(editData.partImage || '')
       setTheraphyQuestions(editData.theraphyAnswers || {})
       setPart(editData.parts || [])
-      
+
       if (docId) fetchSlots(docId)
       setCurrentTab(1)
     } else if (visible && !editData) {
@@ -1062,8 +1062,8 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
           <CCol md={6}>
             <CFormLabel style={labelStyle} className="d-flex align-items-center justify-content-between">
               <span>Doctor <span className="text-danger">*</span></span>
-              <RefreshCw size={16} 
-                onClick={fetchDoctors} 
+              <RefreshCw size={16}
+                onClick={fetchDoctors}
                 style={{ cursor: 'pointer', color: COLORS.primary }}
                 className={loadingDoctors ? 'spin' : ''} />
             </CFormLabel>
@@ -1321,7 +1321,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
           </CCol>
 
           <CCol md={6}>
-            <p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Attachments</p>
+            <p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Previous Medical Records (Optional)</p>
             <CFormInput type="file" multiple accept=".jpg,.jpeg,.png,.pdf" style={{ fontSize: FS }}
               onChange={async (e) => {
                 const newFiles = Array.from(e.target.files)

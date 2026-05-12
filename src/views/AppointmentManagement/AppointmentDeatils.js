@@ -586,7 +586,7 @@ const AppointmentDetails = () => {
 
                 {/* Past Reports */}
                 <CAccordionItem itemKey={2}>
-                  <CAccordionHeader>Past Reports</CAccordionHeader>
+                  <CAccordionHeader>Previous Medical Records</CAccordionHeader>
                   <CAccordionBody>
                     {appointment?.attachments?.length > 0 ? (
                       appointment.attachments.map((attachment, index) => (
