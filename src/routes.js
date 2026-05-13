@@ -80,6 +80,7 @@ const AttendanceReport = React.lazy(() => import('./views/pages/attendance/Atten
 const MonthlyReport = React.lazy(() => import('./views/pages/attendance/MonthlyReport'))
 const AttendanceMenu = React.lazy(() => import('./views/pages/attendance/AttendanceMenu'))
 const AttendanceLayout = React.lazy(() => import('./views/pages/attendance/AttendanceLayout'))
+const StaffAttendanceDetails = React.lazy(() => import('./views/pages/attendance/StaffAttendanceDetails'))
 const HolidayMaster = React.lazy(() => import('./views/pages/attendance/HolidayMaster'))
 const LeaveRequest = React.lazy(() => import('./views/pages/attendance/LeaveRequest'))
 const LeaveList = React.lazy(() => import('./views/pages/attendance/LeaveList'))
@@ -193,27 +194,18 @@ const routes = [
   { path: '/patient-management', name: 'Patient Management', element: PatientManagement },
 
   // Attendance
-  {
-    path: "/attendance",
-    element: AttendanceLayout,
-    children: [
-      { index: true, element: AttendanceList },
-      { path: "employee-list", element: EmployeeList },
-      { path: "shift-list", element: ShiftMaster },
-      { path: "holiday", element: HolidayMaster },
-      { path: "attendance-entry", element: AttendanceEntry },
-      { path: "attendance-list", element: AttendanceList },
-      { path: "report", element: AttendanceReport },
-      { path: "monthly", element: MonthlyReport },
-      { path: "leave", element: LeaveRequest },
-      { path: "leave-list", element: LeaveList },
-      { path: "leave-approval", element: LeaveApproval },
-      { path: "assignShift", element: AssignShift },
-
-
-    ],
-
-  },
+  { path: "/attendance", name: 'Attendance', element: AttendanceReport },
+  { path: "/attendance/staff/:name", name: 'Staff Attendance', element: StaffAttendanceDetails },
+  { path: "/attendance-list", element: AttendanceList },
+  { path: "/employee-list", element: EmployeeList },
+  { path: "/shift-list", element: ShiftMaster },
+  { path: "/holiday", element: HolidayMaster },
+  { path: "/attendance-entry", element: AttendanceEntry },
+  { path: "/monthly", element: MonthlyReport },
+  { path: "/leave", element: LeaveRequest },
+  { path: "/leave-list", element: LeaveList },
+  { path: "/leave-approval", element: LeaveApproval },
+  { path: "/assignShift", element: AssignShift },
   { path: "/session-list", element: SessionList },
   { path: "/therapist", element: TherapistDashboard },
   { path: "/therapist-details", element: TherapistDetails },

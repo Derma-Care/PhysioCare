@@ -21,7 +21,7 @@ export default function AttendanceLayout() {
     useEffect(() => {
 
     if (location.pathname === "/attendance") {
-      navigate("/attendance/employee-list");
+      navigate("/attendance/report");
     }
 
   }, [location.pathname, navigate]);

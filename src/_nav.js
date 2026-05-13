@@ -24,9 +24,12 @@ import {
   cilRunning,
   cilLayers,
   cilStar,
+  cilChatBubble,
+  cilBriefcase,
 } from '@coreui/icons'
 import { CNavItem } from '@coreui/react'
 import { NavLink } from 'react-router-dom'
+import { CircleHelp, CircleQuestionMark } from 'lucide-react'
 
 export const getNavigation = (permissions = {}) => {
   const allNav = [
@@ -50,14 +53,14 @@ export const getNavigation = (permissions = {}) => {
       to: '/Employee-management',
       name: 'Employee management',
       as: NavLink,
-      icon: <CIcon icon={cilUserFollow} customClassName="nav-icon" />,
+      icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
     },
     {
       component: CNavItem,
       name: 'Patient Management',
       to: '/Patient-Management',
       as: NavLink,
-      icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
+      icon: <CIcon icon={cilUserFollow} customClassName="nav-icon" />,
     },
     // {
     //   component: CNavItem,
@@ -79,7 +82,7 @@ export const getNavigation = (permissions = {}) => {
       to: '/package-management',
       name: 'Package Management',
       as: NavLink,
-      icon: <CIcon icon={cilLayers} customClassName="nav-icon" />,
+      icon: <CIcon icon={cilBriefcase} customClassName="nav-icon" />,
     },
     {
       component: CNavItem,
@@ -183,9 +186,9 @@ export const getNavigation = (permissions = {}) => {
     {
       component: CNavItem,
       to: '/attendance',
-      name: 'Attendance',
+      name: 'Attendance Reports',
       as: NavLink,
-      icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
+      icon: <CIcon icon={cilClipboard} customClassName="nav-icon" />,
     },
     {
       component: CNavItem,
@@ -199,7 +202,7 @@ export const getNavigation = (permissions = {}) => {
       to: '/help',
       name: 'Help',
       as: NavLink,
-      icon: <CIcon icon={cilLightbulb} customClassName="nav-icon" />,
+      icon: <CIcon icon={cilChatBubble} customClassName="nav-icon" />,
     },
 
 
@@ -212,7 +215,7 @@ export const getNavigation = (permissions = {}) => {
   // return allNav.filter((item) => permissions[item.name])
   return allNav.filter(
     (item) =>
-      permissions[item.name]
+      permissions[item.name] || item.name === 'Attendance Reports'
 
 
     // item.name === 'Patient Feedback'

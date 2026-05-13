@@ -22,35 +22,43 @@ div {
 
 /* Force dynamic header background + text color */
 .pink-table {
-  /* background-color: var(--color-bgcolor) !important; */
-  /* #1B4F8A */
+  min-width: 1100px;
+  margin-bottom: 0 !important;
   color: var(--color-bgcolor) !important;
-  /* #F0F6FF */
-  font-size: 14px !important;
-
+  font-size: 13px !important;
 }
 
 .pink-table th {
-  background-color: var(--color-bgcolor) !important;
-  /* #a5c4d4ff */
+  background: var(--color-bgcolor) !important;
   color: var(--color-white) !important;
-  /* #7e3a93 */
-  font-size: 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 11px 14px !important;
+  white-space: nowrap;
+  border: none !important;
+  vertical-align: middle !important;
 }
 
-/* Optional: make striped rows light pink dynamically */
+.pink-table tr {
+  transition: background 0.12s;
+}
+
+.pink-table tr:hover {
+  background: #f0f5fb !important;
+}
+
+/* Optional striped rows */
 .table-striped>tbody>tr:nth-of-type(odd) {
   background-color: var(--color-success) !important;
-  /* Replace with your highlight color if needed */
 }
 
 .pink-table td {
+  padding: 11px 14px !important;
+  vertical-align: middle !important;
+  font-size: 13px !important;
   color: var(--color-bgcolor) !important;
-  /* #7e3a93 */
-  font-size: 14px !important;
-
-  vertical-align: middle;
-  /* centers vertically */
+  border-bottom: 0.5px solid #eef2f7 !important;
+  border-top: none !important;
 }
 
 .btn-selected {
@@ -140,6 +148,14 @@ div {
 
 .textColor {
   color: var(--color-bgcolor) !important;
+}
+
+.wd-table-wrapper {
+  border: 0.5px solid #d0dce9;
+  border-radius: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-bottom: 12px;
 }
 
 /* add/submit btn */
@@ -532,4 +548,41 @@ details[open]>summary .pv-acc-arrow {
 .search-input::placeholder {
   color: white !important;
   opacity: 1;
+}
+
+.wd-date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wd-date-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wd-date-input,
+.wd-select {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 0.5px solid #d0dce9;
+  color: #374151;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.wd-date-input:focus,
+.wd-select:focus {
+  border-color: #185fa5;
+}
+
+.wd-select {
+  color: #185fa5;
+  min-width: 130px;
 }
