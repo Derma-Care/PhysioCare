@@ -4,9 +4,11 @@ import {
   saveData,
   LEAVE_KEY,
 } from "./storage";
+import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext";
+import { Search, X, Plus } from "lucide-react";
 
 export default function LeaveList() {
-
+  const { searchQuery, setSearchQuery } = useGlobalSearch();
   const [list, setList] = useState(
     getData(LEAVE_KEY, [])
   );
@@ -45,55 +47,85 @@ export default function LeaveList() {
     });
   };
 
+  // Filter list by search query
+  const filteredList = list.filter(l => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return l.name.toLowerCase().includes(q) || l.reason.toLowerCase().includes(q) || l.status.toLowerCase().includes(q);
+  });
+
   return (
-
-    <div>
-
-      <div className="d-flex justify-content-between">
-
-        <h4>Leave List</h4>
-
-        <button
-          className="btn btn-primary"
-          onClick={() => setShow(true)}
-        >
-          Add Leave Request
-        </button>
-
+    <div className="container-fluid p-0">
+      <div className="card shadow-sm border-0 mb-4" style={{ borderRadius: "12px" }}>
+        <div className="card-header bg-white border-bottom pt-4 pb-3 d-flex justify-content-between align-items-center" style={{ borderTopLeftRadius: "12px", borderTopRightRadius: "12px" }}>
+          <div>
+            <h4 className="mb-1 fw-bold" style={{ color: "#1B4F8A" }}>My Leave Requests</h4>
+            <small className="text-muted fw-medium">View and manage your leave applications</small>
+          </div>
+          <div className="d-flex align-items-center gap-3">
+            <div className="cm-search-wrapper" style={{ width: "250px" }}>
+              <Search size={14} className="cm-search-icon-left" />
+              <input
+                type="text"
+                className="cm-search-input"
+                placeholder="Search leaves..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="cm-search-clear" onClick={() => setSearchQuery("")}>
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <button className="btn btn-primary d-flex align-items-center gap-2" onClick={() => setShow(true)} style={{ borderRadius: "8px", height: "36px" }}>
+              <Plus size={16} /> Add Leave
+            </button>
+          </div>
+        </div>
+        <div className="card-body p-0 mt-2">
+          <div className="table-responsive wd-table-wrapper">
+            <table className="table table-hover align-middle mb-0 pink-table">
+              <thead style={{ backgroundColor: "#1B4F8A", color: "#fff" }}>
+                <tr>
+                  <th className="px-4 py-3 text-uppercase small fw-bold">Name</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold">From</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold">To</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold">Reason</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredList.length > 0 ? (
+                  filteredList.map((l) => (
+                    <tr key={l.id} style={{ borderBottom: "1px solid #f1f3f5" }}>
+                      <td className="px-4 py-3 fw-bold text-dark">{l.name}</td>
+                      <td className="px-4 py-3 text-muted">{l.from}</td>
+                      <td className="px-4 py-3 text-muted">{l.to}</td>
+                      <td className="px-4 py-3 text-muted">{l.reason}</td>
+                      <td className="px-4 py-3">
+                        <span className={`badge rounded-pill px-3 py-2 ${
+                          l.status === 'Approved' ? 'bg-success-light text-success' : 
+                          l.status === 'Pending' ? 'bg-warning-light text-warning' : 
+                          'bg-danger-light text-danger'
+                        }`}>
+                          {l.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center py-5 text-muted">
+                      No leave records found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-
-
-      {/* table */}
-
-      <table className="table mt-3 pink-table">
-
-        <thead>
-          <tr>
-            <th>Id</th>
-            <th>Name</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Reason</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-
-        <tbody>
-
-          {list.map((l) => (
-            <tr key={l.id}>
-              <td>{l.id}</td>
-              <td>{l.name}</td>
-              <td>{l.from}</td>
-              <td>{l.to}</td>
-              <td>{l.reason}</td>
-              <td>{l.status}</td>
-            </tr>
-          ))}
-
-        </tbody>
-
-      </table>
 
 
 

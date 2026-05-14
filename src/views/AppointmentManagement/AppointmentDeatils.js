@@ -20,11 +20,13 @@ import axios from 'axios'
 import jsPDF from 'jspdf'
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
+import { getBookingsForFollowUps } from '../../APIs/GetFollowUpApi'
 import { AppointmentData, deleteBookingData, GetBookingByClinicIdData } from './appointmentAPI'
 import { GetdoctorsByClinicIdData } from './appointmentAPI'
 import { FaEye, FaDownload } from 'react-icons/fa'
 import { deleteVitalsData, postVitalsData, updateVitalsData, VitalsDataById } from './VitalsAPI'
-import { Download, Eye, ArrowLeft, Activity, FileText, User, Stethoscope, CreditCard, ChevronRight } from 'lucide-react'
+import { Download, Eye, ArrowLeft, Activity, FileText, User, Stethoscope, CreditCard, ChevronRight, Pencil } from 'lucide-react'
+import BookAppointmentModal from './BookAppointmentModal'
 import { useHospital } from '../Usecontext/HospitalContext'
 import { GetProcedureFormData } from '../ConsentForms/ConsentFormsAPI'
 import ConsentFormHandler from '../ConsentForms/ConsentFormHandler'
@@ -33,6 +35,7 @@ import PaymentAccordion from './PaymentProgram'
 import ProgramPayment from './PaymentProgram'
 import PhysioConsentForm from './PhysioConsentForm'
 import { COLORS } from '../../Constant/Themes'
+import LoadingIndicator from '../../Utils/loader'
 
 /* ─────────────────────────────────────────────
    Inline styles – scoped design tokens
@@ -81,6 +84,32 @@ const StatusBadge = ({ status }) => {
     }}>
       {cfg.label}
     </span>
+  )
+}
+
+const ActionBtn = ({ children, onClick, style, color = 'primary' }) => {
+  const isSuccess = color === 'success'
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '8px 16px',
+        borderRadius: tokens.radiusSm,
+        fontSize: '12px',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        border: isSuccess ? 'none' : `1px solid ${tokens.border}`,
+        backgroundColor: isSuccess ? tokens.success : COLORS.primary,
+        color: '#fff',
+        ...style,
+      }}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -148,7 +177,33 @@ const AppointmentDetails = () => {
   const [doctor, setDoctor] = useState(null)
   const [vitals, setVitals] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [appointment, setAppointment] = useState(null)
+  const [loadingAppt, setLoadingAppt] = useState(true)
+
+  useEffect(() => {
+    if (id) {
+      const fetchAppt = async () => {
+        setLoadingAppt(true)
+        try {
+          const res = await getBookingsForFollowUps(id)
+          let dataPayload = res?.data?.data || res?.data || res
+          if (Array.isArray(dataPayload)) {
+            dataPayload = dataPayload[0]
+          }
+          if (dataPayload) {
+            setAppointment(dataPayload)
+          }
+        } catch (error) {
+          console.error('Failed to fetch appointment:', error)
+        } finally {
+          setLoadingAppt(false)
+        }
+      }
+      fetchAppt()
+    }
+  }, [id])
 
   const calculateBMI = (height, weight) => {
     const h = Number(height) / 100
@@ -174,30 +229,12 @@ const AppointmentDetails = () => {
     }
   }, [formData.height, formData.weight])
 
-  const appointment = location.state?.appointment
   const { hospitalId, selectedHospital } = useHospital()
-
-  if (!appointment) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: '60px' }}>
-        <h3 style={{ marginBottom: '12px', color: tokens.black }}>No Appointment Data Found</h3>
-        <CButton color="primary" onClick={() => navigate(-1)}>Go Back</CButton>
-      </div>
-    )
-  }
 
   const normalizedStatus = (() => {
     const s = appointment?.status?.trim()?.toLowerCase()
     return s === 'in-progress' ? 'active' : s
   })()
-
-  const showConfirmed = ['active', 'confirmed', 'in-progress', 'followup'].includes(normalizedStatus)
-  const showCompletedOrActive = ['completed', 'active'].includes(normalizedStatus)
-  const showVitalsCard = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
-  const showPayment = ['active', 'followup'].includes(normalizedStatus)
-  const showConfirmedOrCompleted = ['confirmed', 'completed', 'active'].includes(normalizedStatus)
-  const showPrescription = ['active', 'completed'].includes(normalizedStatus) && appointment?.prescriptionPdf
-  const showAccordion = ['confirmed', 'active', 'completed'].includes(normalizedStatus)
 
   const [validationErrors, setValidationErrors] = useState({})
 
@@ -215,22 +252,48 @@ const AppointmentDetails = () => {
     fetchDoctorDetails()
   }, [normalizedStatus, appointment?.doctorId])
 
-  useEffect(() => {
-    if (['confirmed', 'active', 'completed'].includes(normalizedStatus)) fetchVitals()
-  }, [appointment?.bookingId, appointment?.patientId, normalizedStatus])
-
-  const getDoctorImage = (picture) => {
-    if (!picture) return '/default-doctor.png'
-    return picture.startsWith('data:image') ? picture : `data:image/jpeg;base64,${picture}`
-  }
-
   const fetchVitals = async () => {
+    if (!appointment) return
     try {
       const data = await VitalsDataById(appointment.bookingId, appointment.patientId)
       setVitals(Array.isArray(data) && data.length === 0 ? null : data[0])
     } catch (error) {
       console.error('Error fetching vitals:', error)
     }
+  }
+
+  useEffect(() => {
+    if (['confirmed', 'active', 'completed'].includes(normalizedStatus)) fetchVitals()
+  }, [appointment?.bookingId, appointment?.patientId, normalizedStatus])
+
+  if (loadingAppt) {
+    return (
+      <div style={{ textAlign: 'center', marginTop: '60px' }}>
+        <LoadingIndicator message='Loading Appointment Details...' />
+      </div>
+    )
+  }
+
+  if (!appointment) {
+    return (
+      <div style={{ textAlign: 'center', marginTop: '60px' }}>
+        <h3 style={{ marginBottom: '12px', color: tokens.black }}>No Appointment Data Found</h3>
+        <CButton color="primary" onClick={() => navigate(-1)}>Go Back</CButton>
+      </div>
+    )
+  }
+
+  const showConfirmed = ['active', 'confirmed', 'in-progress', 'followup'].includes(normalizedStatus)
+  const showCompletedOrActive = ['completed', 'active'].includes(normalizedStatus)
+  const showVitalsCard = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
+  const showPayment = ['active', 'followup'].includes(normalizedStatus)
+  const showConfirmedOrCompleted = ['confirmed', 'completed', 'active'].includes(normalizedStatus)
+  const showPrescription = ['active', 'completed'].includes(normalizedStatus) && appointment?.prescriptionPdf
+  const showAccordion = ['confirmed', 'active', 'completed'].includes(normalizedStatus)
+
+  const getDoctorImage = (picture) => {
+    if (!picture) return '/default-doctor.png'
+    return picture.startsWith('data:image') ? picture : `data:image/jpeg;base64,${picture}`
   }
 
   const regexRules = {
@@ -460,6 +523,9 @@ const AppointmentDetails = () => {
               <FileText size={13} /> Consent Form
             </ActionBtn>
           )}
+          <ActionBtn style={{ backgroundColor: COLORS.white, color: COLORS.primary }} onClick={() => setShowEditModal(true)}>
+            <Pencil size={13} /> Edit
+          </ActionBtn>
         </div>
       </div>
 
@@ -730,6 +796,12 @@ const AppointmentDetails = () => {
           </ActionBtn>
         </CModalFooter>
       </CModal>
+      {/* ── Edit Appointment Modal ──────────────────── */}
+      <BookAppointmentModal
+        visible={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        editData={appointment}
+      />
     </div>
   )
 }

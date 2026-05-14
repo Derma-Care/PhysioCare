@@ -2,10 +2,14 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { empDummy, attendanceDummy } from "./AttadanceDummyData";
 import Pagination from "../../../Utils/Pagination";
+import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext";
+import { Search, X } from "lucide-react";
 
 export default function AttendanceReport() {
   const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
+
+  const { searchQuery, setSearchQuery } = useGlobalSearch();
 
   // Filters for Main Page
   const [filterStaff, setFilterStaff] = useState("all");
@@ -24,6 +28,17 @@ export default function AttendanceReport() {
     if (att.date !== today) return false;
     if (!availableStaffNames.includes(att.name)) return false;
     if (filterStaff !== "all" && att.name !== filterStaff) return false;
+    
+    // Search filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const empInfo = availableStaff.find((e) => e.name === att.name);
+      const matchesName = att.name.toLowerCase().includes(q);
+      const matchesRole = empInfo ? empInfo.role.toLowerCase().includes(q) : false;
+      const matchesStatus = att.status.toLowerCase().includes(q);
+      if (!matchesName && !matchesRole && !matchesStatus) return false;
+    }
+
     return true;
   });
 
@@ -46,19 +61,35 @@ export default function AttendanceReport() {
             <h4 className="mb-1 fw-bold" style={{ color: "#1B4F8A" }}>Daily Attendance</h4>
             <small className="text-muted fw-medium">Showing records for: {today}</small>
           </div>
-          <div style={{ width: "250px" }}>
-            <label className="mb-1 wd-date-label">Filter by Staff</label>
-            <select
-              className="shadow-sm wd-date-input"
-              value={filterStaff}
-              onChange={(e) => setFilterStaff(e.target.value)}
-              style={{ borderRadius: "8px", border: "1px solid #dee2e6" }}
-            >
-              <option value="all">All Clinic Staff</option>
-              {availableStaff.map((staff) => (
-                <option key={staff.id} value={staff.name}>{staff.name} ({staff.role})</option>
-              ))}
-            </select>
+          <div className="d-flex align-items-center gap-3">
+            <div className="cm-search-wrapper" style={{ width: "250px" }}>
+              <Search size={14} className="cm-search-icon-left" />
+              <input
+                type="text"
+                className="cm-search-input"
+                placeholder="Search attendance..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="cm-search-clear" onClick={() => setSearchQuery("")}>
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <div style={{ width: "200px" }}>
+              <select
+                className="shadow-sm wd-date-input"
+                value={filterStaff}
+                onChange={(e) => setFilterStaff(e.target.value)}
+                style={{ borderRadius: "8px", border: "1px solid #dee2e6", height: "36px", padding: "0 10px" }}
+              >
+                <option value="all">All Clinic Staff</option>
+                {availableStaff.map((staff) => (
+                  <option key={staff.id} value={staff.name}>{staff.name} ({staff.role})</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
         <div className="card-body p-0 mt-2">

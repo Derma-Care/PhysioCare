@@ -22,7 +22,7 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { Edit2, Eye, Search, Trash2, UserPlus, Users, X } from 'lucide-react'
 import LoadingIndicator from '../../Utils/loader'
-// import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
+import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { useHospital } from '../Usecontext/HospitalContext'
 import { emailPattern } from '../../Constant/Constants'
@@ -67,7 +67,7 @@ const CustomerManagement = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [customerIdToDelete, setCustomerIdToDelete] = useState(null)
   const [formErrors, setFormErrors] = useState({})
-  const [searchQuery, setSearchQuery] = useState('')
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
   const [isAdding, setIsAdding] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [saveloading, setSaveLoading] = useState(false)
@@ -222,8 +222,19 @@ const CustomerManagement = () => {
     if (formData.email && formData.email.trim() && !emailPattern.test(formData.email)) errs.email = 'Valid email required'
 
     if (formData.dateOfBirth && formData.dateOfBirth.trim()) {
-      const d = new Date(formData.dateOfBirth)
-      if (isNaN(d) || d > new Date()) errs.dateOfBirth = 'Invalid date of birth'
+      const dob = new Date(formData.dateOfBirth)
+      if (isNaN(dob) || dob > new Date()) {
+        errs.dateOfBirth = 'Invalid date of birth'
+      } else {
+        const today = new Date()
+        let age = today.getFullYear() - dob.getFullYear()
+        if (
+          today.getMonth() < dob.getMonth() ||
+          (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+        )
+          age--
+        if (age >= 100) errs.dateOfBirth = 'Patient must be less than 100 years old.'
+      }
     }
 
     if (!formData.gender) errs.gender = 'Gender required'
@@ -232,6 +243,15 @@ const CustomerManagement = () => {
     if (!formData.address.state?.trim()) errs.state = 'State required'
     if (!/^\d{6}$/.test(formData.address.postalCode)) errs.postalCode = 'Valid 6-digit PIN required'
     else if (!selectedPO && !formData.address.city?.trim()) errs.postOffice = 'Select a post office'
+
+    if (!formData.aadharId) {
+      errs.aadharId = 'Aadhar ID required'
+    } else if (formData.aadharId.length !== 12) {
+      errs.aadharId = 'Aadhar ID must be 12 digits'
+    } else if (/^(.)\1+$/.test(formData.aadharId)) {
+      errs.aadharId = 'Aadhar ID cannot have identical digits'
+    }
+
     setFormErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -519,6 +539,17 @@ const CustomerManagement = () => {
                   className={`cm-input${formErrors.email ? ' is-invalid' : ''}`}
                   onChange={handleInputChange}
                   placeholder="email@example.com"
+                />
+              </Field>
+
+              <Field label="Aadhar ID" required error={formErrors.aadharId}>
+                <CFormInput
+                  name="aadharId"
+                  value={formData.aadharId}
+                  maxLength={12}
+                  className={`cm-input${formErrors.aadharId ? ' is-invalid' : ''}`}
+                  onChange={(e) => { if (/^[0-9]*$/.test(e.target.value)) handleInputChange(e) }}
+                  placeholder="12-digit Aadhar"
                 />
               </Field>
 

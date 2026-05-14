@@ -182,6 +182,9 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     bio: '',
     documents: { licenseCertificate: '', degreeCertificate: '', profilePhoto: '' },
     languages: [], physioType: '',
+    dateOfJoining: '',
+    emergencyContact: '',
+    aadharId: '',
   }
 
   const [formData, setFormData] = useState(emptyForm)
@@ -238,8 +241,14 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     if (!formData.dateOfBirth) {
       e.dateOfBirth = 'Select DOB'
     } else {
-      const maxDate = new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())
-      if (new Date(formData.dateOfBirth) > maxDate) e.dateOfBirth = 'Age must be at least 18 years'
+      const dob = new Date(formData.dateOfBirth)
+      const now = new Date()
+      let age = now.getFullYear() - dob.getFullYear()
+      const m = now.getMonth() - dob.getMonth()
+      if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--
+
+      if (age < 18) e.dateOfBirth = 'Must be at least 18 years'
+      else if (age > 100) e.dateOfBirth = 'Age cannot exceed 100 years'
     }
     // ✅ Email validation
     if (!formData.emailId?.trim()) {
@@ -274,6 +283,25 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     if (!formData.documents?.profilePhoto) {
       e.profilePhoto = "Profile photo is required"
     }
+    if (!formData.dateOfJoining) {
+      e.dateOfJoining = 'Select date of joining'
+    } else {
+      const doj = new Date(formData.dateOfJoining)
+      const now = new Date()
+      const oneYearAgo = new Date()
+      oneYearAgo.setFullYear(now.getFullYear() - 1)
+      if (doj > now) e.dateOfJoining = 'Joining cannot be in future'
+      else if (doj < oneYearAgo) e.dateOfJoining = 'Joining must be within 1 year'
+    }
+    if (!formData.aadharId) {
+      e.aadharId = 'Aadhar ID is required'
+    } else if (!/^\d{12}$/.test(formData.aadharId)) {
+      e.aadharId = 'Aadhar ID must be 12 digits'
+    } else if (/^(.)\1+$/.test(formData.aadharId)) {
+      e.aadharId = 'Aadhar cannot have identical digits'
+    }
+    if (formData.emergencyContact && !/^[6-9]\d{9}$/.test(formData.emergencyContact)) e.emergencyContact = 'Enter valid 10-digit emergency contact'
+
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -491,6 +519,9 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                 <InfoRow label="Email" value={formData.emailId} required error={errors.emailId} />
                 <InfoRow label="Gender" value={formData.gender} />
                 <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
+                <InfoRow label="Date of Joining" value={formData.dateOfJoining} />
+                <InfoRow label="Emergency Contact" value={formData.emergencyContact} />
+                <InfoRow label="Aadhar ID" value={formData.aadharId} />
                 <InfoRow label="Languages" value={formData.languages?.join(', ')} />
               </div>
             </InfoCard>
@@ -617,8 +648,8 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                 <div className="pf-col-third">
                   <Field label="Date of Birth" required error={errors.dateOfBirth}>
                     <input type="date" className="pf-input" value={formData.dateOfBirth}
-                      max={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0]}
-                      min="1950-01-01"
+                      max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                      min={new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split('T')[0]}
                       onChange={(e) => handleChange('dateOfBirth', e.target.value)} />
                   </Field>
                 </div>
@@ -638,6 +669,39 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                       }}
                     // placeholder="Enter qualification (e.g., BPT, MPT)"
                     />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="pf-row">
+                <div className="pf-col-third">
+                  <Field label="Date of Joining" required error={errors.dateOfJoining}>
+                    <input type="date" className="pf-input" value={formData.dateOfJoining}
+                      max={new Date().toISOString().split('T')[0]}
+                      min={new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0]}
+                      onChange={(e) => handleChange('dateOfJoining', e.target.value)} />
+                  </Field>
+                </div>
+                <div className="pf-col-third">
+                  <Field label="Emergency Contact (Optional)" error={errors.emergencyContact}>
+                    <input className="pf-input" value={formData.emergencyContact} maxLength={10}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^[6-9]\d{0,9}$/.test(val)) {
+                          handleChange('emergencyContact', val);
+                        }
+                      }} placeholder="Emergency number" />
+                  </Field>
+                </div>
+                <div className="pf-col-third">
+                  <Field label="Aadhar ID" required error={errors.aadharId}>
+                    <input className="pf-input" value={formData.aadharId} maxLength={12}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d{0,12}$/.test(val)) {
+                          handleChange('aadharId', val);
+                        }
+                      }} placeholder="12 digit Aadhar ID" />
                   </Field>
                 </div>
               </div>

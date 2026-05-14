@@ -20,7 +20,7 @@ import {
 import Select from "react-select"
 import ConfirmationModal from "../../components/ConfirmationModal"
 import { useHospital } from "../Usecontext/HospitalContext"
-import { Edit2, Eye, Trash2, Package, PackagePlus } from "lucide-react"
+import { Edit2, Eye, Trash2, Package, PackagePlus, Search, X } from "lucide-react"
 import {
   addTherapy,
   deleteTherapy,
@@ -51,7 +51,7 @@ export default function PackagesManagement() {
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
-  const { searchQuery } = useGlobalSearch()
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
 
   const [form, setForm] = useState({
     packageName: "",
@@ -298,6 +298,23 @@ export default function PackagesManagement() {
             </p>
           </div>
         </div>
+        
+        <div className="cm-search-wrapper">
+          <Search size={14} className="cm-search-icon-left" />
+          <input
+            type="text"
+            placeholder="Search packages..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="cm-search-input"
+          />
+          {searchQuery && (
+            <button className="cm-search-clear" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         {can("Package Management", "create") && (
           <button className="pm-add-btn" onClick={() => setModal(true)}>
             <PackagePlus size={15} /> Add New Package

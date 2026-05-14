@@ -39,7 +39,7 @@ import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import { http } from '../../Utils/Interceptors'
 import Pagination from '../../Utils/Pagination'
 import { CustomerByClinicNdBranchId } from '../customerManagement/CustomerManagementAPI'
-import { Eye, Printer } from 'lucide-react'
+import { Eye, Printer, Search, X } from 'lucide-react'
 import PrintLetterHead from '../../Utils/PrintLetterHead'
 import ConfirmationModal from '../../components/ConfirmationModal'
 
@@ -66,7 +66,7 @@ const WidgetsDropdown = (props) => {
   const [doctorError, setDoctorError] = useState(null)
   const [doctors, setDoctors] = useState([])
   const [patients, setPatients] = useState([])
-  const { searchQuery } = useGlobalSearch()
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
   const [filteredData, setFilteredData] = useState([])
   const [filterTypes, setFilterTypes] = useState([])
   const [statusFilters, setStatusFilters] = useState([])
@@ -431,6 +431,22 @@ const WidgetsDropdown = (props) => {
             </div>
           </div>
 
+          <div className="cm-search-wrapper">
+            <Search size={14} className="cm-search-icon-left" />
+            <input
+              type="text"
+              placeholder="Search bookings, patients..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="cm-search-input"
+            />
+            {searchQuery && (
+              <button className="cm-search-clear" onClick={() => setSearchQuery('')}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
           {/* ── Right side: filter buttons + nav buttons ───────────────── */}
           <div className="wd-header-right">
             {/* Status filter buttons */}
@@ -495,13 +511,34 @@ const WidgetsDropdown = (props) => {
               ) : appointmentError ? (
                 <CTableRow>
                   <CTableDataCell colSpan="9" className="wd-td">
-                    <div className="wd-empty">
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="wd-empty-icon">
+                    <div
+                      className="wd-empty"
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        textAlign: "center",
+                        padding: "20px",
+                      }}
+                    >
+                      <svg
+                        width="40"
+                        height="40"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="wd-empty-icon"
+                      >
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                         <line x1="16" y1="2" x2="16" y2="6" />
                         <line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
+
                       <p>{appointmentError}</p>
                     </div>
                   </CTableDataCell>
@@ -609,7 +646,7 @@ const WidgetsDropdown = (props) => {
                                     {[
                                       { label: 'Cash', icon: '💵', desc: 'Physical currency' },
                                       { label: 'Card', icon: '💳', desc: 'Debit / Credit' },
-                                      { label: 'UPI',  icon: '📲', desc: 'GPay / PhonePe' },
+                                      { label: 'UPI', icon: '📲', desc: 'GPay / PhonePe' },
                                     ].map((opt) => (
                                       <button
                                         key={opt.label}
@@ -774,6 +811,7 @@ const WidgetsDropdown = (props) => {
           background: #d0dce9;
           margin: 0 4px;
         }
+
 
         /* ── Nav buttons (Search Patients / Doctors) ─ */
         .wd-nav-btn {

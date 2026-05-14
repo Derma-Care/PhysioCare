@@ -321,6 +321,16 @@ const FrontDeskForm = ({
       }
     })
 
+    if (formData.governmentId) {
+      if (formData.governmentId.length !== 12) {
+        newErrors.governmentId = 'Aadhar ID must be exactly 12 digits.'
+        isValid = false
+      } else if (/^(.)\1+$/.test(formData.governmentId)) {
+        newErrors.governmentId = 'Aadhar ID cannot have all identical digits.'
+        isValid = false
+      }
+    }
+
     const todayStr = new Date().toISOString().split('T')[0]
 
     if (formData.dateOfBirth) {
@@ -331,15 +341,51 @@ const FrontDeskForm = ({
         const dob = new Date(formData.dateOfBirth)
         const today = new Date()
         let age = today.getFullYear() - dob.getFullYear()
-        const before = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+        const before =
+          today.getMonth() < dob.getMonth() ||
+          (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
         if (before) age--
-        if (age < 18) { newErrors.dateOfBirth = 'Staff must be at least 18 years old.'; isValid = false }
+        if (age < 18) {
+          newErrors.dateOfBirth = 'Staff must be at least 18 years old.'
+          isValid = false
+        }
+        if (age >= 100) {
+          newErrors.dateOfBirth = 'Staff must be less than 100 years old.'
+          isValid = false
+        }
       }
     }
 
-    if (formData.dateOfJoining && formData.dateOfJoining > todayStr) {
-      newErrors.dateOfJoining = 'Joining Date cannot be in the future.'
-      isValid = false
+    if (formData.dateOfJoining) {
+      if (formData.dateOfJoining > todayStr) {
+        newErrors.dateOfJoining = 'Joining Date cannot be in the future.'
+        isValid = false
+      } else {
+        const joinDate = new Date(formData.dateOfJoining)
+        const oneYearAgo = new Date()
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+        if (joinDate < oneYearAgo) {
+          newErrors.dateOfJoining = 'Joining Date cannot be more than 1 year ago.'
+          isValid = false
+        }
+      }
+    }
+
+    if (formData.bankAccountDetails?.accountNumber) {
+      const accLen = formData.bankAccountDetails.accountNumber.length
+      if (accLen < 9 || accLen > 18) {
+        if (!newErrors.bankAccountDetails) newErrors.bankAccountDetails = {}
+        newErrors.bankAccountDetails.accountNumber = 'Account number must be between 9 and 18 digits.'
+        isValid = false
+      }
+    }
+
+    if (formData.bankAccountDetails?.panCardNumber) {
+      if (formData.bankAccountDetails.panCardNumber.length !== 10) {
+        if (!newErrors.bankAccountDetails) newErrors.bankAccountDetails = {}
+        newErrors.bankAccountDetails.panCardNumber = 'PAN Card must be exactly 10 characters.'
+        isValid = false
+      }
     }
 
     if (formData.contactNumber && !/^[6-9]\d{9}$/.test(formData.contactNumber)) {
@@ -729,7 +775,7 @@ const FrontDeskForm = ({
                           disabled={ifscLoading && (field === 'bankName' || field === 'branchName')}
                           placeholder={ifscLoading && (field === 'bankName' || field === 'branchName') ? 'Fetching...' : ''}
                           maxLength={
-                            field === 'accountNumber' ? 20
+                            field === 'accountNumber' ? 18
                               : field === 'panCardNumber' ? 10
                                 : field === 'ifscCode' ? 11
                                   : field === 'accountHolderName' ? 50

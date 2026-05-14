@@ -46,6 +46,45 @@ const B = {
   400: '#378add',
 }
 
+const initialForm = {
+  doctorPicture: null,
+  doctorLicence: '',
+  doctorMobileNumber: '',
+  doctorEmail: '',
+  doctorName: '',
+  service: [],
+  subServices: [],
+  specialization: '',
+  gender: '',
+  experience: '',
+  qualification: '',
+  associationsOrMemberships: '',
+  branch: [],
+  availableDays: '',
+  availableTimes: '',
+  profileDescription: '',
+  doctorSignature: null,
+  doctorSignatureFileName: null,
+  doctorFees: { inClinicFee: '' },
+  focusAreas: [],
+  languages: [],
+  highlights: [],
+  availableConsultations: [],
+  consultation: { inClinic: 0, videoOrOnline: 0, serviceAndTreatments: 0 },
+  dateOfJoining: '',
+  emergencyContact: '',
+  aadharId: '',
+  dateOfBirth: '',
+}
+
+const SectionHeading = ({ text }) => (
+  <div className="dm-section-header">
+    <span className="dm-section-line" />
+    <span className="dm-section-text">{text}</span>
+    <span className="dm-section-line" />
+  </div>
+)
+
 const DoctorManagement = () => {
   const {
     doctorData,
@@ -88,32 +127,6 @@ const DoctorManagement = () => {
     inClinic: false, online: false, serviceTreatment: false,
   })
 
-  const initialForm = {
-    doctorPicture: null,
-    doctorLicence: '',
-    doctorMobileNumber: '',
-    doctorEmail: '',
-    doctorName: '',
-    service: [],
-    subServices: [],
-    specialization: '',
-    gender: '',
-    experience: '',
-    qualification: '',
-    associationsOrMemberships: '',
-    branch: [],
-    availableDays: '',
-    availableTimes: '',
-    profileDescription: '',
-    doctorSignature: null,
-    doctorSignatureFileName: null,
-    doctorFees: { inClinicFee: '' },
-    focusAreas: [],
-    languages: [],
-    highlights: [],
-    availableConsultations: [],
-    consultation: { inClinic: 0, videoOrOnline: 0, serviceAndTreatments: 0 },
-  }
   const [form, setForm] = useState(initialForm)
 
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -123,7 +136,8 @@ const DoctorManagement = () => {
     '07:00 PM', '08:00 PM', '09:00 PM', '10:00 PM',
   ]
 
-  /* ─── helpers ──────────────────────────────────── */
+
+/* ─── helpers ──────────────────────────────────── */
   const clearFieldError = (field) =>
     setFormErrors((prev) => { const u = { ...prev }; delete u[field]; return u })
 
@@ -246,8 +260,7 @@ const DoctorManagement = () => {
     if (!form.qualification.trim()) errs.qualification = 'Qualification is required'
     if (!form.specialization.trim()) errs.specialization = 'Specialization is required'
     if (!form.profileDescription.trim()) errs.profileDescription = 'Profile description is required'
-    if (enabledTypes.inClinic && (!form.doctorFees.inClinicFee || Number(form.doctorFees.inClinicFee) <= 0)) errs.inClinicFee = 'Enter valid in-clinic fee'
-    // if (enabledTypes.online && (!form.doctorFees.vedioConsultationFee || Number(form.doctorFees.vedioConsultationFee) <= 0)) errs.vedioConsultationFee = 'Enter valid video fee'
+    if (!form.doctorFees.inClinicFee || Number(form.doctorFees.inClinicFee) <= 0) errs.inClinicFee = 'Enter valid in-clinic fee'
     if (!form.doctorPicture) errs.doctorPicture = 'Profile picture is required'
     if (!form.doctorSignature) errs.doctorSignature = 'Doctor signature is required'
     if (!startDay) errs.startDay = 'Start day required'
@@ -257,6 +270,42 @@ const DoctorManagement = () => {
     else if (cvt(startTime) >= cvt(endTime)) errs.availableTimes = 'Start time must be before end time'
     if (!form.gender) errs.gender = 'Please select gender'
     if (!form.branch?.length) errs.branch = 'Select at least one branch'
+    
+    // Date of Joining validation
+    if (!form.dateOfJoining) {
+      errs.dateOfJoining = 'Date of joining is required'
+    } else {
+      const doj = new Date(form.dateOfJoining)
+      const now = new Date()
+      const oneYearAgo = new Date()
+      oneYearAgo.setFullYear(now.getFullYear() - 1)
+      if (doj > now) errs.dateOfJoining = 'Date of joining cannot be in the future'
+      else if (doj < oneYearAgo) errs.dateOfJoining = 'Date of joining must be within the last 1 year'
+    }
+
+    // Date of Birth validation (18 to 100 years)
+    if (!form.dateOfBirth) {
+      errs.dateOfBirth = 'Date of birth is required'
+    } else {
+      const dob = new Date(form.dateOfBirth)
+      const now = new Date()
+      let age = now.getFullYear() - dob.getFullYear()
+      const m = now.getMonth() - dob.getMonth()
+      if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--
+      
+      if (age < 18) errs.dateOfBirth = 'Doctor must be at least 18 years old'
+      else if (age > 100) errs.dateOfBirth = 'Age cannot exceed 100 years'
+    }
+
+    // Aadhar ID validation
+    if (!form.aadharId) {
+      errs.aadharId = 'Aadhar ID is required'
+    } else if (!/^\d{12}$/.test(form.aadharId)) {
+      errs.aadharId = 'Aadhar ID must be 12 digits'
+    } else if (/^(.)\1+$/.test(form.aadharId)) {
+      errs.aadharId = 'Aadhar ID cannot have all identical digits'
+    }
+    if (form.emergencyContact && !/^[6789]\d{9}$/.test(form.emergencyContact)) errs.emergencyContact = 'Enter valid 10-digit emergency contact'
 
     setFormErrors(errs)
     return Object.keys(errs).length === 0
@@ -310,6 +359,10 @@ const DoctorManagement = () => {
         languages: form.languages,
         highlights: form.highlights,
         doctorFees: { inClinicFee: form.doctorFees.inClinicFee },
+        dateOfJoining: form.dateOfJoining,
+        emergencyContact: form.emergencyContact,
+        aadharId: form.aadharId,
+        dateOfBirth: form.dateOfBirth,
         // consultation: {
         //   serviceAndTreatments: form.availableConsultations.includes('Services & Treatments') ? 3 : 0,
         //   inClinic: form.availableConsultations.includes('In-Clinic') ? 1 : 0,
@@ -536,8 +589,8 @@ const DoctorManagement = () => {
 
           <div className="dm-divider" />
 
-          {/* Section 2: Doctor Details */}
-          <SectionHeading text="Doctor Details" />
+          {/* Section 2: Professional Information */}
+          <SectionHeading text="Professional Information" />
           <CRow className="g-3 mb-2">
             <CCol md={6}>
               <label className="dm-label">Doctor Name <span className="req">*</span></label>
@@ -554,22 +607,6 @@ const DoctorManagement = () => {
                 placeholder="Dr. Full Name"
               />
               <Err field="doctorName" />
-            </CCol>
-            <CCol md={6}>
-              <label className="dm-label">License Number <span className="req">*</span></label>
-              <CFormInput
-                className="dm-input"
-                value={form.doctorLicence}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/[^A-Za-z0-9\s/.-]/g, '')
-                  setForm((p) => ({ ...p, doctorLicence: v }))
-                  const isDup = doctorData?.data?.some((d) => d.doctorLicence === v.trim())
-                  setFormErrors((p) => ({ ...p, doctorLicence: isDup ? 'License already exists' : '' }))
-                }}
-                invalid={!!formErrors.doctorLicence}
-                placeholder="License number"
-              />
-              <Err field="doctorLicence" />
             </CCol>
             <CCol md={6}>
               <label className="dm-label">Gender <span className="req">*</span></label>
@@ -589,21 +626,20 @@ const DoctorManagement = () => {
               <Err field="gender" />
             </CCol>
             <CCol md={6}>
-              <label className="dm-label">Experience (years) <span className="req">*</span></label>
+              <label className="dm-label">License Number <span className="req">*</span></label>
               <CFormInput
                 className="dm-input"
-                type="number"
-                value={form.experience}
+                value={form.doctorLicence}
                 onChange={(e) => {
-                  if (/^\d{0,2}$/.test(e.target.value)) {
-                    setForm((p) => ({ ...p, experience: e.target.value }))
-                    clearFieldError('experience')
-                  }
+                  const v = e.target.value.replace(/[^A-Za-z0-9\s/.-]/g, '')
+                  setForm((p) => ({ ...p, doctorLicence: v }))
+                  const isDup = doctorData?.data?.some((d) => d.doctorLicence === v.trim())
+                  setFormErrors((p) => ({ ...p, doctorLicence: isDup ? 'License already exists' : '' }))
                 }}
-                invalid={!!formErrors.experience}
-                placeholder="Years"
+                invalid={!!formErrors.doctorLicence}
+                placeholder="License number"
               />
-              <Err field="experience" />
+              <Err field="doctorLicence" />
             </CCol>
             <CCol md={6}>
               <label className="dm-label">Qualification <span className="req">*</span></label>
@@ -636,6 +672,92 @@ const DoctorManagement = () => {
               <Err field="specialization" />
             </CCol>
             <CCol md={6}>
+              <label className="dm-label">Experience (years) <span className="req">*</span></label>
+              <CFormInput
+                className="dm-input"
+                type="number"
+                value={form.experience}
+                onChange={(e) => {
+                  if (/^\d{0,2}$/.test(e.target.value)) {
+                    setForm((p) => ({ ...p, experience: e.target.value }))
+                    clearFieldError('experience')
+                  }
+                }}
+                invalid={!!formErrors.experience}
+                placeholder="Years"
+              />
+              <Err field="experience" />
+            </CCol>
+          </CRow>
+
+          <div className="dm-divider" />
+
+          {/* Section 3: Employment & Identification */}
+          <SectionHeading text="Employment & Identification" />
+          <CRow className="g-3 mb-2">
+            <CCol md={6}>
+              <label className="dm-label">Date of Birth <span className="req">*</span></label>
+              <CFormInput
+                type="date"
+                className="dm-input"
+                value={form.dateOfBirth}
+                onChange={(e) => {
+                  setForm((p) => ({ ...p, dateOfBirth: e.target.value }))
+                  clearFieldError('dateOfBirth')
+                }}
+                invalid={!!formErrors.dateOfBirth}
+                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                min={new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split('T')[0]}
+              />
+              <Err field="dateOfBirth" />
+            </CCol>
+            <CCol md={6}>
+              <label className="dm-label">Date of Joining <span className="req">*</span></label>
+              <CFormInput
+                type="date"
+                className="dm-input"
+                value={form.dateOfJoining}
+                onChange={(e) => {
+                  setForm((p) => ({ ...p, dateOfJoining: e.target.value }))
+                  clearFieldError('dateOfJoining')
+                }}
+                invalid={!!formErrors.dateOfJoining}
+                max={new Date().toISOString().split('T')[0]}
+                min={new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0]}
+              />
+              <Err field="dateOfJoining" />
+            </CCol>
+            <CCol md={6}>
+              <label className="dm-label">Aadhar ID <span className="req">*</span></label>
+              <CFormInput
+                className="dm-input"
+                value={form.aadharId}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 12)
+                  setForm((p) => ({ ...p, aadharId: v }))
+                  if (v.length === 12) clearFieldError('aadharId')
+                }}
+                invalid={!!formErrors.aadharId}
+                placeholder="1234 5678 9012"
+              />
+              <Err field="aadharId" />
+            </CCol>
+            <CCol md={6}>
+              <label className="dm-label">Emergency Contact (Optional)</label>
+              <CFormInput
+                className="dm-input"
+                value={form.emergencyContact}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 10)
+                  setForm((p) => ({ ...p, emergencyContact: v }))
+                  if (v.length === 10 || v.length === 0) clearFieldError('emergencyContact')
+                }}
+                invalid={!!formErrors.emergencyContact}
+                placeholder="Emergency number"
+              />
+              <Err field="emergencyContact" />
+            </CCol>
+            <CCol md={6}>
               <label className="dm-label">Monthly Paid Leaves</label>
               <CFormInput
                 className="dm-input"
@@ -646,10 +768,15 @@ const DoctorManagement = () => {
                 placeholder="0"
               />
             </CCol>
+          </CRow>
+
+          <div className="dm-divider" />
+
+          {/* Section 4: Additional Information */}
+          <SectionHeading text="Additional Information" />
+          <CRow className="g-3 mb-2">
             <CCol md={6}>
-              <label className="dm-label">
-                Profile Picture <span className="req">*</span>
-              </label>
+              <label className="dm-label">Profile Picture <span className="req">*</span></label>
               <div className="dm-upload-box">
                 <CFormInput
                   type="file"
@@ -747,25 +874,10 @@ const DoctorManagement = () => {
 
           {/* Section 4: Consultation & Contact */}
           <SectionHeading text="Consultations & Contact" />
-          {/* <div className="dm-consult-types">
-            <strong className="dm-label">Consultation Type</strong>
-            <div className="dm-check-row">
-              {[
-                ['serviceTreatment', 'Services & Treatments'],
-                ['inClinic', 'In-Clinic Consultation'],
-                ['online', 'Online Consultation'],
-              ].map(([key, lbl]) => (
-                <label key={key} className="dm-check-label">
-                  <input type="checkbox" checked={enabledTypes[key]} onChange={() => toggleType(key)} />
-                  {lbl}
-                </label>
-              ))}
-            </div>
-          </div> */}
           <CRow className="g-3 mb-2">
 
             <CCol md={6}>
-              <label className="dm-label">Consulation Fee (₹) <span className="req">*</span></label>
+              <label className="dm-label">Consultation Fee (₹) <span className="req">*</span></label>
               <CFormInput
                 className="dm-input"
                 type="number"
@@ -986,8 +1098,19 @@ const DoctorManagement = () => {
         .dm-section-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; margin-top: 4px; }
         .dm-section-bar { width: 3px; height: 20px; background: #185fa5; border-radius: 2px; flex-shrink: 0; }
         .dm-section-title { font-size: 14px; font-weight: 600; color: #0c447c; margin: 0; }
-        .dm-divider { border: none; border-top: 0.5px solid #d0dce9; margin: 18px 0 16px; }
+        /* Section headers */
+        .dm-section-header {
+          display: flex; align-items: center; gap: 12px;
+          margin: 24px 0 12px;
+        }
+        .dm-section-line { height: 1px; background: #e5e7eb; flex: 1; }
+        .dm-section-text {
+          font-size: 13px; font-weight: 700; color: #185fa5;
+          text-transform: uppercase; letter-spacing: 0.05em;
+        }
 
+        .dm-divider { border-top: 1px solid #e5e7eb; margin: 24px 0; }
+        
         /* Labels */
         .dm-label { font-size: 13px; font-weight: 500; color: #374151; display: block; margin-bottom: 4px; }
         .req { color: #e24b4a; margin-left: 2px; }

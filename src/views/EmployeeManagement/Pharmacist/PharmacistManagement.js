@@ -13,7 +13,7 @@ import {
   CModalFooter,
 } from '@coreui/react'
 import PharmacistForm from './PharmacistForm '
-import { Edit2, Eye, Trash2 } from 'lucide-react'
+import { Edit2, Eye, Trash2, Pill, Search, X } from 'lucide-react'
 import capitalizeWords from '../../../Utils/capitalizeWords'
 import { useGlobalSearch } from '../../Usecontext/GlobalSearchContext'
 import ConfirmationModal from '../../../components/ConfirmationModal'
@@ -169,22 +169,42 @@ const PharmacistManagement = () => {
 
   return (
     <div>
-      {can('Pharmacist', 'create') && (
-        <div
-          className="mb-3 w-100"
-          style={{ display: 'flex', justifyContent: 'end', alignContent: 'end', alignItems: 'end' }}
-        >
-          <CButton
-            style={{
-              color: 'var(--color-black)',
-              backgroundColor: 'var(--color-bgcolor)',
-            }}
-            onClick={() => setModalVisible(true)}
-          >
-            Add Pharmacist
-          </CButton>
+      {/* ── Page Header ── */}
+      <div className="ph-page-header">
+        <div className="ph-title-group">
+          <div className="ph-page-icon">
+            <Pill size={20} />
+          </div>
+          <div>
+            <h4 className="ph-page-title">Pharmacist Management</h4>
+            <p className="ph-page-sub">
+              {pharmacist.length} pharmacist{pharmacist.length !== 1 ? 's' : ''} registered
+            </p>
+          </div>
         </div>
-      )}
+
+        <div className="cm-search-wrapper">
+          <Search size={14} className="cm-search-icon-left" />
+          <input
+            type="text"
+            placeholder="Search pharmacists..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="cm-search-input"
+          />
+          {searchQuery && (
+            <button className="cm-search-clear" type="button" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {can('Pharmacist', 'create') && (
+          <button className="ph-add-btn" onClick={() => setModalVisible(true)}>
+            + Add Pharmacist
+          </button>
+        )}
+      </div>
       <CModal visible={credentialsModalVisible} backdrop="static" keyboard={false}>
         <CModalHeader>
           <h5>Pharmacist Credentials</h5>
@@ -401,6 +421,60 @@ const PharmacistManagement = () => {
         pharmacist={pharmacist}
         fetchTechs={fetchTechs}
       />
+      
+      {/* ── STYLES ── */}
+      <style>{`
+        .ph-page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 18px;
+          padding-bottom: 14px;
+          border-bottom: 0.5px solid #d0dce9;
+        }
+        .ph-title-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .ph-page-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background: #e6f1fb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #185fa5;
+          flex-shrink: 0;
+        }
+        .ph-page-title {
+          font-size: 17px;
+          font-weight: 600;
+          color: #0c447c;
+          margin: 0;
+        }
+        .ph-page-sub {
+          font-size: 12px;
+          color: #6b7280;
+          margin: 0;
+        }
+        .ph-add-btn {
+          background: #185fa5;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 8px 18px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: filter 0.15s;
+          white-space: nowrap;
+        }
+        .ph-add-btn:hover { filter: brightness(0.9); }
+      `}</style>
     </div>
   )
 }

@@ -19,7 +19,7 @@ import {
   CCol,
   CImage,
 } from "@coreui/react"
-import { Edit2, Eye, Trash2, Dumbbell, PlusCircle, AlertTriangle } from "lucide-react"
+import { Edit2, Eye, Trash2, Dumbbell, PlusCircle, AlertTriangle, Search, X } from "lucide-react"
 import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 
@@ -186,7 +186,7 @@ export default function ExerciseTable() {
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
-  const { searchQuery } = useGlobalSearch()
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 
@@ -506,6 +506,23 @@ export default function ExerciseTable() {
             </p>
           </div>
         </div>
+
+        <div className="cm-search-wrapper">
+          <Search size={14} className="cm-search-icon-left" />
+          <input
+            type="text"
+            placeholder="Search activities..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="cm-search-input"
+          />
+          {searchQuery && (
+            <button className="cm-search-clear" type="button" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         {can("Activity Library", "create") && (
           <button className="ex-add-btn" onClick={() => setModal(true)}>
             <PlusCircle size={15} />

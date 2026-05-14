@@ -14,7 +14,7 @@ import {
   CModalFooter,
 } from '@coreui/react'
 import OtherStaffForm from './OtherStaffForm'
-import { Edit2, Eye, Trash2, Users, AlertTriangle } from 'lucide-react'
+import { Edit2, Eye, Trash2, Users, AlertTriangle, Search, X } from 'lucide-react'
 import capitalizeWords from '../../../Utils/capitalizeWords'
 import { useGlobalSearch } from '../../Usecontext/GlobalSearchContext'
 import ConfirmationModal from '../../../components/ConfirmationModal'
@@ -36,7 +36,7 @@ const OtherStaffManagement = () => {
   const [viewMode, setViewMode] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
-  const { searchQuery } = useGlobalSearch()
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
   const [loading, setLoading] = useState(false)
   const [delloading, setDelLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -133,6 +133,22 @@ const OtherStaffManagement = () => {
               {technicians.length} staff member{technicians.length !== 1 ? 's' : ''} registered
             </p>
           </div>
+        </div>
+
+        <div className="cm-search-wrapper">
+          <Search size={14} className="cm-search-icon-left" />
+          <input
+            type="text"
+            placeholder="Search other staff..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="cm-search-input"
+          />
+          {searchQuery && (
+            <button className="cm-search-clear" type="button" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
         </div>
 
         {can('OtherStaff', 'create') && (

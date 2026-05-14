@@ -7,7 +7,7 @@ import {
   CTableBody,
   CTableDataCell,
 } from '@coreui/react'
-import { Edit2, Eye, Trash2, UserCog } from 'lucide-react'
+import { Edit2, Eye, Trash2, UserCog, Search, X } from 'lucide-react'
 import PhysioForm from './NurseForm'
 import { getAllPhysios, addPhysio, updatePhysio, deletePhysio } from './NurseAPI'
 import { useHospital } from '../../Usecontext/HospitalContext'
@@ -16,6 +16,7 @@ import Pagination from '../../../Utils/Pagination'  // ← same Pagination used 
 import { showCustomToast } from '../../../Utils/Toaster'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import { useGlobalSearch } from '../../Usecontext/GlobalSearchContext'
 import LoadingIndicator from '../../../Utils/loader'
 
 
@@ -32,6 +33,7 @@ const PhysioManagement = () => {
   // ── Pagination state (mirrors CustomerManagement) ─────────────────────────
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
 
   const hospitalId = localStorage.getItem('HospitalId')
   const branchId = localStorage.getItem('branchId')
@@ -104,8 +106,16 @@ const PhysioManagement = () => {
   }
 
   // ── Pagination slice ───────────────────────────────────────────────────────
-  const totalPages = Math.ceil(physios.length / rowsPerPage)
-  const displayData = physios.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+  const filteredData = React.useMemo(() => {
+    const q = searchQuery?.toLowerCase().trim() || ''
+    if (!q) return physios
+    return physios.filter((item) =>
+      Object.values(item).some((val) => String(val).toLowerCase().includes(q)),
+    )
+  }, [searchQuery, physios])
+
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage)
+  const displayData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
   return (
     <>
@@ -122,6 +132,22 @@ const PhysioManagement = () => {
               {physios.length} therapist{physios.length !== 1 ? 's' : ''} registered
             </p>
           </div>
+        </div>
+
+        <div className="cm-search-wrapper">
+          <Search size={14} className="cm-search-icon-left" />
+          <input
+            type="text"
+            placeholder="Search therapists..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="cm-search-input"
+          />
+          {searchQuery && (
+            <button className="cm-search-clear" type="button" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
         </div>
 
         {can('Therapist', 'create') && (

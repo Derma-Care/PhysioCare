@@ -13,7 +13,7 @@ import {
   CModalFooter,
 } from '@coreui/react'
 import LabTechnicianForm from './LabTechnicianForm '
-import { Edit2, Eye, Trash2 } from 'lucide-react'
+import { Edit2, Eye, Trash2, FlaskConical, Search, X } from 'lucide-react'
 import capitalizeWords from '../../../Utils/capitalizeWords'
 import { useGlobalSearch } from '../../Usecontext/GlobalSearchContext'
 import ConfirmationModal from '../../../components/ConfirmationModal'
@@ -195,22 +195,42 @@ const LabTechnicianManagement = () => {
 
   return (
     <div>
-      {can('Lab Technician', 'create') && (
-        <div
-          className="mb-3 w-100"
-          style={{ display: 'flex', justifyContent: 'end', alignContent: 'end', alignItems: 'end' }}
-        >
-          <CButton
-            style={{
-              color: 'var(--color-black)',
-              backgroundColor: 'var(--color-bgcolor)',
-            }}
-            onClick={() => setModalVisible(true)}
-          >
-            Add Lab Technician
-          </CButton>
+      {/* ── Page Header ── */}
+      <div className="lt-page-header">
+        <div className="lt-title-group">
+          <div className="lt-page-icon">
+            <FlaskConical size={20} />
+          </div>
+          <div>
+            <h4 className="lt-page-title">Lab Technician Management</h4>
+            <p className="lt-page-sub">
+              {technicians.length} technician{technicians.length !== 1 ? 's' : ''} registered
+            </p>
+          </div>
         </div>
-      )}
+
+        <div className="cm-search-wrapper">
+          <Search size={14} className="cm-search-icon-left" />
+          <input
+            type="text"
+            placeholder="Search lab technicians..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="cm-search-input"
+          />
+          {searchQuery && (
+            <button className="cm-search-clear" type="button" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {can('Lab Technician', 'create') && (
+          <button className="lt-add-btn" onClick={() => setModalVisible(true)}>
+            + Add Lab Technician
+          </button>
+        )}
+      </div>
       <CModal visible={modalTVisible} backdrop="static" keyboard={false}>
         <CModalHeader>
           <h5>Technician Credentials</h5>
@@ -440,6 +460,60 @@ const LabTechnicianManagement = () => {
         technicians={technicians}
         fetchTechs={fetchTechs}
       />
+      
+      {/* ── STYLES ── */}
+      <style>{`
+        .lt-page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 18px;
+          padding-bottom: 14px;
+          border-bottom: 0.5px solid #d0dce9;
+        }
+        .lt-title-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .lt-page-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background: #e6f1fb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #185fa5;
+          flex-shrink: 0;
+        }
+        .lt-page-title {
+          font-size: 17px;
+          font-weight: 600;
+          color: #0c447c;
+          margin: 0;
+        }
+        .lt-page-sub {
+          font-size: 12px;
+          color: #6b7280;
+          margin: 0;
+        }
+        .lt-add-btn {
+          background: #185fa5;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 8px 18px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: filter 0.15s;
+          white-space: nowrap;
+        }
+        .lt-add-btn:hover { filter: brightness(0.9); }
+      `}</style>
     </div>
   )
 }

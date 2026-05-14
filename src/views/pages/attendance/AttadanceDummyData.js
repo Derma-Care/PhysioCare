@@ -214,7 +214,12 @@ export const attendanceDummy = [
   { id: 24, name: "John", date: "2026-05-13", in: "12:00", out: "20:00", status: "Present", reason: "", total: "8h", working: "7h", idle: "1h", loginLocation: "Nurse Station", logoutLocation: "Nurse Station" },
   { id: 25, name: "Meena", date: "2026-05-13", in: "08:45", out: "16:45", status: "Present", reason: "", total: "8h", working: "7h 15m", idle: "45m", loginLocation: "Front Desk", logoutLocation: "Front Desk" },
   { id: 26, name: "Rahul", date: "2026-05-13", in: "11:00", out: "19:00", status: "Present", reason: "", total: "8h", working: "5h 30m", idle: "2h 30m", loginLocation: "OPD", logoutLocation: "OPD" },
-  { id: 27, name: "Priya", date: "2026-05-13", in: "09:00", out: "17:00", status: "Present", reason: "", total: "8h", working: "7h", idle: "1h", loginLocation: "Lab Area", logoutLocation: "Lab Area" }
+  { id: 27, name: "Priya", date: "2026-05-13", in: "09:00", out: "17:00", status: "Present", reason: "", total: "8h", working: "7h", idle: "1h", loginLocation: "Lab Area", logoutLocation: "Lab Area" },
+  { id: 36, name: "Ramesh", date: "2026-05-14", in: "09:00", out: "18:00", status: "Present", reason: "", total: "9h", working: "8h", idle: "1h", loginLocation: "Main Entrance", logoutLocation: "Main Entrance" },
+  { id: 37, name: "Amit", date: "2026-05-14", in: "09:05", out: "17:15", status: "Present", reason: "", total: "8h 10m", working: "7h", idle: "1h 10m", loginLocation: "Reception A", logoutLocation: "Reception A" },
+  { id: 38, name: "Neha", date: "2026-05-14", in: "14:00", out: "20:00", status: "Present", reason: "", total: "6h", working: "5h", idle: "1h", loginLocation: "West Wing", logoutLocation: "West Wing" },
+  { id: 39, name: "Sita", date: "2026-05-14", in: "09:15", out: "17:15", status: "Late", reason: "Traffic", total: "8h", working: "6h 45m", idle: "1h 15m", loginLocation: "Front Desk", logoutLocation: "Front Desk" },
+  { id: 40, name: "Kiran", date: "2026-05-14", in: "08:00", out: "16:00", status: "Present", reason: "", total: "8h", working: "7h 30m", idle: "30m", loginLocation: "Lab Area", logoutLocation: "Lab Area" }
 ];
 
 export const shift_daily = [

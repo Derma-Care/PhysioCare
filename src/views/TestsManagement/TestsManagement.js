@@ -26,7 +26,7 @@ import {
   TestDataById,
   updateTestData,
 } from './TestsManagementAPI'
-import { Edit2, Eye, FlaskConical, PlusCircle, Trash2 } from 'lucide-react'
+import { Edit2, Eye, FlaskConical, PlusCircle, Trash2, Search, X } from 'lucide-react'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import LoadingIndicator from '../../Utils/loader'
@@ -65,7 +65,7 @@ const TestsManagement = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
-  const { searchQuery } = useGlobalSearch()
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 
@@ -207,6 +207,23 @@ const TestsManagement = () => {
             </p>
           </div>
         </div>
+
+        <div className="cm-search-wrapper">
+          <Search size={14} className="cm-search-icon-left" />
+          <input
+            type="text"
+            placeholder="Search tests..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="cm-search-input"
+          />
+          {searchQuery && (
+            <button className="cm-search-clear" type="button" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         {can('Tests', 'create') && (
           <button className="ts-add-btn" onClick={() => { setNewTest(emptyTest); setErrors({}); setAddModal(true) }}>
             <PlusCircle size={15} />

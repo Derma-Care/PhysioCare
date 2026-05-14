@@ -37,7 +37,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { GetBookingByClinicIdData } from './appointmentAPI'
 import { GetBookingBy_ClinicId } from '../../baseUrl'
-import BookAppointmentModal from './BookAppointmentModal '
+import BookAppointmentModal from './BookAppointmentModal'
 import Select from 'react-select'
 import { COLORS } from '../../Constant/Themes'
 import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
@@ -45,7 +45,7 @@ import LoadingIndicator from '../../Utils/loader'
 import Pagination from '../../Utils/Pagination'
 import PrintLetterHead from '../../Utils/PrintLetterHead'
 
-import { Edit2, Eye, Loader, Printer, Trash2 } from "lucide-react"
+import { Edit2, Eye, Loader, Printer, Trash2, Search, X } from "lucide-react"
 const appointmentManagement = () => {
   const [viewService, setViewService] = useState(null)
   const [selectedServiceTypes, setSelectedServiceTypes] = useState([])
@@ -71,6 +71,7 @@ const appointmentManagement = () => {
   const navigate = useNavigate()
   const [sortOrder, setSortOrder] = useState('asc')
   const role = localStorage.getItem('role') // or from context/state
+  const [localSearch, setLocalSearch] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
 
   const STATUS_OPTIONS = [
@@ -149,11 +150,12 @@ const appointmentManagement = () => {
     const normalize = (val) => val?.toLowerCase().trim()
 
     // Search
-    if (searchQuery.trim() !== '') {
+    if (searchQuery.trim() !== '' || localSearch.trim() !== '') {
+      const q = (localSearch || searchQuery).toLowerCase().trim()
       filtered = filtered.filter((item) =>
         Object.values(item).some((val) =>
-          normalize(String(val || '')).includes(normalize(searchQuery)),
-        ),
+          normalize(String(val || '')).includes(q)
+        )
       )
     }
 
@@ -249,25 +251,15 @@ const appointmentManagement = () => {
     console.log('Initial bookings:', filtered)
     const normalize = (val) => val?.toLowerCase().trim()
 
-    if (searchQuery.trim() !== '') {
-      const q = normalize(searchQuery)
-
+    const q = (localSearch || searchQuery).toLowerCase().trim()
+    if (q !== '') {
       filtered = filtered.filter((item) =>
         Object.values(item).some((val) => normalize(String(val)).includes(q)),
       )
     }
 
-    // if (searchQuery.trim() !== '') {
-    //   result = result.filter(
-    //     (doc) =>
-    //       doc.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    //       doc.patientId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    //       doc.doctorName?.toLowerCase().includes(searchQuery.toLowerCase()),
-    //   )
-    // }
-
     setFilteredData(filtered)
-  }, [searchQuery])
+  }, [searchQuery, localSearch])
 
   const PrintContent = ({ data }) => {
     if (!data) return null
@@ -438,6 +430,23 @@ const appointmentManagement = () => {
 
           <div className=" d-flex justify-content-end align-items-center flex-wrap gap-2">
             <div className="d-flex align-items-center justify-content-between">
+
+              {/* LEFT SIDE → Search Input */}
+              <div className="cm-search-wrapper mx-2" style={{ width: '250px' }}>
+                <Search size={14} className="cm-search-icon-left" />
+                <input
+                  type="text"
+                  placeholder="Search Patient Name / ID..."
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  className="cm-search-input"
+                />
+                {localSearch && (
+                  <button className="cm-search-clear" onClick={() => setLocalSearch('')}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
 
               {/* LEFT SIDE → Date Input */}
               <div style={{ position: 'relative', width: '200px' }} className='mx-2'>

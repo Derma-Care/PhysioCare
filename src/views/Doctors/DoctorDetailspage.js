@@ -353,6 +353,42 @@ const DoctorDetailsPage = () => {
     if (!formData.profileDescription?.trim()) newErrors.profileDescription = 'Profile description is required.'
     if (!formData.doctorSignature) newErrors.doctorSignature = 'Signature is required.'
     if (!formData.branch?.length) newErrors.branch = 'Select at least one branch.'
+    
+    // Date of Joining validation
+    if (!formData.dateOfJoining) {
+      newErrors.dateOfJoining = 'Date of joining is required.'
+    } else {
+      const doj = new Date(formData.dateOfJoining)
+      const now = new Date()
+      const oneYearAgo = new Date()
+      oneYearAgo.setFullYear(now.getFullYear() - 1)
+      if (doj > now) newErrors.dateOfJoining = 'Joining cannot be in the future.'
+      else if (doj < oneYearAgo) newErrors.dateOfJoining = 'Joining must be within the last 1 year.'
+    }
+
+    // Date of Birth validation (18 to 100 years)
+    if (!formData.dateOfBirth) {
+      newErrors.dateOfBirth = 'Date of birth is required.'
+    } else {
+      const dob = new Date(formData.dateOfBirth)
+      const now = new Date()
+      let age = now.getFullYear() - dob.getFullYear()
+      const m = now.getMonth() - dob.getMonth()
+      if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--
+      
+      if (age < 18) newErrors.dateOfBirth = 'Must be at least 18 years old.'
+      else if (age > 100) newErrors.dateOfBirth = 'Age cannot exceed 100 years.'
+    }
+
+    // Aadhar ID validation
+    if (!formData.aadharId) {
+      newErrors.aadharId = 'Aadhar ID is required.'
+    } else if (!/^\d{12}$/.test(formData.aadharId)) {
+      newErrors.aadharId = 'Aadhar ID must be 12 digits.'
+    } else if (/^(.)\1+$/.test(formData.aadharId)) {
+      newErrors.aadharId = 'Aadhar ID cannot have identical digits.'
+    }
+    if (formData.emergencyContact && !/^[6789]\d{9}$/.test(formData.emergencyContact)) newErrors.emergencyContact = 'Enter valid 10-digit emergency contact.'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -755,6 +791,40 @@ const DoctorDetailsPage = () => {
                     </div>}
                 </FormField>
               </div>
+            </div>
+
+            <Divider />
+
+            {/* ── Employment & Identification ── */}
+            <SectionHeading title="Employment & Identification" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+              <FormField label="Date of Birth" error={errors.dateOfBirth} required>
+                {isEditing
+                  ? <CFormInput type="date" value={formData.dateOfBirth || ''} invalid={!!errors.dateOfBirth} onChange={e => { setFormData(p => ({ ...p, dateOfBirth: e.target.value })); setErrors(p => ({ ...p, dateOfBirth: '' })) }} style={{ fontSize: '13px' }} 
+                      max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]} 
+                      min={new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split('T')[0]} />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.dateOfBirth || '—'}</div>}
+              </FormField>
+
+              <FormField label="Date of Joining" error={errors.dateOfJoining} required>
+                {isEditing
+                  ? <CFormInput type="date" value={formData.dateOfJoining || ''} invalid={!!errors.dateOfJoining} onChange={e => { setFormData(p => ({ ...p, dateOfJoining: e.target.value })); setErrors(p => ({ ...p, dateOfJoining: '' })) }} style={{ fontSize: '13px' }} 
+                      max={new Date().toISOString().split('T')[0]} 
+                      min={new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0]} />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.dateOfJoining || '—'}</div>}
+              </FormField>
+
+              <FormField label="Aadhar ID" error={errors.aadharId} required>
+                {isEditing
+                  ? <CFormInput value={formData.aadharId || ''} invalid={!!errors.aadharId} onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 12); setFormData(p => ({ ...p, aadharId: v })); if (v.length === 12) setErrors(p => ({ ...p, aadharId: '' })) }} style={{ fontSize: '13px' }} placeholder="12 Digits" />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.aadharId || '—'}</div>}
+              </FormField>
+
+              <FormField label="Emergency Contact" error={errors.emergencyContact}>
+                {isEditing
+                  ? <CFormInput value={formData.emergencyContact || ''} invalid={!!errors.emergencyContact} onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setFormData(p => ({ ...p, emergencyContact: v })); if (v.length === 10 || v.length === 0) setErrors(p => ({ ...p, emergencyContact: '' })) }} style={{ fontSize: '13px' }} placeholder="Optional" />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.emergencyContact || '—'}</div>}
+              </FormField>
             </div>
 
             <Divider />

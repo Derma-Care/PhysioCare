@@ -20,6 +20,19 @@ import capitalizeWords from '../../../Utils/capitalizeWords'
 import { showCustomToast } from '../../../Utils/Toaster'
 import { emailPattern } from '../../../Constant/Constants'
 import { COLORS } from '../../../Constant/Themes'
+import {
+  User,
+  Briefcase,
+  MapPin,
+  CreditCard,
+  FileText,
+  Mail,
+  Phone,
+  Shield,
+  Calendar,
+  Activity,
+  Award
+} from 'lucide-react'
 
 const ReferDoctorForm = ({
   visible,
@@ -300,7 +313,18 @@ const ReferDoctorForm = ({
       }
     })
 
+    if (formData.governmentId) {
+      if (formData.governmentId.length !== 12) {
+        newErrors.governmentId = 'Aadhar ID must be exactly 12 digits.'
+        isValid = false
+      } else if (/^(.)\1+$/.test(formData.governmentId)) {
+        newErrors.governmentId = 'Aadhar ID cannot have all identical digits.'
+        isValid = false
+      }
+    }
+
     const todayStr = new Date().toISOString().split('T')[0]
+
 
     if (formData.dateOfBirth) {
       if (formData.dateOfBirth > todayStr) {
@@ -310,9 +334,35 @@ const ReferDoctorForm = ({
         const dob = new Date(formData.dateOfBirth)
         const today = new Date()
         const age = today.getFullYear() - dob.getFullYear()
-        const isBeforeBirthday = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+        const isBeforeBirthday =
+          today.getMonth() < dob.getMonth() ||
+          (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
         const actualAge = isBeforeBirthday ? age - 1 : age
-        if (actualAge < 18) { newErrors.dateOfBirth = 'Doctor must be at least 18 years old.'; isValid = false }
+        if (actualAge < 18) {
+          newErrors.dateOfBirth = 'Doctor must be at least 18 years old.'
+          isValid = false
+        }
+        if (actualAge >= 100) {
+          newErrors.dateOfBirth = 'Doctor must be less than 100 years old.'
+          isValid = false
+        }
+      }
+    }
+
+    if (formData.bankAccountNumber?.accountNumber) {
+      const accLen = formData.bankAccountNumber.accountNumber.length
+      if (accLen < 9 || accLen > 18) {
+        if (!newErrors.bankAccountNumber) newErrors.bankAccountNumber = {}
+        newErrors.bankAccountNumber.accountNumber = 'Account number must be between 9 and 18 digits.'
+        isValid = false
+      }
+    }
+
+    if (formData.bankAccountNumber?.panCardNumber) {
+      if (formData.bankAccountNumber.panCardNumber.length !== 10) {
+        if (!newErrors.bankAccountNumber) newErrors.bankAccountNumber = {}
+        newErrors.bankAccountNumber.panCardNumber = 'PAN Card must be exactly 10 characters.'
+        isValid = false
       }
     }
 
@@ -345,13 +395,13 @@ const ReferDoctorForm = ({
 
     try {
       setLoading(true)
-      
+
       // Ensure "Dr. " prefix is added if missing
       const formattedName = formData.fullName.trim();
-      const finalFullName = formattedName.toLowerCase().startsWith('dr') 
-        ? formattedName 
+      const finalFullName = formattedName.toLowerCase().startsWith('dr')
+        ? formattedName
         : `Dr. ${formattedName}`;
-        
+
       const dataToSave = {
         ...formData,
         fullName: finalFullName
@@ -371,60 +421,6 @@ const ReferDoctorForm = ({
     }
   }
 
-  const handleUserPermission = () => {
-
-    if (missing.length > 0) {
-      showCustomToast(`Please fill required fields: ${missing.join(', ')}`, 'error')
-      return
-    }
-
-    if (formData.dateOfBirth) {
-      const dob = new Date(formData.dateOfBirth)
-      const today = new Date()
-      const age = today.getFullYear() - dob.getFullYear()
-      const isBeforeBirthday =
-        today.getMonth() < dob.getMonth() ||
-        (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-
-      const actualAge = isBeforeBirthday ? age - 1 : age
-
-      if (actualAge < 18) {
-        showCustomToast('Technician must be at least 18 years old.', 'error')
-        return
-      }
-    }
-
-    const mobileRegex = /^[6-9]\d{9}$/
-    if (!mobileRegex.test(formData.mobileNumber)) {
-      showCustomToast('Contact number must be 10 digits and start with 6-9.', 'error')
-      return
-    }
-
-    // ✅ Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      showCustomToast('Please enter a valid email address.', 'error')
-      return
-    }
-
-    const duplicateContact = technicians?.some(
-      (t) => t.mobileNumber === formData.mobileNumber && t.id !== formData.id,
-    )
-    if (duplicateContact) {
-      showCustomToast('Contact number already exists!', 'error')
-      return
-    }
-
-    const duplicateEmail = technicians?.some(
-      (t) => t.emailId === formData.email && t.id !== formData.id,
-    )
-    if (duplicateEmail) {
-      showCustomToast('Email already exists!', 'error')
-      return
-    }
-    console.log(formData)
-    setShowPModal(true)
-  }
 
   // 🔹 Close Preview Modal
   const handleCloseModal = () => {
@@ -450,24 +446,35 @@ const ReferDoctorForm = ({
   }
 
   // 🔹 Small reusable info component
-  const Section = ({ title, children }) => (
-    <div>
-      <h5 className="text-lg font-semibold border-b pb-2 mb-4">{title}</h5>
-      <div className="grid grid-cols-3 gap-4">{children}</div>
+  const Section = ({ title, icon: Icon, children }) => (
+    <div className="mb-4">
+      <div className="d-flex align-items-center mb-3 pb-2 border-bottom">
+        {Icon && <Icon size={18} className="me-2" style={{ color: COLORS.primary }} />}
+        <h5 className="mb-0 fw-bold" style={{ color: '#0c447c', fontSize: '1.1rem' }}>{title}</h5>
+      </div>
+      <div className="row g-3">{children}</div>
     </div>
   )
 
-  const Row = ({ label, value }) => (
-    <div>
-      <p className="text-sm font-medium text-gray-600 fw-bold">{label}</p>
-      <p className="text-base text-gray-900 text-break">{value || 'N/A'}</p>
+  const Row = ({ label, value, icon: Icon }) => (
+    <div className="d-flex flex-column h-100 p-2 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+      <div className="d-flex align-items-center mb-1">
+        {Icon && <Icon size={14} className="me-2 text-muted" />}
+        <span className="text-muted fw-bold" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
+      </div>
+      <span className="fw-semibold text-dark" style={{ fontSize: '0.9rem' }}>{value || 'N/A'}</span>
     </div>
   )
 
-  const RowFull = ({ label, value }) => (
-    <div className="col-span-3">
-      {label && <p className="text-sm font-medium text-gray-600 fw-bold">{label}</p>}
-      <p className="text-base text-gray-900 text-break">{value || 'N/A'}</p>
+  const RowFull = ({ label, value, icon: Icon }) => (
+    <div className="col-12">
+      <div className="d-flex flex-column p-2 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+        <div className="d-flex align-items-center mb-1">
+          {Icon && <Icon size={14} className="me-2 text-muted" />}
+          <span className="text-muted fw-bold" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
+        </div>
+        <span className="fw-semibold text-dark" style={{ fontSize: '0.9rem' }}>{value || 'N/A'}</span>
+      </div>
     </div>
   )
 
@@ -526,148 +533,133 @@ const ReferDoctorForm = ({
         </CModalHeader>
         <CModalBody>
           {viewMode ? (
-            // ✅ VIEW MODE
-
-            <div className="container my-4">
-              {/* 🩺 Doctor Basic Info Card */}
-              <div className="card p-4 mb-4 shadow-sm border-light">
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center">
-                  {/* Left Section */}
-                  <div>
-                    <h4 className="fw-bold mb-2">
-                      Name: {formData.fullName?.toLowerCase().startsWith('dr') ? formData.fullName : `Dr. ${formData.fullName}`}
-                    </h4>
-                    <p className="mb-1">
-                      <strong>Doctor ID: </strong> {formData.referralId}
-                    </p>
-                    <p className="mb-1">
-                      <strong>Email:</strong> {formData.email}
-                    </p>
-                    <p className="mb-1">
-                      <strong>Contact:</strong> {formData.mobileNumber}
-                    </p>
-                  </div>
-
-                  {/* Right Section */}
-                  <div className="text-md-end text-center mt-3 mt-md-0">
-                    <p className="mb-1">
-                      <strong>Doctor ID:</strong>
-                      {formData.referralId || 'N/A'}
-                    </p>
-                    <p className="mb-0"></p>
+            <div className="container-fluid px-0">
+              {/* 🩺 Doctor Header Card */}
+              <div className="card border-0 shadow-sm mb-4" style={{ background: 'linear-gradient(135deg, #0c447c 0%, #185fa5 100%)', borderRadius: '15px' }}>
+                <div className="card-body p-4 text-white">
+                  <div className="d-flex align-items-center">
+                    <div className="bg-white p-3 rounded-circle me-4 shadow-sm">
+                      <User size={40} color="#0c447c" />
+                    </div>
+                    <div>
+                      <h3 className="fw-bold mb-1 text-white">
+                        {formData.fullName?.toLowerCase().startsWith('dr') ? formData.fullName : `Dr. ${formData.fullName}`}
+                      </h3>
+                      <div className="d-flex flex-wrap gap-3 mt-2 text-white">
+                        <div className="d-flex align-items-center opacity-75 text-white">
+                          <Shield size={14} className="me-1" />
+                          <small>ID: {formData.referralId || 'N/A'}</small>
+                        </div>
+                        <div className="d-flex align-items-center opacity-75 text-white">
+                          <Mail size={14} className="me-1" />
+                          <small>{formData.email || 'N/A'}</small>
+                        </div>
+                        <div className="d-flex align-items-center opacity-75 text-white">
+                          <Phone size={14} className="me-1" />
+                          <small>{formData.mobileNumber || 'N/A'}</small>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="ms-auto d-none d-md-block">
+                      <span className="badge bg-light text-primary px-3 py-2 rounded-pill fw-bold shadow-sm">
+                        {formData.status || 'Active'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* 👤 Personal Information */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="border-bottom pb-2 mb-3">Personal Information</h5>
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Row 
-                      label="Full Name" 
-                      value={formData.fullName?.toLowerCase().startsWith('dr') ? formData.fullName : `Dr. ${formData.fullName}`} 
-                    />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Email" value={formData.email} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Contact" value={formData.mobileNumber} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Gender" value={formData.gender} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Date of Birth" value={formData.dateOfBirth} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Government ID" value={formData.governmentId} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Status" value={formData.status} />
-                  </div>
+              <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
+                <div className="card-body p-4">
+                  <Section title="Personal Information" icon={User}>
+                    <div className="col-md-4">
+                      <Row label="Full Name" icon={User} value={formData.fullName?.toLowerCase().startsWith('dr') ? formData.fullName : `Dr. ${formData.fullName}`} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Email Address" icon={Mail} value={formData.email} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Contact Number" icon={Phone} value={formData.mobileNumber} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Gender" icon={Activity} value={formData.gender} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Date of Birth" icon={Calendar} value={formData.dateOfBirth} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Government ID" icon={Shield} value={formData.governmentId} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Status" icon={Activity} value={formData.status} />
+                    </div>
+                  </Section>
                 </div>
               </div>
 
               {/* 🏥 Work Information */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="border-bottom pb-2 mb-3">Work Information</h5>
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Row label="Department" value={formData.department} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Experience" value={formData.yearsOfExperience} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Specialization" value={formData.specialization} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Current Hospital Name" value={formData.currentHospitalName} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Medical Reg. No." value={formData.medicalRegistrationNumber} />
-                  </div>
+              <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
+                <div className="card-body p-4">
+                  <Section title="Work Information" icon={Briefcase}>
+                    <div className="col-md-4">
+                      <Row label="Department" icon={Briefcase} value={formData.department} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Experience (Years)" icon={Award} value={formData.yearsOfExperience} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Specialization" icon={Award} value={formData.specialization} />
+                    </div>
+                    <div className="col-md-6">
+                      <Row label="Current Hospital" icon={Briefcase} value={formData.currentHospitalName} />
+                    </div>
+                    <div className="col-md-6">
+                      <Row label="Medical Reg. No." icon={Shield} value={formData.medicalRegistrationNumber} />
+                    </div>
+                  </Section>
                 </div>
               </div>
 
               {/* 📍 Address */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="border-bottom pb-2 mb-3">Address</h5>
-                <RowFull
-                  value={`${formData.address.houseNo}, ${formData.address.street}, ${formData.address.city}, ${formData.address.state} - ${formData.address.postalCode}, ${formData.address.country}`}
-                />
-              </div>
-
-              {/* 💳 Bank Details */}
-              <div className="card p-3 mb-4 shadow-sm border-light">
-                <h5 className="border-bottom pb-2 mb-3">Bank Details</h5>
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Row label="Account Number" value={formData.bankAccountNumber.accountNumber} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row
-                      label="Account Holder Name"
-                      value={formData.bankAccountNumber.accountHolderName}
+              <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
+                <div className="card-body p-4">
+                  <Section title="Location Details" icon={MapPin}>
+                    <RowFull
+                      label="Full Address"
+                      icon={MapPin}
+                      value={`${formData.address.houseNo}, ${formData.address.street}, ${formData.address.city}, ${formData.address.state} - ${formData.address.postalCode}, ${formData.address.country}`}
                     />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="IFSC Code" value={formData.bankAccountNumber.ifscCode} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Bank Name" value={formData.bankAccountNumber.bankName} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="Branch Name" value={formData.bankAccountNumber.branchName} />
-                  </div>
-                  <div className="col-md-4">
-                    <Row label="PAN Card" value={formData.bankAccountNumber.panCardNumber} />
-                  </div>
+                  </Section>
                 </div>
               </div>
 
-              {/* 🗂️ Optional Documents (Future Use) */}
-              {/* Uncomment if needed */}
-              {/*
-  <div className="card p-3 mb-4 shadow-sm border-light">
-    <h5 className="border-bottom pb-2 mb-3 text-primary">Documents</h5>
-    <div className="row g-3">
-      {formData.qualificationOrCertifications ? (
-        <div className="col-md-6">
-          <FilePreview
-            label="Qualification / Certifications"
-            type={formData.qualificationOrCertificationsType}
-            data={formData.qualificationOrCertifications}
-          />
-        </div>
-      ) : (
-        <p className="col-md-6 text-muted">Not Provided Qualification / Certifications</p>
-      )}
-    </div>
-  </div>
-  */}
+              {/* 💳 Bank Details */}
+              <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
+                <div className="card-body p-4">
+                  <Section title="Bank Account Details" icon={CreditCard}>
+                    <div className="col-md-4">
+                      <Row label="Account Number" icon={CreditCard} value={formData.bankAccountNumber.accountNumber} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Holder Name" icon={User} value={formData.bankAccountNumber.accountHolderName} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="IFSC Code" icon={Shield} value={formData.bankAccountNumber.ifscCode} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Bank Name" icon={Briefcase} value={formData.bankAccountNumber.bankName} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="Branch Name" icon={MapPin} value={formData.bankAccountNumber.branchName} />
+                    </div>
+                    <div className="col-md-4">
+                      <Row label="PAN Card" icon={Shield} value={formData.bankAccountNumber.panCardNumber} />
+                    </div>
+                  </Section>
+                </div>
+              </div>
+
             </div>
           ) : (
             // ✅ EDIT MODE
@@ -1074,7 +1066,7 @@ const ReferDoctorForm = ({
                           value={formData.bankAccountNumber[field]}
                           maxLength={
                             field === 'accountNumber'
-                              ? 20
+                              ? 18
                               : field === 'panCardNumber'
                                 ? 10
                                 : field === 'ifscCode'

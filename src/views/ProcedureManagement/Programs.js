@@ -18,7 +18,7 @@ import {
   CCol,
 } from "@coreui/react"
 import Select from "react-select"
-import { Edit2, Eye, Trash2, ClipboardList, PlusCircle } from "lucide-react"
+import { Edit2, Eye, Trash2, ClipboardList, PlusCircle, Search, X } from "lucide-react"
 import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 
@@ -82,7 +82,7 @@ export default function Programs() {
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
-  const { searchQuery } = useGlobalSearch()
+  const { searchQuery, setSearchQuery } = useGlobalSearch()
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 
@@ -335,6 +335,23 @@ export default function Programs() {
             </p>
           </div>
         </div>
+
+        <div className="cm-search-wrapper">
+          <Search size={14} className="cm-search-icon-left" />
+          <input
+            type="text"
+            placeholder="Search programs..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="cm-search-input"
+          />
+          {searchQuery && (
+            <button className="cm-search-clear" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         {can("Program Management", "create") && (
           <button className="pg-add-btn" onClick={() => setModal(true)}>
             <PlusCircle size={15} />

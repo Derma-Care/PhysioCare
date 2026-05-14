@@ -33,7 +33,7 @@ import {
   updateTreatmentData,
 } from './TreatmentsManagementAPI'
 import capitalizeWords from '../../Utils/capitalizeWords'
-import { Edit2, Eye, Trash2 } from 'lucide-react'
+import { Edit2, Eye, Trash2, Search, X } from 'lucide-react'
 import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import LoadingIndicator from '../../Utils/loader'
@@ -281,10 +281,25 @@ const TreatmentsManagement = () => {
   return (
     <div>
       {/* <ToastContainer /> */}
-      <CForm className="d-flex justify-content-between mb-3">
+      <CForm className="d-flex justify-content-between align-items-center mb-3">
+        <div className="cm-search-wrapper" style={{ margin: 0, marginRight: 'auto' }}>
+          <Search size={14} className="cm-search-icon-left" />
+          <input
+            type="text"
+            placeholder="Search treatments..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="cm-search-input"
+          />
+          {searchQuery && (
+            <button className="cm-search-clear" type="button" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         {can('Treatments', 'create') && (
           <div
-            className=" w-100"
             style={{
               display: 'flex',
               justifyContent: 'end',
