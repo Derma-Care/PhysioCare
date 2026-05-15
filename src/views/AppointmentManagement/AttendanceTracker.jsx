@@ -24,48 +24,7 @@ import { BASE_URL } from "../../baseUrl";
 import ConfirmModal from "../../components/ConfirmLogoutModal";
 import { showCustomToast } from "../../Utils/Toaster";
 
-const ScrollPicker = ({ items, selected, onChange, label }) => {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '70px' }}>
-      <div style={{ fontSize: 12, color: COLORS.primary, opacity: 0.7, marginBottom: 6 }}>{label}</div>
-      <div style={{
-        height: '120px',
-        overflowY: 'auto',
-        border: '1px solid #d1d5db',
-        borderRadius: 8,
-        width: '100%',
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-      }}
-        className="hide-scrollbar"
-      >
-        <style>{`
-          .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
-        {items.map(item => (
-          <div
-            key={item}
-            onClick={() => onChange(item)}
-            style={{
-              padding: '8px 0',
-              textAlign: 'center',
-              cursor: 'pointer',
-              background: selected === item ? '#1B4F8A' : 'transparent',
-              color: selected === item ? '#fff' : '#374151',
-              fontWeight: selected === item ? 600 : 400,
-              fontSize: 14,
-              transition: 'all 0.2s'
-            }}
-          >
-            {item.toString().padStart(2, '0')}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
+
 
 const AttendanceTracker = () => {
   const today = new Date();
@@ -86,6 +45,7 @@ const AttendanceTracker = () => {
   const [activeTab, setActiveTab] = useState("daily");
   const [showModal, setShowModal] = useState(false);
   const [activity, setActivity] = useState("");
+  const [description, setDescription] = useState("");
   const [durationHours, setDurationHours] = useState(0);
   const [durationMinutes, setDurationMinutes] = useState(0);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
@@ -332,6 +292,10 @@ const AttendanceTracker = () => {
       newErrors.duration = "Please select a valid duration";
     }
 
+    if (activity === "other activity" && !description.trim()) {
+      newErrors.description = "Description is mandatory for other activity";
+    }
+
     setErrors(newErrors);
 
     // stop if errors exist
@@ -350,6 +314,7 @@ const AttendanceTracker = () => {
         activities: [
           {
             activity,
+            description,
             duration: durationStr,
             location: address,
             latitude: coords.latitude,
@@ -366,6 +331,7 @@ const AttendanceTracker = () => {
 
         // reset
         setActivity("");
+        setDescription("");
         setDurationHours(0);
         setDurationMinutes(0);
         setErrors({});
@@ -685,6 +651,7 @@ const AttendanceTracker = () => {
   };
   const [errors, setErrors] = useState({
     activity: "",
+    description: "",
     duration: "",
   });
   // ─── Status badge ──────────────────────────────────────────────────────────
@@ -1063,44 +1030,105 @@ const AttendanceTracker = () => {
 
           <CModalBody>
             {/* Activity */}
-            <div style={{ marginBottom: 12 }}>
-              <CFormLabel>Activity Name</CFormLabel>
-              <CFormInput
-                placeholder="Enter Activity Name"
+            <div style={{ marginBottom: 16 }}>
+              <CFormLabel style={{ fontWeight: '600', color: COLORS.primary }}>Activity Name</CFormLabel>
+              <select
+                className={`form-select ${errors.activity ? 'is-invalid' : ''}`}
                 value={activity}
                 onChange={(e) => {
                   setActivity(e.target.value);
                   setErrors({ ...errors, activity: "" });
                 }}
-                invalid={!!errors.activity}
-              />
+                style={{ borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '14px' }}
+              >
+                <option value="">Select Activity</option>
+                <option value="followup calls">Followup Calls</option>
+                <option value="consulations">Consulations</option>
+                <option value="other activity">Other Activity</option>
+                <option value="paid leave">Paid Leave</option>
+                <option value="loss of pay">Loss of Pay</option>
+              </select>
               {errors.activity && (
-                <div style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+                <div style={{ color: "#dc3545", fontSize: 12, marginTop: 4 }}>
                   {errors.activity}
                 </div>
               )}
             </div>
 
+            {/* Description */}
+            <div style={{ marginBottom: 16 }}>
+              <CFormLabel style={{ fontWeight: '600', color: COLORS.primary }}>
+                Description {activity === "other activity" && <span style={{ color: 'red' }}>*</span>}
+              </CFormLabel>
+              <textarea
+                className={`form-control ${errors.description ? 'is-invalid' : ''}`}
+                placeholder="Enter Description (Optional)"
+                rows={3}
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  setErrors({ ...errors, description: "" });
+                }}
+                style={{ borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '14px' }}
+              />
+              {errors.description && (
+                <div style={{ color: "#dc3545", fontSize: 12, marginTop: 4 }}>
+                  {errors.description}
+                </div>
+              )}
+            </div>
+
             {/* Duration */}
-            <div style={{ marginBottom: 12 }}>
-              <CFormLabel>Duration</CFormLabel>
-              <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                <ScrollPicker
-                  items={Array.from({ length: 13 }, (_, i) => i)}
-                  selected={durationHours}
-                  onChange={(val) => { setDurationHours(val); setErrors({ ...errors, duration: "" }); }}
-                  label="Hours"
-                />
-                <div style={{ fontSize: 20, fontWeight: 'bold', color: COLORS.primary, marginTop: 15 }}>:</div>
-                <ScrollPicker
-                  items={Array.from({ length: 60 }, (_, i) => i)}
-                  selected={durationMinutes}
-                  onChange={(val) => { setDurationMinutes(val); setErrors({ ...errors, duration: "" }); }}
-                  label="Minutes"
-                />
+            <div style={{ marginBottom: 16 }}>
+              <CFormLabel style={{ fontWeight: '600', color: COLORS.primary, display: 'block', marginBottom: 10 }}>Duration</CFormLabel>
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
+                background: '#f8fafc',
+                padding: '16px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                justifyContent: 'center'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="number"
+                    min="0"
+                    max="12"
+                    className="form-control"
+                    style={{ width: '70px', borderRadius: '8px', textAlign: 'center', fontWeight: '600', color: COLORS.primary }}
+                    value={durationHours}
+                    onChange={(e) => {
+                      const val = Math.max(0, Math.min(12, parseInt(e.target.value) || 0));
+                      setDurationHours(val);
+                      setErrors({ ...errors, duration: "" });
+                    }}
+                  />
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: COLORS.primary, opacity: 0.8 }}>Hrs</span>
+                </div>
+
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: COLORS.primary, opacity: 0.3 }}>:</div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    className="form-control"
+                    style={{ width: '70px', borderRadius: '8px', textAlign: 'center', fontWeight: '600', color: COLORS.primary }}
+                    value={durationMinutes}
+                    onChange={(e) => {
+                      const val = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
+                      setDurationMinutes(val);
+                      setErrors({ ...errors, duration: "" });
+                    }}
+                  />
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: COLORS.primary, opacity: 0.8 }}>Min</span>
+                </div>
               </div>
               {errors.duration && (
-                <div style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+                <div style={{ color: "#dc3545", fontSize: 12, marginTop: 4 }}>
                   {errors.duration}
                 </div>
               )}
@@ -1109,28 +1137,49 @@ const AttendanceTracker = () => {
             {/* Info Box */}
             <div
               style={{
-                background: "#f9fafb",
-                padding: 10,
-                borderRadius: 8,
-                fontSize: 12,
-                color: COLORS.primary
+                background: "#f0f9ff",
+                padding: "16px",
+                borderRadius: "12px",
+                fontSize: "13px",
+                color: COLORS.primary,
+                border: "1px solid #bae6fd",
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
               }}
             >
-              <div className="mb-4">
-                <strong style={{ color: COLORS.primary }}>Date:</strong> {dateStr}
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span><strong style={{ color: COLORS.primary }}>Date:</strong> {dateStr}</span>
+                <span><strong style={{ color: COLORS.primary }}>Duration:</strong> {durationHours}h {durationMinutes}m</span>
               </div>
-              <div style={{ color: COLORS.primary }}>
-                <strong style={{ color: COLORS.primary }}>Location:</strong> {address}
+              <div style={{ borderTop: '1px solid #bae6fd', paddingTop: '8px', marginTop: '4px' }}>
+                <strong style={{ color: COLORS.primary }}>Location:</strong>
+                <div style={{ marginTop: '4px', opacity: 0.8, fontSize: '11px', lineHeight: '1.4' }}>{address}</div>
               </div>
             </div>
           </CModalBody>
 
-          <CModalFooter>
-            <CButton color="secondary" onClick={() => setShowModal(false)} disabled={isSubmitting}>
+          <CModalFooter style={{ borderTop: '1px solid #e5e7eb', padding: '16px 20px' }}>
+            <CButton
+              color="secondary"
+              onClick={() => setShowModal(false)}
+              disabled={isSubmitting}
+              style={{ borderRadius: '8px', fontWeight: '600' }}
+            >
               Cancel
             </CButton>
-            <CButton color="primary" onClick={handleAdd} disabled={isSubmitting}>
-              {isSubmitting ? <CSpinner size="sm" /> : "Save"}
+            <CButton
+              color="primary"
+              onClick={handleAdd}
+              disabled={isSubmitting || !activity || (durationHours === 0 && durationMinutes === 0) || (activity === "other activity" && !description.trim())}
+              style={{
+                borderRadius: '8px',
+                fontWeight: '600',
+                background: COLORS.primary,
+                opacity: (isSubmitting || !activity || (durationHours === 0 && durationMinutes === 0) || (activity === "other activity" && !description.trim())) ? 0.6 : 1
+              }}
+            >
+              {isSubmitting ? <CSpinner size="sm" color="white" /> : "Save Activity"}
             </CButton>
           </CModalFooter>
         </CModal>
@@ -1209,6 +1258,7 @@ const AttendanceTracker = () => {
                           <td style={styles.td}>{index + 1}</td>
                           <td style={styles.td}>
                             <div style={{ fontWeight: 600, color: COLORS.primary }}>{session.activity}</div>
+                            {session.description && <div className="text-muted small mb-1" style={{ fontSize: "11px", fontStyle: "italic" }}>{session.description}</div>}
                           </td>
                           <td style={styles.td}>
                             <span style={styles.badgeAmber}>{session.duration}</span>

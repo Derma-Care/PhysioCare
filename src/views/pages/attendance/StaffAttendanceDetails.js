@@ -380,7 +380,8 @@ export default function StaffAttendanceDetails() {
                       <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
                         <td className="py-2 fw-bold" style={{ color: "#1B4F8A" }}>{idx + 1}</td>
                         <td className="py-2 text-dark">
-                          <div>{act.activity}</div>
+                          <div className="fw-bold">{act.activity}</div>
+                          {act.description && <div className="text-muted small mb-1" style={{ fontSize: "11px", fontStyle: "italic" }}>{act.description}</div>}
                           <div className="text-muted" style={{ fontSize: "10px" }}>{act.location}</div>
                         </td>
                         <td className="py-2"><span className="badge bg-light text-dark border">{act.duration}</span></td>
