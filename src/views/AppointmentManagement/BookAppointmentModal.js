@@ -33,6 +33,7 @@ import { showCustomToast } from '../../Utils/Toaster'
 import imageCompression from 'browser-image-compression'
 import BodyAssessment from './BodyAssessment'
 import { COLORS } from '../../Constant/Themes'
+import BookingSearch from '../widgets/BookingSearch '
 
 // ─── Tab config ────────────────────────────────────────────────────────────────
 const TABS = [
