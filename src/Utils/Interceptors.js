@@ -175,18 +175,18 @@ import { showCustomToast } from './Toaster'
 export const http = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
-  timeout: 10000,
+  timeout: 60000,
 })
 export const https = axios.create({
   splrURL: wifiUrl,
   withCredentials: true,
-  timeout: 20000,
+  timeout: 60000,
 })
 
 export const httpPublic = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
-  timeout: 20000,
+  timeout: 60000,
 })
 
 /* --------------------- Toast Control Flag --------------------- */

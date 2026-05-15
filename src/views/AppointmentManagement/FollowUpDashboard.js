@@ -427,7 +427,7 @@ export default function FollowupDashboard() {
     const matchSearch = !search ||
       (row.bookingId || '').toLowerCase().includes(search) ||
       (row.name || '').toLowerCase().includes(search) ||
-      (row.patientMobileNumber || mobileNumber || '').toLowerCase().includes(search) ||
+      (row.patientMobileNumber || row.mobileNumber || '').toLowerCase().includes(search) ||
       (row.doctorName || '').toLowerCase().includes(search) ||
       (row.paymentType || '').toLowerCase().includes(search) ||
       (row.visitType || '').toLowerCase().includes(search) ||

@@ -276,9 +276,30 @@ const AppointmentDetails = () => {
 
   if (!appointment) {
     return (
-      <div style={{ textAlign: 'center', marginTop: '60px' }}>
-        <h3 style={{ marginBottom: '12px', color: tokens.black }}>No Appointment Data Found</h3>
-        <CButton color="primary" onClick={() => navigate(-1)}>Go Back</CButton>
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        minHeight: '60vh', padding: '40px', textAlign: 'center'
+      }}>
+        <div style={{
+          backgroundColor: '#fff', padding: '40px', borderRadius: tokens.radius,
+          boxShadow: tokens.shadow, border: `1px solid ${tokens.border}`,
+          maxWidth: '400px', width: '100%'
+        }}>
+          <div style={{
+            width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#f1f5f9',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+          }}>
+            <Search size={30} color={tokens.muted} />
+          </div>
+          <h5 style={{ marginBottom: '12px', color: tokens.black, fontWeight: '700' }}>No Appointment Data Found</h5>
+          <p style={{ color: tokens.muted, fontSize: '13px', marginBottom: '24px' }}>
+            We couldn't find any details for this appointment. It might have been deleted or the ID is incorrect.
+          </p>
+          <CButton color="primary" style={{ backgroundColor: COLORS.primary, border: 'none', padding: '8px 24px' }}
+            onClick={() => navigate(-1)}>
+            <ArrowLeft size={14} className="me-2" /> Go Back
+          </CButton>
+        </div>
       </div>
     )
   }

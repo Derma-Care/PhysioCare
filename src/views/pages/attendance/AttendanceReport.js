@@ -72,8 +72,8 @@ export default function AttendanceReport() {
     currentPage * pageSize
   );
 
-  const handleViewStaff = (staffName) => {
-    navigate(`/attendance/staff/${staffName}`);
+  const handleViewStaff = (userId, role) => {
+    navigate(`/attendance/staff/${userId}`, { state: { role } });
   };
 
   return (
@@ -172,7 +172,7 @@ export default function AttendanceReport() {
                             <button
                               className="btn btn-sm btn-light shadow-sm border"
                               style={{ color: "#1B4F8A", borderRadius: "6px" }}
-                              onClick={() => handleViewStaff(att.userId)}
+                              onClick={() => handleViewStaff(att.userId, att.role)}
                               title="Monthly View"
                             >
                               <i className="cil-calendar"></i> View

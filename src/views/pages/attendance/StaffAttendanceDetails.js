@@ -38,7 +38,18 @@ export default function StaffAttendanceDetails() {
   const fetchMonthlyHistory = useCallback(async () => {
     setLoadingHistory(true);
     try {
-      const res = await http.get(`${BASE_URL}/${GetUserMonthlyAttendence}/${userId}/${month}`);
+      const role = location.state?.role || "";
+      console.log(role);
+      const normalizedRole = role.toLowerCase();
+      let apiUrl;
+
+      if (normalizedRole === "physiotherapist" || normalizedRole === "intern") {
+        apiUrl = `${BASE_URL}/getMonthly/${userId}/${month}`;
+      } else {
+        apiUrl = `${BASE_URL}/${GetUserMonthlyAttendence}/${userId}/${month}`;
+      }
+
+      const res = await http.get(apiUrl);
       if (res.data.success) {
         setHistoryData(res.data.data || []);
       }
@@ -54,7 +65,17 @@ export default function StaffAttendanceDetails() {
     setShowTrackerModal(true);
     setLoadingTracker(true);
     try {
-      const res = await http.get(`${BASE_URL}/${GetUserDailyAttendence}/${userId}/${date}`);
+      const role = location.state?.role || "";
+      const normalizedRole = role.toLowerCase();
+      let apiUrl;
+
+      if (normalizedRole === "physiotherapist" || normalizedRole === "intern") {
+        apiUrl = `${BASE_URL}/getDaily/${userId}/${date}`;
+      } else {
+        apiUrl = `${BASE_URL}/${GetUserDailyAttendence}/${userId}/${date}`;
+      }
+
+      const res = await http.get(apiUrl);
       if (res.data.success) {
         setTrackerData(res.data.data);
       }
@@ -165,7 +186,9 @@ export default function StaffAttendanceDetails() {
   };
 
   const selectedAttRecord = historyData.find(att => att.date === selectedDate);
-
+  const role = location.state?.role || "";
+  console.log(role);
+  const normalizedRole = role.toLowerCase();
   return (
     <div className="container-fluid mt-4">
       {/* Header */}
@@ -185,7 +208,8 @@ export default function StaffAttendanceDetails() {
             Role: {staffRole}
           </span>
         </div>
-        {(staffRole.toLowerCase().includes("therapist") || staffRole.toLowerCase().includes("physio")) && (
+
+        {(normalizedRole.toLowerCase().includes("physiotherapist") || normalizedRole.toLowerCase().includes("intern")) && (
           <CButton
             className=" ms-auto shadow-sm"
             style={{ backgroundColor: "white", borderRadius: "8px", fontWeight: "600", color: "var(--color-bgcolor)", border: "1px solid var(--color-bgcolor)" }}
@@ -365,7 +389,7 @@ export default function StaffAttendanceDetails() {
                 <CSpinner size="sm" color="primary" />
                 <div className="small text-muted mt-2">Fetching activity logs...</div>
               </div>
-            ) : trackerData?.activities?.length > 0 ? (
+            ) : (trackerData?.activities?.length > 0 || trackerData?.sessions?.length > 0) ? (
               <div className="table-responsive">
                 <table className="table table-sm table-borderless align-middle mb-0">
                   <thead className="text-muted small text-uppercase" style={{ backgroundColor: "#f8f9fa" }}>
@@ -376,7 +400,7 @@ export default function StaffAttendanceDetails() {
                     </tr>
                   </thead>
                   <tbody>
-                    {trackerData.activities.map((act, idx) => (
+                    {(trackerData.activities || trackerData.sessions).map((act, idx) => (
                       <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
                         <td className="py-2 fw-bold" style={{ color: "#1B4F8A" }}>{idx + 1}</td>
                         <td className="py-2 text-dark">
@@ -462,18 +486,19 @@ export default function StaffAttendanceDetails() {
                     </h4>
                   </div>
                 </div>
-                <div className="col-md-3">
-                  <div className="p-3 text-center rounded border" style={{ backgroundColor: "#f8f9fa" }}>
-                    <div className="text-muted small text-uppercase fw-bold mb-1">Avg Rating</div>
-                    <h4 className="mb-0 fw-bold" style={{ color: "#ffc107", fontSize: "1.1rem" }}>{performanceData.avgRating || "4.5"}</h4>
-                  </div>
-                </div>
+
                 <div className="col-md-3">
                   <div className="p-3 text-center rounded border" style={{ backgroundColor: "#f8f9fa" }}>
                     <div className="text-muted small text-uppercase fw-bold mb-1">Training Time</div>
                     <h4 className="mb-0 fw-bold" style={{ color: "#198754", fontSize: "1.1rem" }}>
                       {formatHoursToYMD(performanceData.trainingTime || 0)}
                     </h4>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="p-3 text-center rounded border" style={{ backgroundColor: "#f8f9fa" }}>
+                    <div className="text-muted small text-uppercase fw-bold mb-1">Avg Rating</div>
+                    <h4 className="mb-0 fw-bold" style={{ color: "#ffc107", fontSize: "1.1rem" }}>{performanceData.avgRating || "4.5"}</h4>
                   </div>
                 </div>
               </div>

@@ -41,17 +41,17 @@ const ReportDetails = () => {
   const [recommendedTests, setRecommendedTests] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(5)
- const getTodayLocal = () => {
-  const today = new Date();
+  const getTodayLocal = () => {
+    const today = new Date();
 
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
 
-  return `${year}-${month}-${day}`;
-};
+    return `${year}-${month}-${day}`;
+  };
 
-const todayISO = getTodayLocal();
+  const todayISO = getTodayLocal();
 
 
   const [report, setReport] = useState([])
@@ -295,7 +295,7 @@ const todayISO = getTodayLocal();
           <button className="rd-btn-secondary" onClick={() => navigate(-1)}>
             <ArrowLeft size={13} /> Back
           </button>
-          {can('Reports Management', 'create') && (
+          {can('LabReport Management', 'create') && (
             <button className="rd-btn-primary" onClick={() => setUploadModal(true)}>
               <Upload size={13} /> Upload Report
             </button>
@@ -387,8 +387,8 @@ const todayISO = getTodayLocal();
                       <CTableDataCell className="rd-td">
                         {base64File ? (
                           <div style={{ display: 'flex', gap: 6 }}>
-                            {can('Reports Management', 'read') && (
-                              <button className="rd-action-btn rd-view-btn" title="Preview"
+                            {can('LabReport Management', 'read') && (
+                              < button className="rd-action-btn rd-view-btn" title="Preview"
                                 onClick={() => {
                                   const filesArray = Array.isArray(reportItem.reportFile) ? reportItem.reportFile : [reportItem.reportFile]
                                   setSelectedReportFiles(filesArray)
@@ -431,17 +431,19 @@ const todayISO = getTodayLocal();
         </CTable>
       </div>
 
-      {report.length > 0 && (
-        <div className="mb-3">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={Math.ceil(report.length / rowsPerPage)}
-            pageSize={rowsPerPage}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setRowsPerPage}
-          />
-        </div>
-      )}
+      {
+        report.length > 0 && (
+          <div className="mb-3">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(report.length / rowsPerPage)}
+              pageSize={rowsPerPage}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setRowsPerPage}
+            />
+          </div>
+        )
+      }
 
       {/* ── Preview Modal ── */}
       <CModal visible={showModal} onClose={() => setShowModal(false)} alignment="center" size="xl" scrollable>
@@ -532,15 +534,15 @@ const todayISO = getTodayLocal();
 
             <div className="rd-upload-field">
               <label className="rd-upload-label">Report Date <span className="rd-required">*</span></label>
-             <input
-  className="rd-upload-input"
-  type="date"
-  value={newReport.reportDate}
-  max={todayISO}
-  onChange={(e) =>
-    setNewReport({ ...newReport, reportDate: e.target.value })
-  }
-/>
+              <input
+                className="rd-upload-input"
+                type="date"
+                value={newReport.reportDate}
+                max={todayISO}
+                onChange={(e) =>
+                  setNewReport({ ...newReport, reportDate: e.target.value })
+                }
+              />
             </div>
 
             <div className="rd-upload-field">
@@ -697,7 +699,7 @@ const todayISO = getTodayLocal();
           .rd-info-grid { grid-template-columns: 1fr; }
         }
       `}</style>
-    </div>
+    </div >
   )
 }
 

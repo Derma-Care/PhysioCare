@@ -64,11 +64,11 @@ const AttendanceTracker = () => {
   const storedData = localStorage.getItem('therapistData');
   const therapistData = location.state || (storedData ? JSON.parse(storedData) : {});
 
-  // Get data from localStorage as per requirements
-  const userId = localStorage.getItem('staffId') || therapistData?.therapistId || "0001";
+  // Get data from location state or localStorage
+  const userId = location.state?.userId || therapistData?.therapistId || localStorage.getItem('staffId') || "0001";
   const clinicId = localStorage.getItem('HospitalId') || therapistData?.clinicId || "C001";
   const branchId = localStorage.getItem('branchId') || therapistData?.branchId || "B001";
-  const role = localStorage.getItem('role') || "THERAPIST";
+  const role = location.state?.role || therapistData?.role || localStorage.getItem('role') || "THERAPIST";
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [detailsData, setDetailsData] = useState(null);
@@ -90,10 +90,19 @@ const AttendanceTracker = () => {
   const fetchDailyData = async () => {
     try {
       setLoadingDaily(true);
-      const res = await axios.get(`${BASE_URL}/getUserDailyAttendence/${userId}/${dateStr}`);
+      const normalizedRole = role?.toLowerCase() || "";
+      let apiUrl;
+
+      if (normalizedRole === "physiotherapist" || normalizedRole === "intern") {
+        apiUrl = `${BASE_URL}/getDaily/${userId}/${dateStr}`;
+      } else {
+        apiUrl = `${BASE_URL}/getUserDailyAttendence/${userId}/${dateStr}`;
+      }
+
+      const res = await axios.get(apiUrl);
       const result = res.data;
       if (result.success && result.data) {
-        setData(result.data.activities || []);
+        setData(result.data.activities || result.data.sessions || []);
         if (result.data.login?.time) {
           setLoginTime(result.data.login.time);
           setLoginLocation(result.data.login.location || "");
@@ -128,7 +137,16 @@ const AttendanceTracker = () => {
       setLoadingDetails(true);
       setShowDetailsModal(true);
       setDetailsData(null);
-      const res = await axios.get(`${BASE_URL}/getUserDailyAttendence/${userId}/${date}`);
+      const normalizedRole = role?.toLowerCase() || "";
+      let apiUrl;
+
+      if (normalizedRole === "physiotherapist" || normalizedRole === "intern") {
+        apiUrl = `${BASE_URL}/getDaily/${userId}/${date}`;
+      } else {
+        apiUrl = `${BASE_URL}/getUserDailyAttendence/${userId}/${date}`;
+      }
+
+      const res = await axios.get(apiUrl);
       if (res.data.success) {
         setDetailsData(res.data.data);
       }
@@ -143,7 +161,16 @@ const AttendanceTracker = () => {
     try {
       setLoadingMonthly(true);
       const monthStr = dateStr.substring(0, 7);
-      const res = await axios.get(`${BASE_URL}/getUserMonthlyAttendence/${userId}/${monthStr}`);
+      const normalizedRole = role?.toLowerCase() || "";
+      let apiUrl;
+
+      if (normalizedRole === "physiotherapist" || normalizedRole === "intern") {
+        apiUrl = `${BASE_URL}/getMonthly/${userId}/${monthStr}`;
+      } else {
+        apiUrl = `${BASE_URL}/getUserMonthlyAttendence/${userId}/${monthStr}`;
+      }
+
+      const res = await axios.get(apiUrl);
       const result = res.data;
       if (result.success && result.data) {
         setMonthlyData(result.data || []);
@@ -1252,8 +1279,8 @@ const AttendanceTracker = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {detailsData.activities && detailsData.activities.length > 0 ? (
-                      detailsData.activities.map((session, index) => (
+                    {(detailsData.activities || detailsData.sessions) && (detailsData.activities || detailsData.sessions).length > 0 ? (
+                      (detailsData.activities || detailsData.sessions).map((session, index) => (
                         <tr key={index}>
                           <td style={styles.td}>{index + 1}</td>
                           <td style={styles.td}>

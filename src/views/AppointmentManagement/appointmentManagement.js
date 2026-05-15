@@ -599,11 +599,14 @@ const appointmentManagement = () => {
               // ✅ Show only when loading is false and no data
               <CTableRow>
                 <CTableDataCell
-                  colSpan="9"
+                  colSpan="10"
                   className="text-center"
-                  style={{ color: 'var(--color-black)' }}
+                  style={{ color: 'var(--color-black)', padding: '40px 0', fontSize: '15px', fontWeight: '500' }}
                 >
-                  No appointments found.
+                  <div className="d-flex flex-column align-items-center justify-content-center">
+                    <Search size={40} className="mb-2 text-muted" style={{ opacity: 0.3 }} />
+                    No appointments found.
+                  </div>
                 </CTableDataCell>
               </CTableRow>
             )}

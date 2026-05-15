@@ -119,6 +119,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
   const [onboardToCustomer, setOnboardToCustomer] = useState(false)
   const [saveloading, setSaveLoading] = useState(false)
+  const [loadingPincode, setLoadingPincode] = useState(false)
   const [errors, setErrors] = useState({})
 
   // ── Initial state factory ─────────────────────────────────────────────────
@@ -430,30 +431,35 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       })
     }
     if (section === 'address' && field === 'postalCode') {
-      if (/^\d{6}$/.test(value)) {
+      const v = value.replace(/\D/g, '')
+      if (v.length === 6) {
+        setLoadingPincode(true)
         try {
-          const data = await (await fetch(`https://api.postalpincode.in/pincode/${value}`)).json()
+          const data = await (await fetch(`https://api.postalpincode.in/pincode/${v}`)).json()
           if (data[0].Status === 'Success') {
             const po = data[0].PostOffice[0]
             setBookingDetails((p) => ({
-              ...p, address: { ...p.address, city: po.District, state: po.State, postalCode: value },
+              ...p, address: { ...p.address, city: po.District, state: po.State, postalCode: v },
             }))
             setPostOffices(data[0].PostOffice)
             setIsManualAddress(false)
-            // Auto-cleared city/state errors since API filled them
             setErrors((p) => {
               const addrErrs = { ...(p.address || {}) }
-              delete addrErrs.city; delete addrErrs.state
+              delete addrErrs.city; delete addrErrs.state; delete addrErrs.postalCode
               return { ...p, address: addrErrs }
             })
           } else {
             setPostOffices([])
             setIsManualAddress(true)
+            setErr('address', { ...(errors.address || {}), postalCode: 'Invalid Pincode' })
           }
         } catch {
           setIsManualAddress(true)
+        } finally {
+          setLoadingPincode(false)
         }
       } else {
+        setPostOffices([])
         setIsManualAddress(false)
       }
     }
@@ -526,13 +532,13 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     }
     if (tabId === 'booking') {
       setOriginalConsultationFee('')
-      setSlotsForSelectedDate([]); setSelectedDate(''); setSelectedSlots([])
+      setSlotsForSelectedDate([]); setSelectedSlots([])
       setBookingDetails((p) => ({
         ...p,
         branchId: '', branchname: '',
         doctorId: '', doctorName: '', doctorDeviceId: '',
         consultationFee: 0, foc: 'Paid', focReason: '',
-        serviceDate: '', servicetime: '',
+        // serviceDate and servicetime persist during tab reset
       }))
     }
     if (tabId === 'slots') {
@@ -926,8 +932,9 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
             <CCol md={2}>
               <CFormLabel style={labelStyle}>Age <span className="text-danger">*</span></CFormLabel>
               <CFormInput type="number" name="age" value={bookingDetails.age || ''}
+                disabled
                 onChange={handleBookingChange}
-                style={inputStyle(errors.age)} />
+                style={{ ...inputStyle(errors.age), backgroundColor: '#f8f9fa' }} />
               <ErrMsg msg={errors.age} />
             </CCol>
             <CCol md={4}>
@@ -967,16 +974,23 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
                 })}
                 <CCol md={4}>
                   <CFormLabel style={labelStyle}>Postal Code <span className="text-danger">*</span></CFormLabel>
-                  <CFormInput type="text" maxLength={6} value={bookingDetails.address?.postalCode || ''}
-                    style={inputStyle(errors.address?.postalCode)}
-                    onChange={(e) => {
-                      handleNestedChange('address', 'postalCode', e.target.value)
-                      if (e.target.value.length === 6)
-                        fetch(`https://api.postalpincode.in/pincode/${e.target.value}`)
-                          .then((r) => r.json())
-                          .then((d) => { if (d[0].Status === 'Success') setPostOffices(d[0].PostOffice) })
-                      else setPostOffices([])
-                    }} />
+                  <div style={{ position: 'relative' }}>
+                    <CFormInput
+                      type="text"
+                      maxLength={6}
+                      value={bookingDetails.address?.postalCode || ''}
+                      style={inputStyle(errors.address?.postalCode)}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, '').slice(0, 6)
+                        handleNestedChange('address', 'postalCode', v)
+                      }}
+                    />
+                    {loadingPincode && (
+                      <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                        <div className="spinner-border spinner-border-sm text-primary" style={{ width: '14px', height: '14px' }} />
+                      </div>
+                    )}
+                  </div>
                   <ErrMsg msg={errors.address?.postalCode} />
                 </CCol>
                 {postOffices.length > 0 && (
