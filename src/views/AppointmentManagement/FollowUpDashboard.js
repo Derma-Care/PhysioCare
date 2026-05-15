@@ -427,7 +427,7 @@ export default function FollowupDashboard() {
     const matchSearch = !search ||
       (row.bookingId || '').toLowerCase().includes(search) ||
       (row.name || '').toLowerCase().includes(search) ||
-      (row.patientMobileNumber || '').toLowerCase().includes(search) ||
+      (row.patientMobileNumber || mobileNumber || '').toLowerCase().includes(search) ||
       (row.doctorName || '').toLowerCase().includes(search) ||
       (row.paymentType || '').toLowerCase().includes(search) ||
       (row.visitType || '').toLowerCase().includes(search) ||
@@ -729,7 +729,7 @@ export default function FollowupDashboard() {
                         </CTableDataCell>
 
                         <CTableDataCell className="wd-td">
-                          {row.patientMobileNumber}
+                          {row.patientMobileNumber || row.mobileNumber || "N/A"}
                         </CTableDataCell>
 
                         <CTableDataCell className="wd-td">{row.doctorName}</CTableDataCell>

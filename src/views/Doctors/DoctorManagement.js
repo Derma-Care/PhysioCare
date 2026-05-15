@@ -28,7 +28,7 @@ import {
   getSubServiceById,
 } from '../ProcedureManagement/ProcedureManagementAPI'
 import LoadingIndicator from '../../Utils/loader'
-import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
+import { Search, X } from 'lucide-react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUserDoctor, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { http } from '../../Utils/Interceptors'
@@ -445,7 +445,7 @@ const DoctorManagement = () => {
   }
 
   /* ─── Global search filter ─────────────────────── */
-  const { searchQuery } = useGlobalSearch()
+  const [searchQuery, setSearchQuery] = useState('')
   const normalize = (s) => s?.toString().toLowerCase() || ''
   const filteredDoctors = (Array.isArray(doctorData?.data) ? doctorData.data : []).filter((d) => {
     if (!searchQuery.trim()) return true
@@ -477,15 +477,31 @@ const DoctorManagement = () => {
     <div className="dm-wrapper">
       {/* <ToastContainer /> */}
 
-      {/* Add Doctor button */}
-      {can('Doctors', 'create') && (
-        <div className="dm-top-bar">
+      {/* Add Doctor button & Search bar */}
+      <div className="dm-top-bar">
+        <div className="dm-search-wrapper">
+          <Search size={14} className="dm-search-icon-left" />
+          <input
+            type="text"
+            className="dm-search-input"
+            placeholder="Search doctors by name, ID, or specialization..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="dm-search-clear" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {can('Doctors', 'create') && (
           <button className="dm-add-btn" onClick={() => { setFormErrors({}); setModalVisible(true) }}>
             <FontAwesomeIcon icon={faUserDoctor} />
             <span>Add Doctor</span>
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* List */}
       {loading ? (
@@ -1338,6 +1354,69 @@ const DoctorManagement = () => {
         .dm-select__dropdown-indicator:hover { color: #185fa5 !important; }
         .dm-select__clear-indicator { color: #6b7280 !important; }
         .dm-select__clear-indicator:hover { color: #a32d2d !important; }
+
+        /* Search Bar Styles */
+        .dm-top-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          gap: 15px;
+          flex-wrap: wrap;
+        }
+
+        .dm-search-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          background: #fff;
+          border: 1px solid #d0dce9;
+          border-radius: 8px;
+          padding: 0 12px;
+          height: 38px;
+          width: 320px;
+          transition: all 0.2s;
+        }
+
+        .dm-search-wrapper:focus-within {
+          border-color: #185fa5;
+          box-shadow: 0 0 0 3px rgba(24, 95, 165, 0.1);
+        }
+
+        .dm-search-icon-left {
+          color: #6b7280;
+          margin-right: 8px;
+        }
+
+        .dm-search-input {
+          border: none;
+          outline: none;
+          width: 100%;
+          font-size: 13px;
+          color: #374151;
+          background: transparent;
+        }
+
+        .dm-search-input::placeholder {
+          color: #9ca3af;
+        }
+
+        .dm-search-clear {
+          background: none;
+          border: none;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #9ca3af;
+          cursor: pointer;
+          transition: color 0.15s;
+        }
+
+        .dm-search-clear:hover {
+          color: #ef4444;
+        }
+
       `}</style>
     </div>
   )

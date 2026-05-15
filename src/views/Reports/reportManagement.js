@@ -26,22 +26,22 @@ const STATUS_OPTIONS = ['All Status', 'Active', 'Completed']
 
 const statusBadge = (status) => {
   const n = normalize(status)
-  if (n === 'completed')   return { label: 'Completed', cls: 'rp-badge-green' }
+  if (n === 'completed') return { label: 'Completed', cls: 'rp-badge-green' }
   if (n === 'in-progress' || n === 'active') return { label: 'Active', cls: 'rp-badge-blue' }
   return { label: status, cls: 'rp-badge-gray' }
 }
 
 const ReportsManagement = () => {
-  const [bookings, setBookings]         = useState([])
+  const [bookings, setBookings] = useState([])
   const [filteredData, setFilteredData] = useState([])
-  const [loading, setLoading]           = useState(false)
-  const [error, setError]               = useState(null)
-  const [searchTerm, setSearchTerm]   = useState('')
-  const [dateFilter, setDateFilter]   = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [dateFilter, setDateFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('All Status')
-  const [currentPage, setCurrentPage]   = useState(1)
-  const [pageSize, setPageSize]         = useState(10)
-  const [selectedAppointment]           = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [selectedAppointment] = useState([])
 
   const navigate = useNavigate()
   const { user } = useHospital()
@@ -178,7 +178,7 @@ const ReportsManagement = () => {
               <CTableRow>
                 <CTableHeaderCell className="rp-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
                 <CTableHeaderCell className="rp-th">Name</CTableHeaderCell>
-                <CTableHeaderCell className="rp-th">Consultation Type</CTableHeaderCell>
+                <CTableHeaderCell className="rp-th">Visit Type</CTableHeaderCell>
                 <CTableHeaderCell className="rp-th">Date</CTableHeaderCell>
                 <CTableHeaderCell className="rp-th">Time</CTableHeaderCell>
                 <CTableHeaderCell className="rp-th">Status</CTableHeaderCell>
@@ -210,7 +210,7 @@ const ReportsManagement = () => {
                       </CTableDataCell>
 
                       <CTableDataCell className="rp-td rp-muted">
-                        {item.consultationType || '—'}
+                        {item.visitType || '—'}
                       </CTableDataCell>
 
                       <CTableDataCell className="rp-td rp-muted">

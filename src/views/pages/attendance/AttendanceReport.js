@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { empDummy } from "./AttadanceDummyData";
+
 import Pagination from "../../../Utils/Pagination";
 import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext";
 import { Search, X, Calendar } from "lucide-react";
@@ -11,10 +11,10 @@ export default function AttendanceReport() {
   const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
 
-  const { searchQuery, setSearchQuery } = useGlobalSearch();
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Filters for Main Page
-  const [filterStaff, setFilterStaff] = useState("all");
+  const [filterRole, setFilterRole] = useState("all");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -43,11 +43,15 @@ export default function AttendanceReport() {
     fetchAttendance();
   }, [fetchAttendance]);
 
-  // Base Data preparation
-  const availableStaff = empDummy;
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterRole, searchQuery]);
+
+
 
   const allFilteredAttendance = attendanceData.filter((att) => {
-    if (filterStaff !== "all" && att.name !== filterStaff) return false;
+    // Role filter (case-insensitive)
+    if (filterRole !== "all" && att.role?.toLowerCase() !== filterRole.toLowerCase()) return false;
 
     // Search filter
     if (searchQuery) {
@@ -94,6 +98,19 @@ export default function AttendanceReport() {
                 />
               </div>
             </div>
+            <div style={{ width: "180px" }}>
+              <select
+                className="form-select shadow-sm"
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                style={{ borderRadius: "8px", border: "1px solid #dee2e6", height: "36px", fontSize: "14px" }}
+              >
+                <option value="all">All Roles</option>
+                {[...new Set(attendanceData.map(a => a.role?.trim()).filter(Boolean))].map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            </div>
             <div className="cm-search-wrapper" style={{ width: "250px" }}>
               <Search size={14} className="cm-search-icon-left" />
               <input
@@ -109,19 +126,6 @@ export default function AttendanceReport() {
                 </button>
               )}
             </div>
-            <div style={{ width: "200px" }}>
-              <select
-                className="shadow-sm wd-date-input"
-                value={filterStaff}
-                onChange={(e) => setFilterStaff(e.target.value)}
-                style={{ borderRadius: "8px", border: "1px solid #dee2e6", height: "36px", padding: "0 10px" }}
-              >
-                <option value="all">All Clinic Staff</option>
-                {availableStaff.map((staff) => (
-                  <option key={staff.id} value={staff.name}>{staff.name} ({staff.role})</option>
-                ))}
-              </select>
-            </div>
           </div>
         </div>
         <div className="card-body p-0 mt-2">
@@ -130,7 +134,6 @@ export default function AttendanceReport() {
               <thead style={{ backgroundColor: "#1B4F8A", color: "#fff" }}>
                 <tr>
                   <th className="px-4 py-3 text-uppercase small fw-bold">S.No</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Date</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold">Name</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold">Role</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold">In Time</th>
@@ -145,7 +148,6 @@ export default function AttendanceReport() {
                     return (
                       <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
                         <td className="px-4 py-3 text-muted">{(currentPage - 1) * pageSize + idx + 1}</td>
-                        <td className="px-4 py-3 fw-medium" style={{ color: "#495057" }}>{att.date}</td>
                         <td className="px-4 py-3 fw-bold text-dark">{att.name}</td>
                         <td className="px-4 py-3" style={{ color: "#6c757d" }}>{att.role || "-"}</td>
                         <td className="px-4 py-3" style={{ color: "#495057" }}>{att.login?.time || "-"}</td>
@@ -175,15 +177,15 @@ export default function AttendanceReport() {
                             >
                               <i className="cil-calendar"></i> View
                             </button>
-                            <button
+                            {/* <button
                               className="btn btn-sm btn-outline-primary shadow-sm"
                               style={{ borderRadius: "6px" }}
                               onClick={() => navigate(`/attendance/staff/${att.userId}`, { state: { openTracker: true, initialDate: att.date } })}
                               title="Track Activities"
                             >
                               <i className="cil-map"></i> Track
-                            </button>
-                            {(att.role?.toLowerCase().includes("therapist") || att.role?.toLowerCase().includes("physio")) && (
+                            </button> */}
+                            {/* {(att.role?.toLowerCase().includes("therapist") || att.role?.toLowerCase().includes("physio")) && (
                               <button
                                 className="btn btn-sm btn-outline-success shadow-sm"
                                 style={{ borderRadius: "6px" }}
@@ -192,7 +194,7 @@ export default function AttendanceReport() {
                               >
                                 <i className="cil-chart"></i> Performance
                               </button>
-                            )}
+                            )} */}
                           </div>
                         </td>
                       </tr>
@@ -208,7 +210,7 @@ export default function AttendanceReport() {
                       ) : (
                         <>
                           <div className="mb-2">No attendance records found for {selectedDate}.</div>
-                          <small>Select a different filter or check back later.</small>
+                          {/* <small>Select a different filter or check back later.</small> */}
                         </>
                       )}
                     </td>
