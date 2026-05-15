@@ -25,7 +25,7 @@ import { CategoryData } from '../ProcedureManagement/ProcedureManagementAPI'
 import { BASE_URL } from '../../baseUrl'
 import axios from 'axios'
 import { useHospital } from '../Usecontext/HospitalContext'
-import BookingSearch from '../widgets/BookingSearch '
+
 import { followUPBooking, postBooking } from '../../APIs/BookServiceAPi'
 import { bookingUpdate } from './appointmentAPI'
 import { addCustomer } from '../customerManagement/CustomerManagementAPI'

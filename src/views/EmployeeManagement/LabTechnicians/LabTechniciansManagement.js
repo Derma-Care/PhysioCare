@@ -12,7 +12,7 @@ import {
   CModalBody,
   CModalFooter,
 } from '@coreui/react'
-import LabTechnicianForm from './LabTechnicianForm '
+import LabTechnicianForm from './LabTechnicianForm'
 import { Edit2, Eye, Trash2, FlaskConical, Search, X } from 'lucide-react'
 import capitalizeWords from '../../../Utils/capitalizeWords'
 import { useGlobalSearch } from '../../Usecontext/GlobalSearchContext'
