@@ -605,7 +605,7 @@ const appointmentManagement = () => {
                 >
                   <div className="d-flex flex-column align-items-center justify-content-center">
                     <Search size={40} className="mb-2 text-muted" style={{ opacity: 0.3 }} />
-                    No appointments found.
+                    No appointments match your search and filters.
                   </div>
                 </CTableDataCell>
               </CTableRow>

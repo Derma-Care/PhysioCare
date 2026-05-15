@@ -18,6 +18,7 @@ import {
   CRow,
   CCol,
   CImage,
+  CModalFooter,
 } from "@coreui/react"
 import { Edit2, Eye, Trash2, Dumbbell, PlusCircle, AlertTriangle, Search, X } from "lucide-react"
 import { ToastContainer } from "react-toastify"
@@ -632,10 +633,10 @@ export default function ExerciseTable() {
         onClose={resetForm}
         backdrop="static"
         alignment="center"
-        className="ex-custom-modal "
+        className="custom-modal "
         size="lg"
       >
-        <CModalHeader className="ex-modal-header custom-modal"  >
+        <CModalHeader className="ex-modal-header "  >
           <CModalTitle className="ex-modal-title">
             {editId ? "Edit" : "Add"} Activity
           </CModalTitle>
@@ -1286,26 +1287,29 @@ export default function ExerciseTable() {
 
             </CRow>
 
-            <div className="ex-modal-footer">
-              <button type="button" className="ex-btn-secondary" onClick={resetForm}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="ex-btn-primary"
-                onClick={handleSave}
-                disabled={saveLoading}
-              >
-                {saveLoading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" />
-                    {editId ? "Updating..." : "Saving..."}
-                  </>
-                ) : editId ? "Update Exercise" : "Save Exercise"}
-              </button>
-            </div>
+
           </CForm>
         </CModalBody>
+        <CModalFooter>
+          <div className="ex-modal-footer">
+            <button type="button" className="ex-btn-secondary" onClick={resetForm}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="ex-btn-primary"
+              onClick={handleConfirmedSave}
+              disabled={saveLoading}
+            >
+              {saveLoading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" />
+                  {editId ? "Updating..." : "Saving..."}
+                </>
+              ) : editId ? "Update Exercise" : "Save Exercise"}
+            </button>
+          </div>
+        </CModalFooter>
       </CModal >
 
       {/* ── VIEW MODAL ───────────────────────────────── */}
@@ -1522,7 +1526,7 @@ export default function ExerciseTable() {
       </CModal >
 
       {/* ── SAVE / UPDATE CONFIRMATION ───────────────── */}
-      < ConfirmationModal
+      {/* < ConfirmationModal
         isVisible={saveConfirmVisible}
         title={editId ? "Update Exercise" : "Save Exercise"}
         message={saveConfirmMessage}
@@ -1534,7 +1538,7 @@ export default function ExerciseTable() {
         onCancel={() => {
           if (!isSaveConfirming) setSaveConfirmVisible(false)
         }}
-      />
+      /> */}
 
       {/* ── DELETE CONFIRMATION ──────────────────────── */}
       <ConfirmationModal

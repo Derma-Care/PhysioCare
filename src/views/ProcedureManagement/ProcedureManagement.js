@@ -18,7 +18,7 @@ import {
   CCol,
 } from "@coreui/react"
 import Select from "react-select"
-import { Edit2, Eye, Trash2, Stethoscope, PlusCircle } from "lucide-react"
+import { Edit2, Eye, Trash2, Stethoscope, PlusCircle, Search, X } from "lucide-react"
 import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 
@@ -100,6 +100,7 @@ export default function TherapyManagement() {
   const [viewError, setViewError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [saveLoading, setSaveLoading] = useState(false)
+  const [localSearch, setLocalSearch] = useState("")
 
   // ── Pagination state ──────────────────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1)
@@ -230,7 +231,7 @@ export default function TherapyManagement() {
 
   // ── Filtered + paginated data ─────────────────────────────────────────────
   const filteredList = list.filter((item) => {
-    const search = (searchQuery || "").toLowerCase()
+    const search = (localSearch || searchQuery || "").toLowerCase()
     if (!search) return true
     return (
       (item.id || "").toString().toLowerCase().includes(search) ||
@@ -243,7 +244,7 @@ export default function TherapyManagement() {
   const displayData = filteredList.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
   // Reset to page 1 when search changes
-  useEffect(() => { setCurrentPage(1) }, [searchQuery])
+  useEffect(() => { setCurrentPage(1) }, [searchQuery, localSearch])
 
   const selectStyles = {
     control: (base, state) => ({
@@ -295,11 +296,28 @@ export default function TherapyManagement() {
             </p>
           </div>
         </div>
-        {can("Therapy Management", "create") && (
-          <button className="tm-add-btn" onClick={() => setModal(true)}>
-            <PlusCircle size={15} /> Add New Therapy
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="tm-search-wrapper">
+            <Search size={14} className="tm-search-icon" />
+            <input
+              type="text"
+              placeholder="Search therapy..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className="tm-search-input"
+            />
+            {localSearch && (
+              <button className="tm-search-clear" onClick={() => setLocalSearch("")}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          {can("Therapy Management", "create") && (
+            <button className="tm-add-btn" onClick={() => setModal(true)}>
+              <PlusCircle size={15} /> Add New Therapy
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Table ── */}
@@ -585,6 +603,25 @@ export default function TherapyManagement() {
         }
         .tm-add-btn:hover  { background: #0c447c; }
         .tm-add-btn:active { transform: scale(0.97); }
+
+        .tm-search-wrapper {
+          position: relative; display: flex; align-items: center; width: 250px;
+        }
+        .tm-search-icon {
+          position: absolute; left: 10px; color: #9ca3af;
+        }
+        .tm-search-input {
+          width: 100%; height: 36px; padding: 0 32px; font-size: 13px;
+          border: 0.5px solid #ced4da; border-radius: 8px; transition: all 0.15s; background: #fff;
+        }
+        .tm-search-input:focus {
+          border-color: #185fa5; box-shadow: 0 0 0 2px rgba(24,95,165,0.15); outline: none;
+        }
+        .tm-search-clear {
+          position: absolute; right: 10px; background: none; border: none;
+          color: #9ca3af; cursor: pointer; padding: 0; display: flex; align-items: center;
+        }
+        .tm-search-clear:hover { color: #374151; }
 
         .tm-table-wrapper {
           border: 0.5px solid #d0dce9; border-radius: 10px;

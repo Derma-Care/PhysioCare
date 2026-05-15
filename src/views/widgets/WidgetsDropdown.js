@@ -577,22 +577,25 @@ const WidgetsDropdown = (props) => {
                   if (finalFilteredData.length === 0) {
                     return (
                       <CTableRow>
-                        <CTableDataCell colSpan="9" className="wd-td">
-                          <div className="wd-empty">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="wd-empty-icon">
-                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                              <line x1="16" y1="2" x2="16" y2="6" />
-                              <line x1="8" y1="2" x2="8" y2="6" />
-                              <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <p>
-                              {searchQuery || filterTypes.length > 0
-                                ? 'No appointments match your search and filters.'
-                                : 'No appointments for today.'}
-                            </p>
+                        <CTableDataCell
+                          colSpan="10"
+                          style={{
+                            color: 'var(--color-black)',
+                            padding: '40px 0',
+                            fontSize: '15px',
+                            fontWeight: '500',
+                          }}
+                        >
+                          <div
+                            className="d-flex flex-column align-items-center justify-content-center"
+                            style={{ textAlign: 'center' }}
+                          >
+                            <Search size={40} className="mb-2 text-muted" style={{ opacity: 0.3 }} />
+                            No appointments match your search and filters.
                           </div>
                         </CTableDataCell>
                       </CTableRow>
+
                     )
                   }
 
