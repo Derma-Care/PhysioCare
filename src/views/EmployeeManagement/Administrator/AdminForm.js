@@ -294,8 +294,8 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
           (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
         )
           age -= 1
-        if (age < 18) {
-          newErrors.dateOfBirth = 'Admin must be at least 18 years old.'
+        if (age < 21) {
+          newErrors.dateOfBirth = 'Admin must be at least 21 years old.'
           isValid = false
         }
         if (age >= 100) {
@@ -311,10 +311,10 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
         isValid = false
       } else {
         const joinDate = new Date(formData.dateOfJoining)
-        const oneYearAgo = new Date()
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-        if (joinDate < oneYearAgo) {
-          newErrors.dateOfJoining = 'Joining Date cannot be more than 1 year ago.'
+        const fifteenYearsAgo = new Date()
+        fifteenYearsAgo.setFullYear(fifteenYearsAgo.getFullYear() - 15)
+        if (joinDate < fifteenYearsAgo) {
+          newErrors.dateOfJoining = 'Joining Date cannot be more than 15 years ago.'
           isValid = false
         }
       }
@@ -504,7 +504,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
                       <input
                         className="af-input"
                         value={formData.fullName}
-                        onChange={(e) => handleChange('fullName', e.target.value)}
+                        onChange={(e) => handleChange('fullName', e.target.value.replace(/[^A-Za-z\s]/g, ''))}
                         onBlur={() => handleBlur('fullName', formData.fullName)}
                       />
                     </Field>
@@ -524,7 +524,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
                       <input
                         className="af-input" type="date"
                         value={formData.dateOfBirth}
-                        max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                        max={new Date(new Date().setFullYear(new Date().getFullYear() - 21)).toISOString().split('T')[0]}
                         onChange={(e) => handleChange('dateOfBirth', e.target.value)}
                       />
                     </Field>
@@ -574,7 +574,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
                       <input
                         className="af-input" type="date"
                         value={formData.dateOfJoining}
-                        max={new Date().toISOString().split('T')[0]}
+                        min={new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split('T')[0]}
                         onChange={(e) => handleChange('dateOfJoining', e.target.value)}
                       />
                     </Field>
@@ -584,7 +584,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
                       <input
                         className="af-input"
                         value={formData.department}
-                        onChange={(e) => handleChange('department', e.target.value)}
+                        onChange={(e) => handleChange('department', e.target.value.replace(/[^A-Za-z\s]/g, ''))}
                       />
                     </Field>
                   </div>

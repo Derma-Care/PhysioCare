@@ -107,11 +107,8 @@ const ReferDoctorForm = ({
     // 'dateOfBirth',
     'gender',
     'mobileNumber',
-    // 'governmentId',
-    // 'department',
+    'emergencyContact',
     'yearsOfExperience',
-    // 'currentHospitalName',
-    // 'email',
     'status',
 
     // address fields (Address is @NotNull)
@@ -228,6 +225,9 @@ const ReferDoctorForm = ({
 
   // 🔹 Handle text inputs (top-level fields)
   const handleChange = (field, value) => {
+    if (field === 'specialization' || field === 'currentHospitalName') {
+      value = value.replace(/[^A-Za-z\s]/g, '')
+    }
     setFormData((prev) => ({ ...prev, [field]: value }))
     setErrors((prev) => ({ ...prev, [field]: '' }))
   }
@@ -338,8 +338,8 @@ const ReferDoctorForm = ({
           today.getMonth() < dob.getMonth() ||
           (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
         const actualAge = isBeforeBirthday ? age - 1 : age
-        if (actualAge < 18) {
-          newErrors.dateOfBirth = 'Doctor must be at least 18 years old.'
+        if (actualAge < 21) {
+          newErrors.dateOfBirth = 'Doctor must be at least 21 years old.'
           isValid = false
         }
         if (actualAge >= 100) {
@@ -699,11 +699,9 @@ const ReferDoctorForm = ({
                   <CFormInput
                     value={formData.fullName}
                     onChange={(e) => {
-                      // update value
-                      handleChange('fullName', e.target.value)
-
-                      // run validation live
-                      const err = validateField('fullName', e.target.value)
+                      const value = e.target.value.replace(/[^A-Za-z\s.]/g, '')
+                      handleChange('fullName', value)
+                      const err = validateField('fullName', value)
                       setErrors((prev) => ({ ...prev, fullName: err }))
                     }}
                   />
@@ -738,7 +736,7 @@ const ReferDoctorForm = ({
                     type="date"
                     value={formData.dateOfBirth}
                     max={
-                      new Date(new Date().setFullYear(new Date().getFullYear() - 18))
+                      new Date(new Date().setFullYear(new Date().getFullYear() - 21))
                         .toISOString()
                         .split('T')[0]
                     } // ✅ only allow DOB ≤ today-18yrs
@@ -841,12 +839,8 @@ const ReferDoctorForm = ({
                   <CFormInput
                     value={capitalizeWords(formData.department)}
                     onChange={(e) => {
-                      const value = e.target.value
-
-                      // Update form data
+                      const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
                       handleChange('department', value)
-
-                      // Run live validation
                       const err = validateField('department', value, formData)
                       setErrors((prev) => ({
                         ...prev,
@@ -967,9 +961,9 @@ const ReferDoctorForm = ({
                   </CFormSelect> */}
                 </div>
 
-                {/* <div className="col-md-4">
-                  <CFormLabel>Emergency Contact</CFormLabel>
-
+                <div className="col-md-4">
+                  <CFormLabel>Emergency Contact <span style={{ color: 'red' }}>*</span></CFormLabel>
+ 
                   <CFormInput
                     type="text"
                     maxLength={10} // ✅ Restrict to 10 digits
@@ -978,11 +972,12 @@ const ReferDoctorForm = ({
                       const value = e.target.value
                       // ✅ Allow only digits
                       if (/^\d*$/.test(value)) {
-                        handleChange('emergencyContact', e.target.value)
+                        handleChange('emergencyContact', value)
                       }
                     }}
                   />
-                </div> */}
+                  {errors.emergencyContact && <div className="text-danger mt-1">{errors.emergencyContact}</div>}
+                </div>
                 <div className="col-md-4">
                   {/* <CFormLabel>
                     Vaccination Status <span style={{ color: 'red' }}>*</span>

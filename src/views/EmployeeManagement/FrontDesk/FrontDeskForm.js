@@ -177,7 +177,7 @@ const FrontDeskForm = ({
     'address.postalCode', 'address.country',
     'bankAccountDetails.accountNumber', 'bankAccountDetails.accountHolderName',
     'bankAccountDetails.bankName', 'bankAccountDetails.branchName',
-    'bankAccountDetails.ifscCode', 'bankAccountDetails.panCardNumber',
+    'bankAccountDetails.ifscCode', 'bankAccountDetails.panCardNumber', 'emergencyContact',
   ]
 
   const validateMandatoryFields = (data, fields) => {
@@ -362,10 +362,10 @@ const FrontDeskForm = ({
         isValid = false
       } else {
         const joinDate = new Date(formData.dateOfJoining)
-        const oneYearAgo = new Date()
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-        if (joinDate < oneYearAgo) {
-          newErrors.dateOfJoining = 'Joining Date cannot be more than 1 year ago.'
+        const fifteenYearsAgo = new Date()
+        fifteenYearsAgo.setFullYear(fifteenYearsAgo.getFullYear() - 15)
+        if (joinDate < fifteenYearsAgo) {
+          newErrors.dateOfJoining = 'Joining Date cannot be more than 15 years ago.'
           isValid = false
         }
       }
@@ -658,10 +658,8 @@ const FrontDeskForm = ({
                         className="fdf-input" type="date"
                         value={formData.dateOfJoining}
                         max={new Date().toISOString().split('T')[0]}
-                        onChange={e => {
-                          handleChange('dateOfJoining', e.target.value)
-                          setErrors(p => ({ ...p, dateOfJoining: validateField('dateOfJoining', e.target.value, formData) }))
-                        }}
+                        min={new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split('T')[0]}
+                        onChange={e => handleChange('dateOfJoining', e.target.value)}
                       />
                     </Field>
                   </div>
@@ -671,8 +669,9 @@ const FrontDeskForm = ({
                         className="fdf-input"
                         value={formData.department}
                         onChange={e => {
-                          handleChange('department', e.target.value)
-                          setErrors(p => ({ ...p, department: validateField('department', e.target.value) }))
+                          const v = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                          handleChange('department', v)
+                          setErrors(p => ({ ...p, department: validateField('department', v) }))
                         }}
                       />
                     </Field>
@@ -715,11 +714,16 @@ const FrontDeskForm = ({
                     </Field>
                   </div>
                   <div className="fdf-col-third">
-                    <Field label="Emergency Contact" error={errors.emergencyContact}>
+                    <Field label="Emergency Contact" required error={errors.emergencyContact}>
                       <input
                         className="fdf-input" type="text" maxLength={10}
                         value={formData.emergencyContact}
-                        onChange={e => { if (/^\d*$/.test(e.target.value)) handleChange('emergencyContact', e.target.value) }}
+                        onChange={e => {
+                          const v = e.target.value
+                          if (/^\d*$/.test(v)) {
+                            handleChange('emergencyContact', v)
+                          }
+                        }}
                       />
                     </Field>
                   </div>

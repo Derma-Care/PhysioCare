@@ -172,7 +172,7 @@ const OtherStaffForm = ({
   }, [visible, initialData])
 
   const mandatoryFields = [
-    'fullName', 'gender', 'dateOfBirth', 'contactNumber', 'governmentId', 'dateOfJoining',
+    'fullName', 'gender', 'dateOfBirth', 'contactNumber', 'governmentId', 'dateOfJoining', 'emergencyContact',
     'profilePicture', 'department', 'shiftTimingsOrAvailability',
     'address.houseNo', 'address.street', 'address.city', 'address.state',
     'address.postalCode', 'address.country',
@@ -318,10 +318,10 @@ const OtherStaffForm = ({
         isValid = false
       } else {
         const joinDate = new Date(formData.dateOfJoining)
-        const oneYearAgo = new Date()
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-        if (joinDate < oneYearAgo) {
-          newErrors.dateOfJoining = 'Joining Date cannot be more than 1 year ago.'
+        const fifteenYearsAgo = new Date()
+        fifteenYearsAgo.setFullYear(fifteenYearsAgo.getFullYear() - 15)
+        if (joinDate < fifteenYearsAgo) {
+          newErrors.dateOfJoining = 'Joining Date cannot be more than 15 years ago.'
           isValid = false
         }
       }
@@ -565,6 +565,7 @@ const OtherStaffForm = ({
                         type="date"
                         value={formData.dateOfJoining}
                         max={new Date().toISOString().split('T')[0]}
+                        min={new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split('T')[0]}
                         onChange={(e) => handleChange('dateOfJoining', e.target.value)}
                       />
                     </Field>
@@ -574,7 +575,7 @@ const OtherStaffForm = ({
                       <input
                         className="osf-input"
                         value={formData.department}
-                        onChange={(e) => handleChange('department', e.target.value)}
+                        onChange={(e) => handleChange('department', e.target.value.replace(/[^A-Za-z\s]/g, ''))}
                       />
                     </Field>
                   </div>
@@ -612,7 +613,7 @@ const OtherStaffForm = ({
                     </Field>
                   </div>
                   <div className="osf-col-third">
-                    <Field label="Emergency Contact">
+                    <Field label="Emergency Contact" required error={errors.emergencyContact}>
                       <input
                         className="osf-input"
                         type="text"

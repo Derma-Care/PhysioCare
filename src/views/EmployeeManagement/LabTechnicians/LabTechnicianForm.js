@@ -99,7 +99,8 @@ const LabTechnicianForm = ({
     'emailId',
     'governmentId',
     'dateOfJoining',
-    // 'departmentOrAssignedLab',
+    'departmentOrAssignedLab',
+    'emergencyContact',
     'yearOfExperience',
     'clinicId',
     'vaccinationStatus',
@@ -209,6 +210,9 @@ const LabTechnicianForm = ({
 
   // 🔹 Handle text inputs (top-level fields)
   const handleChange = (field, value) => {
+    if (field === 'departmentOrAssignedLab') {
+      value = value.replace(/[^A-Za-z\s]/g, '')
+    }
     setFormData((prev) => ({ ...prev, [field]: value }))
     setErrors((prev) => ({ ...prev, [field]: '' }))
   }
@@ -340,10 +344,10 @@ const LabTechnicianForm = ({
         isValid = false
       } else {
         const joinDate = new Date(formData.dateOfJoining)
-        const oneYearAgo = new Date()
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-        if (joinDate < oneYearAgo) {
-          newErrors.dateOfJoining = 'Joining Date cannot be more than 1 year ago.'
+        const fifteenYearsAgo = new Date()
+        fifteenYearsAgo.setFullYear(fifteenYearsAgo.getFullYear() - 15)
+        if (joinDate < fifteenYearsAgo) {
+          newErrors.dateOfJoining = 'Joining Date cannot be more than 15 years ago.'
           isValid = false
         }
       }
@@ -737,9 +741,7 @@ const LabTechnicianForm = ({
                   <CFormInput
                     value={formData.fullName}
                     onChange={(e) => {
-                      const value = e.target.value
-
-                      // Update the form value
+                      const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
                       handleChange('fullName', value)
 
                       // Run validation from your validators file
@@ -898,6 +900,7 @@ const LabTechnicianForm = ({
                     type="date"
                     value={formData.dateOfJoining}
                     max={new Date().toISOString().split('T')[0]}
+                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split('T')[0]}
                     onChange={(e) => {
                       const value = e.target.value
                       handleChange('dateOfJoining', value)
@@ -919,7 +922,7 @@ const LabTechnicianForm = ({
                   <CFormInput
                     value={formData.departmentOrAssignedLab}
                     onChange={(e) => {
-                      const value = e.target.value
+                      const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
                       handleChange('departmentOrAssignedLab', value)
 
                       // run live validation

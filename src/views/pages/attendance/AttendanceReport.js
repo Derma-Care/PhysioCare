@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { empDummy, attendanceDummy } from "./AttadanceDummyData";
+import { empDummy } from "./AttadanceDummyData";
 import Pagination from "../../../Utils/Pagination";
 import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext";
-import { Search, X } from "lucide-react";
+import { Search, X, Calendar } from "lucide-react";
+import { http } from "../../../Utils/Interceptors";
+import { BASE_URL, GetAllUsersDailyByClinicAndBranch } from "../../../baseUrl";
 
 export default function AttendanceReport() {
   const navigate = useNavigate();
@@ -13,30 +15,48 @@ export default function AttendanceReport() {
 
   // Filters for Main Page
   const [filterStaff, setFilterStaff] = useState("all");
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Base Data preparation
-  // Get all available staff
-  const availableStaff = empDummy;
-  const availableStaffNames = availableStaff.map(emp => emp.name);
+  const fetchAttendance = useCallback(async () => {
+    setLoading(true);
+    try {
+      const hospitalId = localStorage.getItem("HospitalId");
+      const branchId = localStorage.getItem("branchId");
+      const res = await http.get(`${BASE_URL}/${GetAllUsersDailyByClinicAndBranch}/${hospitalId}/${branchId}/${selectedDate}`);
+      if (res.status === 200 && res.data && res.data.success) {
+        setAttendanceData(res.data.data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching attendance:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDate]);
 
-  // Main Page: Today's attendance for all available staff
-  const allFilteredAttendance = attendanceDummy.filter((att) => {
-    if (att.date !== today) return false;
-    if (!availableStaffNames.includes(att.name)) return false;
+  useEffect(() => {
+    fetchAttendance();
+  }, [fetchAttendance]);
+
+  // Base Data preparation
+  const availableStaff = empDummy;
+
+  const allFilteredAttendance = attendanceData.filter((att) => {
     if (filterStaff !== "all" && att.name !== filterStaff) return false;
-    
+
     // Search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const empInfo = availableStaff.find((e) => e.name === att.name);
       const matchesName = att.name.toLowerCase().includes(q);
-      const matchesRole = empInfo ? empInfo.role.toLowerCase().includes(q) : false;
-      const matchesStatus = att.status.toLowerCase().includes(q);
-      if (!matchesName && !matchesRole && !matchesStatus) return false;
+      const matchesRole = att.role?.toLowerCase().includes(q);
+      const matchesStatus = att.status?.toLowerCase().includes(q);
+      const matchesUserId = att.userId?.toLowerCase().includes(q);
+      if (!matchesName && !matchesRole && !matchesStatus && !matchesUserId) return false;
     }
 
     return true;
@@ -59,9 +79,21 @@ export default function AttendanceReport() {
         <div className="card-header bg-white border-bottom pt-4 pb-3 d-flex justify-content-between align-items-center" style={{ borderTopLeftRadius: "12px", borderTopRightRadius: "12px" }}>
           <div>
             <h4 className="mb-1 fw-bold" style={{ color: "#1B4F8A" }}>Daily Attendance</h4>
-            <small className="text-muted fw-medium">Showing records for: {today}</small>
+            <small className="text-muted fw-medium">Showing records for: {selectedDate}</small>
           </div>
           <div className="d-flex align-items-center gap-3">
+            <div className="wd-date-group mb-0">
+              <div className="d-flex align-items-center position-relative">
+                <Calendar size={14} className="position-absolute ms-2 text-muted" />
+                <input
+                  type="date"
+                  className="form-control shadow-sm ps-5"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  style={{ borderRadius: "8px", border: "1px solid #dee2e6", height: "36px", fontSize: "14px", width: "160px" }}
+                />
+              </div>
+            </div>
             <div className="cm-search-wrapper" style={{ width: "250px" }}>
               <Search size={14} className="cm-search-icon-left" />
               <input
@@ -110,47 +142,75 @@ export default function AttendanceReport() {
               <tbody>
                 {todaysAttendance.length > 0 ? (
                   todaysAttendance.map((att, idx) => {
-                    const empInfo = availableStaff.find((e) => e.name === att.name);
                     return (
                       <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
                         <td className="px-4 py-3 text-muted">{(currentPage - 1) * pageSize + idx + 1}</td>
                         <td className="px-4 py-3 fw-medium" style={{ color: "#495057" }}>{att.date}</td>
                         <td className="px-4 py-3 fw-bold text-dark">{att.name}</td>
-                        <td className="px-4 py-3" style={{ color: "#6c757d" }}>{empInfo ? empInfo.role : "-"}</td>
-                        <td className="px-4 py-3" style={{ color: "#495057" }}>{att.in}</td>
-                        <td className="px-4 py-3" style={{ color: "#495057" }}>{att.out}</td>
+                        <td className="px-4 py-3" style={{ color: "#6c757d" }}>{att.role || "-"}</td>
+                        <td className="px-4 py-3" style={{ color: "#495057" }}>{att.login?.time || "-"}</td>
+                        <td className="px-4 py-3" style={{ color: "#495057" }}>{att.logout?.time || "-"}</td>
                         <td className="px-4 py-3">
                           <span className={`badge`} style={{
                             padding: "6px 14px",
                             borderRadius: "20px",
                             fontWeight: "500",
-                            backgroundColor: att.status === "Present" ? "#d1e7dd" :
+                            backgroundColor: (att.status === "Present" || att.status === "LOGGED_OUT" || att.status === "LOGGED_IN") ? "#d1e7dd" :
                               att.status === "Late" ? "#fff3cd" :
                                 att.status === "Leave" ? "#cff4fc" : "#f8d7da",
-                            color: att.status === "Present" ? "#0f5132" :
+                            color: (att.status === "Present" || att.status === "LOGGED_OUT" || att.status === "LOGGED_IN") ? "#0f5132" :
                               att.status === "Late" ? "#856404" :
                                 att.status === "Leave" ? "#055160" : "#842029"
                           }}>
-                            {att.status}
+                            {att.status === "LOGGED_OUT" ? "Present" : att.status === "LOGGED_IN" ? "In Work" : att.status}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <button
-                            className="btn btn-sm btn-light shadow-sm border"
-                            style={{ color: "#1B4F8A", borderRadius: "6px" }}
-                            onClick={() => handleViewStaff(att.name)}
-                          >
-                            <i className="cil-eye"></i> View
-                          </button>
+                          <div className="d-flex justify-content-center gap-2">
+                            <button
+                              className="btn btn-sm btn-light shadow-sm border"
+                              style={{ color: "#1B4F8A", borderRadius: "6px" }}
+                              onClick={() => handleViewStaff(att.userId)}
+                              title="Monthly View"
+                            >
+                              <i className="cil-calendar"></i> View
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline-primary shadow-sm"
+                              style={{ borderRadius: "6px" }}
+                              onClick={() => navigate(`/attendance/staff/${att.userId}`, { state: { openTracker: true, initialDate: att.date } })}
+                              title="Track Activities"
+                            >
+                              <i className="cil-map"></i> Track
+                            </button>
+                            {(att.role?.toLowerCase().includes("therapist") || att.role?.toLowerCase().includes("physio")) && (
+                              <button
+                                className="btn btn-sm btn-outline-success shadow-sm"
+                                style={{ borderRadius: "6px" }}
+                                onClick={() => navigate(`/attendance/staff/${att.userId}`, { state: { openPerformance: true } })}
+                                title="Performance Summary"
+                              >
+                                <i className="cil-chart"></i> Performance
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan="7" className="text-center py-5 text-muted">
-                      <div className="mb-2">No attendance records found for today.</div>
-                      <small>Select a different filter or check back later.</small>
+                    <td colSpan="8" className="text-center py-5 text-muted">
+                      {loading ? (
+                        <div className="spinner-border spinner-border-sm text-primary" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="mb-2">No attendance records found for {selectedDate}.</div>
+                          <small>Select a different filter or check back later.</small>
+                        </>
+                      )}
                     </td>
                   </tr>
                 )}

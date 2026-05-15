@@ -71,10 +71,10 @@ const initialForm = {
   highlights: [],
   availableConsultations: [],
   consultation: { inClinic: 0, videoOrOnline: 0, serviceAndTreatments: 0 },
-  dateOfJoining: '',
+  dateofJoining: '',
   emergencyContact: '',
-  aadharId: '',
-  dateOfBirth: '',
+  aadharID: '',
+  dateofBirth: '',
 }
 
 const SectionHeading = ({ text }) => (
@@ -272,40 +272,44 @@ const DoctorManagement = () => {
     if (!form.branch?.length) errs.branch = 'Select at least one branch'
     
     // Date of Joining validation
-    if (!form.dateOfJoining) {
-      errs.dateOfJoining = 'Date of joining is required'
+    if (!form.dateofJoining) {
+      errs.dateofJoining = 'Date of joining is required'
     } else {
-      const doj = new Date(form.dateOfJoining)
+      const doj = new Date(form.dateofJoining)
       const now = new Date()
-      const oneYearAgo = new Date()
-      oneYearAgo.setFullYear(now.getFullYear() - 1)
-      if (doj > now) errs.dateOfJoining = 'Date of joining cannot be in the future'
-      else if (doj < oneYearAgo) errs.dateOfJoining = 'Date of joining must be within the last 1 year'
+      const fifteenYearsAgo = new Date()
+      fifteenYearsAgo.setFullYear(now.getFullYear() - 15)
+      if (doj > now) errs.dateofJoining = 'Date of joining cannot be in the future'
+      else if (doj < fifteenYearsAgo) errs.dateofJoining = 'Date of joining cannot be more than 15 years ago'
     }
 
-    // Date of Birth validation (18 to 100 years)
-    if (!form.dateOfBirth) {
-      errs.dateOfBirth = 'Date of birth is required'
+    // Date of Birth validation (21 to 100 years)
+    if (!form.dateofBirth) {
+      errs.dateofBirth = 'Date of birth is required'
     } else {
-      const dob = new Date(form.dateOfBirth)
+      const dob = new Date(form.dateofBirth)
       const now = new Date()
       let age = now.getFullYear() - dob.getFullYear()
       const m = now.getMonth() - dob.getMonth()
       if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--
       
-      if (age < 18) errs.dateOfBirth = 'Doctor must be at least 18 years old'
-      else if (age > 100) errs.dateOfBirth = 'Age cannot exceed 100 years'
+      if (age < 21) errs.dateofBirth = 'Doctor must be at least 21 years old'
+      else if (age > 100) errs.dateofBirth = 'Age cannot exceed 100 years'
     }
 
     // Aadhar ID validation
-    if (!form.aadharId) {
-      errs.aadharId = 'Aadhar ID is required'
-    } else if (!/^\d{12}$/.test(form.aadharId)) {
-      errs.aadharId = 'Aadhar ID must be 12 digits'
-    } else if (/^(.)\1+$/.test(form.aadharId)) {
-      errs.aadharId = 'Aadhar ID cannot have all identical digits'
+    if (!form.aadharID) {
+      errs.aadharID = 'Aadhar ID is required'
+    } else if (!/^\d{12}$/.test(form.aadharID)) {
+      errs.aadharID = 'Aadhar ID must be 12 digits'
+    } else if (/^(.)\1+$/.test(form.aadharID)) {
+      errs.aadharID = 'Aadhar ID cannot have all identical digits'
     }
-    if (form.emergencyContact && !/^[6789]\d{9}$/.test(form.emergencyContact)) errs.emergencyContact = 'Enter valid 10-digit emergency contact'
+    if (!form.emergencyContact) {
+      errs.emergencyContact = 'Emergency contact is required'
+    } else if (!/^[6789]\d{9}$/.test(form.emergencyContact)) {
+      errs.emergencyContact = 'Enter valid 10-digit emergency contact'
+    }
 
     setFormErrors(errs)
     return Object.keys(errs).length === 0
@@ -359,10 +363,10 @@ const DoctorManagement = () => {
         languages: form.languages,
         highlights: form.highlights,
         doctorFees: { inClinicFee: form.doctorFees.inClinicFee },
-        dateOfJoining: form.dateOfJoining,
+        dateofJoining: form.dateofJoining,
         emergencyContact: form.emergencyContact,
-        aadharId: form.aadharId,
-        dateOfBirth: form.dateOfBirth,
+        aadharID: form.aadharID,
+        dateofBirth: form.dateofBirth,
         // consultation: {
         //   serviceAndTreatments: form.availableConsultations.includes('Services & Treatments') ? 3 : 0,
         //   inClinic: form.availableConsultations.includes('In-Clinic') ? 1 : 0,
@@ -598,7 +602,7 @@ const DoctorManagement = () => {
                 className="dm-input"
                 value={form.doctorName}
                 onChange={(e) => {
-                  let v = e.target.value.replace(/[0-9]/g, '')
+                  let v = e.target.value.replace(/[^A-Za-z\s.]/g, '')
                   const w = v.startsWith('Dr.') ? v : `Dr. ${v}`
                   setForm((p) => ({ ...p, doctorName: w }))
                   if (w.length > 3) clearFieldError('doctorName')
@@ -662,7 +666,7 @@ const DoctorManagement = () => {
                 className="dm-input"
                 value={form.specialization}
                 onChange={(e) => {
-                  const v = e.target.value.replace(/[0-9]/g, '')
+                  const v = e.target.value.replace(/[^A-Za-z\s]/g, '')
                   setForm((p) => ({ ...p, specialization: v }))
                   if (v.trim().length >= 2) clearFieldError('specialization')
                 }}
@@ -700,50 +704,50 @@ const DoctorManagement = () => {
               <CFormInput
                 type="date"
                 className="dm-input"
-                value={form.dateOfBirth}
+                value={form.dateofBirth}
                 onChange={(e) => {
-                  setForm((p) => ({ ...p, dateOfBirth: e.target.value }))
-                  clearFieldError('dateOfBirth')
+                  setForm((p) => ({ ...p, dateofBirth: e.target.value }))
+                  clearFieldError('dateofBirth')
                 }}
-                invalid={!!formErrors.dateOfBirth}
-                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                invalid={!!formErrors.dateofBirth}
+                max={new Date(new Date().setFullYear(new Date().getFullYear() - 21)).toISOString().split('T')[0]}
                 min={new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split('T')[0]}
               />
-              <Err field="dateOfBirth" />
+              <Err field="dateofBirth" />
             </CCol>
             <CCol md={6}>
               <label className="dm-label">Date of Joining <span className="req">*</span></label>
               <CFormInput
                 type="date"
                 className="dm-input"
-                value={form.dateOfJoining}
+                value={form.dateofJoining}
                 onChange={(e) => {
-                  setForm((p) => ({ ...p, dateOfJoining: e.target.value }))
-                  clearFieldError('dateOfJoining')
+                  setForm((p) => ({ ...p, dateofJoining: e.target.value }))
+                  clearFieldError('dateofJoining')
                 }}
-                invalid={!!formErrors.dateOfJoining}
+                invalid={!!formErrors.dateofJoining}
                 max={new Date().toISOString().split('T')[0]}
-                min={new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0]}
+                min={new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split('T')[0]}
               />
-              <Err field="dateOfJoining" />
+              <Err field="dateofJoining" />
             </CCol>
             <CCol md={6}>
               <label className="dm-label">Aadhar ID <span className="req">*</span></label>
               <CFormInput
                 className="dm-input"
-                value={form.aadharId}
+                value={form.aadharID}
                 onChange={(e) => {
                   const v = e.target.value.replace(/\D/g, '').slice(0, 12)
-                  setForm((p) => ({ ...p, aadharId: v }))
-                  if (v.length === 12) clearFieldError('aadharId')
+                  setForm((p) => ({ ...p, aadharID: v }))
+                  if (v.length === 12) clearFieldError('aadharID')
                 }}
-                invalid={!!formErrors.aadharId}
+                invalid={!!formErrors.aadharID}
                 placeholder="1234 5678 9012"
               />
-              <Err field="aadharId" />
+              <Err field="aadharID" />
             </CCol>
             <CCol md={6}>
-              <label className="dm-label">Emergency Contact (Optional)</label>
+              <label className="dm-label">Emergency Contact <span className="req">*</span></label>
               <CFormInput
                 className="dm-input"
                 value={form.emergencyContact}

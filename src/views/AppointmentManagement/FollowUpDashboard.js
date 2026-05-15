@@ -526,24 +526,22 @@ export default function FollowupDashboard() {
             </div>
           </div>
 
-          <div className="cm-search-wrapper">
-            <Search size={14} className="cm-search-icon-left" />
-            <input
-              type="text"
-              placeholder="Search bookings, patients..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="cm-search-input"
-            />
-            {searchQuery && (
-              <button className="cm-search-clear" onClick={() => setSearchQuery('')}>
-                <X size={14} />
-              </button>
-            )}
-          </div>
-
-          {/* Right controls — only date pickers, status dropdown, and book button */}
           <div className="wd-header-right">
+            <div className="cm-search-wrapper" style={{ minWidth: '250px', marginLeft: '0' }}>
+              <Search size={14} className="cm-search-icon-left" />
+              <input
+                type="text"
+                placeholder="Search bookings, patients..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="cm-search-input"
+              />
+              {searchQuery && (
+                <button className="cm-search-clear" onClick={() => setSearchQuery('')}>
+                  <X size={14} />
+                </button>
+              )}
+            </div>
 
             <div className="wd-date-group">
               <label className="wd-date-label">From</label>
@@ -1103,7 +1101,7 @@ export default function FollowupDashboard() {
         .wd-stat-value { font-size: 22px; font-weight: 700; color: #0c447c; line-height: 1.1; }
 
         .wd-page-header {
-          display: flex; align-items: flex-start; justify-content: space-between;
+          display: flex; align-items: center; justify-content: space-between;
           flex-wrap: wrap; gap: 10px; margin-bottom: 18px;
           padding-bottom: 14px; border-bottom: 0.5px solid #d0dce9;
         }

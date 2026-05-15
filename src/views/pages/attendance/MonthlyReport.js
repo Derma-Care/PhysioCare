@@ -1,38 +1,61 @@
-import React, { useState } from "react";
-
-import {
-  CPopover,
-  CButton,
-} from "@coreui/react";
-
-import {
-  attendanceDummy,
-  empDummy,
-} from "./AttadanceDummyData";
+import React, { useState, useEffect, useCallback } from "react";
+import { CPopover, CButton } from "@coreui/react";
+import { empDummy } from "./AttadanceDummyData";
 import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext";
-import { Search, X } from "lucide-react";
+import { Search, X, Calendar } from "lucide-react";
+import { http } from "../../../Utils/Interceptors";
+import { BASE_URL, GetAllUsersMonthlyByClinicAndBranch } from "../../../baseUrl";
 
 export default function MonthlyReport() {
   const { searchQuery, setSearchQuery } = useGlobalSearch();
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const [month, setMonth] =
-    useState("2026-03");
+  const fetchMonthlyAttendance = useCallback(async () => {
+    setLoading(true);
+    try {
+      const hospitalId = localStorage.getItem("HospitalId");
+      const branchId = localStorage.getItem("branchId");
+      const res = await http.get(`${BASE_URL}/${GetAllUsersMonthlyByClinicAndBranch}/${hospitalId}/${branchId}/${month}`);
+      if (res.status === 200 && res.data && res.data.success) {
+        setAttendanceData(res.data.data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching monthly attendance:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [month]);
 
-  const getData = (name, status) => {
-    return attendanceDummy.filter(
-      (a) => a.name === name && a.status === status && a.date.startsWith(month)
-    );
-  };
+  useEffect(() => {
+    fetchMonthlyAttendance();
+  }, [fetchMonthlyAttendance]);
 
-  const getCount = (name, status) => {
-    return getData(name, status).length;
-  };
+  // If the API returns a list of daily records, we aggregate them by user
+  // If it already returns a summary, we use it directly.
+  // Assuming it returns daily records for the month based on the provided JSON structure.
+  
+  const userSummaries = React.useMemo(() => {
+    const summary = {};
+    attendanceData.forEach(record => {
+      const { userId, name, status, role, date, reason } = record;
+      if (!summary[userId]) {
+        summary[userId] = { userId, name, role, present: 0, absent: 0, late: 0, leave: 0, records: [] };
+      }
+      summary[userId].records.push(record);
+      if (status === "Present" || status === "LOGGED_OUT" || status === "LOGGED_IN") summary[userId].present++;
+      else if (status === "Absent") summary[userId].absent++;
+      else if (status === "Late") summary[userId].late++;
+      else if (status === "Leave") summary[userId].leave++;
+    });
+    return Object.values(summary);
+  }, [attendanceData]);
 
-  // Filter employees by search query
-  const filteredEmployees = empDummy.filter(e => {
+  const filteredSummaries = userSummaries.filter(s => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return e.name.toLowerCase().includes(q) || e.role.toLowerCase().includes(q);
+    return s.name.toLowerCase().includes(q) || s.role?.toLowerCase().includes(q);
   });
 
   return (
@@ -83,28 +106,16 @@ export default function MonthlyReport() {
                 </tr>
               </thead>
               <tbody>
-                {filteredEmployees.length > 0 ? (
-                  filteredEmployees.map((e) => (
-                    <tr key={e.id} style={{ borderBottom: "1px solid #f1f3f5" }}>
-                      <td className="px-4 py-3 fw-bold text-dark">{e.name}</td>
+                {filteredSummaries.length > 0 ? (
+                  filteredSummaries.map((s) => (
+                    <tr key={s.userId} style={{ borderBottom: "1px solid #f1f3f5" }}>
+                      <td className="px-4 py-3 fw-bold text-dark">{s.name}</td>
                       <td className="px-4 py-3 text-center">
                         <span className="badge bg-success-light text-success px-3 py-2 rounded-pill">
-                          {getCount(e.name, "Present")}
+                          {s.present}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-
-              <tr key={e.id}>
-
-                <td>{e.name}</td>
-
-                <td>
-                  {getCount(
-                    e.name,
-                    "Present"
-                  )}
-                </td>
-
                         <CPopover
                           trigger="hover"
                           placement="top"
@@ -114,15 +125,15 @@ export default function MonthlyReport() {
                                 <tr><th>Date</th><th>Reason</th></tr>
                               </thead>
                               <tbody>
-                                {getData(e.name, "Absent").map((d, i) => (
-                                  <tr key={i}><td>{d.date}</td><td>{d.reason}</td></tr>
+                                {s.records.filter(r => r.status === "Absent").map((d, i) => (
+                                  <tr key={i}><td>{d.date}</td><td>{d.reason || "N/A"}</td></tr>
                                 ))}
                               </tbody>
                             </table>
                           }
                         >
                           <CButton size="sm" color="danger" variant="outline" className="rounded-pill px-3">
-                            {getCount(e.name, "Absent")}
+                            {s.absent}
                           </CButton>
                         </CPopover>
                       </td>
@@ -136,15 +147,15 @@ export default function MonthlyReport() {
                                 <tr><th>Date</th><th>In</th><th>Reason</th></tr>
                               </thead>
                               <tbody>
-                                {getData(e.name, "Late").map((d, i) => (
-                                  <tr key={i}><td>{d.date}</td><td>{d.in}</td><td>{d.reason}</td></tr>
+                                {s.records.filter(r => r.status === "Late").map((d, i) => (
+                                  <tr key={i}><td>{d.date}</td><td>{d.login?.time || "-"}</td><td>{d.reason || "N/A"}</td></tr>
                                 ))}
                               </tbody>
                             </table>
                           }
                         >
                           <CButton size="sm" color="warning" variant="outline" className="rounded-pill px-3">
-                            {getCount(e.name, "Late")}
+                            {s.late}
                           </CButton>
                         </CPopover>
                       </td>
@@ -158,15 +169,15 @@ export default function MonthlyReport() {
                                 <tr><th>Date</th><th>Reason</th></tr>
                               </thead>
                               <tbody>
-                                {getData(e.name, "Leave").map((d, i) => (
-                                  <tr key={i}><td>{d.date}</td><td>{d.reason}</td></tr>
+                                {s.records.filter(r => r.status === "Leave").map((d, i) => (
+                                  <tr key={i}><td>{d.date}</td><td>{d.reason || "N/A"}</td></tr>
                                 ))}
                               </tbody>
                             </table>
                           }
                         >
                           <CButton size="sm" color="info" variant="outline" className="rounded-pill px-3">
-                            {getCount(e.name, "Leave")}
+                            {s.leave}
                           </CButton>
                         </CPopover>
                       </td>
@@ -175,7 +186,13 @@ export default function MonthlyReport() {
                 ) : (
                   <tr>
                     <td colSpan="5" className="text-center py-5 text-muted">
-                      No staff found matching "{searchQuery}"
+                      {loading ? (
+                        <div className="spinner-border spinner-border-sm text-primary" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                      ) : (
+                        `No staff found matching "${searchQuery}"`
+                      )}
                     </td>
                   </tr>
                 )}

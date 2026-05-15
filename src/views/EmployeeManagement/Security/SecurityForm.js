@@ -43,6 +43,7 @@ const makeEmptyForm = () => ({
   policeVerification: '',
   previousEmployeeHistory: '',
   traningOrGuardLicense: '',
+  emergencyContact: '',
   permissions: {},
   userName: '',
   password: '',
@@ -147,7 +148,7 @@ const SecurityForm = ({
     'bankAccountDetails.accountNumber', 'bankAccountDetails.accountHolderName',
     'bankAccountDetails.bankName', 'bankAccountDetails.branchName',
     'bankAccountDetails.ifscCode', 'bankAccountDetails.panCardNumber',
-    'medicalFitnessCertificate', 'profilePicture',
+    'medicalFitnessCertificate', 'profilePicture', 'emergencyContact',
   ]
 
   const handleChange = (field, value) => {
@@ -279,10 +280,10 @@ const SecurityForm = ({
         isValid = false
       } else {
         const joinDate = new Date(formData.dateOfJoining)
-        const oneYearAgo = new Date()
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-        if (joinDate < oneYearAgo) {
-          newErrors.dateOfJoining = 'Joining Date cannot be more than 1 year ago.'
+        const fifteenYearsAgo = new Date()
+        fifteenYearsAgo.setFullYear(fifteenYearsAgo.getFullYear() - 15)
+        if (joinDate < fifteenYearsAgo) {
+          newErrors.dateOfJoining = 'Joining Date cannot be more than 15 years ago.'
           isValid = false
         }
       }
@@ -502,6 +503,7 @@ const SecurityForm = ({
                         className="sf-input" type="date"
                         value={formData.dateOfJoining}
                         max={new Date().toISOString().split('T')[0]}
+                        min={new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split('T')[0]}
                         onChange={(e) => handleChange('dateOfJoining', e.target.value)}
                       />
                     </Field>
@@ -511,7 +513,7 @@ const SecurityForm = ({
                       <input
                         className="sf-input"
                         value={formData.department}
-                        onChange={(e) => handleChange('department', e.target.value)}
+                        onChange={(e) => handleChange('department', e.target.value.replace(/[^A-Za-z\s]/g, ''))}
                       />
                     </Field>
                   </div>
@@ -527,6 +529,17 @@ const SecurityForm = ({
                 </div>
 
                 <div className="sf-row">
+                  <div className="sf-col-third">
+                    <Field label="Emergency Contact" required error={errors.emergencyContact}>
+                      <input
+                        className="sf-input" type="text" maxLength={10}
+                        value={formData.emergencyContact}
+                        onChange={(e) => {
+                          if (/^\d*$/.test(e.target.value)) handleChange('emergencyContact', e.target.value)
+                        }}
+                      />
+                    </Field>
+                  </div>
                   <div className="sf-col-full">
                     <Field label="Shift Timings / Availability" required error={errors.shiftTimingsOrAvailability}>
                       <select

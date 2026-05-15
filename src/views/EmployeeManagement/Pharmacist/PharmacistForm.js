@@ -102,6 +102,7 @@ const PharmacistForm = ({
     'governmentId',
     'dateOfJoining',
     'department',
+    'emergencyContactNumber',
     'hospitalId',
     'profilePicture',
     'role',
@@ -221,6 +222,9 @@ const PharmacistForm = ({
 
   // 🔹 Handle text inputs (top-level fields)
   const handleChange = (field, value) => {
+    if (field === 'department') {
+      value = value.replace(/[^A-Za-z\s]/g, '')
+    }
     setFormData((prev) => ({ ...prev, [field]: value }))
     setErrors(prev => ({ ...prev, [field]: '' }))
   }
@@ -364,10 +368,10 @@ const PharmacistForm = ({
         isValid = false
       } else {
         const joinDate = new Date(formData.dateOfJoining)
-        const oneYearAgo = new Date()
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-        if (joinDate < oneYearAgo) {
-          newErrors.dateOfJoining = 'Joining Date cannot be more than 1 year ago.'
+        const fifteenYearsAgo = new Date()
+        fifteenYearsAgo.setFullYear(fifteenYearsAgo.getFullYear() - 15)
+        if (joinDate < fifteenYearsAgo) {
+          newErrors.dateOfJoining = 'Joining Date cannot be more than 15 years ago.'
           isValid = false
         }
       }
@@ -778,16 +782,10 @@ const PharmacistForm = ({
                   <CFormInput
                     value={formData.fullName}
                     onChange={(e) => {
-                      const value = e.target.value
-
-                      // Allow only letters and spaces
-                      if (/^[A-Za-z\s]*$/.test(value)) {
-                        handleChange('fullName', value)
-
-                        // Run validation
-                        const error = validateField('fullName', value)
-                        setErrors((prev) => ({ ...prev, fullName: error }))
-                      }
+                      const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                      handleChange('fullName', value)
+                      const error = validateField('fullName', value)
+                      setErrors((prev) => ({ ...prev, fullName: error }))
                     }}
                   />
 
