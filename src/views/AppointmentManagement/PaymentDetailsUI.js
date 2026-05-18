@@ -22,12 +22,12 @@ import { getBookingsByPatientId } from "../../APIs/GetpatinetData";
 
 const StatusBadge = ({ status }) => {
     const styles = {
-        PAID:    { background: "#eaf3de", color: "#27500a", border: "0.5px solid #97c459" },
+        PAID: { background: "#eaf3de", color: "#27500a", border: "0.5px solid #97c459" },
         PARTIAL: { background: "#faeeda", color: "#633806", border: "0.5px solid #ef9f27" },
-        UNPAID:  { background: "#fcebeb", color: "#791f1f", border: "0.5px solid #f09595" },
+        UNPAID: { background: "#fcebeb", color: "#791f1f", border: "0.5px solid #f09595" },
     }
     const s = styles[status] || styles.UNPAID
-    
+
     return (
         <span style={{
             ...s,
@@ -50,37 +50,37 @@ export default function PaymentDetailsUI() {
     const [data, setData] = useState(paymentData);
     const patientId = data?.patientId;
     const [patientInfo, setPatientInfo] = useState({
-  name: "",
-  mobileNumber: ""
-});
-useEffect(() => {
-  const patientId = data?.patientId;
+        name: "",
+        mobileNumber: ""
+    });
+    useEffect(() => {
+        const patientId = data?.patientId;
 
-  if (!patientId) return;
+        if (!patientId) return;
 
-  const fetchPatientDetails = async () => {
-    try {
-      const res = await getBookingsByPatientId(patientId);
+        const fetchPatientDetails = async () => {
+            try {
+                const res = await getBookingsByPatientId(patientId);
 
-      const bookingList = res?.data?.data || [];
+                const bookingList = res?.data?.data || [];
 
-      // ✅ Find correct booking OR take first
-      const booking = bookingList.find(
-        b => b.patientId === patientId
-      ) || bookingList[0];
+                // ✅ Find correct booking OR take first
+                const booking = bookingList.find(
+                    b => b.patientId === patientId
+                ) || bookingList[0];
 
-      setPatientInfo({
-        name: booking?.name || "-",
-        mobileNumber: booking?.mobileNumber || booking?.mobile || "-"
-      });
+                setPatientInfo({
+                    name: booking?.name || "-",
+                    mobileNumber: booking?.mobileNumber || booking?.mobile || "-"
+                });
 
-    } catch (err) {
-      console.error("Patient fetch error:", err);
-    }
-  };
+            } catch (err) {
+                console.error("Patient fetch error:", err);
+            }
+        };
 
-  fetchPatientDetails();
-}, [data?.patientId]);
+        fetchPatientDetails();
+    }, [data?.patientId]);
 
     const normalizeData = (data) => {
         return (data?.therapyWithSessions || []).map((item) => {
@@ -175,10 +175,10 @@ useEffect(() => {
             {/* 🔹 Top Summary */}
             <CRow className="g-3 mb-4">
                 {[
-                    { label: "Booking ID",     value: data.bookingId },
-                   { label: "Patient", value: patientInfo.name, sub: patientInfo.mobileNumber },
-                    { label: "Doctor",         value: data.doctorName },
-                    { label: "Status",         value: <StatusBadge status={data.paymentStatus} /> },
+                    { label: "Booking ID", value: data.bookingId },
+                    { label: "Patient", value: patientInfo.name, sub: patientInfo.mobileNumber },
+                    { label: "Doctor", value: data.doctorName },
+                    { label: "Status", value: <StatusBadge status={data.paymentStatus} /> },
                 ].map((item, i) => (
                     <CCol md={3} key={i}>
                         <div style={{
@@ -206,10 +206,10 @@ useEffect(() => {
             {/* 🔹 Amount Cards */}
             <CRow className="g-3 mb-4">
                 {[
-                    { label: "Total amount",  value: `₹${data.totalAmount}`,    bg: "#f7fafd", color: "#0c447c"  },
-                    { label: "Discount",      value: `₹${data.discountAmount}`, bg: "#faeeda", color: "#854f0b"  },
-                    { label: "Total paid",    value: `₹${data.totalPaid}`,      bg: "#eaf3de", color: "#27500a"  },
-                    { label: "Balance due",   value: `₹${data.balanceAmount}`,  bg: "#fcebeb", color: "#a32d2d"  },
+                    { label: "Total amount", value: `₹${data.totalAmount}`, bg: "#f7fafd", color: "#0c447c" },
+                    { label: "Discount", value: `₹${data.discountAmount}`, bg: "#faeeda", color: "#854f0b" },
+                    { label: "Total paid", value: `₹${data.totalPaid}`, bg: "#eaf3de", color: "#27500a" },
+                    { label: "Balance due", value: `₹${data.balanceAmount}`, bg: "#fcebeb", color: "#a32d2d" },
                 ].map((item, i) => (
                     <CCol md={3} key={i}>
                         <div style={{
@@ -245,17 +245,17 @@ useEffect(() => {
                         {paidSessions}/{allSessions.length} ({percent}%)
                     </span>
                 </div>
-                <div style={{ 
-                    height: "8px", 
-                    borderRadius: "10px", 
-                    background: "#e9ecef", 
-                    marginTop: "16px", 
+                <div style={{
+                    height: "8px",
+                    borderRadius: "10px",
+                    background: "#e9ecef",
+                    marginTop: "16px",
                     overflow: "hidden",
                     position: "relative"
                 }}>
-                    <div style={{ 
-                        width: `${percent}%`, 
-                        height: "100%", 
+                    <div style={{
+                        width: `${percent}%`,
+                        height: "100%",
                         backgroundColor: percent === 100 ? "#97c459" : "#ef9f27",
                         borderRadius: "10px",
                         transition: "width 0.5s ease-in-out"
@@ -272,12 +272,12 @@ useEffect(() => {
                 const programs = pkg?.programs
                     ? pkg.programs
                     : pkg?.therapyData
-                    ? [pkg]
-                    : pkg?.exercises
-                    ? [{ programName: null, therapyData: [pkg] }]
-                    : pkg?.sessions
-                    ? [{ programName: null, therapyData: [{ therapyName: null, exercises: [pkg] }] }]
-                    : [];
+                        ? [pkg]
+                        : pkg?.exercises
+                            ? [{ programName: null, therapyData: [pkg] }]
+                            : pkg?.sessions
+                                ? [{ programName: null, therapyData: [{ therapyName: null, exercises: [pkg] }] }]
+                                : [];
 
                 return (
                     <div key={pi}>
@@ -375,6 +375,7 @@ useEffect(() => {
                                                                             }}
                                                                         >
                                                                             {isPaid ? `✓ Paid` : `Session ${session.sessionNo}`}
+                                                                            <span className="ms-2">{session.date}</span>
                                                                         </CButton>
                                                                     );
                                                                 })}
