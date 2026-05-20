@@ -105,6 +105,21 @@ const Tag = ({ label }) => (
   </span>
 )
 
+const formatDateForInput = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().split('T')[0]
+}
+
+const normalizeDoctorPayload = (doctor = {}) => ({
+  ...doctor,
+  dateOfBirth: formatDateForInput(doctor.dateOfBirth || doctor.dateofBirth),
+  dateOfJoining: formatDateForInput(doctor.dateOfJoining || doctor.dateofJoining),
+  emergencyContact: doctor.emergencyContact || doctor.emergencyContactNumber || '',
+  aadharId: doctor.aadharId || doctor.aadharID || doctor.aadhar || '',
+})
+
 /* ─── Main Component ─── */
 const DoctorDetailsPage = () => {
   const [categoryOptions, setCategoryOptions] = useState([])
@@ -134,7 +149,7 @@ const DoctorDetailsPage = () => {
   const [timeInput, setTimeInput] = useState('')
   const [timeSlots, setTimeSlots] = useState([])
   const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState(state?.doctor || {})
+  const [formData, setFormData] = useState(normalizeDoctorPayload(state?.doctor || {}))
   const [interval, setInterval] = useState(30)
   const [slots, setSlots] = useState([])
   const [customerDetails, setCustomerDetails] = useState({})
@@ -191,7 +206,7 @@ const DoctorDetailsPage = () => {
     try {
       const res = await http.get(`/getDoctorById/${doctorData?.doctorId}`)
       setDoctorData(res.data)
-      setFormData(res.data)
+      setFormData(normalizeDoctorPayload(res.data))
     } catch (err) {
       console.error('Error fetching doctor', err)
     }
@@ -231,7 +246,7 @@ const DoctorDetailsPage = () => {
   useEffect(() => {
     if (doctorData && !isEditing) {
       setFormData({
-        ...doctorData,
+        ...normalizeDoctorPayload(doctorData),
         branch: doctorData.branches?.map(b => ({ branchId: b.branchId || b.id, branchName: b.branchName || b.name })) || [],
       })
     }
@@ -353,7 +368,7 @@ const DoctorDetailsPage = () => {
     if (!formData.profileDescription?.trim()) newErrors.profileDescription = 'Profile description is required.'
     if (!formData.doctorSignature) newErrors.doctorSignature = 'Signature is required.'
     if (!formData.branch?.length) newErrors.branch = 'Select at least one branch.'
-    
+
     // Date of Joining validation
     if (!formData.dateOfJoining) {
       newErrors.dateOfJoining = 'Date of joining is required.'
@@ -375,7 +390,7 @@ const DoctorDetailsPage = () => {
       let age = now.getFullYear() - dob.getFullYear()
       const m = now.getMonth() - dob.getMonth()
       if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--
-      
+
       if (age < 18) newErrors.dateOfBirth = 'Must be at least 18 years old.'
       else if (age > 100) newErrors.dateOfBirth = 'Age cannot exceed 100 years.'
     }
@@ -800,30 +815,30 @@ const DoctorDetailsPage = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
               <FormField label="Date of Birth" error={errors.dateOfBirth} required>
                 {isEditing
-                  ? <CFormInput type="date" value={formData.dateOfBirth || ''} invalid={!!errors.dateOfBirth} onChange={e => { setFormData(p => ({ ...p, dateOfBirth: e.target.value })); setErrors(p => ({ ...p, dateOfBirth: '' })) }} style={{ fontSize: '13px' }} 
-                      max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]} 
-                      min={new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split('T')[0]} />
-                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.dateOfBirth || '—'}</div>}
+                  ? <CFormInput type="date" value={formData.dateOfBirth || ''} invalid={!!errors.dateOfBirth} onChange={e => { setFormData(p => ({ ...p, dateOfBirth: e.target.value })); setErrors(p => ({ ...p, dateOfBirth: '' })) }} style={{ fontSize: '13px' }}
+                    max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split('T')[0]} />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.dateOfBirth || doctorData.dateofBirth || '—'}</div>}
               </FormField>
 
               <FormField label="Date of Joining" error={errors.dateOfJoining} required>
                 {isEditing
-                  ? <CFormInput type="date" value={formData.dateOfJoining || ''} invalid={!!errors.dateOfJoining} onChange={e => { setFormData(p => ({ ...p, dateOfJoining: e.target.value })); setErrors(p => ({ ...p, dateOfJoining: '' })) }} style={{ fontSize: '13px' }} 
-                      max={new Date().toISOString().split('T')[0]} 
-                      min={new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0]} />
-                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.dateOfJoining || '—'}</div>}
+                  ? <CFormInput type="date" value={formData.dateOfJoining || ''} invalid={!!errors.dateOfJoining} onChange={e => { setFormData(p => ({ ...p, dateOfJoining: e.target.value })); setErrors(p => ({ ...p, dateOfJoining: '' })) }} style={{ fontSize: '13px' }}
+                    max={new Date().toISOString().split('T')[0]}
+                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0]} />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.dateOfJoining || doctorData.dateofJoining || '—'}</div>}
               </FormField>
 
               <FormField label="Aadhar ID" error={errors.aadharId} required>
                 {isEditing
                   ? <CFormInput value={formData.aadharId || ''} invalid={!!errors.aadharId} onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 12); setFormData(p => ({ ...p, aadharId: v })); if (v.length === 12) setErrors(p => ({ ...p, aadharId: '' })) }} style={{ fontSize: '13px' }} placeholder="12 Digits" />
-                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.aadharId || '—'}</div>}
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.aadharId || doctorData.aadharID || '—'}</div>}
               </FormField>
 
               <FormField label="Emergency Contact" error={errors.emergencyContact}>
                 {isEditing
                   ? <CFormInput value={formData.emergencyContact || ''} invalid={!!errors.emergencyContact} onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setFormData(p => ({ ...p, emergencyContact: v })); if (v.length === 10 || v.length === 0) setErrors(p => ({ ...p, emergencyContact: '' })) }} style={{ fontSize: '13px' }} placeholder="Optional" />
-                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.emergencyContact || '—'}</div>}
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.emergencyContact || doctorData.emergencyContactNumber || '—'}</div>}
               </FormField>
             </div>
 

@@ -216,11 +216,11 @@ export default function PackagesManagement() {
     if (!search) return true
     return (
       (item.packageName || "").toLowerCase().includes(search) ||
-      (item.packageId || "").toLowerCase().includes(search) ||
-      safeArray(item.programs)
-        .map((p) => (p?.programName || "").toLowerCase())
-        .join(" ")
-        .includes(search)
+      (item.packageId || "").toLowerCase().includes(search)
+      // safeArray(item.programs)
+      //   .map((p) => (p?.programName || "").toLowerCase())
+      //   .join(" ")
+      //   .includes(search)
     )
   })
 
@@ -298,7 +298,7 @@ export default function PackagesManagement() {
             </p>
           </div>
         </div>
-        
+
         <div className="cm-search-wrapper">
           <Search size={14} className="cm-search-icon-left" />
           <input
