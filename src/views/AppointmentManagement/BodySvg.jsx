@@ -242,8 +242,8 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
           rx="15"
           ry="30"
           // stroke="red"
-          fill={getColor('leftFoot')}
-          onClick={(e) => onClickPart('leftFoot', e)}
+          fill={getColor('rightFoot')}
+          onClick={(e) => onClickPart('rightFoot', e)}
         />
 
         <ellipse
@@ -252,8 +252,8 @@ export default function BodySvg({ veiew, onClickPart, getColor }) {
           rx="15"
           ry="35"
           // stroke="red"
-          fill={getColor('rightFoot')}
-          onClick={(e) => onClickPart('rightFoot', e)}
+          fill={getColor('leftFoot')}
+          onClick={(e) => onClickPart('leftFoot', e)}
         />
       </g>
 
