@@ -266,8 +266,8 @@ case 'specialization':
 
 
     case 'emergencyContact':
-      if (!value || value.trim() === '') {
-        error = 'Emergency contact is required.'
+      if (!value || String(value).trim() === '') {
+        error = ''
       } else if (!/^\d{10}$/.test(value)) {
         error = 'Emergency contact must be exactly 10 digits.'
       } else if (!/^[6-9]/.test(value)) {
@@ -289,7 +289,9 @@ case 'specialization':
       break
 
     case 'emergencyContactNumber':
-      if (!/^\d{10}$/.test(value)) {
+      if (!value || String(value).trim() === '') {
+        error = ''
+      } else if (!/^\d{10}$/.test(value)) {
         error = 'Emergency contact must be exactly 10 digits.'
       } else if (!/^[6-9]/.test(value)) {
         error = 'Emergency contact must start with 6, 7, 8, or 9.'

@@ -100,7 +100,6 @@ const LabTechnicianForm = ({
     'governmentId',
     'dateOfJoining',
     'departmentOrAssignedLab',
-    'emergencyContact',
     'yearOfExperience',
     'clinicId',
     'vaccinationStatus',
@@ -382,6 +381,11 @@ const LabTechnicianForm = ({
 
     if (formData.contactNumber && formData.emergencyContact && formData.contactNumber === formData.emergencyContact) {
       newErrors.emergencyContact = 'Emergency contact cannot be same as contact number.'
+      isValid = false
+    }
+
+    if (formData.emergencyContact && !/^[6-9]\d{9}$/.test(formData.emergencyContact)) {
+      newErrors.emergencyContact = 'Emergency contact must be 10 digits starting 6-9.'
       isValid = false
     }
 
@@ -1009,7 +1013,7 @@ const LabTechnicianForm = ({
                 </div>
 
                 <div className="col-md-4">
-                  <CFormLabel>Emergency Contact <span style={{ color: 'red' }}>*</span></CFormLabel>
+                  <CFormLabel>Emergency Contact</CFormLabel>
                   <CFormInput
                     maxLength={10}
                     value={formData.emergencyContact}

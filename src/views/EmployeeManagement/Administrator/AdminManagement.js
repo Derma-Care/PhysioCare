@@ -121,9 +121,10 @@ const AdminManagement = () => {
   const filteredData = React.useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
     if (!q) return admins
-    return admins.filter((item) =>
-      Object.values(item).some((val) => String(val).toLowerCase().includes(q)),
-    )
+    return admins.filter((item) => {
+      const searchFields = [item.fullName, item.contactNumber, item.emailId]
+      return searchFields.some((val) => String(val || '').toLowerCase().includes(q))
+    })
   }, [searchQuery, admins])
 
   const displayData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)

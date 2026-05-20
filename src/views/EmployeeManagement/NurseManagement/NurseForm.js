@@ -301,9 +301,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     } else if (/^(.)\1+$/.test(formData.aadharID)) {
       e.aadharID = 'Aadhar cannot have identical digits'
     }
-    if (!formData.emergencyContact) {
-      e.emergencyContact = 'Emergency contact is required'
-    } else if (!/^[6-9]\d{9}$/.test(formData.emergencyContact)) {
+    if (formData.emergencyContact && !/^[6-9]\d{9}$/.test(formData.emergencyContact)) {
       e.emergencyContact = 'Enter valid 10-digit emergency contact'
     }
 
@@ -689,7 +687,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                   </Field>
                 </div>
                 <div className="pf-col-third">
-                  <Field label="Emergency Contact" required error={errors.emergencyContact}>
+                  <Field label="Emergency Contact" error={errors.emergencyContact}>
                     <input className="pf-input" value={formData.emergencyContact} maxLength={10}
                       onChange={(e) => {
                         const val = e.target.value;

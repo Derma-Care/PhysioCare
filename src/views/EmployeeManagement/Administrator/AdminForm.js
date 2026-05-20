@@ -108,7 +108,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
   const mandatoryFields = [
     'fullName', 'gender', 'dateOfBirth', 'contactNumber', 'emailId',
     'governmentId', 'dateOfJoining', 'department', 'clinicId',
-    'profilePicture', 'role', 'emergencyContact',
+    'profilePicture', 'role',
     'address.houseNo', 'address.street', 'address.city', 'address.state',
     'address.postalCode', 'address.country',
     'bankAccountDetails.accountNumber', 'bankAccountDetails.accountHolderName',
@@ -349,6 +349,11 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
 
     if (formData.contactNumber && formData.emergencyContact && formData.contactNumber === formData.emergencyContact) {
       newErrors.emergencyContact = 'Emergency contact cannot be same as contact number.'
+      isValid = false
+    }
+
+    if (formData.emergencyContact && !/^[6-9]\d{9}$/.test(formData.emergencyContact)) {
+      newErrors.emergencyContact = 'Emergency contact must be 10 digits starting 6-9.'
       isValid = false
     }
 
@@ -601,7 +606,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
 
                 <div className="af-row">
                   <div className="af-col-third">
-                    <Field label="Emergency Contact" required error={errors.emergencyContact}>
+                    <Field label="Emergency Contact" error={errors.emergencyContact}>
                       <input
                         className="af-input" type="text" maxLength={10}
                         value={formData.emergencyContact}

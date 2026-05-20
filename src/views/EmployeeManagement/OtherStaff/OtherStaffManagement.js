@@ -64,6 +64,12 @@ const OtherStaffManagement = () => {
 
   useEffect(() => { fetchTechs() }, [])
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+
+
   const handleSave = async (formData) => {
     try {
       if (selectedTech) {
@@ -112,13 +118,17 @@ const OtherStaffManagement = () => {
   const filteredData = React.useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
     if (!q) return technicians
-    return technicians.filter((item) =>
-      Object.values(item).some((val) => String(val).toLowerCase().includes(q)),
-    )
+    return technicians.filter((item) => {
+      const searchFields = [item.fullName, item.contactNumber, item.department]
+      return searchFields.some((val) => String(val || '').toLowerCase().includes(q))
+    })
   }, [searchQuery, technicians])
 
-  const displayData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
+
+
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage)
+  const displayData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
   return (
     <>
       {/* ── Page Header ── */}

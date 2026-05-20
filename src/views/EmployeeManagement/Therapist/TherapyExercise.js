@@ -68,7 +68,7 @@ const activityOptions = [
 
 // update emptyExercise
 const emptyExercise = {
-  activityType: "Exercise",
+  activityType: "",
   name: "",
   video: "",
   session: "1",
@@ -525,7 +525,10 @@ export default function ExerciseTable() {
         </div>
 
         {can("Activity Library", "create") && (
-          <button className="ex-add-btn" onClick={() => setModal(true)}>
+          <button className="ex-add-btn" onClick={() => {
+            resetForm()
+            setModal(true)
+          }}>
             <PlusCircle size={15} />
             Add Activity
           </button>
@@ -664,20 +667,25 @@ export default function ExerciseTable() {
                     Activity Type <span className="ex-req">*</span>
                   </CFormLabel>
                   <select
-                    className="ex-input"
+                    className={`ex-input${errors.activityType ? " is-invalid" : ""}`}
                     value={form.activityType}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setForm({
                         ...emptyExercise,
                         activityType: e.target.value,
                         name: form.name,
                       })
-                    }
+                      setErrors((prev) => ({ ...prev, activityType: "" }))
+                    }}
                   >
+                    <option value="" disabled>
+                      Select activity type
+                    </option>
                     {activityOptions.map((item) => (
-                      <option key={item}>{item}</option>
+                      <option key={item} value={item}>{item}</option>
                     ))}
                   </select>
+                  <CFormText className="ex-err-msg">{errors.activityType}</CFormText>
                 </div>
               </CCol>
 
@@ -1298,7 +1306,7 @@ export default function ExerciseTable() {
             <button
               type="button"
               className="ex-btn-primary"
-              onClick={handleConfirmedSave}
+              onClick={handleSave}
               disabled={saveLoading}
             >
               {saveLoading ? (
@@ -1526,7 +1534,7 @@ export default function ExerciseTable() {
       </CModal >
 
       {/* ── SAVE / UPDATE CONFIRMATION ───────────────── */}
-      {/* < ConfirmationModal
+      <ConfirmationModal
         isVisible={saveConfirmVisible}
         title={editId ? "Update Exercise" : "Save Exercise"}
         message={saveConfirmMessage}
@@ -1538,7 +1546,7 @@ export default function ExerciseTable() {
         onCancel={() => {
           if (!isSaveConfirming) setSaveConfirmVisible(false)
         }}
-      /> */}
+      />
 
       {/* ── DELETE CONFIRMATION ──────────────────────── */}
       <ConfirmationModal

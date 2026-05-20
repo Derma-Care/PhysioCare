@@ -102,7 +102,6 @@ const PharmacistForm = ({
     'governmentId',
     'dateOfJoining',
     'department',
-    'emergencyContactNumber',
     'hospitalId',
     'profilePicture',
     'role',
@@ -401,6 +400,11 @@ const PharmacistForm = ({
 
     if (formData.emailID && !emailPattern.test(formData.emailID)) {
       newErrors.emailID = 'Invalid email address format.'
+      isValid = false
+    }
+
+    if (formData.emergencyContactNumber && !/^[6-9]\d{9}$/.test(formData.emergencyContactNumber)) {
+      newErrors.emergencyContactNumber = 'Emergency contact must be 10 digits starting 6-9.'
       isValid = false
     }
 
@@ -979,7 +983,7 @@ const PharmacistForm = ({
                   )}
                 </div>
                 <div className="col-md-4">
-                  <CFormLabel>Emergency Contact Number <span style={{ color: 'red' }}>*</span></CFormLabel>
+                  <CFormLabel>Emergency Contact Number </CFormLabel>
                   <CFormInput
                     maxLength={10}
                     value={formData.emergencyContactNumber}

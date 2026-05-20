@@ -148,7 +148,7 @@ const SecurityForm = ({
     'bankAccountDetails.accountNumber', 'bankAccountDetails.accountHolderName',
     'bankAccountDetails.bankName', 'bankAccountDetails.branchName',
     'bankAccountDetails.ifscCode', 'bankAccountDetails.panCardNumber',
-    'medicalFitnessCertificate', 'profilePicture', 'emergencyContact',
+    'medicalFitnessCertificate', 'profilePicture',
   ]
 
   const handleChange = (field, value) => {
@@ -313,6 +313,16 @@ const SecurityForm = ({
 
     if (formData.emailId && !emailPattern.test(formData.emailId)) {
       newErrors.emailId = 'Invalid email address format.'
+      isValid = false
+    }
+
+    if (formData.emergencyContact && !/^[6-9]\d{9}$/.test(formData.emergencyContact)) {
+      newErrors.emergencyContact = 'Emergency contact must be 10 digits starting 6-9.'
+      isValid = false
+    }
+
+    if (formData.contactNumber && formData.emergencyContact && formData.contactNumber === formData.emergencyContact) {
+      newErrors.emergencyContact = 'Emergency contact cannot be the same as contact number.'
       isValid = false
     }
 
@@ -530,7 +540,7 @@ const SecurityForm = ({
 
                 <div className="sf-row">
                   <div className="sf-col-third">
-                    <Field label="Emergency Contact" required error={errors.emergencyContact}>
+                    <Field label="Emergency Contact" error={errors.emergencyContact}>
                       <input
                         className="sf-input" type="text" maxLength={10}
                         value={formData.emergencyContact}

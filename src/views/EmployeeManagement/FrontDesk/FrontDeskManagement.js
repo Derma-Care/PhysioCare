@@ -119,9 +119,10 @@ const FrontDeskManagement = () => {
   const filteredData = React.useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
     if (!q) return receptionist
-    return receptionist.filter((item) =>
-      Object.values(item).some((val) => String(val).toLowerCase().includes(q)),
-    )
+    return receptionist.filter((item) => {
+      const searchFields = [item.fullName, item.contactNumber, item.qualification]
+      return searchFields.some((val) => String(val || '').toLowerCase().includes(q))
+    })
   }, [searchQuery, receptionist])
 
   const displayData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)

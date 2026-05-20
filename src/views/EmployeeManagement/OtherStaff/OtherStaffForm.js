@@ -172,7 +172,7 @@ const OtherStaffForm = ({
   }, [visible, initialData])
 
   const mandatoryFields = [
-    'fullName', 'gender', 'dateOfBirth', 'contactNumber', 'governmentId', 'dateOfJoining', 'emergencyContact',
+    'fullName', 'gender', 'dateOfBirth', 'contactNumber', 'governmentId', 'dateOfJoining',
     'profilePicture', 'department', 'shiftTimingsOrAvailability',
     'address.houseNo', 'address.street', 'address.city', 'address.state',
     'address.postalCode', 'address.country',
@@ -351,6 +351,11 @@ const OtherStaffForm = ({
 
     if (formData.emailId && !emailPattern.test(formData.emailId)) {
       newErrors.emailId = 'Invalid email address format.'
+      isValid = false
+    }
+
+    if (formData.emergencyContact && !/^[6-9]\d{9}$/.test(formData.emergencyContact)) {
+      newErrors.emergencyContact = 'Emergency contact must be 10 digits starting 6-9.'
       isValid = false
     }
 
@@ -613,7 +618,7 @@ const OtherStaffForm = ({
                     </Field>
                   </div>
                   <div className="osf-col-third">
-                    <Field label="Emergency Contact" required error={errors.emergencyContact}>
+                    <Field label="Emergency Contact" error={errors.emergencyContact}>
                       <input
                         className="osf-input"
                         type="text"
