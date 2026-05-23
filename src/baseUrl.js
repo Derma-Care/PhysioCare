@@ -225,3 +225,5 @@ export const GetAllUsersMonthlyByClinicAndBranch = 'getAllUsersMonthlyByClinicAn
 export const GetUserDailyAttendence = 'getUserDailyAttendence'
 export const GetUserMonthlyAttendence = 'getUserMonthlyAttendence'
 export const GetTherapistPerformanceSummary = 'getTherapistPerformanceSummary'
+export const SaveUserAttendence = 'saveUserAttendence'
+export const UpdateUserAttendence = 'updateUserAttendence'

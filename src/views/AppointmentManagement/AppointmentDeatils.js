@@ -28,7 +28,7 @@ import { deleteVitalsData, postVitalsData, updateVitalsData, VitalsDataById } fr
 import { Download, Eye, ArrowLeft, Activity, FileText, User, Stethoscope, CreditCard, ChevronRight, Pencil } from 'lucide-react'
 import BookAppointmentModal from './BookAppointmentModal'
 import { useHospital } from '../Usecontext/HospitalContext'
-import { GetProcedureFormData } from '../ConsentForms/ConsentFormsAPI'
+// import { GetProcedureFormData } from '../ConsentForms/ConsentFormsAPI'
 import ConsentFormHandler from '../ConsentForms/ConsentFormHandler'
 import { showCustomToast } from '../../Utils/Toaster'
 import PaymentAccordion from './PaymentProgram'

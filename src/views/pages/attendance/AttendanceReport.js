@@ -5,7 +5,7 @@ import Pagination from "../../../Utils/Pagination";
 import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext";
 import { Search, X, Calendar } from "lucide-react";
 import { http } from "../../../Utils/Interceptors";
-import { BASE_URL, GetAllUsersDailyByClinicAndBranch } from "../../../baseUrl";
+import { BASE_URL, GetAllUsersDailyByClinicAndBranch, SaveUserAttendence, UpdateUserAttendence } from "../../../baseUrl";
 
 export default function AttendanceReport() {
   const navigate = useNavigate();
@@ -47,7 +47,48 @@ export default function AttendanceReport() {
     setCurrentPage(1);
   }, [filterRole, searchQuery]);
 
+  const handleManualLogin = async (userId) => {
+    try {
+      const time = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+      const payload = {
+        date: selectedDate,
+        login: {
+          time: time,
+          latitude: "17.433071",
+          longitude: "78.407807"
+        },
+        latitude: "17.433071",
+        longitude: "78.407807",
+        time: time,
+        userId: userId
+      };
+      const res = await http.post(`${BASE_URL}/${SaveUserAttendence}`, payload);
+      if (res.status === 200 || res.status === 201) {
+        fetchAttendance();
+      }
+    } catch (error) {
+      console.error("Error manual login:", error);
+    }
+  };
 
+  const handleManualLogout = async (userId) => {
+    try {
+      const time = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+      const payload = {
+        date: selectedDate,
+        logoutLatitude: "17.433071",
+        logoutLongtitude: "78.407807",
+        logoutTime: time,
+        userId: userId
+      };
+      const res = await http.put(`${BASE_URL}/${UpdateUserAttendence}`, payload);
+      if (res.status === 200) {
+        fetchAttendance();
+      }
+    } catch (error) {
+      console.error("Error manual logout:", error);
+    }
+  };
 
   const allFilteredAttendance = attendanceData.filter((att) => {
     // Role filter (case-insensitive)
@@ -150,8 +191,38 @@ export default function AttendanceReport() {
                         <td className="px-4 py-3 text-muted">{(currentPage - 1) * pageSize + idx + 1}</td>
                         <td className="px-4 py-3 fw-bold text-dark">{att.name}</td>
                         <td className="px-4 py-3" style={{ color: "#6c757d" }}>{att.role || "-"}</td>
-                        <td className="px-4 py-3" style={{ color: "#495057" }}>{att.login?.time || "-"}</td>
-                        <td className="px-4 py-3" style={{ color: "#495057" }}>{att.logout?.time || "-"}</td>
+                        <td className="px-4 py-3" style={{ color: "#495057" }}>
+                          {att.login?.time ? (
+                            att.login.time
+                          ) : selectedDate <= today ? (
+                            <button
+                              className="btn btn-sm   shadow-sm"
+                              style={{ borderRadius: "6px", color: "var(--pink-color)", borderColor: "var(--pink-color)" }}
+                              onClick={() => handleManualLogin(att.userId)}
+                              title="Manual Login"
+                            >
+                              Login
+                            </button>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                        <td className="px-4 py-3" style={{ color: "#495057" }}>
+                          {att.logout?.time ? (
+                            att.logout.time
+                          ) : selectedDate <= today && att.login?.time ? (
+                            <button
+                              className="btn btn-sm shadow-sm"
+                              style={{ borderRadius: "6px", color: "var(--pink-color)", borderColor: "var(--pink-color)" }}
+                              onClick={() => handleManualLogout(att.userId)}
+                              title="Manual Logout"
+                            >
+                              Logout
+                            </button>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <span className={`badge`} style={{
                             padding: "6px 14px",

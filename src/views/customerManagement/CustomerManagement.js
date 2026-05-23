@@ -244,13 +244,13 @@ const CustomerManagement = () => {
     if (!/^\d{6}$/.test(formData.address.postalCode)) errs.postalCode = 'Valid 6-digit PIN required'
     else if (!selectedPO && !formData.address.city?.trim()) errs.postOffice = 'Select a post office'
 
-    if (!formData.aadharId) {
-      errs.aadharId = 'Aadhar ID required'
-    } else if (formData.aadharId.length !== 12) {
-      errs.aadharId = 'Aadhar ID must be 12 digits'
-    } else if (/^(.)\1+$/.test(formData.aadharId)) {
-      errs.aadharId = 'Aadhar ID cannot have identical digits'
-    }
+    // if (!formData.aadharId) {
+    //   errs.aadharId = 'Aadhar ID required'
+    // } else if (formData.aadharId.length !== 12) {
+    //   errs.aadharId = 'Aadhar ID must be 12 digits'
+    // } else if (/^(.)\1+$/.test(formData.aadharId)) {
+    //   errs.aadharId = 'Aadhar ID cannot have identical digits'
+    // }
 
     setFormErrors(errs)
     return Object.keys(errs).length === 0
@@ -542,7 +542,7 @@ const CustomerManagement = () => {
                 />
               </Field>
 
-              <Field label="Aadhar ID" required error={formErrors.aadharId}>
+              {/* <Field label="Aadhar ID" required error={formErrors.aadharId}>
                 <CFormInput
                   name="aadharId"
                   value={formData.aadharId}
@@ -551,7 +551,7 @@ const CustomerManagement = () => {
                   onChange={(e) => { if (/^[0-9]*$/.test(e.target.value)) handleInputChange(e) }}
                   placeholder="12-digit Aadhar"
                 />
-              </Field>
+              </Field> */}
 
               <Field label="Mobile Number" required error={formErrors.mobileNumber}>
                 <CFormInput

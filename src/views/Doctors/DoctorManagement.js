@@ -137,7 +137,7 @@ const DoctorManagement = () => {
   ]
 
 
-/* ─── helpers ──────────────────────────────────── */
+  /* ─── helpers ──────────────────────────────────── */
   const clearFieldError = (field) =>
     setFormErrors((prev) => { const u = { ...prev }; delete u[field]; return u })
 
@@ -173,14 +173,14 @@ const DoctorManagement = () => {
     }
   }
 
-  const fetchSubServices = async (serviceIds) => {
-    if (!Array.isArray(serviceIds) || serviceIds.length === 0) return
-    try {
-      const all = await Promise.all(serviceIds.map((id) => subServiceData(id)))
-      const flat = all.flatMap((r) => (r.data || []).flatMap((b) => b.subServices || []))
-      setSubServiceOptions(flat)
-    } catch { setSubServiceOptions([]) }
-  }
+  // const fetchSubServices = async (serviceIds) => {
+  //   if (!Array.isArray(serviceIds) || serviceIds.length === 0) return
+  //   try {
+  //     const all = await Promise.all(serviceIds.map((id) => subServiceData(id)))
+  //     const flat = all.flatMap((r) => (r.data || []).flatMap((b) => b.subServices || []))
+  //     setSubServiceOptions(flat)
+  //   } catch { setSubServiceOptions([]) }
+  // }
 
   const handleChanges = async (e) => {
     const { name, value } = e.target
@@ -270,7 +270,7 @@ const DoctorManagement = () => {
     else if (cvt(startTime) >= cvt(endTime)) errs.availableTimes = 'Start time must be before end time'
     if (!form.gender) errs.gender = 'Please select gender'
     if (!form.branch?.length) errs.branch = 'Select at least one branch'
-    
+
     // Date of Joining validation
     if (!form.dateofJoining) {
       errs.dateofJoining = 'Date of joining is required'
@@ -292,7 +292,7 @@ const DoctorManagement = () => {
       let age = now.getFullYear() - dob.getFullYear()
       const m = now.getMonth() - dob.getMonth()
       if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--
-      
+
       if (age < 21) errs.dateofBirth = 'Doctor must be at least 21 years old'
       else if (age > 100) errs.dateofBirth = 'Age cannot exceed 100 years'
     }

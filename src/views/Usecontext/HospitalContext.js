@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { http } from '../../Utils/Interceptors'
-import { GetSubServices_ByClinicId } from '../ProcedureManagement/ProcedureManagementAPI'
+// import { GetSubServices_ByClinicId } from '../ProcedureManagement/ProcedureManagementAPI'
 import { getDoctorByClinicId } from '../../baseUrl'
 
 const HospitalContext = createContext()
@@ -110,21 +110,21 @@ export const HospitalProvider = ({ children }) => {
   }, [])
 
   // Fetch subservices by hospital
-  const fetchSubServices = useCallback(async () => {
-    const hospitalId = localStorage.getItem('HospitalId')
-    if (!hospitalId) return
-    setLoading(true)
-    try {
-      const res = await GetSubServices_ByClinicId(hospitalId)
-      const list = Array.isArray(res?.data) ? res.data : []
-      setSubServices(list.filter((s) => s.hospitalId === hospitalId))
-    } catch (err) {
-      console.error(err)
-      setErrorMessage('Error fetching subservices.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  // const fetchSubServices = useCallback(async () => {
+  //   const hospitalId = localStorage.getItem('HospitalId')
+  //   if (!hospitalId) return
+  //   setLoading(true)
+  //   try {
+  //     const res = await GetSubServices_ByClinicId(hospitalId)
+  //     const list = Array.isArray(res?.data) ? res.data : []
+  //     setSubServices(list.filter((s) => s.hospitalId === hospitalId))
+  //   } catch (err) {
+  //     console.error(err)
+  //     setErrorMessage('Error fetching subservices.')
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }, [])
 
   const fetchAllData = useCallback(
     async (id = hospitalId) => {
@@ -132,10 +132,10 @@ export const HospitalProvider = ({ children }) => {
       setHydrated(false)
       await fetchHospital(id)
       await fetchDoctors()
-      await fetchSubServices()
+      // await fetchSubServices()
       setHydrated(true)
     },
-    [hospitalId, fetchHospital, fetchDoctors, fetchSubServices],
+    [hospitalId, fetchHospital, fetchDoctors],
   )
 
   // Auto-fetch on hospitalId change
@@ -167,7 +167,7 @@ export const HospitalProvider = ({ children }) => {
         fetchAllData,
         fetchDoctors,
         fetchHospital,
-        fetchSubServices, // expose for manual calls (like after login)
+        // fetchSubServices, // expose for manual calls (like after login)
         notifications,
         setNotifications,
         addNotification,

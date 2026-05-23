@@ -11,7 +11,7 @@ import {
   // subService_URL,  
   subservice,
   getadminSubServicesbyserviceId,
-  getService_ByClinicId,
+  // getService_ByClinicId,
   getservice,
 } from '../../baseUrl'
 import { toast } from 'react-toastify'
@@ -82,22 +82,22 @@ export const getSubServiceById = async (hospitalId, subServiceId) => {
     return null
   }
 }
-export const GetSubServices_ByClinicId = async (hospitalId) => {
-  try {
-    const response = await http.get(`/${getService_ByClinicId}/${hospitalId}`)
-    console.log(response.data?.data)
-    return response.data?.data
-  } catch (error) {
-    if (error.response) {
-      console.error('Server responded with status:', error.response.status, error.response.data)
-    } else if (error.request) {
-      console.error('No response received:', error.request)
-    } else {
-      console.error('Axios error:', error.message)
-    }
-    return null
-  }
-}
+// export const GetSubServices_ByClinicId = async (hospitalId) => {
+//   try {
+//     const response = await http.get(`/${getService_ByClinicId}/${hospitalId}`)
+//     console.log(response.data?.data)
+//     return response.data?.data
+//   } catch (error) {
+//     if (error.response) {
+//       console.error('Server responded with status:', error.response.status, error.response.data)
+//     } else if (error.request) {
+//       console.error('No response received:', error.request)
+//     } else {
+//       console.error('Axios error:', error.message)
+//     }
+//     return null
+//   }
+// }
 
 export const CategoryData = async () => {
   try {
@@ -131,7 +131,7 @@ export const postServiceData = async (serviceData, id) => {
     return response
   } catch (error) {
     console.error('Error response:', error.response)
-  //  showCustomToast(`${error.response.data.message || error.response.statusText}`,'error')
+    //  showCustomToast(`${error.response.data.message || error.response.statusText}`,'error')
   }
 }
 
