@@ -27,7 +27,7 @@ import LoadingIndicator from '../../Utils/loader'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { http } from '../../Utils/Interceptors'
 import {
-  CategoryData,
+  // CategoryData,
   getSubServiceById,
   serviceData,
   subServiceData,
@@ -414,6 +414,8 @@ const DoctorDetailsPage = () => {
 
   useEffect(() => {
     const fetchBranches = async () => {
+      console.log(localStorage.getItem('HospitalId'));
+
       try {
         const clinicId = localStorage.getItem('HospitalId')
         const response = await GetClinicBranches(clinicId)
@@ -429,9 +431,9 @@ const DoctorDetailsPage = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await CategoryData()
-        const categories = res?.data || []
-        setCategoryOptions(categories.map(c => ({ value: c.categoryId, label: c.categoryName })))
+        // const res = await CategoryData()
+        // const categories = res?.data || []
+        // setCategoryOptions(categories.map(c => ({ value: c.categoryId, label: c.categoryName })))
       } catch (err) {
         setCategoryOptions([])
       }

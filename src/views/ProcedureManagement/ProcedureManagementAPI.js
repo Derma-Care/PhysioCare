@@ -3,7 +3,7 @@ import axios from 'axios'
 import {
   BASE_URL,
   service,
-  Category,
+  // Category,
   AddSubService,
   updateService,
   deleteService,
@@ -99,22 +99,22 @@ export const getSubServiceById = async (hospitalId, subServiceId) => {
 //   }
 // }
 
-export const CategoryData = async () => {
-  try {
-    const response = await http.get(`/${Category}`)
+// export const CategoryData = async () => {
+//   try {
+//     const response = await http.get(`/${Category}`)
 
-    return response.data
-  } catch (error) {
-    console.error('Error fetching service data:', error.message)
+//     return response.data
+//   } catch (error) {
+//     console.error('Error fetching service data:', error.message)
 
-    if (error.response) {
-      console.error('Error Response Data:', error.response.data)
-      console.error('Error Response Status:', error.response.status)
-    }
+//     if (error.response) {
+//       console.error('Error Response Data:', error.response.data)
+//       console.error('Error Response Status:', error.response.status)
+//     }
 
-    throw error
-  }
-}
+//     throw error
+//   }
+// }
 
 export const postServiceData = async (serviceData, id) => {
   console.log('Sending data to id:', id)

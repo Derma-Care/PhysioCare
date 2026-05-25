@@ -21,7 +21,7 @@ import { GetClinicBranches, getDoctorByClinicIdData } from '../Doctors/DoctorAPI
 import { useNavigate } from 'react-router-dom'
 import { getAllReferDoctors } from '../EmployeeManagement/ReferDoctor/ReferDoctorAPI'
 import Select from 'react-select'
-import { CategoryData } from '../ProcedureManagement/ProcedureManagementAPI'
+// import { CategoryData } from '../ProcedureManagement/ProcedureManagementAPI'
 import { BASE_URL } from '../../baseUrl'
 import axios from 'axios'
 import { useHospital } from '../Usecontext/HospitalContext'
@@ -233,7 +233,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       }).catch(() => setBranches([]))
     getAllReferDoctors(localStorage.getItem('HospitalId'))
       .then((res) => setReferDoctor(res.data?.data || [])).catch(() => setReferDoctor([]))
-    CategoryData().then().catch()
+    // CategoryData().then().catch()
   }, [visible])
 
   const [loadingDoctors, setLoadingDoctors] = useState(false)

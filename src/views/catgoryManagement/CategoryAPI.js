@@ -8,21 +8,21 @@ import {
 } from '../../baseUrl'
 import { http } from '../../Utils/Interceptors'
 
-export const CategoryData = async () => {
-  try {
-    const response = await http.get(`/${CategoryAllData}`)
+// export const CategoryData = async () => {
+//   try {
+//     const response = await http.get(`/${CategoryAllData}`)
 
-    return response.data
-  } catch (error) {
-    console.error('Error fetching service data:', error.message)
+//     return response.data
+//   } catch (error) {
+//     console.error('Error fetching service data:', error.message)
 
-    if (error.response) {
-      console.error('Error Response Data:', error.response.data)
-      console.error('Error Response Status:', error.response.status)
-    }
-    throw error
-  }
-}
+//     if (error.response) {
+//       console.error('Error Response Data:', error.response.data)
+//       console.error('Error Response Status:', error.response.status)
+//     }
+//     throw error
+//   }
+// }
 
 export const postCategoryData = async (categoryData) => {
   try {
@@ -57,7 +57,7 @@ export const updateCategoryData = async (categoryId, updatedCategory) => {
 
   try {
     const response = await http.put(
-      `/${UpdateCategory}/${categoryId}`,updatedCategory,
+      `/${UpdateCategory}/${categoryId}`, updatedCategory,
       {
         headers: {
           'Content-Type': 'application/json',

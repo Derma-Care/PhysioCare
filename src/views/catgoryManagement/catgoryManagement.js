@@ -20,7 +20,7 @@ import { cilSearch } from '@coreui/icons'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import {
-  CategoryData,
+  // CategoryData,
   postCategoryData,
   updateCategoryData,
   deleteCategoryData,
@@ -54,22 +54,22 @@ const CategoryManagement = () => {
     categoryImage: null,
   })
 
-  const fetchData = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await CategoryData()
-      setCategory(data.data)
-    } catch (error) {
-      setError('Failed to fetch category data.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  // const fetchData = async () => {
+  //   setLoading(true)
+  //   setError(null)
+  //   try {
+  //     const data = await CategoryData()
+  //     setCategory(data.data)
+  //   } catch (error) {
+  //     setError('Failed to fetch category data.')
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  // useEffect(() => {
+  //   fetchData()
+  // }, [])
 
   useEffect(() => {
     const handleSearch = () => {

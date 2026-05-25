@@ -179,9 +179,7 @@ export default function ExerciseTable() {
   const [exerciseIdToDelete, setExerciseIdToDelete] = useState(null)
   const [delloading, setDelLoading] = useState(false)
 
-  /* ── Save confirmation modal states ── */
-  const [saveConfirmVisible, setSaveConfirmVisible] = useState(false)
-  const [isSaveConfirming, setIsSaveConfirming] = useState(false)
+
 
   // ── Pagination state ──────────────────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1)
@@ -382,19 +380,14 @@ export default function ExerciseTable() {
     return Object.keys(err).length === 0
   }
 
-  // ── SAVE — validate then open confirm modal ───────────
-  const handleSave = () => {
+  // ── SAVE / UPDATE ────────────────────────────────────
+  const handleSave = async (e) => {
+    if (e && e.preventDefault) e.preventDefault()
     if (!validate()) return
-    setSaveConfirmVisible(true)
-  }
-
-  // ── CONFIRMED SAVE ────────────────────────────────────
-  const handleConfirmedSave = async () => {
     const combinedDuration = form.duration ? `${form.duration} ${form.durationUnit || 'mins'}` : "";
     const payload = { ...form, duration: combinedDuration, activityDuration: combinedDuration, clinicId, branchId }
     console.log(payload)
     try {
-      setIsSaveConfirming(true)
       setSaveLoading(true)
       if (editId !== null) {
         await updateTherapyExercise(editId, payload)
@@ -403,14 +396,12 @@ export default function ExerciseTable() {
         await createTherapyExercise(payload)
         showCustomToast("Exercise added successfully!", { position: "top-right" }, "success")
       }
-      setSaveConfirmVisible(false)
       resetForm()
       loadExercises()
     } catch {
       showCustomToast("Something went wrong!", { position: "top-right" }, "error")
     } finally {
       setSaveLoading(false)
-      setIsSaveConfirming(false)
     }
   }
 
@@ -485,10 +476,7 @@ export default function ExerciseTable() {
 
   if (loading) return <LoadingIndicator message="Loading exercises..." />
 
-  /* ── Confirm modal message ───────────────────────────────────────── */
-  const saveConfirmMessage = editId
-    ? <>Are you sure you want to update <strong>{form.name}</strong>? Changes may affect therapies and programs using this exercise.</>
-    : <>Are you sure you want to save <strong>{form.name}</strong> as a new exercise?</>
+
 
   return (
     <>
@@ -1252,45 +1240,56 @@ export default function ExerciseTable() {
               </CCol>
 
               <CCol md={3}>
-                <CFormInput
-                  type="number"
-                  className="ex-input"
-                  placeholder="GST %"
-                  value={form.gst}
-                  onChange={(e) => setForm({ ...form, gst: e.target.value })}
-                />
+                <div className="ex-field">
+                  <CFormLabel className="ex-label">GST %</CFormLabel>
+                  <CFormInput
+                    type="number"
+                    className="ex-input"
+                    placeholder="GST %"
+                    value={form.gst}
+                    onChange={(e) => setForm({ ...form, gst: e.target.value })}
+                  />
+                </div>
               </CCol>
 
               <CCol md={3}>
-                <CFormInput
-                  type="number"
-                  className="ex-input"
-                  placeholder="Other Tax %"
-                  value={form.otherTax}
-                  onChange={(e) => setForm({ ...form, otherTax: e.target.value })}
-                />
+                <div className="ex-field">
+                  <CFormLabel className="ex-label">Other Tax %</CFormLabel>
+                  <CFormInput
+                    type="number"
+                    className="ex-input"
+                    placeholder="Other Tax %"
+                    value={form.otherTax}
+                    onChange={(e) => setForm({ ...form, otherTax: e.target.value })}
+                  />
+                </div>
               </CCol>
 
               <CCol md={3}>
-                <CFormInput
-                  type="number"
-                  className="ex-input"
-                  placeholder="Discount %"
-                  value={form.discountPercentage}
-                  onChange={(e) =>
-                    setForm({ ...form, discountPercentage: e.target.value })
-                  }
-                />
+                <div className="ex-field">
+                  <CFormLabel className="ex-label">Discount %</CFormLabel>
+                  <CFormInput
+                    type="number"
+                    className="ex-input"
+                    placeholder="Discount %"
+                    value={form.discountPercentage}
+                    onChange={(e) =>
+                      setForm({ ...form, discountPercentage: e.target.value })
+                    }
+                  />
+                </div>
               </CCol>
 
               <CCol md={3}>
-                <CFormInput
-
-                  className="ex-input"
-                  placeholder="Video/Image URL"
-                  value={form.video}
-                  onChange={(e) => setForm({ ...form, video: e.target.value })}
-                />
+                <div className="ex-field">
+                  <CFormLabel className="ex-label">Video/Image URL</CFormLabel>
+                  <CFormInput
+                    className="ex-input"
+                    placeholder="Video/Image URL"
+                    value={form.video}
+                    onChange={(e) => setForm({ ...form, video: e.target.value })}
+                  />
+                </div>
               </CCol>
 
             </CRow>
@@ -1533,20 +1532,7 @@ export default function ExerciseTable() {
         </CModalBody>
       </CModal >
 
-      {/* ── SAVE / UPDATE CONFIRMATION ───────────────── */}
-      <ConfirmationModal
-        isVisible={saveConfirmVisible}
-        title={editId ? "Update Exercise" : "Save Exercise"}
-        message={saveConfirmMessage}
-        confirmText={editId ? "Yes, Update" : "Yes, Save"}
-        cancelText="Cancel"
-        confirmColor="primary"
-        isLoading={isSaveConfirming}
-        onConfirm={handleConfirmedSave}
-        onCancel={() => {
-          if (!isSaveConfirming) setSaveConfirmVisible(false)
-        }}
-      />
+
 
       {/* ── DELETE CONFIRMATION ──────────────────────── */}
       <ConfirmationModal

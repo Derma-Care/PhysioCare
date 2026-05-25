@@ -19,7 +19,7 @@ import {
 } from '@coreui/react'
 import { FaPlus, FaTrash, FaEdit } from 'react-icons/fa'
 import {
-  CategoryData,
+  // CategoryData,
   serviceData, // This API function needs to be updated to accept a categoryId
   subServiceData,
   getSubServiceById,
@@ -79,19 +79,19 @@ const ProcedureConsentForm = () => {
   const [delloading, setDelLoading] = useState(false)
   // Refactored API fetching to use the correct IDs
   // Fetch categories
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await CategoryData()
-        if (Array.isArray(res.data)) setCategory(res.data)
-        else if (Array.isArray(res.data?.data)) setCategory(res.data.data)
-        else setCategory([])
-      } catch (err) {
-        console.error('Error fetching categories:', err)
-      }
-    }
-    fetchCategories()
-  }, [])
+  // useEffect(() => {
+  //   const fetchCategories = async () => {
+  //     try {
+  //       const res = await CategoryData()
+  //       if (Array.isArray(res.data)) setCategory(res.data)
+  //       else if (Array.isArray(res.data?.data)) setCategory(res.data.data)
+  //       else setCategory([])
+  //     } catch (err) {
+  //       console.error('Error fetching categories:', err)
+  //     }
+  //   }
+  //   fetchCategories()
+  // }, [])
 
   useEffect(() => {
     const fetchProcedureForms = async () => {

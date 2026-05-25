@@ -771,9 +771,10 @@ export default function ProgramPayment() {
   };
 
   const handleSubmit = async () => {
-    if (Number(paymentPercent) < 50 && !discountIssuedBy.trim()) {
+    const isApprovalRequired = Number(paymentPercent) < 50 || Number(discount || 0) > 0 || Number(discountAmount || 0) > 0;
+    if (isApprovalRequired && !discountIssuedBy.trim()) {
       showCustomToast(
-        "Approval is required for payments below 50%",
+        "Approval is required when a discount is applied or payment is below 50%",
         "error"
       )
       setSubmitLoading(false)
@@ -906,6 +907,8 @@ export default function ProgramPayment() {
 
   const labelStyle = { fontSize: "11px", fontWeight: 600, color: COLORS.primary, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" };
   const inputStyle = { fontSize: "13px", color: COLORS.primary, border: "0.5px solid #d0dce9", borderRadius: "7px", padding: "8px 12px" };
+
+  const isApprovalRequired = Number(paymentPercent) < 50 || Number(discount || 0) > 0 || Number(discountAmount || 0) > 0;
 
   return (
     <div style={{ background: "#f4f6f9", minHeight: "100vh", padding: "20px" }}>
@@ -1327,10 +1330,15 @@ export default function ProgramPayment() {
                     <CFormInput
                       value={discount}
                       onChange={(e) => {
-                        const percent = Number(e.target.value || 0);
-                        setDiscount(percent);
-                        const amount = (paymentAmount * percent) / 100;
-                        setDiscountAmount(amount.toFixed(2));
+                        const rawValue = e.target.value;
+                        setDiscount(rawValue);
+                        const percent = Number(rawValue || 0);
+                        if (percent === 0) {
+                          setDiscountAmount(0);
+                        } else {
+                          const amount = (paymentAmount * percent) / 100;
+                          setDiscountAmount(Number(amount.toFixed(2)));
+                        }
                       }}
                       style={inputStyle}
                     />
@@ -1339,7 +1347,17 @@ export default function ProgramPayment() {
                     <CFormLabel style={labelStyle}>Discount Amount</CFormLabel>
                     <CFormInput
                       value={discountAmount}
-                      onChange={(e) => setDiscountAmount(e.target.value)}
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDiscountAmount(rawValue);
+                        const amount = Number(rawValue || 0);
+                        if (amount === 0) {
+                          setDiscount(0);
+                        } else {
+                          const percent = paymentAmount > 0 ? (amount / paymentAmount) * 100 : 0;
+                          setDiscount(Number(percent.toFixed(2)));
+                        }
+                      }}
                       style={inputStyle}
                     />
                   </CCol>
@@ -1356,7 +1374,7 @@ export default function ProgramPayment() {
               <CCol md={3}>
                 <CFormLabel style={labelStyle}>
                   Approved By
-                  {paymentPercent < 50 && (
+                  {isApprovalRequired && (
                     <span style={{ color: "#dc2626" }}> *</span>
                   )}
                 </CFormLabel>
@@ -1365,24 +1383,24 @@ export default function ProgramPayment() {
                   value={discountIssuedBy}
                   onChange={(e) => setDiscountIssuedBy(e.target.value)}
                   placeholder={
-                    paymentPercent < 50
-                      ? "Approval required below 50%"
+                    isApprovalRequired
+                      ? "Approval is required"
                       : "Enter approved person"
                   }
                   style={{
                     ...inputStyle,
                     border:
-                      paymentPercent < 50 && !discountIssuedBy
+                      isApprovalRequired && !discountIssuedBy
                         ? "1px solid #dc2626"
                         : inputStyle.border,
                     background:
-                      paymentPercent < 50
+                      isApprovalRequired
                         ? "#fef2f2"
                         : "#fff",
                   }}
                 />
 
-                {paymentPercent < 50 && !discountIssuedBy && (
+                {isApprovalRequired && !discountIssuedBy && (
                   <div
                     style={{
                       color: "#dc2626",
@@ -1391,7 +1409,7 @@ export default function ProgramPayment() {
                       fontWeight: "500",
                     }}
                   >
-                    Approval is required for payments below 50%
+                    Approval is required
                   </div>
                 )}
               </CCol>

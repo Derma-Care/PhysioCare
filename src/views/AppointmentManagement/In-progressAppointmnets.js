@@ -35,7 +35,7 @@ import Pagination from '../../Utils/Pagination'
 import { getDoctorDetailsById } from '../Doctors/DoctorAPI'
 import RazorpayButton from '../Payments/RazorpayButton'
 import {
-  CategoryData,
+  // CategoryData,
   getSubServiceById,
   serviceData,
   serviceDataH,

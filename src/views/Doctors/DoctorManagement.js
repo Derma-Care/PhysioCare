@@ -23,7 +23,7 @@ import Select from 'react-select'
 import { getservice } from '../../baseUrl'
 import {
   serviceDataH,
-  CategoryData,
+  // CategoryData,
   subServiceData,
   getSubServiceById,
 } from '../ProcedureManagement/ProcedureManagementAPI'
@@ -198,19 +198,19 @@ const DoctorManagement = () => {
     }
   }
 
-  const fetchData = async () => {
-    try {
-      const catRes = await CategoryData()
-      if (Array.isArray(catRes.data)) setCategory(catRes.data)
-    } catch { /* ignore */ }
-  }
+  // const fetchData = async () => {
+  //   try {
+  //     const catRes = await CategoryData()
+  //     if (Array.isArray(catRes.data)) setCategory(catRes.data)
+  //   } catch { /* ignore */ }
+  // }
 
   useEffect(() => {
     const fetchAll = async () => {
       const clinicId = localStorage.getItem('HospitalId')
       try {
         setLoading(true)
-        await fetchData()
+        // await fetchData()
         setBranchLoading(true)
         const res = await GetClinicBranches(clinicId)
         const branches = res.data || []
@@ -327,12 +327,12 @@ const DoctorManagement = () => {
       const hospitalId = localStorage.getItem('HospitalId')
       const hospitalName = localStorage.getItem('HospitalName')
       const validIds = subServiceOptions.map((s) => s.subServiceId)
-      const selectedSubServiceObjects = subServiceOptions
-        .filter((s) => selectedSubService.includes(s.subServiceId) && validIds.includes(s.subServiceId))
-        .map((s) => ({ subServiceId: s.subServiceId, subServiceName: s.subServiceName }))
+      // const selectedSubServiceObjects = subServiceOptions
+      //   .filter((s) => selectedSubService.includes(s.subServiceId) && validIds.includes(s.subServiceId))
+      //   .map((s) => ({ subServiceId: s.subServiceId, subServiceName: s.subServiceName }))
 
-      const mobileExists = doctorData.data?.some((d) => d.doctorMobileNumber === form.doctorMobileNumber)
-      const emailExists = doctorData.data?.some((d) => d.doctorEmail === form.doctorEmail)
+      const mobileExists = doctorData?.data?.some((d) => d.doctorMobileNumber === form.doctorMobileNumber)
+      const emailExists = doctorData?.data?.some((d) => d.doctorEmail === form.doctorEmail)
       if (mobileExists) { showCustomToast('Mobile number already exists', 'error'); setIsSaving(false); return }
       if (emailExists) { showCustomToast('Email already exists', 'error'); setIsSaving(false); return }
 
@@ -376,20 +376,20 @@ const DoctorManagement = () => {
 
       const response = await http.post(`/addDoctor`, payload, { headers: { 'Content-Type': 'application/json' } })
 
-      if (response.data?.status === 201) {
+      if (response.status === 201 || response.status === 200 || response.data?.status === 201 || response.data?.success) {
         const newDoctor = response.data.data?.doctor ?? payload
         setDoctorData((prev) => ({ ...prev, data: [...(prev?.data || []), newDoctor] }))
-        await sendDermaCareOnboardingEmail({
-          name: form.doctorName, email: form.doctorEmail,
-          password: response.data.data?.temporaryPassword,
-          userID: response.data.data?.username, clinicName: hospitalName,
-        })
+        // sendDermaCareOnboardingEmail({
+        //   name: form.doctorName, email: form.doctorEmail,
+        //   password: response.data.data?.temporaryPassword,
+        //   userID: response.data.data?.username, clinicName: hospitalName,
+        // })
         showCustomToast(response.data.message || 'Doctor added successfully', 'success')
         resetForm()
         setModalVisible(false)
       } else throw new Error(response.data?.message || 'Failed to add doctor')
     } catch (error) {
-      showCustomToast(error?.response?.data?.message || 'Something went wrong', 'error')
+      showCustomToast(error?.response?.data?.message || error.message || 'Something went wrong', 'error')
     } finally { setIsSaving(false); setSaveLoading(false) }
   }
 
