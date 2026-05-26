@@ -896,7 +896,7 @@ const AttendanceTracker = () => {
                 <table style={styles.table}>
                   <thead>
                     <tr>
-                      {["#", "Activity", "Duration", "Location", "Date"].map((h) => (
+                      {["#", "Activity", "Duration", "Location", "Date", "Description"].map((h) => (
                         <th key={h} style={styles.th}>{h}</th>
                       ))}
                     </tr>
@@ -913,6 +913,7 @@ const AttendanceTracker = () => {
                           <div style={styles.addrCell}>{item.location}</div>
                         </td>
                         <td style={styles.td}>{dateStr}</td>
+                        <td style={styles.td}>{item.description || 'NA'}</td>
                       </tr>
                     ))}
                     {data.length === 0 && (

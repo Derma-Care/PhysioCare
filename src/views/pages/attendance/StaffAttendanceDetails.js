@@ -6,6 +6,118 @@ import { empDummy, attendanceDummy } from "./AttadanceDummyData";
 import Pagination from "../../../Utils/Pagination";
 import { http } from "../../../Utils/Interceptors";
 import { BASE_URL, GetUserDailyAttendence, GetUserMonthlyAttendence, GetTherapistPerformanceSummary } from "../../../baseUrl";
+import CertificateTablePreview from "./Certificates";
+
+const sadStyles = `
+  .sad-root {   background: #F0F4F8; min-height: 100vh; }
+
+  /* Top bar */
+  .sad-topbar { background: linear-gradient(135deg,#1B4F8A 0%,#1a5fa8 100%); padding: 0 28px; height: 58px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 12px rgba(27,79,138,.18); }
+  .sad-topbar-back { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); border-radius: 9px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; transition: background .15s; flex-shrink: 0; }
+  .sad-topbar-back:hover { background: rgba(255,255,255,.24); }
+  .sad-topbar-crumb { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .sad-topbar-crumb span { color: rgba(255,255,255,.65); font-size: 13px; }
+  .sad-topbar-crumb .active { color: #fff; font-weight: 600; }
+  .sad-topbar-crumb .sep { color: rgba(255,255,255,.3); }
+  .sad-perf-btn { margin-left: auto; padding: 8px 18px; border-radius: 9px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.12); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; white-space: nowrap;   }
+  .sad-perf-btn:hover { background: rgba(255,255,255,.22); }
+
+  /* Body */
+  .sad-body { padding: 24px 28px 48px; max-width: 1200px; margin: 0 auto; }
+
+  /* Profile card */
+  .sad-profile-card { background: #fff; border-radius: 16px; border: 1px solid #E2E8F0; padding: 20px 24px; display: flex; align-items: center; gap: 18px; margin-bottom: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+  .sad-avatar { width: 52px; height: 52px; border-radius: 50%; background: #EFF6FF; border: 2px solid #1B4F8A; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #1B4F8A; flex-shrink: 0; letter-spacing: -.03em; }
+  .sad-profile-name { font-size: 17px; font-weight: 700; color: #0F172A; margin: 0 0 5px; letter-spacing: -.02em; }
+  .sad-role-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #EFF6FF; color: #1B4F8A; letter-spacing: .01em; }
+
+  /* Filters card */
+  .sad-filters-card { background: #fff; border-radius: 14px; border: 1px solid #E2E8F0; padding: 18px 22px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+  .sad-filter-label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: #94A3B8; display: block; margin-bottom: 7px; }
+  .sad-filter-input { width: 100%; padding: 9px 12px; border-radius: 9px; border: 1px solid #E2E8F0; background: #F8FAFC; color: #0F172A; font-size: 13px; font-weight: 500; outline: none; transition: border-color .15s, box-shadow .15s;  }
+  .sad-filter-input:focus { border-color: #1B4F8A; box-shadow: 0 0 0 3px rgba(27,79,138,.08); }
+  .sad-clear-btn { width: 26px; height: 26px; border-radius: 50%; border: none; background: #FFF1F0; color: #B91C1C; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; line-height: 1; }
+
+  /* Table card */
+  .sad-table-card { background: #fff; border-radius: 16px; border: 1px solid #E2E8F0; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+  .sad-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .sad-table thead tr { background: #F8FAFC; }
+  .sad-table th { padding: 13px 18px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: #fff; background-color: var(--color-bgcolor); border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+  .sad-table td { padding: 13px 18px; border-bottom: 1px solid #F1F5F9; }
+  .sad-table tbody tr:last-child td { border-bottom: none; }
+  .sad-table tbody tr { transition: background .12s; }
+  .sad-table tbody tr:hover { background: #F8FAFC; }
+  .sad-sno { color: #94A3B8; font-weight: 600; }
+  .sad-date-cell { color: #0F172A; font-weight: 600; }
+  .sad-time-cell { color: #475569; }
+  .sad-working-cell { color: #0D6E5A; font-weight: 600; }
+  .sad-absent-row { background: #FFF8F8 !important; }
+  .sad-absent-row:hover { background: #FFF1F0 !important; }
+  .sad-view-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid #E2E8F0; background: #F8FAFC; color: #1B4F8A; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s;  }
+  .sad-view-btn:hover { background: #EFF6FF; border-color: rgba(27,79,138,.3); }
+  .sad-empty td { padding: 52px 18px; text-align: center; color: #94A3B8; font-size: 14px; }
+  .sad-table-footer { padding: 14px 20px; border-top: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; }
+  .sad-record-count { font-size: 12px; color: #94A3B8; }
+
+  /* Status pills */
+  .sad-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .sad-pill-present { background: #ECFDF5; color: #065F46; }
+  .sad-pill-absent  { background: #FFF1F0; color: #B91C1C; }
+
+  /* Modal overrides */
+  .sad-modal .modal-content { border-radius: 18px !important; border: 1px solid #E2E8F0 !important; box-shadow: 0 20px 60px rgba(0,0,0,.15) !important; overflow: hidden; }
+  .sad-modal .modal-header { background: #fff; border-bottom: 1px solid #F1F5F9 !important; padding: 20px 24px !important; }
+  .sad-modal .modal-body { padding: 22px 24px !important; }
+  .sad-modal .modal-footer { border-top: 1px solid #F1F5F9 !important; padding: 14px 24px !important; background: #FAFBFC; }
+  .sad-modal-title { font-size: 16px !important; font-weight: 700 !important; color: #1B4F8A !important; letter-spacing: -.01em; }
+  .sad-date-sub { font-size: 13px; font-weight: 400; color: #94A3B8; margin-left: 8px; }
+
+  /* Tracker login/logout cards */
+  .sad-io-card { padding: 14px 16px; border-radius: 12px; border: 1px solid; }
+  .sad-io-card.in  { background: #F0FDF4; border-color: rgba(13,110,90,.2); }
+  .sad-io-card.out { background: #FFF1F0; border-color: rgba(185,28,28,.2); }
+  .sad-io-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  .sad-io-label.in  { color: #0D6E5A; }
+  .sad-io-label.out { color: #B91C1C; }
+  .sad-io-time { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sad-io-time.in  { color: #0D6E5A; }
+  .sad-io-time.out { color: #B91C1C; }
+  .sad-io-loc { font-size: 11px; margin-top: 4px; line-height: 1.4; opacity: .75; }
+  .sad-io-loc.in  { color: #0D6E5A; }
+  .sad-io-loc.out { color: #B91C1C; }
+
+  /* Activity table */
+  .sad-act-head { background: #F8FAFC; border-radius: 10px 10px 0 0; padding: 11px 16px; border: 1px solid #E2E8F0; border-bottom: none; }
+  .sad-act-head h6 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #1B4F8A; }
+  .sad-act-wrap { border: 1px solid #E2E8F0; border-radius: 0 0 10px 10px; overflow: hidden; }
+  .sad-act-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .sad-act-table th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #94A3B8; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; }
+  .sad-act-table td { padding: 11px 14px; border-bottom: 1px solid #F1F5F9; }
+  .sad-act-table tbody tr:last-child td { border-bottom: none; }
+  .sad-act-num { font-weight: 700; color: #1B4F8A; }
+  .sad-act-name { font-weight: 600; color: #0F172A; }
+  .sad-act-desc { font-size: 11px; color: #64748B; margin-top: 2px; font-style: italic; }
+  .sad-act-loc  { font-size: 10px; color: #94A3B8; margin-top: 3px; }
+  .sad-dur-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; background: #EFF6FF; color: #1B4F8A; font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+  /* Performance modal */
+  .sad-exp-block { background: #EFF6FF; border: 1px solid rgba(27,79,138,.2); border-radius: 12px; padding: 14px 18px; flex: 1; margin-right: 18px; }
+  .sad-exp-lbl { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #1B4F8A; margin-bottom: 6px; }
+  .sad-exp-val { font-size: 20px; font-weight: 700; color: #1B4F8A; font-variant-numeric: tabular-nums; }
+  .sad-year-sel { width: 100%; padding: 10px 12px; border-radius: 9px; border: 1px solid #E2E8F0; background: #F8FAFC; color: #0F172A; font-size: 13px; font-weight: 600; outline: none; cursor: pointer; }
+  .sad-year-sel:focus { border-color: #1B4F8A; }
+  .sad-metric-card { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 16px; text-align: center; }
+  .sad-metric-lbl { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #94A3B8; margin-bottom: 8px; }
+  .sad-metric-val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sad-metric-sub { font-size: 11px; color: #94A3B8; margin-top: 3px; }
+  .sad-analysis-block { background: #EFF6FF; border: 1px solid rgba(27,79,138,.15); border-radius: 12px; padding: 16px 18px; }
+  .sad-analysis-ttl { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #1B4F8A; margin: 0 0 8px; }
+  .sad-analysis-txt { margin: 0; font-size: 13px; color: #334155; line-height: 1.65; }
+  .sad-cert-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 9px; border: 1px solid #1B4F8A; background: transparent; color: #1B4F8A; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .18s;   margin-top: 18px; }
+  .sad-cert-toggle:hover, .sad-cert-toggle.open { background: #1B4F8A; color: #fff; }
+  .sad-close-btn { padding: 8px 20px; border-radius: 9px; border: 1px solid #E2E8F0; background: #F8FAFC; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer;  transition: background .15s; }
+  .sad-close-btn:hover { background: #F1F5F9; }
+`;
 
 export default function StaffAttendanceDetails() {
   const { name: userId } = useParams();
@@ -24,6 +136,7 @@ export default function StaffAttendanceDetails() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [loadingTracker, setLoadingTracker] = useState(false);
   const [loadingPerformance, setLoadingPerformance] = useState(false);
+  const [showCertificateTable, setShowCertificateTable] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,6 +208,7 @@ export default function StaffAttendanceDetails() {
       const res = await http.get(`${BASE_URL}/${GetTherapistPerformanceSummary}/${clinicId}/${branchId}/${userId}/${performanceYear}`);
       if (res.data.success) {
         setPerformanceData(res.data.data);
+        console.log("Performance Data:", res.data.data);
       }
     } catch (err) {
       console.error("Error fetching performance summary:", err);
@@ -123,6 +237,7 @@ export default function StaffAttendanceDetails() {
   const staffInfo = historyData.length > 0 ? historyData[0] : null;
   const staffName = staffInfo?.name || userId;
   const staffRole = staffInfo?.role || "Staff";
+  const initials = staffName ? staffName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : "ST";
 
   const calculateDuration = (startDate) => {
     if (!startDate) return "N/A";
@@ -131,15 +246,8 @@ export default function StaffAttendanceDetails() {
     let years = end.getFullYear() - start.getFullYear();
     let months = end.getMonth() - start.getMonth();
     let days = end.getDate() - start.getDate();
-
-    if (days < 0) {
-      months--;
-      days += new Date(end.getFullYear(), end.getMonth(), 0).getDate();
-    }
-    if (months < 0) {
-      years--;
-      months += 12;
-    }
+    if (days < 0) { months--; days += new Date(end.getFullYear(), end.getMonth(), 0).getDate(); }
+    if (months < 0) { years--; months += 12; }
     return `${years}Y ${months}M ${days}D`;
   };
 
@@ -148,16 +256,13 @@ export default function StaffAttendanceDetails() {
   const formatHoursToYMD = (totalHours) => {
     if (!totalHours || totalHours === 0) return "0D 0H";
     let hours = totalHours;
-    if (typeof hours === 'string' && hours.includes('h')) {
-      hours = parseInt(hours);
-    }
+    if (typeof hours === 'string' && hours.includes('h')) { hours = parseInt(hours); }
     let days = Math.floor(hours / 24);
     hours = hours % 24;
     let months = Math.floor(days / 30);
     days = days % 30;
     let years = Math.floor(months / 12);
     months = months % 12;
-
     let result = "";
     if (years > 0) result += `${years}Y `;
     if (months > 0 || years > 0) result += `${months}M `;
@@ -189,153 +294,149 @@ export default function StaffAttendanceDetails() {
   const role = location.state?.role || "";
   console.log(role);
   const normalizedRole = role.toLowerCase();
-  return (
-    <div className="container-fluid mt-4">
-      {/* Header */}
-      <div className="d-flex align-items-center mb-4">
-        <button
-          className="btn btn-link text-decoration-none p-0 me-3"
-          onClick={() => navigate(-1)}
-          style={{ color: "#1B4F8A" }}
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <div>
-          <h4 className="mb-0 fw-bold" style={{ color: "#1B4F8A" }}>
-            Attendance History: {staffName}
-          </h4>
-          <span className="badge mt-2" style={{ backgroundColor: "#1B4F8A", color: "#fff", padding: "6px 12px", fontSize: "12px", borderRadius: "20px" }}>
-            Role: {staffRole}
-          </span>
-        </div>
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, index) => currentYear + 1 - index);
 
+  return (
+    <div className="sad-root">
+      <style>{sadStyles}</style>
+
+      {/* ── Top Bar ── */}
+      <div className="sad-topbar">
+        {/* <button className="sad-topbar-back" onClick={() => navigate(-1)}>
+          <ArrowLeft size={18} />
+        </button>
+        <div className="sad-topbar-crumb">
+          <span>Attendance</span>
+          <span className="sep">/</span>
+          <span className="active">{staffName}</span>
+        </div> */}
         {(normalizedRole.toLowerCase().includes("physiotherapist") || normalizedRole.toLowerCase().includes("intern")) && (
-          <CButton
-            className=" ms-auto shadow-sm"
-            style={{ backgroundColor: "white", borderRadius: "8px", fontWeight: "600", color: "var(--color-bgcolor)", border: "1px solid var(--color-bgcolor)" }}
-            onClick={() => setShowPerformanceModal(true)}
-          >
-            Performance
-          </CButton>
+          <button className="sad-perf-btn" onClick={() => setShowPerformanceModal(true)}>
+            📊 Performance
+          </button>
         )}
       </div>
 
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
-          {/* Filters */}
-          <div className="row g-3 mb-4 ">
-            <div className="col-md-3 wd-date-group">
-              <label className="wd-date-label">Month Selection</label>
+      <div className="sad-body">
+
+        {/* ── Profile Card ── */}
+        <div className="sad-profile-card">
+          <div className="sad-avatar">{initials}</div>
+          <div>
+            <h4 className="sad-profile-name">{location.state?.name}</h4>
+            <span className="sad-role-badge">Role: {location.state?.role}</span>
+          </div>
+        </div>
+
+        {/* ── Filters ── */}
+        <div className="sad-filters-card">
+          <div className="row g-3">
+            <div className="col-md-3">
+              <label className="sad-filter-label">Month Selection</label>
               <input
                 type="month"
-                className="wd-date-input w-100"
+                className="sad-filter-input"
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
-                style={{ borderRadius: "8px", border: "1px solid #dee2e6" }}
               />
             </div>
-            <div className="col-md-3 wd-date-group">
-              <label className="wd-date-label">From Date</label>
-              <div className="d-flex align-items-center">
+            <div className="col-md-3">
+              <label className="sad-filter-label">From Date</label>
+              <div className="d-flex align-items-center gap-2">
                 <input
                   type="date"
-                  className="wd-date-input w-100"
+                  className="sad-filter-input"
                   value={fromDate}
                   max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => setFromDate(e.target.value)}
-                  style={{ borderRadius: "8px", border: "1px solid #dee2e6" }}
                 />
                 {fromDate && (
-                  <X
-                    size={18}
-                    className="ms-2"
-                    style={{ cursor: "pointer", color: "#dc3545", flexShrink: 0 }}
-                    onClick={() => setFromDate("")}
-                    title="Clear"
-                  />
+                  <button className="sad-clear-btn" onClick={() => setFromDate("")} title="Clear">×</button>
                 )}
               </div>
             </div>
-            <div className="col-md-3 wd-date-group">
-              <label className="wd-date-label">To Date</label>
-              <div className="d-flex align-items-center">
+            <div className="col-md-3">
+              <label className="sad-filter-label">To Date</label>
+              <div className="d-flex align-items-center gap-2">
                 <input
                   type="date"
-                  className="wd-date-input w-100"
+                  className="sad-filter-input"
                   value={toDate}
                   max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => setToDate(e.target.value)}
-                  style={{ borderRadius: "8px", border: "1px solid #dee2e6" }}
                 />
                 {toDate && (
-                  <X
-                    size={18}
-                    className="ms-2"
-                    style={{ cursor: "pointer", color: "#dc3545", flexShrink: 0 }}
-                    onClick={() => setToDate("")}
-                    title="Clear"
-                  />
+                  <button className="sad-clear-btn" onClick={() => setToDate("")} title="Clear">×</button>
                 )}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* History Table */}
-          <div className="table-responsive rounded shadow-sm wd-table-wrapper">
-            <table className="table table-hover align-middle mb-0 pink-table">
-              <thead style={{ backgroundColor: "#1B4F8A", color: "#fff" }}>
+        {/* ── History Table ── */}
+        <div className="sad-table-card">
+          <div className="table-responsive">
+            <table className="sad-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">S.No</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Date</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Login</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Logout</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Total</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Working</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Idle</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold text-center">Action</th>
+                  <th>S.No</th>
+                  <th>Date</th>
+                  <th>Login</th>
+                  <th>Logout</th>
+                  <th>Total</th>
+                  <th>Working</th>
+                  <th>Idle</th>
+                  <th style={{ textAlign: "center" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingHistory ? (
                   <tr>
-                    <td colSpan="8" className="text-center py-5">
+                    <td colSpan="8" style={{ padding: "52px 18px", textAlign: "center" }}>
                       <CSpinner color="primary" />
-                      <div className="mt-2 text-muted">Loading attendance history...</div>
+                      <div style={{ marginTop: 10, color: "#94A3B8", fontSize: 13 }}>Loading attendance history...</div>
                     </td>
                   </tr>
                 ) : staffHistory.length > 0 ? (
-                  staffHistory.map((att, idx) => (
-                    <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
-                      <td className="px-4 py-3 text-muted">{(currentPage - 1) * pageSize + idx + 1}</td>
-                      <td className="px-4 py-3 fw-medium" style={{ color: "#495057" }}>{att.date}</td>
-                      <td className="px-4 py-3" style={{ color: "#6c757d" }}>{att.inTime || "-"}</td>
-                      <td className="px-4 py-3" style={{ color: "#6c757d" }}>{att.outTime || "-"}</td>
-                      <td className="px-4 py-3" style={{ color: "#6c757d" }}>{att.logTime || "-"}</td>
-                      <td className="px-4 py-3" style={{ color: "#6c757d" }}>{att.workingHours || "-"}</td>
-                      <td className="px-4 py-3" style={{ color: "#6c757d" }}>{att.idleTime || "-"}</td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          className="btn btn-sm btn-light shadow-sm border"
-                          style={{ color: "#1B4F8A", borderRadius: "6px" }}
-                          onClick={() => handleViewTracker(att.date)}
-                        >
-                          <i className="cil-eye"></i> View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  staffHistory.map((att, idx) => {
+                    const isAbsent = !att.inTime || att.inTime === "-";
+                    return (
+                      <tr key={idx} className={isAbsent ? "sad-absent-row" : ""}>
+                        <td className="sad-sno">{(currentPage - 1) * pageSize + idx + 1}</td>
+                        <td className="sad-date-cell">{att.date}</td>
+                        <td>
+                          {isAbsent
+                            ? <span className="sad-pill sad-pill-absent">Absent</span>
+                            : <span className="sad-pill sad-pill-present">{att.inTime}</span>
+                          }
+                        </td>
+                        <td className="sad-time-cell">{att.outTime || "—"}</td>
+                        <td className="sad-time-cell">{att.logTime || "—"}</td>
+                        <td className={isAbsent ? "sad-time-cell" : "sad-working-cell"}>{att.workingHours || "—"}</td>
+                        <td className="sad-time-cell">{att.idleTime || "—"}</td>
+                        <td style={{ textAlign: "center" }}>
+                          <button
+                            className="sad-view-btn"
+                            onClick={() => handleViewTracker(att.date)}
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
-                  <tr>
-                    <td colSpan="8" className="text-center py-5 text-muted">
-                      <div className="mb-2">No records found for the selected dates.</div>
-                    </td>
+                  <tr className="sad-empty">
+                    <td colSpan="8">No records found for the selected dates.</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
 
-          <div className="mt-4">
+          <div className="sad-table-footer">
+            <span className="sad-record-count">{allStaffHistory.length} record{allStaffHistory.length !== 1 ? "s" : ""}</span>
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages || 1}
@@ -347,177 +448,184 @@ export default function StaffAttendanceDetails() {
         </div>
       </div>
 
-      {/* TRACKER MODAL */}
+      {/* ── TRACKER MODAL ── */}
       <CModal
         visible={showTrackerModal}
         onClose={() => setShowTrackerModal(false)}
         size="lg"
-        alignment="center" className="custom-modal"
+        alignment="center"
+        className="sad-modal custom-modal"
       >
-        <CModalHeader closeButton style={{ borderBottom: "1px solid #f1f3f5", padding: "20px 24px" }}>
-          <CModalTitle style={{ color: "#1B4F8A", fontWeight: "bold", fontSize: "1.1rem" }}>
-            Attendance Details <span className="text-muted fw-normal fs-6 ms-2">| {selectedDate}</span>
+        <CModalHeader closeButton>
+          <CModalTitle className="sad-modal-title">
+            Attendance Details
+            <span className="sad-date-sub">| {selectedDate}</span>
           </CModalTitle>
         </CModalHeader>
-        <CModalBody style={{ padding: "24px" }}>
-          {/* Summary Row */}
+
+        <CModalBody>
           <div className="row g-3 mb-4">
             <div className="col-md-6">
-              <div className="p-3 rounded border" style={{ backgroundColor: "#f8f9fa" }}>
-                <div className="text-muted small text-uppercase fw-bold mb-1">Login Details</div>
-                <div className="d-flex flex-column">
-                  <span className="fw-bold" style={{ color: "#1B4F8A" }}>{trackerData?.login?.time || "-"}</span>
-                  <span className="text-muted small" style={{ fontSize: "10px", lineHeight: "1.2" }}>{trackerData?.login?.location || "Location N/A"}</span>
-                </div>
+              <div className="sad-io-card in">
+                <div className="sad-io-label in">Login Details</div>
+                <div className="sad-io-time in">{trackerData?.login?.time || "—"}</div>
+                <div className="sad-io-loc in">{trackerData?.login?.location || "Location N/A"}</div>
               </div>
             </div>
             <div className="col-md-6">
-              <div className="p-3 rounded border" style={{ backgroundColor: "#f8f9fa" }}>
-                <div className="text-muted small text-uppercase fw-bold mb-1">Logout Details</div>
-                <div className="d-flex flex-column">
-                  <span className="fw-bold" style={{ color: "#1B4F8A" }}>{trackerData?.logout?.time || "-"}</span>
-                  <span className="text-muted small" style={{ fontSize: "10px", lineHeight: "1.2" }}>{trackerData?.logout?.location || "Location N/A"}</span>
-                </div>
+              <div className="sad-io-card out">
+                <div className="sad-io-label out">Logout Details</div>
+                <div className="sad-io-time out">{trackerData?.logout?.time || "—"}</div>
+                <div className="sad-io-loc out">{trackerData?.logout?.location || "Location N/A"}</div>
               </div>
             </div>
           </div>
 
-          <div className="p-3 rounded border" style={{ backgroundColor: "#f0f7ff" }}>
-            <h6 className="fw-bold mb-3" style={{ color: "#1B4F8A" }}>Daily Activity Log</h6>
+          <div className="sad-act-head">
+            <h6>Daily Activity Log</h6>
+          </div>
+          <div className="sad-act-wrap">
             {loadingTracker ? (
-              <div className="text-center py-3">
+              <div style={{ padding: "32px", textAlign: "center" }}>
                 <CSpinner size="sm" color="primary" />
-                <div className="small text-muted mt-2">Fetching activity logs...</div>
+                <div style={{ marginTop: 8, fontSize: 12, color: "#94A3B8" }}>Fetching activity logs...</div>
               </div>
             ) : (trackerData?.activities?.length > 0 || trackerData?.sessions?.length > 0) ? (
-              <div className="table-responsive">
-                <table className="table table-sm table-borderless align-middle mb-0">
-                  <thead className="text-muted small text-uppercase" style={{ backgroundColor: "#f8f9fa" }}>
-                    <tr>
-                      <th className="py-2">#</th>
-                      <th className="py-2">Activity</th>
-                      <th className="py-2">Duration</th>
+              <table className="sad-act-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 40 }}>#</th>
+                    <th>Activity</th>
+                    <th style={{ width: 110 }}>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(trackerData.activities || trackerData.sessions).map((act, idx) => (
+                    <tr key={idx}>
+                      <td className="sad-act-num">{idx + 1}</td>
+                      <td>
+                        <div className="sad-act-name">{act.activity}</div>
+                        {act.description && <div className="sad-act-desc">{act.description}</div>}
+                        {act.location && <div className="sad-act-loc">📍 {act.location}</div>}
+                      </td>
+                      <td>
+                        <span className="sad-dur-badge">{act.duration}</span>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {(trackerData.activities || trackerData.sessions).map((act, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
-                        <td className="py-2 fw-bold" style={{ color: "#1B4F8A" }}>{idx + 1}</td>
-                        <td className="py-2 text-dark">
-                          <div className="fw-bold">{act.activity}</div>
-                          {act.description && <div className="text-muted small mb-1" style={{ fontSize: "11px", fontStyle: "italic" }}>{act.description}</div>}
-                          <div className="text-muted" style={{ fontSize: "10px" }}>{act.location}</div>
-                        </td>
-                        <td className="py-2"><span className="badge bg-light text-dark border">{act.duration}</span></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             ) : (
-              <p className="mb-0 text-muted small text-center py-2">No detailed activity logs available for this day.</p>
+              <div style={{ padding: "28px", textAlign: "center", color: "#94A3B8", fontSize: 13 }}>
+                No detailed activity logs available for this day.
+              </div>
             )}
           </div>
         </CModalBody>
-        <CModalFooter style={{ borderTop: "none", padding: "16px 24px" }}>
-          <CButton color="secondary" style={{ backgroundColor: "#f8f9fa", color: "#495057", border: "1px solid #dee2e6" }} onClick={() => setShowTrackerModal(false)}>
+
+        <CModalFooter>
+          <button className="sad-close-btn" onClick={() => setShowTrackerModal(false)}>
             Close Details
-          </CButton>
+          </button>
         </CModalFooter>
       </CModal>
 
-      {/* PERFORMANCE MODAL */}
+      {/* ── PERFORMANCE MODAL ── */}
       <CModal
         visible={showPerformanceModal}
         onClose={() => setShowPerformanceModal(false)}
         size="lg"
-        alignment="center" className="custom-modal" backdrop="static"
+        alignment="center"
+        className="sad-modal custom-modal"
+        backdrop="static"
       >
-        <CModalHeader closeButton style={{ borderBottom: "1px solid #f1f3f5", padding: "20px 24px" }} keyboard={false}>
-          <CModalTitle style={{ color: "#1B4F8A", fontWeight: "bold" }}>
+        <CModalHeader closeButton keyboard={false}>
+          <CModalTitle className="sad-modal-title">
             Performance Overview: {staffName}
           </CModalTitle>
         </CModalHeader>
-        <CModalBody style={{ padding: "30px" }}>
-          {/* Top Info & Year Filter */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div className="p-3 rounded border" style={{ backgroundColor: "#f0f7ff", flex: 1, marginRight: "20px" }}>
-              <div className="text-muted small text-uppercase fw-bold mb-1">Total Experience (since {staffInfo?.joiningDate || "N/A"})</div>
-              <h5 className="mb-0 fw-bold" style={{ color: "#1B4F8A" }}>{experience}</h5>
+
+        <CModalBody>
+          <div className="d-flex align-items-stretch mb-4">
+            <div className="sad-exp-block">
+              <div className="sad-exp-lbl">Total Experience (since {staffInfo?.joiningDate || "N/A"})</div>
+              <div className="sad-exp-val">{experience}</div>
             </div>
-            <div style={{ width: "150px" }}>
-              <label className="form-label text-muted small text-uppercase fw-bold mb-1">Select Year</label>
+            <div style={{ width: 160, flexShrink: 0 }}>
+              <label className="sad-filter-label">Select Year</label>
               <select
-                className="form-select shadow-sm"
+                className="sad-year-sel"
                 value={performanceYear}
                 onChange={(e) => setPerformanceYear(e.target.value)}
-                style={{ borderRadius: "8px", border: "1px solid #dee2e6" }}
               >
                 <option value="all">All Time</option>
-                <option value="2026">2026</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-                <option value="2023">2023</option>
+                {years.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
               </select>
             </div>
           </div>
 
           {loadingPerformance ? (
-            <div className="text-center py-5">
+            <div style={{ textAlign: "center", padding: "52px 0" }}>
               <CSpinner color="primary" />
-              <div className="mt-3 text-muted">Analyzing performance data...</div>
+              <div style={{ marginTop: 12, color: "#94A3B8", fontSize: 13 }}>Analyzing performance data...</div>
             </div>
           ) : performanceData ? (
             <>
-              <div className="row g-4 mb-4">
-                <div className="col-md-3">
-                  <div className="p-3 text-center rounded border" style={{ backgroundColor: "#f8f9fa" }}>
-                    <div className="text-muted small text-uppercase fw-bold mb-1">Session Time</div>
-                    <h4 className="mb-0 fw-bold" style={{ color: "#1B4F8A", fontSize: "1.1rem" }}>
-                      {formatHoursToYMD(performanceData.completedSessionTime || 0)}
-                    </h4>
+              <div className="row g-3 mb-4">
+                {[
+                  { label: "Session Time", value: performanceData.totalSessionTime || 0, color: "#1B4F8A" },
+                  { label: "Idle Time", value: performanceData.totalIdleTime || 0, color: "#B91C1C" },
+                  { label: "Training Time", value: performanceData.totalTrainingHours || 0, color: "#0D6E5A" },
+                  { label: "Avg Rating", value: `${performanceData.totalAvgRating || "0"} ★`, sub: `No of Ratings: ${performanceData.totalNoOfRatings || "0"}`, color: "#d97706" },
+                  { label: "Total Paid Leaves", value: performanceData.paidLeaveDays || "0", color: "#64748B" },
+                  { label: "Unpaid Leave", value: performanceData.lossOfPayDays || "0", color: "#B91C1C" },
+                ].map((m) => (
+                  <div className="col-md-3" key={m.label}>
+                    <div className="sad-metric-card">
+                      <div className="sad-metric-lbl">{m.label}</div>
+                      <div className="sad-metric-val" style={{ color: m.color }}>{m.value}</div>
+                      {m.sub && <div className="sad-metric-sub">{m.sub}</div>}
+                    </div>
                   </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="p-3 text-center rounded border" style={{ backgroundColor: "#f8f9fa" }}>
-                    <div className="text-muted small text-uppercase fw-bold mb-1">Idle Time</div>
-                    <h4 className="mb-0 fw-bold" style={{ color: "#dc3545", fontSize: "1.1rem" }}>
-                      {formatHoursToYMD(performanceData.idleTime || 0)}
-                    </h4>
-                  </div>
-                </div>
-
-                <div className="col-md-3">
-                  <div className="p-3 text-center rounded border" style={{ backgroundColor: "#f8f9fa" }}>
-                    <div className="text-muted small text-uppercase fw-bold mb-1">Training Time</div>
-                    <h4 className="mb-0 fw-bold" style={{ color: "#198754", fontSize: "1.1rem" }}>
-                      {formatHoursToYMD(performanceData.trainingTime || 0)}
-                    </h4>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="p-3 text-center rounded border" style={{ backgroundColor: "#f8f9fa" }}>
-                    <div className="text-muted small text-uppercase fw-bold mb-1">Avg Rating</div>
-                    <h4 className="mb-0 fw-bold" style={{ color: "#ffc107", fontSize: "1.1rem" }}>{performanceData.avgRating || "4.5"}</h4>
-                  </div>
-                </div>
+                ))}
               </div>
 
-              <div className="p-4 rounded border" style={{ backgroundColor: "#f0f7ff" }}>
-                <h5 className="fw-bold mb-3" style={{ color: "#1B4F8A" }}>Performance Analysis for {performanceYear === "all" ? "Entire Tenure" : performanceYear}</h5>
-                <p className="mb-0" style={{ color: "#495057", lineHeight: "1.6" }}>
-                  {performanceData.analysisSummary || `Based on the metrics for ${performanceYear === "all" ? "the entire period" : performanceYear}, ${staffName} is showing consistent dedication to patient care with a high session completion rate.`}
+              <div className="sad-analysis-block mb-3">
+                <p className="sad-analysis-ttl">
+                  Performance Analysis for {performanceYear === "all" ? "Entire Tenure" : performanceYear}
+                </p>
+                <p className="sad-analysis-txt">
+                  {performanceData.analysisSummary ||
+                    `Based on the metrics for ${performanceYear === "all" ? "the entire period" : performanceYear}, ${staffName} is showing consistent dedication to patient care with a high session completion rate.`}
                 </p>
               </div>
+
+              <button
+                className={`sad-cert-toggle ${showCertificateTable ? "open" : ""}`}
+                onClick={() => setShowCertificateTable(!showCertificateTable)}
+              >
+                📜 {showCertificateTable ? "Hide Certificates" : "Load Certificates"}
+              </button>
+
+              {showCertificateTable && (
+                <div className="mt-4">
+                  <CertificateTablePreview />
+                </div>
+              )}
             </>
           ) : (
-            <div className="text-center py-4 text-muted">No performance data available for the selected year.</div>
+            <div style={{ textAlign: "center", padding: "40px 0", color: "#94A3B8", fontSize: 14 }}>
+              No performance data available for the selected year.
+            </div>
           )}
         </CModalBody>
-        <CModalFooter style={{ borderTop: "none", padding: "16px 24px" }}>
-          <CButton color="secondary" variant="outline" onClick={() => setShowPerformanceModal(false)}>
+
+        <CModalFooter>
+          <button className="sad-close-btn" onClick={() => setShowPerformanceModal(false)}>
             Close
-          </CButton>
+          </button>
         </CModalFooter>
       </CModal>
     </div>

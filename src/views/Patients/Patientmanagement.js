@@ -128,7 +128,7 @@ const PatientManagement = () => {
         // Based on the provided snippet, it looks like data.data is what we want
         // But if it's already normalized in payment API, it's under therapyWithSessions
         const rawData = data.data.therapyWithSessions || data.data || []
-        
+
         // Ensure it's a flat list of exercises as expected by the new UI
         const normalized = rawData.flatMap(item => {
           if (item.exerciseId) return [item]; // Flat exercise
@@ -702,21 +702,21 @@ const PatientManagement = () => {
                     </>
                   )}
                 </select>
-                <ChevronRight 
-                  size={14} 
-                  style={{ 
-                    position: 'absolute', right: 10, top: '50%', 
+                <ChevronRight
+                  size={14}
+                  style={{
+                    position: 'absolute', right: 10, top: '50%',
                     transform: 'translateY(-50%) rotate(90deg)',
                     pointerEvents: 'none', color: '#6b7280'
-                  }} 
+                  }}
                 />
               </div>
             </div>
 
             {/* Plan Summary */}
             {!planLoading && planData.length > 0 && (
-              <div style={{ 
-                display: 'flex', gap: 15, marginBottom: 20, 
+              <div style={{
+                display: 'flex', gap: 15, marginBottom: 20,
                 background: '#f8fafc', padding: '15px', borderRadius: '10px',
                 border: '1px solid #e2e8f0', maxWidth: 360
               }}>
@@ -779,9 +779,9 @@ const PatientManagement = () => {
                                   {session.date || "—"}
                                 </CTableDataCell>
                                 <CTableDataCell className="pm2-td">
-                                  <span 
-                                    className="badge" 
-                                    style={{ 
+                                  <span
+                                    className="badge"
+                                    style={{
                                       background: session.paymentStatus?.toLowerCase() === 'paid' ? '#eaf3de' : '#fcebeb',
                                       color: session.paymentStatus?.toLowerCase() === 'paid' ? '#3b6d11' : '#a32d2d',
                                       fontSize: '10px'
@@ -791,9 +791,9 @@ const PatientManagement = () => {
                                   </span>
                                 </CTableDataCell>
                                 <CTableDataCell className="pm2-td">
-                                  <span 
-                                    className="badge" 
-                                    style={{ 
+                                  <span
+                                    className="badge"
+                                    style={{
                                       background: session.status?.toLowerCase() === 'completed' ? '#e6f1fb' : '#fff3cd',
                                       color: session.status?.toLowerCase() === 'completed' ? '#185fa5' : '#856404',
                                       fontSize: '10px'
@@ -1047,7 +1047,7 @@ const PatientManagement = () => {
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
-            font-family: inherit;
+ 
           }
           .pm-action-btn {
             width: 30px;

@@ -374,7 +374,7 @@ const CustomerManagement = () => {
                 <CTable hover responsive className="cm-table">
                   <CTableHead>
                     <CTableRow>
-                      {['S.No', 'Patient ID', 'Full Name', 'Mobile', 'Gender', 'City', 'Actions'].map((h) => (
+                      {['S.No', 'Customer ID', 'Full Name', 'Mobile', 'Gender', 'City', 'Actions'].map((h) => (
                         <CTableHeaderCell key={h} className="cm-th">{h}</CTableHeaderCell>
                       ))}
                     </CTableRow>
@@ -699,7 +699,7 @@ const CustomerManagement = () => {
 
       {/* ─── Styles ─── */}
       <style>{`
-        .cm-wrapper { padding: 2px 0; font-family: inherit; }
+        .cm-wrapper { padding: 2px 0;  }
 
         .cm-page-header {
           display: flex; align-items: center; justify-content: space-between;

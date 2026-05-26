@@ -110,7 +110,7 @@ const MoneyReceipts = ({ supplierId, billNo, purchase }) => {
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+ 
   font-size: 12px;
 }
 

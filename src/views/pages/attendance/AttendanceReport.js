@@ -3,9 +3,380 @@ import { useNavigate } from "react-router-dom";
 
 import Pagination from "../../../Utils/Pagination";
 import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext";
-import { Search, X, Calendar } from "lucide-react";
+import { Search, X, Calendar, Clock, Users, CheckCircle2, UserCheck, Filter } from "lucide-react";
 import { http } from "../../../Utils/Interceptors";
 import { BASE_URL, GetAllUsersDailyByClinicAndBranch, SaveUserAttendence, UpdateUserAttendence } from "../../../baseUrl";
+
+const styles = `
+  .ar-wrapper {
+    padding: 24px;
+ 
+  }
+
+  .ar-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .ar-title-block h4 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.3px;
+  }
+
+  .ar-title-block p {
+    font-size: 13px;
+    color: #6B7280;
+    margin: 0;
+  }
+
+  .ar-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .ar-date-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .ar-date-input-wrap svg {
+    position: absolute;
+    left: 10px;
+    color: #9CA3AF;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .ar-date-input {
+    padding: 0 12px 0 32px;
+    height: 38px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 10px;
+    font-size: 13.5px;
+    color: #374151;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 155px;
+    cursor: pointer;
+  }
+
+  .ar-date-input:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  }
+
+  .ar-select {
+    padding: 0 12px;
+    height: 38px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 10px;
+    font-size: 13.5px;
+    color: #374151;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+    min-width: 150px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+  }
+
+  .ar-select:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  }
+
+  .ar-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .ar-search-wrap svg.search-icon {
+    position: absolute;
+    left: 10px;
+    color: #9CA3AF;
+    pointer-events: none;
+  }
+
+  .ar-search-input {
+    padding: 0 32px 0 32px;
+    height: 38px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 10px;
+    font-size: 13.5px;
+    color: #374151;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 220px;
+  }
+
+  .ar-search-input:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  }
+
+  .ar-search-clear {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9CA3AF;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+
+  .ar-search-clear:hover {
+    color: #374151;
+  }
+
+  .ar-card {
+    background: #fff;
+    border: 1.5px solid #F3F4F6;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+
+  .ar-table-scroll {
+    overflow-x: auto;
+  }
+
+  .ar-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+  }
+
+  .ar-table thead tr {
+    background: #F8FAFC;
+    border-bottom: 1.5px solid #E5E7EB;
+  }
+
+  .ar-table thead th {
+    padding: 13px 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+    background-color: var(--color-bgcolor);
+  }
+
+  .ar-table tbody tr {
+    border-bottom: 1px solid #F3F4F6;
+    transition: background 0.12s;
+  }
+
+  .ar-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .ar-table tbody tr:hover {
+    background: #F8FAFC;
+  }
+
+  .ar-table td {
+    padding: 14px 20px;
+    font-size: 14px;
+    color: #374151;
+    vertical-align: middle;
+  }
+
+  .ar-sno {
+    color: #9CA3AF;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .ar-name {
+    font-weight: 600;
+    color: #111827;
+    font-size: 14px;
+  }
+
+  .ar-role {
+    color: #6B7280;
+    font-size: 13px;
+  }
+
+  .ar-time {
+    font-size: 13.5px;
+    color: #374151;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  .ar-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 13px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .ar-btn-login {
+    background: #EFF6FF;
+    color: #2563EB;
+    border-color: #BFDBFE;
+  }
+
+  .ar-btn-login:hover {
+    background: #DBEAFE;
+    border-color: #93C5FD;
+  }
+
+  .ar-btn-logout {
+    background: #FFF7ED;
+    color: #D97706;
+    border-color: #FDE68A;
+  }
+
+  .ar-btn-logout:hover {
+    background: #FEF3C7;
+    border-color: #FCD34D;
+  }
+
+  .ar-btn-view {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    background: #F3F4F6;
+    color: #374151;
+    border: 1.5px solid #E5E7EB;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .ar-btn-view:hover {
+    background: #E5E7EB;
+    color: #111827;
+  }
+
+  .ar-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .ar-badge-present {
+    background: #DCFCE7;
+    color: #166534;
+  }
+
+  .ar-badge-inwork {
+    background: #DBEAFE;
+    color: #1D4ED8;
+  }
+
+  .ar-badge-late {
+    background: #FEF9C3;
+    color: #854D0E;
+  }
+
+  .ar-badge-leave {
+    background: #E0F2FE;
+    color: #075985;
+  }
+
+  .ar-badge-absent {
+    background: #FEE2E2;
+    color: #991B1B;
+  }
+
+  .ar-empty {
+    text-align: center;
+    padding: 60px 24px;
+    color: #9CA3AF;
+  }
+
+  .ar-empty-icon {
+    width: 48px;
+    height: 48px;
+    background: #F3F4F6;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+  }
+
+  .ar-empty p {
+    font-size: 14px;
+    margin: 0;
+    color: #6B7280;
+  }
+
+  .ar-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #E5E7EB;
+    border-top-color: #2563EB;
+    border-radius: 50%;
+    animation: ar-spin 0.7s linear infinite;
+    margin: 0 auto 10px;
+  }
+
+  @keyframes ar-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .ar-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #F3F4F6;
+    background: #FAFAFA;
+  }
+`;
+
+function getStatusBadge(status) {
+  if (status === "LOGGED_OUT" || status === "Present") {
+    return <span className="ar-badge ar-badge-present">Present</span>;
+  } else if (status === "LOGGED_IN") {
+    return <span className="ar-badge ar-badge-inwork">In Work</span>;
+  } else if (status === "Late") {
+    return <span className="ar-badge ar-badge-late">Late</span>;
+  } else if (status === "Leave") {
+    return <span className="ar-badge ar-badge-leave">Leave</span>;
+  } else {
+    return <span className="ar-badge ar-badge-absent">{status || "Absent"}</span>;
+  }
+}
 
 export default function AttendanceReport() {
   const navigate = useNavigate();
@@ -91,10 +462,7 @@ export default function AttendanceReport() {
   };
 
   const allFilteredAttendance = attendanceData.filter((att) => {
-    // Role filter (case-insensitive)
     if (filterRole !== "all" && att.role?.toLowerCase() !== filterRole.toLowerCase()) return false;
-
-    // Search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matchesName = att.name.toLowerCase().includes(q);
@@ -103,7 +471,6 @@ export default function AttendanceReport() {
       const matchesUserId = att.userId?.toLowerCase().includes(q);
       if (!matchesName && !matchesRole && !matchesStatus && !matchesUserId) return false;
     }
-
     return true;
   });
 
@@ -113,194 +480,161 @@ export default function AttendanceReport() {
     currentPage * pageSize
   );
 
-  const handleViewStaff = (userId, role) => {
-    navigate(`/attendance/staff/${userId}`, { state: { role } });
+  const handleViewStaff = (userId, role, name) => {
+    console.log(userId, role, name);
+    navigate(`/attendance/staff/${userId}`, { state: { role, name, userId } });
   };
 
   return (
-    <div className="container-fluid mt-4">
-      {/* MAIN VIEW */}
-      <div className="card shadow-sm border-0 mb-4" style={{ borderRadius: "12px" }}>
-        <div className="card-header bg-white border-bottom pt-4 pb-3 d-flex justify-content-between align-items-center" style={{ borderTopLeftRadius: "12px", borderTopRightRadius: "12px" }}>
-          <div>
-            <h4 className="mb-1 fw-bold" style={{ color: "#1B4F8A" }}>Daily Attendance</h4>
-            <small className="text-muted fw-medium">Showing records for: {selectedDate}</small>
+    <>
+      <style>{styles}</style>
+      <div className="ar-wrapper">
+        {/* Header */}
+        <div className="ar-header">
+          <div className="ar-title-block">
+            <h4>Daily Attendance</h4>
+            <p>Showing records for {selectedDate}</p>
           </div>
-          <div className="d-flex align-items-center gap-3">
-            <div className="wd-date-group mb-0">
-              <div className="d-flex align-items-center position-relative">
-                <Calendar size={14} className="position-absolute ms-2 text-muted" />
-                <input
-                  type="date"
-                  className="form-control shadow-sm ps-5"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  style={{ borderRadius: "8px", border: "1px solid #dee2e6", height: "36px", fontSize: "14px", width: "160px" }}
-                />
-              </div>
+          <div className="ar-controls">
+            {/* Date Picker */}
+            <div className="ar-date-input-wrap">
+              <Calendar size={14} />
+              <input
+                type="date"
+                className="ar-date-input"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
             </div>
-            <div style={{ width: "180px" }}>
-              <select
-                className="form-select shadow-sm"
-                value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value)}
-                style={{ borderRadius: "8px", border: "1px solid #dee2e6", height: "36px", fontSize: "14px" }}
-              >
-                <option value="all">All Roles</option>
-                {[...new Set(attendanceData.map(a => a.role?.trim()).filter(Boolean))].map(role => (
-                  <option key={role} value={role}>{role}</option>
-                ))}
-              </select>
-            </div>
-            <div className="cm-search-wrapper" style={{ width: "250px" }}>
-              <Search size={14} className="cm-search-icon-left" />
+
+            {/* Role Filter */}
+            <select
+              className="ar-select"
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+            >
+              <option value="all">All Roles</option>
+              {[...new Set(attendanceData.map(a => a.role?.trim()).filter(Boolean))].map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+
+            {/* Search */}
+            <div className="ar-search-wrap">
+              <Search size={14} className="search-icon" />
               <input
                 type="text"
-                className="cm-search-input"
+                className="ar-search-input"
                 placeholder="Search attendance..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {searchQuery && (
-                <button className="cm-search-clear" onClick={() => setSearchQuery("")}>
-                  <X size={14} />
+                <button className="ar-search-clear" onClick={() => setSearchQuery("")}>
+                  <X size={13} />
                 </button>
               )}
             </div>
           </div>
         </div>
-        <div className="card-body p-0 mt-2">
-          <div className="table-responsive wd-table-wrapper">
-            <table className="table table-hover align-middle mb-0 pink-table">
-              <thead style={{ backgroundColor: "#1B4F8A", color: "#fff" }}>
+
+        {/* Table Card */}
+        <div className="ar-card">
+          <div className="ar-table-scroll">
+            <table className="ar-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">S.No</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Name</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Role</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">In Time</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Out Time</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold">Status</th>
-                  <th className="px-4 py-3 text-uppercase small fw-bold text-center">Action</th>
+                  <th>S.No</th>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>In Time</th>
+                  <th>Out Time</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: "center" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {todaysAttendance.length > 0 ? (
-                  todaysAttendance.map((att, idx) => {
-                    return (
-                      <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
-                        <td className="px-4 py-3 text-muted">{(currentPage - 1) * pageSize + idx + 1}</td>
-                        <td className="px-4 py-3 fw-bold text-dark">{att.name}</td>
-                        <td className="px-4 py-3" style={{ color: "#6c757d" }}>{att.role || "-"}</td>
-                        <td className="px-4 py-3" style={{ color: "#495057" }}>
-                          {att.login?.time ? (
-                            att.login.time
-                          ) : selectedDate <= today ? (
-                            <button
-                              className="btn btn-sm   shadow-sm"
-                              style={{ borderRadius: "6px", color: "var(--pink-color)", borderColor: "var(--pink-color)" }}
-                              onClick={() => handleManualLogin(att.userId)}
-                              title="Manual Login"
-                            >
-                              Login
-                            </button>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td className="px-4 py-3" style={{ color: "#495057" }}>
-                          {att.logout?.time ? (
-                            att.logout.time
-                          ) : selectedDate <= today && att.login?.time ? (
-                            <button
-                              className="btn btn-sm shadow-sm"
-                              style={{ borderRadius: "6px", color: "var(--pink-color)", borderColor: "var(--pink-color)" }}
-                              onClick={() => handleManualLogout(att.userId)}
-                              title="Manual Logout"
-                            >
-                              Logout
-                            </button>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`badge`} style={{
-                            padding: "6px 14px",
-                            borderRadius: "20px",
-                            fontWeight: "500",
-                            backgroundColor: (att.status === "Present" || att.status === "LOGGED_OUT" || att.status === "LOGGED_IN") ? "#d1e7dd" :
-                              att.status === "Late" ? "#fff3cd" :
-                                att.status === "Leave" ? "#cff4fc" : "#f8d7da",
-                            color: (att.status === "Present" || att.status === "LOGGED_OUT" || att.status === "LOGGED_IN") ? "#0f5132" :
-                              att.status === "Late" ? "#856404" :
-                                att.status === "Leave" ? "#055160" : "#842029"
-                          }}>
-                            {att.status === "LOGGED_OUT" ? "Present" : att.status === "LOGGED_IN" ? "In Work" : att.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <div className="d-flex justify-content-center gap-2">
-                            <button
-                              className="btn btn-sm btn-light shadow-sm border"
-                              style={{ color: "#1B4F8A", borderRadius: "6px" }}
-                              onClick={() => handleViewStaff(att.userId, att.role)}
-                              title="Monthly View"
-                            >
-                              <i className="cil-calendar"></i> View
-                            </button>
-                            {/* <button
-                              className="btn btn-sm btn-outline-primary shadow-sm"
-                              style={{ borderRadius: "6px" }}
-                              onClick={() => navigate(`/attendance/staff/${att.userId}`, { state: { openTracker: true, initialDate: att.date } })}
-                              title="Track Activities"
-                            >
-                              <i className="cil-map"></i> Track
-                            </button> */}
-                            {/* {(att.role?.toLowerCase().includes("therapist") || att.role?.toLowerCase().includes("physio")) && (
-                              <button
-                                className="btn btn-sm btn-outline-success shadow-sm"
-                                style={{ borderRadius: "6px" }}
-                                onClick={() => navigate(`/attendance/staff/${att.userId}`, { state: { openPerformance: true } })}
-                                title="Performance Summary"
-                              >
-                                <i className="cil-chart"></i> Performance
-                              </button>
-                            )} */}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
+                  todaysAttendance.map((att, idx) => (
+                    <tr key={idx}>
+                      <td className="ar-sno">{(currentPage - 1) * pageSize + idx + 1}</td>
+                      <td className="ar-name">{att.name}</td>
+                      <td className="ar-role">{att.role || "—"}</td>
+                      <td>
+                        {att.login?.time ? (
+                          <span className="ar-time">{att.login.time}</span>
+                        ) : selectedDate <= today ? (
+                          <button
+                            className="ar-action-btn ar-btn-login"
+                            onClick={() => handleManualLogin(att.userId)}
+                          >
+                            <CheckCircle2 size={13} /> Login
+                          </button>
+                        ) : (
+                          <span style={{ color: "#D1D5DB" }}>—</span>
+                        )}
+                      </td>
+                      <td>
+                        {att.logout?.time ? (
+                          <span className="ar-time">{att.logout.time}</span>
+                        ) : selectedDate <= today && att.login?.time ? (
+                          <button
+                            className="ar-action-btn ar-btn-logout"
+                            onClick={() => handleManualLogout(att.userId)}
+                          >
+                            <Clock size={13} /> Logout
+                          </button>
+                        ) : (
+                          <span style={{ color: "#D1D5DB" }}>—</span>
+                        )}
+                      </td>
+                      <td>{getStatusBadge(att.status)}</td>
+                      <td style={{ textAlign: "center" }}>
+                        <button
+                          className="ar-btn-view"
+                          onClick={() => handleViewStaff(att.userId, att.role, att.name)}
+                        >
+                          <Calendar size={13} /> View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="text-center py-5 text-muted">
-                      {loading ? (
-                        <div className="spinner-border spinner-border-sm text-primary" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="mb-2">No attendance records found for {selectedDate}.</div>
-                          {/* <small>Select a different filter or check back later.</small> */}
-                        </>
-                      )}
+                    <td colSpan="7">
+                      <div className="ar-empty">
+                        {loading ? (
+                          <>
+                            <div className="ar-spinner" />
+                            <p>Loading attendance records...</p>
+                          </>
+                        ) : (
+                          <>
+                            <div className="ar-empty-icon">
+                              <Users size={22} color="#9CA3AF" />
+                            </div>
+                            <p>No attendance records found for {selectedDate}</p>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-        </div>
-        <div className="card-footer bg-white border-0 py-3">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages || 1}
-            pageSize={pageSize}
-            onPageChange={(page) => setCurrentPage(page)}
-            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
-          />
+
+          <div className="ar-footer">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages || 1}
+              pageSize={pageSize}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -27,18 +27,18 @@ const PatientRegistration = ({ booking, vitals }) => {
 
   const handleEmergencyChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === "phone") {
       // Reject non-numeric characters
       if (value !== "" && !/^\d+$/.test(value)) return;
-      
+
       // Restrict to 10 digits
       if (value.length > 10) return;
-      
+
       const error = validateField("emergencyContact", value, { contactNumber: data.phone });
       setPhoneError(error);
     }
-    
+
     setEmergencyData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -110,12 +110,12 @@ const PatientRegistration = ({ booking, vitals }) => {
             <tr>
               <td><strong>Phone Number:</strong></td>
               <td>
-                <input 
-                  type="text" 
-                  name="phone" 
-                  value={emergencyData.phone} 
-                  onChange={handleEmergencyChange} 
-                  className="hideboder" 
+                <input
+                  type="text"
+                  name="phone"
+                  value={emergencyData.phone}
+                  onChange={handleEmergencyChange}
+                  className="hideboder"
                   maxLength={10}
                 />
                 {phoneError && <div style={{ color: "red", fontSize: "10px", marginTop: "2px" }}>{phoneError}</div>}
@@ -193,7 +193,7 @@ const PatientRegistration = ({ booking, vitals }) => {
           width: 100% !important;
           margin: 0 !important;
           padding: 0 !important;
-          font-family: Arial, sans-serif;
+       
           font-size: 12px;
         }
 

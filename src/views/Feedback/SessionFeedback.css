@@ -1,7 +1,7 @@
 .sf-wrapper {
   padding: 0;
   min-height: 80vh;
-  font-family: 'Inter', sans-serif;
+
   width: 100%;
 }
 
@@ -114,7 +114,8 @@
   background-color: #f1f5f9;
 }
 
-.sf-pat-cell, .sf-staff-cell {
+.sf-pat-cell,
+.sf-staff-cell {
   display: flex;
   flex-direction: column;
 }
@@ -187,9 +188,21 @@
   text-transform: uppercase;
 }
 
-.sf-badge-full { background: #dcfce7; color: #166534; }
-.sf-badge-half { background: #fef9c3; color: #854d0e; }
-.sf-badge-none { background: #f1f5f9; color: #475569; }
+.sf-badge-full {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.sf-badge-half {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.sf-badge-none {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .sf-booking-badge {
   font-size: 11px;
   font-weight: 700;
@@ -197,7 +210,7 @@
   background: #e0e7ff;
   padding: 2px 8px;
   border-radius: 4px;
-  font-family: monospace;
+
 }
 
 .sf-action-btns {
@@ -219,9 +232,20 @@
   flex-shrink: 0;
 }
 
-.sf-btn-view { background: #e6f1fb; color: #185fa5; }
-.sf-btn-edit { background: #eaf3de; color: #3b6d11; }
-.sf-btn-delete { background: #fcebeb; color: #a32d2d; }
+.sf-btn-view {
+  background: #e6f1fb;
+  color: #185fa5;
+}
+
+.sf-btn-edit {
+  background: #eaf3de;
+  color: #3b6d11;
+}
+
+.sf-btn-delete {
+  background: #fcebeb;
+  color: #a32d2d;
+}
 
 .sf-btn-icon:hover {
   filter: brightness(0.9);
@@ -255,9 +279,14 @@
   font-size: 13px;
 }
 
-.sf-req { color: #e53935; margin-left: 2px; }
+.sf-req {
+  color: #e53935;
+  margin-left: 2px;
+}
 
-.sf-input, .sf-select, .sf-textarea {
+.sf-input,
+.sf-select,
+.sf-textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #d0dce9;
@@ -266,12 +295,19 @@
   transition: border-color 0.2s;
 }
 
-.sf-input:focus, .sf-select:focus, .sf-textarea:focus {
+.sf-input:focus,
+.sf-select:focus,
+.sf-textarea:focus {
   outline: none;
   border-color: #185fa5;
 }
 
-.sf-err { color: #e53935; font-size: 11px; margin-top: 4px; display: block; }
+.sf-err {
+  color: #e53935;
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+}
 
 .sf-form-actions {
   display: flex;
@@ -304,8 +340,13 @@
   border: 1px solid #e2e8f0;
 }
 
-.sf-report-section.main { background: #e6f1fb; }
-.sf-report-section.feedback { background: #fff; }
+.sf-report-section.main {
+  background: #e6f1fb;
+}
+
+.sf-report-section.feedback {
+  background: #fff;
+}
 
 .sf-rep-row {
   display: flex;
@@ -314,8 +355,17 @@
   font-size: 13px;
 }
 
-.sf-rep-box h6 { font-size: 13px; margin-bottom: 8px; }
-.sf-rep-box p { font-size: 13px; color: #475569; margin: 0; font-style: italic; }
+.sf-rep-box h6 {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.sf-rep-box p {
+  font-size: 13px;
+  color: #475569;
+  margin: 0;
+  font-style: italic;
+}
 
 .sf-report-footer {
   display: flex;
@@ -369,7 +419,7 @@
 .sf-rating-card.active {
   border-width: 2px;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
 .sf-rating-card.active .sf-rating-emoji {
@@ -378,11 +428,35 @@
   transform: scale(1.1);
 }
 
-.sf-rating-card.active-1, .sf-rating-card.active-2 { border-color: #ef4444; background: #fef2f2; }
-.sf-rating-card.active-3, .sf-rating-card.active-4 { border-color: #f97316; background: #fff7ed; }
-.sf-rating-card.active-5, .sf-rating-card.active-6 { border-color: #eab308; background: #fefce8; }
-.sf-rating-card.active-7, .sf-rating-card.active-8 { border-color: #22c55e; background: #f0fdf4; }
-.sf-rating-card.active-9, .sf-rating-card.active-10 { border-color: #3b82f6; background: #eff6ff; }
+.sf-rating-card.active-1,
+.sf-rating-card.active-2 {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.sf-rating-card.active-3,
+.sf-rating-card.active-4 {
+  border-color: #f97316;
+  background: #fff7ed;
+}
+
+.sf-rating-card.active-5,
+.sf-rating-card.active-6 {
+  border-color: #eab308;
+  background: #fefce8;
+}
+
+.sf-rating-card.active-7,
+.sf-rating-card.active-8 {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.sf-rating-card.active-9,
+.sf-rating-card.active-10 {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
 
 .sf-rating-badge {
   display: inline-flex;
@@ -394,7 +468,8 @@
   color: #334155;
 }
 
-.sf-loading-state, .sf-empty-state {
+.sf-loading-state,
+.sf-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -404,7 +479,8 @@
   color: #64748b;
 }
 
-.sf-loading-state p, .sf-empty-state p {
+.sf-loading-state p,
+.sf-empty-state p {
   margin-top: 1rem;
   font-size: 14px;
 }
