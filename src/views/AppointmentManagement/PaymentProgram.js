@@ -62,7 +62,7 @@ export default function ProgramPayment() {
   const [totalPaid, setTotalPaid] = useState(0);
   const [balanceAmount, setBalanceAmount] = useState(0);
   const [totalForSelection, setTotalForSelection] = useState(0);
-
+  const [payAfterService, setPayAfterService] = useState(false);
 
   useEffect(() => {
     if (bookingId && patientId && clinicId && branchId) {
@@ -673,6 +673,7 @@ export default function ProgramPayment() {
     paymentLevel: selectedType === "activity" ? "EXERCISE" : selectedType.toUpperCase(),
     amount: Number(finalAmount || 0), paymentMode: paymentMode.toUpperCase(), paymentType: paymentType.toUpperCase(),
     totalSessionCount: 2, discountAmount: Number(discountAmount || 0), discountIssuedBy,
+    payAfterService: payAfterService,
     paymentDate: new Date().toISOString().split("T")[0],
     paymentTarget: {
       packageIds: selectedType === "package" ? [packageId] : [],
@@ -771,7 +772,7 @@ export default function ProgramPayment() {
   };
 
   const handleSubmit = async () => {
-    const isApprovalRequired = Number(paymentPercent) < 50 || Number(discount || 0) > 0 || Number(discountAmount || 0) > 0;
+    const isApprovalRequired = !payAfterService && (Number(paymentPercent) < 50 || Number(discount || 0) > 0 || Number(discountAmount || 0) > 0);
     if (isApprovalRequired && !discountIssuedBy.trim()) {
       showCustomToast(
         "Approval is required when a discount is applied or payment is below 50%",
@@ -783,7 +784,90 @@ export default function ProgramPayment() {
     try {
       setSubmitLoading(true);
       let payload, url, method;
-      if (!isFollowUpPayment) { payload = createPayloadData; url = `${wifiUrl}/api/physiotherapy-doctor/payment/create`; method = "POST"; }
+      if (!isFollowUpPayment) {
+        if (payAfterService) {
+          const type = backendServiceType?.toLowerCase();
+          const mapEx = (ex) => ({
+            exerciseId: ex.exerciseId,
+            exerciseName: ex.exerciseName,
+            pricePerSession: Number(ex.totalPrice || (ex.totalSessionCost / (ex.noOfSessions || 1)) || ex.pricePerSession || 0),
+            totalExercisePrice: Number(ex.totalSessionCost || ex.totalExercisePrice || 0),
+            noOfSessions: Number(ex.noOfSessions || 0),
+            repetitions: Number(ex.repetitions || 0),
+            sets: Number(ex.sets || 0),
+            frequency: ex.frequency || "",
+            youtubeUrl: ex.youtubeUrl || "",
+            notes: ex.notes || "",
+            technique: ex.technique || null,
+            machine: ex.machine || null,
+            intensity: ex.intensity || null,
+            assistanceLevel: ex.assistanceLevel || null,
+            type: ex.type || null,
+            area: ex.area || null,
+            metric: ex.metric || null,
+            value: ex.value || null,
+            unit: ex.unit || null,
+            bodyPart: ex.bodyPart || null,
+            activityType: ex.activityType || null,
+            activityDuration: ex.activityDuration || null
+          });
+
+          const therapyWithSessionsData = (() => {
+            if (!apiData?.length) return [];
+            if (type === "package") {
+              return apiData.map(pkg => ({
+                packageId: pkg.packageId || "",
+                packageName: pkg.packageName || "",
+                totalPrice: pkg.totalPrice || 0,
+                programs: (pkg.programs || pkg.therapySessions || []).map(prog => ({
+                  programId: prog.programId,
+                  programName: prog.programName,
+                  therapyData: (prog.therapyData || []).map(therapy => ({
+                    therapyId: therapy.therapyId,
+                    therapyName: therapy.therapyName,
+                    exercises: (therapy.exercises || []).map(ex => mapEx(ex))
+                  }))
+                }))
+              }));
+            }
+            if (type === "program") {
+              return apiData.map(program => ({
+                programId: program.programId,
+                programName: program.programName,
+                therapyData: (program.therapyData || []).map(therapy => ({
+                  therapyId: therapy.therapyId,
+                  therapyName: therapy.therapyName,
+                  exercises: (therapy.exercises || []).map(ex => mapEx(ex))
+                }))
+              }));
+            }
+            if (type === "therapy") {
+              return apiData.map(therapy => ({
+                therapyId: therapy.therapyId,
+                therapyName: therapy.therapyName,
+                exercises: (therapy.exercises || []).map(ex => mapEx(ex))
+              }));
+            }
+            if (type === "activity") {
+              return [{
+                exercises: apiData.flatMap(item => (item.exercises || [])).map(ex => mapEx(ex))
+              }];
+            }
+            return [];
+          })();
+
+          payload = {
+            clinicId, branchId, bookingId, patientId, sessionStartDate: startDate, doctorId, doctorName, therapistId, therapistName, therapistRecordId,
+            serviceType: backendServiceType === "activity" ? "EXERCISE" : backendServiceType.toUpperCase(),
+            payAfterService: true,
+            therapyWithSessions: therapyWithSessionsData
+          };
+        } else {
+          payload = createPayloadData;
+        }
+        url = `${wifiUrl}/api/physiotherapy-doctor/payment/create`;
+        method = "POST";
+      }
       else { payload = updatePayload; url = `${wifiUrl}/api/physiotherapy-doctor/payment/update`; method = "POST"; }
       console.log("FINAL PAYLOAD:", payload);
       const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
@@ -987,10 +1071,49 @@ export default function ProgramPayment() {
                   </>
                 ) : "Generate Table"}
               </button>
+
             </CCol>
           </CRow>
         </div>
       )}
+
+      {
+        showTable && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "12px"
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={payAfterService}
+              onChange={(e) => setPayAfterService(e.target.checked)}
+              style={{
+                width: "16px",
+                height: "16px",
+                cursor: "pointer"
+              }}
+            />
+
+            <label
+              style={{
+                fontSize: "12px",
+                fontWeight: "600",
+                color: COLORS.primary,
+                cursor: "pointer",
+                margin: 0
+              }}
+            >
+              Pay After Service
+            </label>
+          </div>
+        )
+      }
+
 
       {/* ── STEP 2: Session Table (Accordion) ── */}
       {showTable && !allPaid && !sessionTableAlreadyCreated && (
@@ -1097,7 +1220,7 @@ export default function ProgramPayment() {
       )}
 
       {/* ── Payment Form ── */}
-      {showTable && !allPaid && (
+      {showTable && !allPaid && !payAfterService && (
         <div style={{
           background: "#fff", border: "0.5px solid #d0dce9",
           borderRadius: "10px", overflow: "hidden",
@@ -1450,6 +1573,58 @@ export default function ProgramPayment() {
                   </>
                 ) : (
                   isFollowUpPayment ? "Update Payment" : "Submit Payment"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Pay After Service Submit Button ── */}
+      {showTable && !allPaid && payAfterService && (
+        <div style={{
+          background: "#fff", border: "0.5px solid #d0dce9",
+          borderRadius: "10px", overflow: "hidden", marginTop: "16px"
+        }}>
+          {/* Header */}
+          <div style={{
+            background: COLORS.primary,
+            padding: "10px 14px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: "#fff" }}>Pay After Service Activation</span>
+          </div>
+
+          <div style={{ padding: "16px 20px" }}>
+            <p style={{ fontSize: "13px", color: "#475569", marginBottom: "16px", lineHeight: "1.5" }}>
+              The session details table has been successfully generated starting from <strong>{startDate}</strong>. 
+              Checking <strong>Pay After Service</strong> enables you to submit and activate these sessions directly. 
+              The patient will make payments after their treatment services are completed.
+            </p>
+            <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "0.5px solid #d0dce9", display: "flex", justifyContent: "flex-end" }}>
+              <button
+                onClick={handleSubmit}
+                disabled={submitLoading}
+                style={{ ...primaryBtn, opacity: submitLoading ? 0.75 : 1, display: "flex", alignItems: "center", gap: "8px", minWidth: "180px", justifyContent: "center" }}
+              >
+                {submitLoading ? (
+                  <>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: "14px", height: "14px",
+                        border: "2px solid rgba(255,255,255,0.4)",
+                        borderTopColor: "#fff",
+                        borderRadius: "50%",
+                        animation: "spin 0.7s linear infinite",
+                      }}
+                    />
+                    Activating...
+                  </>
+                ) : (
+                  "Activate Pay After Service"
                 )}
               </button>
             </div>

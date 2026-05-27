@@ -86,7 +86,8 @@ const SessionFeedback = () => {
     rating: '',
     whatWentWell: '',
     improvements: '',
-    clinicId: localStorage.getItem('HospitalId') || ''
+    clinicId: localStorage.getItem('HospitalId') || '',
+    branchId: localStorage.getItem('branchId') || ''
   });
 
   const [errors, setErrors] = useState({});
@@ -220,9 +221,10 @@ const SessionFeedback = () => {
 
     const isFull = ratio >= 1;
     const isHalf = ratio >= 0.5 && ratio < 1;
-
+    console.log(form)
     const payload = {
       ...form,
+      branchId: localStorage.getItem('branchId') || '',
       totalNoOfSessions: total,
       noOfSessionsCompleted: completed,
       halfSessionsCompleted: isHalf,
@@ -254,7 +256,7 @@ const SessionFeedback = () => {
     setForm({
       patientId: '', patientName: '', patientPhone: '',
       doctorId: '', doctorName: '', therapistId: '', therapistName: '',
-      serviceType: '', service: [], 
+      serviceType: '', service: [],
       totalNoOfSessions: '', noOfSessionsCompleted: '',
       halfSessionsCompleted: false, fullSessionsCompleted: false,
       rating: '',
