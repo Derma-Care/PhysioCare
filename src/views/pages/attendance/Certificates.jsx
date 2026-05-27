@@ -50,7 +50,7 @@ const certStyles = `
   .cert-img { width: 100%; max-height: 80vh; object-fit: contain; border-radius: 10px; display: block; }
 `;
 
-export default function CertificateTablePreview() {
+export default function CertificateTablePreview({ staffId, role }) {
 
     const [certifications, setCertifications] = useState([])
     const [previewLoading, setPreviewLoading] = useState(false)
@@ -65,6 +65,8 @@ export default function CertificateTablePreview() {
     const fetchCertificates = async () => {
         const clinicId = localStorage.getItem("HospitalId")
         const branchId = localStorage.getItem("branchId")
+        console.log("staffId", staffId)
+        console.log("role", role)
         try {
             setLoading(true)
             const response = await fetch(

@@ -6,6 +6,7 @@ import { useGlobalSearch } from "../../Usecontext/GlobalSearchContext";
 import { Search, X, Calendar, Clock, Users, CheckCircle2, UserCheck, Filter } from "lucide-react";
 import { http } from "../../../Utils/Interceptors";
 import { BASE_URL, GetAllUsersDailyByClinicAndBranch, SaveUserAttendence, UpdateUserAttendence } from "../../../baseUrl";
+import capitalizeWords from "../../../Utils/capitalizeWords";
 
 const styles = `
   .ar-wrapper {
@@ -559,7 +560,7 @@ export default function AttendanceReport() {
                     <tr key={idx}>
                       <td className="ar-sno">{(currentPage - 1) * pageSize + idx + 1}</td>
                       <td className="ar-name">{att.name}</td>
-                      <td className="ar-role">{att.role || "—"}</td>
+                      <td className="ar-role">{capitalizeWords(att.role) || "—"}</td>
                       <td>
                         {att.login?.time ? (
                           <span className="ar-time">{att.login.time}</span>

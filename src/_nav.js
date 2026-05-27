@@ -119,7 +119,7 @@ export const getNavigation = (permissions = {}) => {
     {
       component: CNavItem,
       to: '/feedback',
-      name: 'Patient Feedback',
+      name: 'Patient FeedBack',
       as: NavLink,
       icon: <CIcon icon={cilStar} customClassName="nav-icon" />,
     },

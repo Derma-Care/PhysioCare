@@ -36,6 +36,7 @@ import { GetClinicBranches } from './DoctorAPI'
 import { showCustomToast } from '../../Utils/Toaster'
 import Pagination from '../../Utils/Pagination'
 import { emailPattern } from '../../Constant/Constants'
+import { use } from 'react'
 
 /* ─── Brand token ─────────────────────────────── */
 const B = {
@@ -90,7 +91,7 @@ const DoctorManagement = () => {
     doctorData,
     errorMessage,
     setDoctorData,
-    fetchDoctorDetails,
+    fetchDoctors
   } = useHospital()
 
   const { user } = useHospital()
@@ -172,6 +173,22 @@ const DoctorManagement = () => {
       setForm((f) => ({ ...f, availableTimes: `${startTime || ''} - ${value}`.trim() }))
     }
   }
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadDoctors = async () => {
+      if (mounted) {
+        await fetchDoctors()
+      }
+    }
+
+    loadDoctors()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   // const fetchSubServices = async (serviceIds) => {
   //   if (!Array.isArray(serviceIds) || serviceIds.length === 0) return
@@ -367,6 +384,7 @@ const DoctorManagement = () => {
         emergencyContact: form.emergencyContact,
         aadharID: form.aadharID,
         dateofBirth: form.dateofBirth,
+        role: "doctor"
         // consultation: {
         //   serviceAndTreatments: form.availableConsultations.includes('Services & Treatments') ? 3 : 0,
         //   inClinic: form.availableConsultations.includes('In-Clinic') ? 1 : 0,
@@ -387,6 +405,7 @@ const DoctorManagement = () => {
         showCustomToast(response.data.message || 'Doctor added successfully', 'success')
         resetForm()
         setModalVisible(false)
+        fetchDoctors()
       } else throw new Error(response.data?.message || 'Failed to add doctor')
     } catch (error) {
       showCustomToast(error?.response?.data?.message || error.message || 'Something went wrong', 'error')

@@ -16,6 +16,7 @@ export const HospitalProvider = ({ children }) => {
   const [subServices, setSubServices] = useState([])
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [doctorLoading, setDoctorLoading] = useState(false)
   const [notificationCount, setNotificationCount] = useState('')
   const [role, setRole] = useState(localStorage.getItem('role'))
   const [user, setUser] = useState(() => {
@@ -93,19 +94,37 @@ export const HospitalProvider = ({ children }) => {
   }, [])
 
   // Fetch doctors by hospital and branch
+  // const fetchDoctors = useCallback(async () => {
+  //   if (!hospitalId) return
+  //   setLoading(true)
+  //   try {
+  //     const branchId = localStorage.getItem('branchId')
+  //     const hospitalId = localStorage.getItem('HospitalId')
+  //     const res = await http.get(`${getDoctorByClinicId}/${hospitalId}/${branchId}`)
+  //     if (res.status === 200 && res.data) setDoctorData(res.data)
+  //   } catch (err) {
+  //     console.error(err)
+  //     setErrorMessage('Error fetching doctors.')
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }, [])
   const fetchDoctors = useCallback(async () => {
-    if (!hospitalId) return
-    setLoading(true)
     try {
+      setDoctorLoading(true)
+
       const branchId = localStorage.getItem('branchId')
       const hospitalId = localStorage.getItem('HospitalId')
-      const res = await http.get(`${getDoctorByClinicId}/${hospitalId}/${branchId}`)
-      if (res.status === 200 && res.data) setDoctorData(res.data)
+
+      const res = await http.get(
+        `${getDoctorByClinicId}/${hospitalId}/${branchId}`
+      )
+
+      setDoctorData(res.data)
     } catch (err) {
-      console.error(err)
-      setErrorMessage('Error fetching doctors.')
+      console.log(err)
     } finally {
-      setLoading(false)
+      setDoctorLoading(false)
     }
   }, [])
 

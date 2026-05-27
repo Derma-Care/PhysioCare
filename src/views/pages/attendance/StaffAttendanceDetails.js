@@ -7,6 +7,7 @@ import Pagination from "../../../Utils/Pagination";
 import { http } from "../../../Utils/Interceptors";
 import { BASE_URL, GetUserDailyAttendence, GetUserMonthlyAttendence, GetTherapistPerformanceSummary } from "../../../baseUrl";
 import CertificateTablePreview from "./Certificates";
+import capitalizeWords from "../../../Utils/capitalizeWords";
 
 const sadStyles = `
   .sad-root {   background: #F0F4F8; min-height: 100vh; }
@@ -292,6 +293,7 @@ export default function StaffAttendanceDetails() {
 
   const selectedAttRecord = historyData.find(att => att.date === selectedDate);
   const role = location.state?.role || "";
+  const staffId = location.state?.staffId || "";
   console.log(role);
   const normalizedRole = role.toLowerCase();
   const currentYear = new Date().getFullYear();
@@ -325,7 +327,7 @@ export default function StaffAttendanceDetails() {
           <div className="sad-avatar">{initials}</div>
           <div>
             <h4 className="sad-profile-name">{location.state?.name}</h4>
-            <span className="sad-role-badge">Role: {location.state?.role}</span>
+            <span className="sad-role-badge">Role: {capitalizeWords(location.state?.role)}</span>
           </div>
         </div>
 
@@ -611,7 +613,7 @@ export default function StaffAttendanceDetails() {
 
               {showCertificateTable && (
                 <div className="mt-4">
-                  <CertificateTablePreview />
+                  <CertificateTablePreview staffId={staffName} role={role} />
                 </div>
               )}
             </>

@@ -102,7 +102,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0])
   const [showAllSlots, setShowAllSlots] = useState(false)
   const [loadingFee, setLoadingFee] = useState(false)
-
+  const [isEditMode, setIsEditMode] = useState(false);
   const [branches, setBranches] = useState([])
   const [doctors, setDoctors] = useState([])
   const [referDoctor, setReferDoctor] = useState([])
@@ -1115,7 +1115,19 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
           <CCol md={6}>
             <CFormLabel style={labelStyle}>Consultation Fee</CFormLabel>
-            <CFormInput type="number" value={bookingDetails.consultationFee || 0} disabled style={inputStyle(false)} />
+
+            <CFormInput
+              type="number"
+              value={bookingDetails?.consultationFee ?? ''}
+              onChange={(e) =>
+                setBookingDetails((prev) => ({
+                  ...prev,
+                  consultationFee: e.target.value || bookingDetails?.consultationFee,
+                }))
+              }
+            // disabled={!isEditMode}
+            // style={inputStyle(!isEditMode)}
+            />
           </CCol>
           <CCol md={6}>
             <CFormLabel style={labelStyle}>Fee Type <span className="text-danger">*</span></CFormLabel>
