@@ -13,8 +13,9 @@ import { http } from '../../Utils/Interceptors'
 // Fetch all customers
 export const CustomerData = async () => {
   const hospitalId = localStorage.getItem('HospitalId')
+  const branchId = localStorage.getItem('branchId')
   try {
-    const url = `${BASE_URL}/${GetAllCustomers}/${hospitalId}`
+    const url = `${BASE_URL}/${GetAllCustomers}/${hospitalId}/${branchId}`
     const response = await http.get(url) //TODO:chnage when apigetway call axios to http
     // Assuming backend wraps list in response.data.data
     return Array.isArray(response.data.data) ? response.data.data : [response.data.data]

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { showCustomToast } from '../../Utils/Toaster'
 import { bookingUpdate } from '../AppointmentManagement/appointmentAPI'
 import { COLORS } from '../../Constant/Themes'
+import { uploadFile } from '../widgets/S3UploadService'
 
 function UploadButton({ bookingId }) {
   const navigate = useNavigate()
@@ -15,37 +16,34 @@ function UploadButton({ bookingId }) {
     fileInputRef.current.click() // trigger file input
   }
 
-  const handleFileChange = (event) => {
+  const handleFileChange = async (event) => {
     const file = event.target.files[0]
     if (file) {
-      const reader = new FileReader()
-
-      reader.onloadend = async () => {
-        const pdfBase64 = reader.result.split(',')[1] // remove data prefix
-
+      if (file.size > 204800) {
+        showCustomToast("Consent PDF file exceeds the 200 KB limit.", "error")
+        return
+      }
+      try {
+        const fileKey = await uploadFile("consentPdf", file)
         const payload = {
           bookingId: bookingId,
-          consentFormPdf: pdfBase64,
+          consentFormPdf: fileKey,
         }
 
         console.log('Final payload:', payload)
 
-        try {
-          const res = await bookingUpdate(payload)
-          console.log(res)
-          if (res) {
-            showCustomToast(res.message || 'Consent form uploaded successfully', 'success')
-            navigate('/dashboard', { replace: true })
-          } else {
-            showCustomToast(res.message || 'Consent form not uploaded successfully', 'error')
-          }
-          // console.log('Consent form uploaded successfully');
-        } catch (error) {
-          console.error('Upload failed:', error)
+        const res = await bookingUpdate(payload)
+        console.log(res)
+        if (res) {
+          showCustomToast(res.message || 'Consent form uploaded successfully', 'success')
+          navigate('/dashboard', { replace: true })
+        } else {
+          showCustomToast(res.message || 'Consent form not uploaded successfully', 'error')
         }
+      } catch (error) {
+        console.error('Upload failed:', error)
+        showCustomToast("Failed to upload consent form.", "error")
       }
-
-      reader.readAsDataURL(file)
     }
   }
 

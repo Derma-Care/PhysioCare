@@ -425,7 +425,7 @@ export default function PaymentDetailsUI() {
                         </CTableRow>
                     </CTableHead>
                     <CTableBody>
-                        {data.paymentHistory.map((item, i) => (
+                        {(data.paymentHistory || []).filter(item => item?.amount !== null && item?.amount !== undefined).map((item, i) => (
                             <CTableRow key={i}>
                                 <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", color: "#9ca3af" }}>{i + 1}</CTableDataCell>
                                 <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", color: "#374151" }}>{item.paymentDate}</CTableDataCell>

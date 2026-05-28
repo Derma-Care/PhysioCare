@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import SignaturePad from "react-signature-canvas";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -14,9 +14,12 @@ import { bookingUpdate } from "./appointmentAPI";
 import { showCustomToast } from "../../Utils/Toaster";
 import { COLORS } from "../../Constant/Themes";
 import FullScreenLoader from "../../Utils/FullScreenLoader";
+import { uploadFile } from "../widgets/S3UploadService";
+import { BASE_URL } from "../../baseUrl";
 
 const ConsentForm = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const booking = location.state?.bookingDetails || {};
   const vitals = location.state?.vitals || {};
   const doctorSign = location.state?.doctorsign || "";
@@ -58,12 +61,13 @@ const ConsentForm = () => {
       const hiddenEls = document.querySelectorAll(".no-print");
       hiddenEls.forEach((el) => (el.style.display = "none"));
 
+      // Set html2canvas scale to 1.8 to ensure high quality yet compact PDF (under 200KB)
       const pdf = new jsPDF("p", "mm", "a4");
       const pages = document.querySelectorAll(".a4-page");
 
       for (let i = 0; i < pages.length; i++) {
         const canvas = await html2canvas(pages[i], {
-          scale: 4,
+          scale: 1.8,
           useCORS: true,
           backgroundColor: "#ffffff",
           scrollY: -window.scrollY,
@@ -71,21 +75,60 @@ const ConsentForm = () => {
           height: pages[i].offsetHeight,
         });
 
-        const imgData = canvas.toDataURL("image/jpeg", 1.0);
+        const imgData = canvas.toDataURL("image/jpeg", 0.85); // 0.85 compression
         if (i > 0) pdf.addPage();
         pdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
       }
 
       hiddenEls.forEach((el) => (el.style.display = ""));
 
-      const pdfBase64 = pdf.output("datauristring").split(",")[1];
-      const payload = { bookingId: booking?.bookingId, consentFormPdf: pdfBase64 };
-      const res = await bookingUpdate(payload);
+      const pdfBlob = pdf.output("blob");
+      // S3 presigned URL limits consentPdf to 204800 bytes
+      const file = new File([pdfBlob], `${booking?.name || "Patient"}_Consent.pdf`, { type: "application/pdf" });
 
-      if (res) {
-        showCustomToast(res.message || "Consent form uploaded successfully", "success");
+      if (file.size > 204800) {
+        console.warn(`Generated PDF size: ${file.size} bytes. Retrying with lower scale for safety.`);
+        // Fallback: recreate with a lower scale if it somehow still exceeds
+        const fallbackPdf = new jsPDF("p", "mm", "a4");
+        for (let i = 0; i < pages.length; i++) {
+          const canvas = await html2canvas(pages[i], {
+            scale: 1.2,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+            scrollY: -window.scrollY,
+            width: pages[i].offsetWidth,
+            height: pages[i].offsetHeight,
+          });
+          const imgData = canvas.toDataURL("image/jpeg", 0.7);
+          if (i > 0) fallbackPdf.addPage();
+          fallbackPdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
+        }
+        const fallbackBlob = fallbackPdf.output("blob");
+        const fallbackFile = new File([fallbackBlob], `${booking?.name || "Patient"}_Consent.pdf`, { type: "application/pdf" });
+
+        console.log(`Fallback PDF size: ${fallbackFile.size} bytes`);
+        const fileKey = await uploadFile("consentPdf", fallbackFile);
+        const payload = { bookingId: booking?.bookingId, consentFormPdf: fileKey };
+        const res = await bookingUpdate(payload);
+        if (res) {
+          showCustomToast(res.message || "Consent form uploaded successfully", "success");
+          // navigate(`/appointment-details/${booking?.bookingId}`);
+          navigate(-1);
+        }
+        const pdfBase64 = fallbackPdf.output("datauristring").split(",")[1];
+        setPdfPreview(pdfBase64);
+      } else {
+        console.log(`PDF size: ${file.size} bytes`);
+        const fileKey = await uploadFile("consentPdf", file);
+        const payload = { bookingId: booking?.bookingId, consentFormPdf: fileKey };
+        const res = await bookingUpdate(payload);
+        if (res) {
+          showCustomToast(res.message || "Consent form uploaded successfully", "success");
+          navigate(-1);
+        }
+        const pdfBase64 = pdf.output("datauristring").split(",")[1];
+        setPdfPreview(pdfBase64);
       }
-      setPdfPreview(pdfBase64);
     } catch (error) {
       console.error(error);
       alert("Upload Failed ❌");
@@ -119,6 +162,18 @@ const ConsentForm = () => {
     pdf.save(`${booking?.name}_Consent.pdf`);
   };
 
+  const getFileUrl = (str) => {
+    if (!str) return ''
+    if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('/')) {
+      return str
+    }
+    const isBase64 = str.includes(';base64,') || (str.length > 100 && !str.includes('/') && !str.includes('.'));
+    if (!isBase64) {
+      return `${BASE_URL}/viewFile/${str}`
+    }
+    return ''
+  }
+
   const consentFile = pdfPreview || booking?.consentFormPdf || "";
   const hasConsentFile = !!String(consentFile).trim();
 
@@ -132,37 +187,60 @@ const ConsentForm = () => {
   };
 
   const fileValue = consentFile || "";
-  const isPdf =
-    fileValue.startsWith("JVBER") ||
-    fileValue.startsWith("data:application/pdf") ||
-    fileValue.includes("application/pdf");
+  const isBase64 = fileValue.includes(';base64,') || (fileValue.length > 100 && !fileValue.includes('/') && !fileValue.includes('.'));
+
+  const isPdf = isBase64
+    ? (fileValue.startsWith("JVBER") || fileValue.startsWith("data:application/pdf") || fileValue.includes("application/pdf"))
+    : (fileValue.toLowerCase().endsWith(".pdf"));
 
   const handleDownloadPreview = () => {
-    const link = document.createElement("a");
-    link.href = `data:application/pdf;base64,${consentFile}`;
-    link.download = `${booking?.name}_Consent.pdf`;
-    link.click();
-  };
-
-  const handlePrintPreview = () => {
-    const mime = isPdf ? "application/pdf" : "image/png";
-    const blob = base64ToBlob(consentFile, mime);
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, "_blank");
-    if (win) {
-      win.onload = () => {
-        win.focus();
-        win.print();
-      };
+    if (isBase64) {
+      const link = document.createElement("a");
+      link.href = `data:application/pdf;base64,${consentFile}`;
+      link.download = `${booking?.name}_Consent.pdf`;
+      link.click();
+    } else {
+      const link = document.createElement("a");
+      link.href = getFileUrl(consentFile);
+      link.target = "_blank";
+      link.download = `${booking?.name}_Consent.pdf`;
+      link.click();
     }
   };
 
-  const pdfSrc = fileValue.startsWith("data:")
-    ? fileValue
-    : `data:application/pdf;base64,${fileValue}`;
+  const handlePrintPreview = () => {
+    if (isBase64) {
+      const mime = isPdf ? "application/pdf" : "image/png";
+      const blob = base64ToBlob(consentFile, mime);
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, "_blank");
+      if (win) {
+        win.onload = () => {
+          win.focus();
+          win.print();
+        };
+      }
+    } else {
+      const win = window.open(getFileUrl(consentFile), "_blank");
+      if (win) {
+        win.onload = () => {
+          win.focus();
+          win.print();
+        };
+      }
+    }
+  };
 
-  const pdfBlob = hasConsentFile ? base64ToBlob(consentFile, "application/pdf") : null;
-  const pdfUrl = pdfBlob ? URL.createObjectURL(pdfBlob) : "";
+  const pdfUrl = (() => {
+    if (!hasConsentFile) return "";
+    if (isBase64) {
+      const cleanBase64 = fileValue.startsWith("data:") ? fileValue.split(",")[1] : fileValue;
+      const blob = base64ToBlob(cleanBase64, "application/pdf");
+      return blob ? URL.createObjectURL(blob) : "";
+    } else {
+      return getFileUrl(consentFile);
+    }
+  })();
 
   return (
     <>

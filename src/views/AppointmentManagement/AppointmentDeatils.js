@@ -36,6 +36,7 @@ import ProgramPayment from './PaymentProgram'
 import PhysioConsentForm from './PhysioConsentForm'
 import { COLORS } from '../../Constant/Themes'
 import LoadingIndicator from '../../Utils/loader'
+import { BASE_URL } from '../../baseUrl'
 
 /* ─────────────────────────────────────────────
    Inline styles – scoped design tokens
@@ -304,10 +305,10 @@ const AppointmentDetails = () => {
     )
   }
 
-  const showConfirmed = ['active', 'confirmed', 'in-progress', 'followup'].includes(normalizedStatus)
+  const showConfirmed = ['active', 'confirmed', 'in-progress', 'follow-up'].includes(normalizedStatus)
   const showCompletedOrActive = ['completed', 'active'].includes(normalizedStatus)
   const showVitalsCard = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
-  const showPayment = ['active', 'followup'].includes(normalizedStatus)
+  const showPayment = ['active', 'follow-up'].includes(normalizedStatus)
   const showConfirmedOrCompleted = ['confirmed', 'completed', 'active'].includes(normalizedStatus)
   const showPrescription = ['active', 'completed'].includes(normalizedStatus) && appointment?.prescriptionPdf
   const showAccordion = ['confirmed', 'active', 'completed'].includes(normalizedStatus)
@@ -422,24 +423,56 @@ const AppointmentDetails = () => {
     } catch (e) { alert('Failed to decode file data.'); return null }
   }
 
+  const getFileUrl = (str) => {
+    if (!str) return ''
+    if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('/')) {
+      return str
+    }
+    const isBase64 = str.includes(';base64,') || (str.length > 100 && !str.includes('/') && !str.includes('.'));
+    if (!isBase64) {
+      return `${BASE_URL}/viewFile/${str}`
+    }
+    return ''
+  }
+
   const handlePreview = (base64String) => {
     if (!base64String || typeof base64String !== 'string') { alert('No valid file data.'); return }
+    const fileUrl = getFileUrl(base64String)
+    if (fileUrl) {
+      window.open(fileUrl, '_blank')
+      return
+    }
     const blob = base64toBlob(base64String, getMimeTypeFromBase64(base64String))
-    window.open(URL.createObjectURL(blob), '_blank')
+    if (blob) {
+      window.open(URL.createObjectURL(blob), '_blank')
+    }
   }
 
   const handleDownload = (base64String, fileName) => {
     if (!base64String || typeof base64String !== 'string') { alert('No valid file data.'); return }
+    const fileUrl = getFileUrl(base64String)
+    if (fileUrl) {
+      const link = document.createElement('a')
+      link.href = fileUrl
+      link.download = fileName || 'file'
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      return
+    }
     const blob = base64toBlob(base64String, getMimeTypeFromBase64(base64String))
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url; link.download = fileName || 'file.pdf'
-    document.body.appendChild(link); link.click()
-    document.body.removeChild(link); URL.revokeObjectURL(url)
+    if (blob) {
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url; link.download = fileName || 'file.pdf'
+      document.body.appendChild(link); link.click()
+      document.body.removeChild(link); URL.revokeObjectURL(url)
+    }
   }
 
   const handlePaymentClick = () => {
-    if (showPayment && normalizedStatus === 'active' || appointment?.status === 'in-progress' || normalizedStatus === 'followup') {
+    if (showPayment && normalizedStatus === 'active' || appointment?.status === 'in-progress' || normalizedStatus === 'follow-up') {
       navigate('/program-payment' + `/${id}`, {
         state: {
           bookingId: appointment.bookingId, doctorId: appointment.doctorId,
@@ -447,7 +480,7 @@ const AppointmentDetails = () => {
           patientId: appointment.patientId,
         }
       })
-    } else { alert('Payment allowed only for active status') }
+    } else { showCustomToast('Payment allowed only for active status') }
   }
 
   /* ── shared action button ── */
@@ -539,7 +572,7 @@ const AppointmentDetails = () => {
               <CreditCard size={13} /> Payment
             </ActionBtn>
           )}
-          {vitals && (
+          {vitals && !appointment?.consentFormPdf && (
             <ActionBtn style={{ backgroundColor: COLORS.white, color: COLORS.primary }} onClick={() => navigate('/physio-consent-form', { state: { bookingDetails: appointment, vitals, doctorsign: doctor?.doctorSignature } })}>
               <FileText size={13} /> Consent Form
             </ActionBtn>
@@ -601,7 +634,7 @@ const AppointmentDetails = () => {
                 {appointment?.partImage && (
                   <div style={{ textAlign: 'center', marginBottom: '16px' }}>
                     <img
-                      src={`data:image/png;base64,${appointment.partImage}`}
+                      src={getFileUrl(appointment.partImage) || `data:image/png;base64,${appointment.partImage}`}
                       alt="Pain Area Mapping"
                       style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: '8px' }}
                     />
@@ -717,6 +750,28 @@ const AppointmentDetails = () => {
                     </CAccordionBody>
                   </CAccordionItem>
                 )}
+
+                {/* Consent Form */}
+                {appointment?.consentFormPdf ? (
+                  <CAccordionItem itemKey={4}>
+                    <CAccordionHeader>Patient Consent Form</CAccordionHeader>
+                    <CAccordionBody>
+                      <div style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '8px 0',
+                      }}>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>Consent Form File</div>
+                          {/* <div style={{ fontSize: '11px', color: '#64748b' }}>Uploaded during booking</div> */}
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <ActionBtn onClick={() => handlePreview(appointment.consentFormPdf)}><Eye size={13} /></ActionBtn>
+                          <ActionBtn onClick={() => handleDownload(appointment.consentFormPdf, `consent_form.pdf`)}><Download size={13} /></ActionBtn>
+                        </div>
+                      </div>
+                    </CAccordionBody>
+                  </CAccordionItem>
+                ) : null}
               </CAccordion>
             </div>
 

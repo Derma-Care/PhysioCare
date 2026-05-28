@@ -34,6 +34,7 @@ import imageCompression from 'browser-image-compression'
 import BodyAssessment from './BodyAssessment'
 import { COLORS } from '../../Constant/Themes'
 import BookingSearch from '../widgets/BookingSearch '
+import { uploadFile } from '../widgets/S3UploadService'
 
 // ─── Tab config ────────────────────────────────────────────────────────────────
 const TABS = [
@@ -119,8 +120,102 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
   const [onboardToCustomer, setOnboardToCustomer] = useState(false)
   const [saveloading, setSaveLoading] = useState(false)
+  const [uploadProgressMsg, setUploadProgressMsg] = useState('')
   const [loadingPincode, setLoadingPincode] = useState(false)
   const [errors, setErrors] = useState({})
+
+  // Helper to convert base64 to File object
+  const base64ToFile = (base64String, filename = 'partImage.png') => {
+    try {
+      const arr = base64String.split(',')
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png'
+      const bstr = atob(arr[1] || arr[0])
+      let n = bstr.length
+      const u8arr = new Uint8Array(n)
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n)
+      }
+      return new File([u8arr], filename, { type: mime })
+    } catch (e) {
+      console.error('base64ToFile conversion failed', e)
+      return null
+    }
+  }
+
+  // Helper to compress images if needed
+  const compressAndPrepFile = async (file, maxSizeMB = 0.14, fileType = 'image/jpeg', maxSizeBytes = 150 * 1024) => {
+    if (file && file.type?.startsWith('image/')) {
+      if (file.size > maxSizeBytes) {
+        try {
+          const options = {
+            maxSizeMB: maxSizeMB,
+            maxWidthOrHeight: 1280,
+            useWebWorker: true,
+            fileType: fileType
+          }
+          const compressedBlob = await imageCompression(file, options)
+          const ext = fileType.split('/').pop()
+          return new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + "." + ext, {
+            type: fileType,
+            lastModified: Date.now()
+          })
+        } catch (err) {
+          console.error("Compression error:", err)
+          return file
+        }
+      }
+    }
+    return file
+  }
+
+  // Upload all files to S3 before submission
+  const uploadAllPendingFiles = async () => {
+    let uploadedPartImage = markedImage
+    let uploadedAttachments = []
+
+    // 1. Upload partImage (markedImage) if it's base64
+    if (markedImage && (markedImage.startsWith('data:image') || !markedImage.startsWith('http'))) {
+      try {
+        setUploadProgressMsg('Compressing & uploading pain assessment image...')
+        const file = base64ToFile(markedImage, 'pain_assessment.png')
+        if (file) {
+          // Compress PNG below 50,000 bytes (using 0.045MB)
+          const compressed = await compressAndPrepFile(file, 0.045, 'image/png', 45 * 1024)
+          const key = await uploadFile('partImage', compressed)
+          uploadedPartImage = key
+        }
+      } catch (err) {
+        console.error("Failed to upload partImage:", err)
+        throw new Error("Failed to upload pain assessment image to S3.")
+      }
+    }
+
+    // 2. Upload attachments (singular 'attachment' fieldName as requested)
+    if (bookingDetails.attachments?.length > 0) {
+      setUploadProgressMsg('Compressing & uploading attachments...')
+      for (let i = 0; i < bookingDetails.attachments.length; i++) {
+        const att = bookingDetails.attachments[i]
+        if (att.isS3) {
+          uploadedAttachments.push(att.url)
+        } else if (att.fileObj) {
+          try {
+            const compressed = await compressAndPrepFile(att.fileObj)
+            const key = await uploadFile('attachment', compressed)
+            uploadedAttachments.push(key)
+          } catch (err) {
+            console.error("Failed to upload attachment:", err)
+            throw new Error(`Failed to upload attachment: ${att.name}`)
+          }
+        } else if (typeof att === 'string') {
+          uploadedAttachments.push(att)
+        }
+      }
+    }
+
+    return { uploadedPartImage, uploadedAttachments }
+  }
+
+
 
   // ── Initial state factory ─────────────────────────────────────────────────
   const getInitialBookingDetails = () => ({
@@ -147,7 +242,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     symptomsDuration: '', unit: '', problem: '',
     foc: 'Paid', focReason: '', attachments: [],
     freeFollowUps: selectedHospital?.data?.freeFollowUps || '',
-    consentFormPdf: '', customerDeviceId: '',
+    customerDeviceId: '',
     serviceDate: '', servicetime: '',
     referredByType: '', referredByName: '',
     address: {
@@ -304,6 +399,12 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         dob: editData.dob || editData.dateOfBirth || '',
         symptomsDuration: parsedDuration,
         unit: parsedUnit,
+        attachments: editData.attachments?.map((att, idx) => {
+          if (typeof att === 'string') {
+            return { name: att.split('/').pop() || `Attachment_${idx + 1}`, url: att, isS3: true }
+          }
+          return att
+        }) || [],
         address: {
           houseNo: parts[0]?.trim() || '', street: parts[1]?.trim() || '',
           landmark: parts[2]?.trim() || '', city: parts[3]?.trim() || '',
@@ -699,6 +800,11 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     }
     try {
       setSaveLoading(true)
+      
+      // Upload files to S3 first
+      const { uploadedPartImage, uploadedAttachments } = await uploadAllPendingFiles()
+      setUploadProgressMsg('Submitting booking details...')
+
       // ✅ Exclude unit, address, serviceDate from the spread so they don't bleed into payloads
       const { unit, address, serviceDate: _serviceDate, ...rest } = bookingDetails
       const combinedName = `${bookingDetails.title}${bookingDetails.name}`
@@ -728,6 +834,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
             'Mobile number already exists. Please search for the existing patient.'
           showCustomToast(msg, 'error')
           setSaveLoading(false)
+          setUploadProgressMsg('')
           return
         }
       }
@@ -742,8 +849,8 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
           serviceDate: editData.serviceDate,
           servicetime: editData.servicetime || editData.time,
           patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
-          attachments: bookingDetails.attachments?.map((f) => f.base64?.split(',')[1] || f).filter(Boolean) || [],
-          partImage: markedImage,
+          attachments: uploadedAttachments,
+          partImage: uploadedPartImage,
           theraphyAnswers: theraphyQuestions,
           parts: part,
           reasonForVisit: bookingDetails.reasonforVisit === 'Others' ? otherReason : bookingDetails.reasonforVisit,
@@ -761,8 +868,9 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
           patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
           customerId: selectedBooking?.customerId || customerData?.customerId || '',
           patientId: selectedBooking?.patientId || customerData?.patientId || '',
-          attachments: bookingDetails.attachments?.map((f) => f.base64.split(',')[1]) || [],
-          partImage: markedImage, theraphyAnswers: theraphyQuestions, parts: part,
+          attachments: uploadedAttachments,
+          partImage: uploadedPartImage,
+          theraphyAnswers: theraphyQuestions, parts: part,
           reasonForVisit: bookingDetails.reasonforVisit === 'Others' ? otherReason : bookingDetails.reasonforVisit,
           dob: bookingDetails.dob,
           dateOfBirth: bookingDetails.dob,
@@ -785,6 +893,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       showCustomToast(msg, 'error')
     } finally {
       setSaveLoading(false)
+      setUploadProgressMsg('')
     }
   }
 
@@ -796,12 +905,19 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     }
     try {
       setSaveLoading(true)
+
+      // Upload files to S3 first
+      const { uploadedPartImage, uploadedAttachments } = await uploadAllPendingFiles()
+      setUploadProgressMsg('Submitting booking details...')
+
       await followUPBooking({
         bookingId: selectedBooking.bookingId, doctorId: selectedBooking.doctorId,
         visitType: 'follow-up', mobileNumber: selectedBooking.mobileNumber,
         serviceDate: selectedDate, servicetime: bookingDetails.servicetime,
         patientId: selectedBooking.patientId, bookingFor: selectedBooking.bookingFor,
-        partImage: markedImage, theraphyAnswers: theraphyQuestions, parts: part,
+        attachments: uploadedAttachments,
+        partImage: uploadedPartImage,
+        theraphyAnswers: theraphyQuestions, parts: part,
         listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
       })
 
@@ -816,6 +932,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       showCustomToast('Failed to submit follow-up booking.', 'error')
     } finally {
       setSaveLoading(false)
+      setUploadProgressMsg('')
     }
   }
 
@@ -1352,22 +1469,24 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
             <CFormInput type="file" multiple accept=".jpg,.jpeg,.png,.pdf" style={{ fontSize: FS }}
               onChange={async (e) => {
                 const newFiles = Array.from(e.target.files)
-                if (newFiles.length + (bookingDetails.attachments?.length || 0) > 6) {
-                  showCustomToast('Maximum 6 files allowed.', 'error'); e.target.value = ''; return
+                if (newFiles.length + (bookingDetails.attachments?.length || 0) > 4) {
+                  showCustomToast('Maximum 4 files allowed.', 'error'); e.target.value = ''; return
                 }
                 const processed = await Promise.all(newFiles.map(async (file) => {
                   let f = file
-                  if (file.size > 250 * 1024 && file.type.startsWith('image/'))
+                  if (file.type.startsWith('image/')) {
                     try {
-                      f = await imageCompression(file, { maxSizeMB: 0.25, maxWidthOrHeight: 1920, useWebWorker: true })
+                      f = await imageCompression(file, { maxSizeMB: 0.14, maxWidthOrHeight: 1280, useWebWorker: true })
                     } catch { }
-                  const base64 = await new Promise((res, rej) => {
-                    const r = new FileReader(); r.readAsDataURL(f)
-                    r.onload = () => res(r.result); r.onerror = rej
-                  })
-                  return { name: file.name, base64 }
+                  } else {
+                    if (file.size > 150 * 1024) {
+                      showCustomToast(`Warning: File "${file.name}" is larger than 150 KB.`, 'warning')
+                    }
+                  }
+                  return { name: file.name, fileObj: f, isS3: false }
                 }))
                 setBookingDetails((p) => ({ ...p, attachments: [...(p.attachments || []), ...processed] }))
+                e.target.value = ''
               }} />
             {bookingDetails.attachments?.map((file, i) => (
               <div key={i} className="d-flex align-items-center mt-1 gap-2" style={{ fontSize: FS }}>
@@ -1380,6 +1499,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
               </div>
             ))}
           </CCol>
+
         </CRow>
       </div>
     )
@@ -1591,7 +1711,12 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
                   backgroundColor: COLORS.primary, color: '#fff', border: 'none',
                 }}
                 onClick={visitType === 'followup' ? handleFollowUpSubmit : handleSubmit}>
-                {saveloading ? 'Submitting…' : '✓ Submit'}
+                {saveloading ? (
+                  <div className="d-flex align-items-center gap-1">
+                    <span className="spinner-border spinner-border-sm" style={{ width: '12px', height: '12px' }} />
+                    {uploadProgressMsg || 'Submitting…'}
+                  </div>
+                ) : '✓ Submit'}
               </CButton>
             )}
           </div>

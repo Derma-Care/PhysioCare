@@ -550,8 +550,8 @@ export default function StaffAttendanceDetails() {
         <CModalBody>
           <div className="d-flex align-items-stretch mb-4">
             <div className="sad-exp-block">
-              <div className="sad-exp-lbl">Total Experience (since {staffInfo?.joiningDate || "N/A"})</div>
-              <div className="sad-exp-val">{experience}</div>
+              <div className="sad-exp-lbl">Total Experience (since {performanceData?.joiningDate || "N/A"})</div>
+              <div className="sad-exp-val">{performanceData?.yearsOfExperience || "N/A"} Years</div>
             </div>
             <div style={{ width: 160, flexShrink: 0 }}>
               <label className="sad-filter-label">Select Year</label>

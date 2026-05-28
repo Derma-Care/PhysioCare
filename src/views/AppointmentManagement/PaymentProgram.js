@@ -70,6 +70,11 @@ export default function ProgramPayment() {
     }
   }, [bookingId, patientId, clinicId, branchId]);
 
+  const getValidPaymentHistory = (history) => {
+    if (!Array.isArray(history)) return [];
+    return history.filter(p => p && p.amount !== null && p.amount !== undefined);
+  };
+
   // Step 1: Check payment API first for sessionTableCreatedStatus
   const initializePayment = async () => {
     try {
@@ -85,30 +90,38 @@ export default function ProgramPayment() {
           setAllPaid(checkAllSessionsPaid(result));
           setFullPaymentData(result);
           console.log("Payment data loaded (table exists):", result);
-          if ((result.paymentHistory || []).length > 0) {
+          const validHistory = getValidPaymentHistory(result.paymentHistory);
+          if (validHistory.length > 0) {
             setTotalForSelection(result.balanceAmount || 0);
             setPaymentAmount(result.balanceAmount || 0);
             setFinalAmount(result.balanceAmount || 0);
           } else {
             setTotalForSelection(result.totalAmount || 0);
             setPaymentAmount(result.totalAmount || 0);
-            setFinalAmount(result.finalAmount || result.totalAmount || 0);
+            setFinalAmount(result.balanceAmount || result.totalAmount || 0);
           }
-          setDiscountAmount(result.discountAmount || 0);
+          // For follow-up payments, do NOT carry over the first payment's discount
+          if (validHistory.length > 0) {
+            setDiscountAmount(0);
+            setDiscount(0);
+          } else {
+            setDiscountAmount(result.discountAmount || 0);
+          }
           setDoctorName(result.doctorName);
           setTherapistName(result.therapistName);
           setTherapistRecordId(result.therapistRecordId);
           setPaymentStatus(result.paymentStatus);
-          setPaymentHistory(result.paymentHistory || []);
+          setPaymentHistory(validHistory);
           setTotalPaid(result.totalPaid || 0);
           setBalanceAmount(result.balanceAmount || 0);
+          setPayAfterService(result.payAfterService === false);
           const typeRaw = result.serviceType?.toLowerCase() || "";
           setBackendServiceType(typeRaw === "exercise" ? "activity" : typeRaw);
           const formatted = formatTherapyTable(result.therapyWithSessions);
           setTableData(formatted);
           setShowTable(true);
           setSessionTableAlreadyCreated(true); // mark as pre-existing, hide session details
-          if ((result.paymentHistory || []).length > 0) setIsFollowUpPayment(true);
+          if (validHistory.length > 0) setIsFollowUpPayment(true);
 
           // Also fetch therapy sessions for dropdown options
           await fetchTherapySessions();
@@ -673,7 +686,7 @@ export default function ProgramPayment() {
     paymentLevel: selectedType === "activity" ? "EXERCISE" : selectedType.toUpperCase(),
     amount: Number(finalAmount || 0), paymentMode: paymentMode.toUpperCase(), paymentType: paymentType.toUpperCase(),
     totalSessionCount: 2, discountAmount: Number(discountAmount || 0), discountIssuedBy,
-    payAfterService: payAfterService,
+    payAfterService: true,
     paymentDate: new Date().toISOString().split("T")[0],
     paymentTarget: {
       packageIds: selectedType === "package" ? [packageId] : [],
@@ -769,10 +782,14 @@ export default function ProgramPayment() {
       ...(selectedType === "session" && { sessionIds: selectedValue.length ? selectedValue.map(i => i.value) : sessionRows.map(s => s.sessionId) }),
     },
     paymentDate: new Date().toISOString().split("T")[0],
+    payAfterService: true,
+    discountAmount: Number(discountAmount || 0),
+    discountIssuedBy,
   };
 
   const handleSubmit = async () => {
-    const isApprovalRequired = !payAfterService && (Number(paymentPercent) < 50 || Number(discount || 0) > 0 || Number(discountAmount || 0) > 0);
+    const hasPaidOnceSubmit = Number(totalPaid || 0) > 0 || (Array.isArray(paymentHistory) ? paymentHistory.length > 0 : false);
+    const isApprovalRequired = !payAfterService && !hasPaidOnceSubmit && (Number(paymentPercent) < 50 || Number(discount || 0) > 0 || Number(discountAmount || 0) > 0);
     if (isApprovalRequired && !discountIssuedBy.trim()) {
       showCustomToast(
         "Approval is required when a discount is applied or payment is below 50%",
@@ -784,7 +801,7 @@ export default function ProgramPayment() {
     try {
       setSubmitLoading(true);
       let payload, url, method;
-      if (!isFollowUpPayment) {
+      if (!isFollowUpPayment && !sessionTableAlreadyCreated) {
         if (payAfterService) {
           const type = backendServiceType?.toLowerCase();
           const mapEx = (ex) => ({
@@ -859,7 +876,7 @@ export default function ProgramPayment() {
           payload = {
             clinicId, branchId, bookingId, patientId, sessionStartDate: startDate, doctorId, doctorName, therapistId, therapistName, therapistRecordId,
             serviceType: backendServiceType === "activity" ? "EXERCISE" : backendServiceType.toUpperCase(),
-            payAfterService: true,
+            payAfterService: false,
             therapyWithSessions: therapyWithSessionsData
           };
         } else {
@@ -868,7 +885,27 @@ export default function ProgramPayment() {
         url = `${wifiUrl}/api/physiotherapy-doctor/payment/create`;
         method = "POST";
       }
-      else { payload = updatePayload; url = `${wifiUrl}/api/physiotherapy-doctor/payment/update`; method = "POST"; }
+      else {
+        if (payAfterService) {
+          // Checkbox checked → pay after service, send null payment fields (same as initial backend entry)
+          payload = {
+            bookingId,
+            payAfterService: false,
+            amount: null,
+            paymentMode: null,
+            paymentType: null,
+            paymentDate: null,
+            paymentLevel: null,
+            discountAmount: null,
+            discountIssuedBy: null,
+          };
+        } else {
+          // Checkbox unchecked → normal payment with actual values
+          payload = { ...updatePayload, payAfterService: true };
+        }
+        url = `${wifiUrl}/api/physiotherapy-doctor/payment/update`;
+        method = "POST";
+      }
       console.log("FINAL PAYLOAD:", payload);
       const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await response.json();
@@ -899,28 +936,31 @@ export default function ProgramPayment() {
       setAllPaid(checkAllSessionsPaid(result));
       setFullPaymentData(result);
       console.log(result);
-      if ((result.paymentHistory || []).length > 0) { setPaymentAmount(result.balanceAmount || 0); setFinalAmount(result.balanceAmount || 0); }
+      const validHistory = getValidPaymentHistory(result.paymentHistory);
+      if (validHistory.length > 0) { setPaymentAmount(result.balanceAmount || 0); setFinalAmount(result.balanceAmount || 0); }
       else { setPaymentAmount(result.totalAmount || 0); setFinalAmount(result.finalAmount || result.totalAmount || 0); }
       setDiscountAmount(result.discountAmount || 0);
       setDoctorName(result.doctorName);
       setTherapistName(result.therapistName);
       setTherapistRecordId(result.therapistRecordId);
       setPaymentStatus(result.paymentStatus);
-      setPaymentHistory(result.paymentHistory || []);
+      setPaymentHistory(validHistory);
+      setPayAfterService(result.payAfterService === false);
       const typeRaw = result.serviceType?.toLowerCase() || "";
       setBackendServiceType(typeRaw === "exercise" ? "activity" : typeRaw); // Sync backend service type
       const formatted = formatTherapyTable(result.therapyWithSessions);
       setTableData(formatted);
       setShowTable(true);
-      if ((result.paymentHistory || []).length > 0) setIsFollowUpPayment(true);
+      if (validHistory.length > 0) setIsFollowUpPayment(true);
     } catch (err) { console.error(err); }
   };
 
   useEffect(() => {
     const total = Number(paymentAmount || 0);
-    const discountVal = Number(discountAmount || 0);
+    // For follow-up payments, discount is always 0 — don't deduct it
+    const discountVal = isFollowUpPayment ? 0 : Number(discountAmount || 0);
     setFinalAmount(total - discountVal);
-  }, [paymentAmount, discountAmount]);
+  }, [paymentAmount, discountAmount, isFollowUpPayment]);
 
   // ── react-select styles ──────────────────────────────────────────
   const selectStyles = {
@@ -992,7 +1032,8 @@ export default function ProgramPayment() {
   const labelStyle = { fontSize: "11px", fontWeight: 600, color: COLORS.primary, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" };
   const inputStyle = { fontSize: "13px", color: COLORS.primary, border: "0.5px solid #d0dce9", borderRadius: "7px", padding: "8px 12px" };
 
-  const isApprovalRequired = Number(paymentPercent) < 50 || Number(discount || 0) > 0 || Number(discountAmount || 0) > 0;
+  const hasPaidOnce = Number(totalPaid || 0) > 0 || (Array.isArray(paymentHistory) ? paymentHistory.length > 0 : false);
+  const isApprovalRequired = !payAfterService && !hasPaidOnce && (Number(paymentPercent) < 50 || Number(discount || 0) > 0 || Number(discountAmount || 0) > 0);
 
   return (
     <div style={{ background: "#f4f6f9", minHeight: "100vh", padding: "20px" }}>
@@ -1446,7 +1487,7 @@ export default function ProgramPayment() {
                 )} */}
               </CCol>
 
-              {!isFollowUpPayment && (
+              {!hasPaidOnce && (
                 <>
                   <CCol md={2}>
                     <CFormLabel style={labelStyle}>Discount %</CFormLabel>
@@ -1486,56 +1527,62 @@ export default function ProgramPayment() {
                   </CCol>
                 </>
               )}
+              {
+                !hasPaidOnce && (
+                  <CCol md={2}>
+                    <CFormLabel style={labelStyle}>Final Amount</CFormLabel>
+                    <CFormInput value={finalAmount.toFixed(2)} readOnly style={{ ...inputStyle, background: "#eaf3de", color: "#27500a", fontWeight: 600 }} />
+                  </CCol>
+                )
+              }
 
-              <CCol md={2}>
-                <CFormLabel style={labelStyle}>Final Amount</CFormLabel>
-                <CFormInput value={finalAmount} readOnly style={{ ...inputStyle, background: "#eaf3de", color: "#27500a", fontWeight: 600 }} />
-              </CCol>
             </CRow>
 
             <CRow className="g-3 mt-2">
-              <CCol md={3}>
-                <CFormLabel style={labelStyle}>
-                  Approved By
-                  {isApprovalRequired && (
-                    <span style={{ color: "#dc2626" }}> *</span>
-                  )}
-                </CFormLabel>
+              {!hasPaidOnce && (
+                <CCol md={3}>
+                  <CFormLabel style={labelStyle}>
+                    Approved By
+                    {isApprovalRequired && (
+                      <span style={{ color: "#dc2626" }}> *</span>
+                    )}
+                  </CFormLabel>
 
-                <CFormInput
-                  value={discountIssuedBy}
-                  onChange={(e) => setDiscountIssuedBy(e.target.value)}
-                  placeholder={
-                    isApprovalRequired
-                      ? "Approval is required"
-                      : "Enter approved person"
-                  }
-                  style={{
-                    ...inputStyle,
-                    border:
-                      isApprovalRequired && !discountIssuedBy
-                        ? "1px solid #dc2626"
-                        : inputStyle.border,
-                    background:
+                  <CFormInput
+                    value={discountIssuedBy}
+                    onChange={(e) => setDiscountIssuedBy(e.target.value)}
+                    placeholder={
                       isApprovalRequired
-                        ? "#fef2f2"
-                        : "#fff",
-                  }}
-                />
-
-                {isApprovalRequired && !discountIssuedBy && (
-                  <div
+                        ? "Approval is required"
+                        : "Enter approved person"
+                    }
                     style={{
-                      color: "#dc2626",
-                      fontSize: "11px",
-                      marginTop: "4px",
-                      fontWeight: "500",
+                      ...inputStyle,
+                      border:
+                        isApprovalRequired && !discountIssuedBy
+                          ? "1px solid #dc2626"
+                          : inputStyle.border,
+                      background:
+                        isApprovalRequired
+                          ? "#fef2f2"
+                          : "#fff",
                     }}
-                  >
-                    Approval is required
-                  </div>
-                )}
-              </CCol>
+                  />
+
+                  {isApprovalRequired && !discountIssuedBy && (
+                    <div
+                      style={{
+                        color: "#dc2626",
+                        fontSize: "11px",
+                        marginTop: "4px",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Approval is required
+                    </div>
+                  )}
+                </CCol>
+              )}
 
               <CCol md={3}>
                 <CFormLabel style={labelStyle}>Payment Mode</CFormLabel>
@@ -1599,8 +1646,8 @@ export default function ProgramPayment() {
 
           <div style={{ padding: "16px 20px" }}>
             <p style={{ fontSize: "13px", color: "#475569", marginBottom: "16px", lineHeight: "1.5" }}>
-              The session details table has been successfully generated starting from <strong>{startDate}</strong>. 
-              Checking <strong>Pay After Service</strong> enables you to submit and activate these sessions directly. 
+              The session details table has been successfully generated starting from <strong>{startDate}</strong>.
+              Checking <strong>Pay After Service</strong> enables you to submit and activate these sessions directly.
               The patient will make payments after their treatment services are completed.
             </p>
             <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "0.5px solid #d0dce9", display: "flex", justifyContent: "flex-end" }}>
