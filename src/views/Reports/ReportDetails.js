@@ -29,8 +29,9 @@ import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import Select from 'react-select'
 import { TestDataById } from '../TestsManagement/TestsManagementAPI'
-import { BASE_URL } from '../../baseUrl'
+import { BASE_URL, wifiUrl } from '../../baseUrl'
 import { http } from '../../Utils/Interceptors'
+import { uploadFile } from '../widgets/S3UploadService'
 
 const ReportDetails = () => {
   const { id } = useParams()
@@ -69,6 +70,8 @@ const ReportDetails = () => {
   const [selectedReport, setSelectedReport] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [testNames, setTestNames] = useState([])
+  const [previewBlobUrls, setPreviewBlobUrls] = useState([])
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   useEffect(() => {
     const fetchTestNames = async () => {
@@ -130,19 +133,93 @@ const ReportDetails = () => {
     )
   }
 
-  const getMimeType = (base64) => {
-    if (!base64) return 'application/octet-stream'
-    if (base64.startsWith('JVBER')) return 'application/pdf'
-    if (base64.startsWith('/9j/')) return 'image/jpeg'
-    if (base64.startsWith('iVBOR')) return 'image/png'
+  const S3_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp']
+
+  const getMimeType = (file) => {
+    if (!file) return 'application/octet-stream'
+    // Strip S3 query params (pre-signed URL) then check extension
+    const cleanPath = file.split('?')[0]
+    if (cleanPath.includes('.')) {
+      const ext = cleanPath.split('.').pop().toLowerCase()
+      if (ext === 'pdf') return 'application/pdf'
+      if (['jpg', 'jpeg'].includes(ext)) return 'image/jpeg'
+      if (ext === 'png') return 'image/png'
+    }
+    // Legacy base64 magic-byte heuristics
+    if (file.startsWith('JVBER')) return 'application/pdf'
+    if (file.startsWith('/9j/')) return 'image/jpeg'
+    if (file.startsWith('iVBOR')) return 'image/png'
     return 'application/octet-stream'
+  }
+
+  const getFileUrl = (fileData, mimeType) => {
+    if (!fileData) return ''
+    // Legacy base64: starts with magic bytes or data URI
+    if (fileData.startsWith('data:') || fileData.startsWith('JVBER') || fileData.startsWith('/9j/') || fileData.startsWith('iVBOR')) {
+      return fileData.startsWith('data:') ? fileData : `data:${mimeType};base64,${fileData}`
+    }
+    // S3 key or full URL — build absolute URL
+    return fileData.startsWith('http') ? fileData : `${wifiUrl}/${fileData}`
+  }
+
+  // Returns true when the stored value is an S3 path/key (not raw base64)
+  const isS3Key = (file) => {
+    if (!file) return false
+    if (file.startsWith('data:') || file.startsWith('JVBER') || file.startsWith('/9j/') || file.startsWith('iVBOR')) return false
+    // Use extension as the primary signal — S3 keys always end with a file extension
+    const cleanPath = file.split('?')[0].toLowerCase()
+    return S3_EXTENSIONS.some(ext => cleanPath.endsWith(`.${ext}`))
+  }
+
+  // Download a file blob from URL and trigger save-as
+  const downloadFileFromUrl = async (url, fileName) => {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`)
+    const blob = await response.blob()
+    saveAs(blob, fileName)
   }
 
   const onDocumentLoadSuccess = ({ numPages }) => { setNumPages(numPages); setPageNumber(1) }
 
   const handleCloseModal = () => {
-    setShowModal(false); setPreviewFileUrl(null)
-    setIsPreviewPdf(false); setNumPages(null); setPageNumber(1)
+    setShowModal(false)
+    setPreviewFileUrl(null)
+    setIsPreviewPdf(false)
+    setNumPages(null)
+    setPageNumber(1)
+    // Revoke blob URLs to free memory
+    previewBlobUrls.forEach(url => { if (url?.startsWith('blob:')) URL.revokeObjectURL(url) })
+    setPreviewBlobUrls([])
+  }
+
+  // Fetch all files as blob URLs so iframe/img can render without CORS issues
+  const openPreviewModal = async (filesArray, reportItem) => {
+    setSelectedReportFiles(filesArray)
+    setSelectedReport(reportItem)
+    setDeleteId(reportItem)
+    setShowModal(true)
+    setPreviewLoading(true)
+    const blobUrls = await Promise.all(
+      filesArray.map(async (file) => {
+        if (isS3Key(file)) {
+          try {
+            const url = getFileUrl(file, getMimeType(file))
+            const res = await fetch(url)
+            if (!res.ok) throw new Error('fetch failed')
+            const blob = await res.blob()
+            return URL.createObjectURL(blob)
+          } catch {
+            // Fallback to direct URL if fetch fails
+            return getFileUrl(file, getMimeType(file))
+          }
+        }
+        // Legacy base64 — build data URL
+        const mimeType = getMimeType(file)
+        return `data:${mimeType};base64,${file}`
+      })
+    )
+    setPreviewBlobUrls(blobUrls)
+    setPreviewLoading(false)
   }
 
   const fetchReportDetails = async () => {
@@ -165,17 +242,13 @@ const ReportDetails = () => {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files)
     if (!files.length) return
-    const pdfFiles = files.filter((file) => file.type === 'application/pdf')
-    if (pdfFiles.length !== files.length) { alert('Only PDF files are allowed!'); e.target.value = ''; return }
-    const readers = pdfFiles.map((file) =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result.split(',')[1])
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
-    )
-    Promise.all(readers).then((base64Files) => setNewReport((prev) => ({ ...prev, reportFile: base64Files }))).catch(console.error)
+    const validFiles = files.filter((file) => file.type === 'application/pdf' || file.type.startsWith('image/'))
+    if (validFiles.length !== files.length) {
+      alert('Only PDF and image files are allowed!')
+      e.target.value = ''
+      return
+    }
+    setNewReport((prev) => ({ ...prev, reportFile: validFiles }))
   }
 
   const handleUploadSubmit = async () => {
@@ -206,13 +279,23 @@ const ReportDetails = () => {
     try {
       setLoading(true);
 
+      const fileKeys = [];
+      for (const file of newReport.reportFile) {
+        if (file instanceof File) {
+          const fileKey = await uploadFile('report', file);
+          fileKeys.push(fileKey);
+        } else {
+          fileKeys.push(file); // Fallback if somehow already uploaded or string
+        }
+      }
+
       const payload = {
         customerId: appointmentInfo?.item.customerId,
         reportsList: [
           {
             ...newReport,
             patientId,
-            reportFile: newReport.reportFile,
+            reportFile: fileKeys,
           },
         ],
       };
@@ -267,15 +350,40 @@ const ReportDetails = () => {
       const zip = new JSZip()
       const files = Array.isArray(reportItem.reportFile) ? reportItem.reportFile : [reportItem.reportFile]
       if (!files || files.length === 0) { showCustomToast('No files to download.', 'info'); return }
-      files.forEach((fileBase64, index) => {
-        const mimeType = getMimeType(fileBase64)
-        const extension = mimeType === 'application/pdf' ? 'pdf' : mimeType.split('/')[1] || 'dat'
-        zip.file(`${reportItem.reportName || 'report'}_${index + 1}.${extension}`, fileBase64, { base64: true })
-      })
+
+      // If only one S3 file, download directly without zip
+      if (files.length === 1 && isS3Key(files[0])) {
+        const mimeType = getMimeType(files[0])
+        const ext = mimeType === 'application/pdf' ? 'pdf' : (mimeType.split('/')[1] || 'dat')
+        const url = getFileUrl(files[0], mimeType)
+        await downloadFileFromUrl(url, `${reportItem.reportName || 'report'}.${ext}`)
+        showCustomToast('File downloaded successfully.', 'success')
+        return
+      }
+
+      for (let index = 0; index < files.length; index++) {
+        const file = files[index]
+        const mimeType = getMimeType(file)
+        const ext = mimeType === 'application/pdf' ? 'pdf' : (mimeType.split('/')[1] || 'dat')
+        const fileName = `${reportItem.reportName || 'report'}_${index + 1}.${ext}`
+        if (isS3Key(file)) {
+          // Fetch binary blob from S3/server URL
+          const url = getFileUrl(file, mimeType)
+          const response = await fetch(url)
+          const blob = await response.blob()
+          zip.file(fileName, blob)
+        } else {
+          // Legacy base64 data
+          zip.file(fileName, file, { base64: true })
+        }
+      }
       const content = await zip.generateAsync({ type: 'blob' })
       saveAs(content, `${reportItem.reportName || 'report'}_all_files.zip`)
       showCustomToast('All files downloaded successfully.', 'success')
-    } catch (error) { console.error('Error downloading all files:', error) }
+    } catch (error) {
+      console.error('Error downloading all files:', error)
+      showCustomToast('Failed to download. Try opening the file preview first.', 'error')
+    }
   }
 
   return (
@@ -370,7 +478,7 @@ const ReportDetails = () => {
                   const base64File = Array.isArray(reportItem.reportFile) ? reportItem.reportFile[0] : reportItem.reportFile
                   const mimeType = getMimeType(base64File)
                   const isPdf = mimeType === 'application/pdf'
-                  const fileUrl = `data:${mimeType};base64,${base64File}`
+                  const fileUrl = getFileUrl(base64File, mimeType)
 
                   return (
                     <CTableRow key={index} className="rd-tr">
@@ -388,13 +496,10 @@ const ReportDetails = () => {
                         {base64File ? (
                           <div style={{ display: 'flex', gap: 6 }}>
                             {can('LabReport Management', 'read') && (
-                              < button className="rd-action-btn rd-view-btn" title="Preview"
+                              <button className="rd-action-btn rd-view-btn" title="Preview"
                                 onClick={() => {
                                   const filesArray = Array.isArray(reportItem.reportFile) ? reportItem.reportFile : [reportItem.reportFile]
-                                  setSelectedReportFiles(filesArray)
-                                  setSelectedReport(reportItem)
-                                  setDeleteId(reportItem)
-                                  setShowModal(true)
+                                  openPreviewModal(filesArray, reportItem)
                                 }}>
                                 <Eye size={14} />
                               </button>
@@ -451,18 +556,40 @@ const ReportDetails = () => {
           <CModalTitle style={{ fontSize: 15, fontWeight: 600, color: '#0c447c' }}>Preview Report</CModalTitle>
         </CModalHeader>
         <CModalBody style={{ padding: 0, background: '#f8fafc' }}>
-          {Array.isArray(selectedReportFiles) && selectedReportFiles.length > 0 ? (
+          {previewLoading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 12 }}>
+              <div className="spinner-border text-primary" style={{ width: 36, height: 36 }} />
+              <p style={{ fontSize: 13, color: '#555' }}>Loading preview...</p>
+            </div>
+          ) : Array.isArray(selectedReportFiles) && selectedReportFiles.length > 0 ? (
             <Swiper modules={[Navigation]} navigation spaceBetween={20} slidesPerView={1} style={{ height: '90vh' }}>
               {selectedReportFiles.map((file, i) => {
                 const mimeType = getMimeType(file)
                 const isPdf = mimeType === 'application/pdf'
-                const fileUrl = `data:${mimeType};base64,${file}`
+                // Use pre-fetched blob URL if available, else fall back to data/direct URL
+                const fileUrl = previewBlobUrls[i] || getFileUrl(file, mimeType)
                 return (
                   <SwiperSlide key={i}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: 10, padding: '12px 16px' }}>
-                      <a href={fileUrl} download={`report_${i + 1}.${isPdf ? 'pdf' : 'jpg'}`} className="rd-btn-secondary" style={{ textDecoration: 'none' }}>
+                      <button className="rd-btn-secondary"
+                        onClick={async () => {
+                          const ext = isPdf ? 'pdf' : (mimeType.split('/')[1] || 'jpg')
+                          const fileName = `report_${i + 1}.${ext}`
+                          try {
+                            if (fileUrl.startsWith('blob:') || fileUrl.startsWith('http')) {
+                              await downloadFileFromUrl(fileUrl, fileName)
+                            } else {
+                              saveAs(new Blob([Uint8Array.from(atob(file), c => c.charCodeAt(0))], { type: mimeType }), fileName)
+                            }
+                          } catch (e) {
+                            window.open(fileUrl, '_blank')
+                          }
+                        }}>
                         <Download size={14} /> Download
-                      </a>
+                      </button>
+                      <button className="rd-btn-secondary" onClick={() => window.open(fileUrl, '_blank')}>
+                        <Eye size={14} /> Open in Tab
+                      </button>
                       <button className="rd-btn-danger" onClick={() => {
                         setDeleteTarget({ id: deleteId.parentId, bookingId: selectedReport?.bookingId, index: i, fileName: `Report File #${i + 1}` })
                         showDeleteModal(true)

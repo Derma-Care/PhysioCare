@@ -22,7 +22,7 @@ import { useNavigate } from 'react-router-dom'
 import { getAllReferDoctors } from '../EmployeeManagement/ReferDoctor/ReferDoctorAPI'
 import Select from 'react-select'
 // import { CategoryData } from '../ProcedureManagement/ProcedureManagementAPI'
-import { BASE_URL } from '../../baseUrl'
+import { BASE_URL, wifiUrl } from '../../baseUrl'
 import axios from 'axios'
 import { useHospital } from '../Usecontext/HospitalContext'
 
@@ -35,6 +35,7 @@ import BodyAssessment from './BodyAssessment'
 import { COLORS } from '../../Constant/Themes'
 import BookingSearch from '../widgets/BookingSearch '
 import { uploadFile } from '../widgets/S3UploadService'
+import { emailPattern } from '../../Constant/Constants'
 
 // ─── Tab config ────────────────────────────────────────────────────────────────
 const TABS = [
@@ -225,9 +226,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     clinicName: localStorage.getItem('HospitalName') || '',
     clinicAddress: selectedHospital?.data?.address || '',
     title: '', customerId: '', patientId: '',
-    categoryName: '', categoryId: '',
-    servicename: '', serviceId: '',
-    subServiceName: '', subServiceId: '',
+
     previousInjuries: '', currentMedications: '', allergies: '',
     occupation: '', activityLevels: [], reasonforVisit: '',
     insuranceProvider: '', policyNumber: '',
@@ -244,7 +243,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     freeFollowUps: selectedHospital?.data?.freeFollowUps || '',
     customerDeviceId: '',
     serviceDate: '', servicetime: '',
-    referredByType: '', referredByName: '',
+    referredByType: '', referredByName: '', email: '',
     address: {
       houseNo: '', street: '', landmark: '',
       city: '', state: '', postalCode: '', country: 'India',
@@ -308,7 +307,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
   const visibleSlots = showAllSlots ? sortedSlots : sortedSlots.slice(0, 12)
 
   const visibleTabs = React.useMemo(() => TABS.filter((t) => {
-    if (visitType === 'followup' && ['contact', 'medical', 'payment', 'assessment'].includes(t.id)) return false
+    if (visitType === 'followup' && ['contact', 'medical', 'assessment'].includes(t.id)) return false
     return true
   }), [visitType])
   const progressPct = Math.round(((currentTab + 1) / visibleTabs.length) * 100)
@@ -401,7 +400,10 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         unit: parsedUnit,
         attachments: editData.attachments?.map((att, idx) => {
           if (typeof att === 'string') {
-            return { name: att.split('/').pop() || `Attachment_${idx + 1}`, url: att, isS3: true }
+            // Strip query params (pre-signed URL) to get clean filename
+            const cleanPath = att.split('?')[0]
+            const fileName = cleanPath.split('/').pop() || `Attachment_${idx + 1}`
+            return { name: fileName, url: att, isS3: true }
           }
           return att
         }) || [],
@@ -449,6 +451,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       doctorDeviceId: selectedBooking.doctorDeviceId || p.doctorDeviceId,
       foc: isFollowupStatus ? 'FOC' : p.foc,
       consultationFee: isFollowupStatus ? 0 : p.consultationFee,
+      email: selectedBooking.email || '',
       address: {
         houseNo: parts[0]?.trim() || '', street: parts[1]?.trim() || '',
         landmark: parts[2]?.trim() || '', city: parts[3]?.trim() || '',
@@ -705,6 +708,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         if (isManualAddress && !addr.city?.trim()) addrErrs.city = 'City is required'
         if (isManualAddress && !addr.state?.trim()) addrErrs.state = 'State is required'
         if (Object.keys(addrErrs).length > 0) e.address = addrErrs
+        if (bookingDetails.email && bookingDetails.email.trim() && !emailPattern.test(bookingDetails.email)) e.email = 'Valid email required'
       }
     }
 
@@ -800,7 +804,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     }
     try {
       setSaveLoading(true)
-      
+
       // Upload files to S3 first
       const { uploadedPartImage, uploadedAttachments } = await uploadAllPendingFiles()
       setUploadProgressMsg('Submitting booking details...')
@@ -821,6 +825,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
             fullName: combinedName, mobileNumber: bookingDetails.mobileNumber, gender: bookingDetails.gender,
             dateOfBirth: `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`,
             age: bookingDetails.age,
+            email: bookingDetails.email,
             hospitalId: localStorage.getItem('HospitalId') || '',
             hospitalName: localStorage.getItem('HospitalName') || '',
             branchId: localStorage.getItem('branchId') || '',
@@ -840,14 +845,14 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       }
 
       if (editData) {
-        await bookingUpdate({
+        const updatePayload = {
           ...rest,
           bookingId: editData.bookingId,
           name: combinedName,
           symptomsDuration: combinedDuration,
-          // ✅ Preserve the original booking date & time — do NOT allow these to change in edit mode
-          serviceDate: editData.serviceDate,
-          servicetime: editData.servicetime || editData.time,
+          // ✅ Use user-selected date and time so changes reflect in the payload
+          serviceDate: selectedDate,
+          servicetime: bookingDetails.servicetime,
           patientAddress: `${address.houseNo}, ${address.street}, ${address.landmark}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`,
           attachments: uploadedAttachments,
           partImage: uploadedPartImage,
@@ -857,7 +862,17 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
           dob: bookingDetails.dob,
           dateOfBirth: bookingDetails.dob,
           listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
+        }
+
+        const changedData = { bookingId: editData.bookingId }
+        Object.keys(updatePayload).forEach((key) => {
+          // Compare stringified values to catch differences in nested objects/arrays as well
+          if (JSON.stringify(updatePayload[key]) !== JSON.stringify(editData[key])) {
+            changedData[key] = updatePayload[key]
+          }
         })
+
+        await bookingUpdate(changedData)
       } else {
         await postBooking({
           ...rest,
@@ -916,9 +931,11 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         serviceDate: selectedDate, servicetime: bookingDetails.servicetime,
         patientId: selectedBooking.patientId, bookingFor: selectedBooking.bookingFor,
         attachments: uploadedAttachments,
+        paymentType: bookingDetails.paymentType, foc: bookingDetails.foc, focReason: bookingDetails.focReason,
         partImage: uploadedPartImage,
         theraphyAnswers: theraphyQuestions, parts: part,
-        listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
+        // listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
+        consulationFee: Number(bookingDetails.consultationFee || 0),
       })
 
       // ✅ Correct order: close → reset → toast → navigate
@@ -1003,7 +1020,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
               onChange={() => {
                 setVisitType('followup')
                 setBookingDetails((p) => ({
-                  ...p, visitType: 'followup',
+                  ...p, visitType: 'follow-up',
                   foc: (Number(selectedBooking?.freeFollowUpsLeft || 0) > 0) ? 'FOC' : p.foc,
                   consultationFee: (Number(selectedBooking?.freeFollowUpsLeft || 0) > 0) ? 0 : p.consultationFee,
                 }))
@@ -1046,7 +1063,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
                 style={inputStyle(errors.dob)} />
               <ErrMsg msg={errors.dob} />
             </CCol>
-            <CCol md={2}>
+            <CCol md={1}>
               <CFormLabel style={labelStyle}>Age <span className="text-danger">*</span></CFormLabel>
               <CFormInput type="number" name="age" value={bookingDetails.age || ''}
                 disabled
@@ -1054,7 +1071,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
                 style={{ ...inputStyle(errors.age), backgroundColor: '#f8f9fa' }} />
               <ErrMsg msg={errors.age} />
             </CCol>
-            <CCol md={4}>
+            <CCol md={3}>
               <CFormLabel style={labelStyle}>Gender <span className="text-danger">*</span></CFormLabel>
               <CFormSelect name="gender" value={bookingDetails.gender || ''} onChange={handleBookingChange} style={selectStyle(errors.gender)}>
                 <option value="">Select Gender</option>
@@ -1062,12 +1079,22 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
               </CFormSelect>
               <ErrMsg msg={errors.gender} />
             </CCol>
-            <CCol md={6}>
-              <CFormLabel style={labelStyle}>Mobile Number <span className="text-danger">*</span></CFormLabel>
+            <CCol md={4}>
+              <CFormLabel style={labelStyle}>Mobile Number (WhatsApp Number) <span className="text-danger">*</span></CFormLabel>
               <CFormInput type="tel" name="patientMobileNumber" value={bookingDetails.patientMobileNumber || ''}
                 onChange={handleBookingChange} maxLength={10} style={inputStyle(errors.patientMobileNumber)} />
               <ErrMsg msg={errors.patientMobileNumber} />
             </CCol>
+
+            <CCol md={4}>
+              <CFormLabel style={labelStyle}>Email</CFormLabel>
+              <CFormInput type="email" name="email" value={bookingDetails.email || ''}
+                onChange={handleBookingChange} className={`cm-input${errors.email ? ' is-invalid' : ''}`} />
+              {/* <ErrMsg msg={errors.patientMobileNumber} /> */}
+            </CCol>
+
+
+
 
             <CCol md={12}>
               <p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Address</p>
@@ -1171,7 +1198,14 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     // ── 3. BOOKING DETAILS ────────────────────────────────────────────────
     if (tabId === 'booking') return (
       <div>
-        <p style={sectionHeadStyle}>Patient & Booking Details</p>
+        <CRow>
+          <CCol md={6}><p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Patient Information</p></CCol>
+          {selectedBooking &&
+            <CCol md={6}><p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Free consultation left : {selectedBooking?.freeFollowUpsLeft}</p></CCol>
+          }
+        </CRow>
+
+        {/* <p style={sectionHeadStyle}>Patient & Booking Details</p> */}
         <CRow className="g-3">
           <CCol md={6}>
             <CFormLabel style={labelStyle}>Branch <span className="text-danger">*</span></CFormLabel>
@@ -1253,7 +1287,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
               <option value="FOC">FOC (Free of Consultation)</option>
             </CFormSelect>
           </CCol>
-          {bookingDetails.foc === 'FOC' && (
+          {bookingDetails.foc.toLocaleUpperCase() === 'FOC' && (
             <CCol md={12}>
               <CFormLabel style={labelStyle}>Reason for FOC <span className="text-danger">*</span></CFormLabel>
               <CFormInput value={bookingDetails.focReason || ''} placeholder="Enter reason"
@@ -1488,16 +1522,52 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
                 setBookingDetails((p) => ({ ...p, attachments: [...(p.attachments || []), ...processed] }))
                 e.target.value = ''
               }} />
-            {bookingDetails.attachments?.map((file, i) => (
-              <div key={i} className="d-flex align-items-center mt-1 gap-2" style={{ fontSize: FS }}>
-                <span>{file.name}</span>
-                <button type="button"
-                  style={{ color: 'red', border: 'none', background: 'transparent', cursor: 'pointer', lineHeight: 1 }}
-                  onClick={() => setBookingDetails((p) => ({
-                    ...p, attachments: p.attachments.filter((_, idx) => idx !== i),
-                  }))}>×</button>
-              </div>
-            ))}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+              {bookingDetails.attachments?.map((file, i) => {
+                const name = file.name || ''
+                const ext = name.split('.').pop()?.toLowerCase()
+                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
+                const isPdf = ext === 'pdf'
+                // Resolve preview URL: S3 already has url; local file needs object URL
+                const previewUrl = file.isS3
+                  ? file.url
+                  : file.fileObj
+                    ? URL.createObjectURL(file.fileObj)
+                    : null
+                return (
+                  <div key={i} style={{
+                    position: 'relative', border: '1px solid #ddd', borderRadius: '6px',
+                    overflow: 'hidden', width: '80px', flexShrink: 0, background: '#f9f9f9'
+                  }}>
+                    {isImage && previewUrl ? (
+                      <img src={previewUrl} alt={name}
+                        style={{ width: '80px', height: '70px', objectFit: 'cover', display: 'block' }} />
+                    ) : isPdf ? (
+                      <a href={previewUrl} target="_blank" rel="noreferrer"
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '70px', textDecoration: 'none', color: '#c0392b' }}>
+                        <span style={{ fontSize: '28px' }}>📄</span>
+                        <span style={{ fontSize: '9px', textAlign: 'center', padding: '0 2px', color: '#555', wordBreak: 'break-all' }}>{name}</span>
+                      </a>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '70px', fontSize: '11px', color: '#888', padding: '4px', textAlign: 'center', wordBreak: 'break-all' }}>
+                        {name}
+                      </div>
+                    )}
+                    <button type="button"
+                      title="Remove"
+                      style={{
+                        position: 'absolute', top: '2px', right: '2px',
+                        color: 'white', background: 'rgba(200,0,0,0.75)', border: 'none',
+                        borderRadius: '50%', width: '16px', height: '16px',
+                        cursor: 'pointer', fontSize: '11px', lineHeight: '15px', textAlign: 'center', padding: 0
+                      }}
+                      onClick={() => setBookingDetails((p) => ({
+                        ...p, attachments: p.attachments.filter((_, idx) => idx !== i),
+                      }))}>×</button>
+                  </div>
+                )
+              })}
+            </div>
           </CCol>
 
         </CRow>
@@ -1521,29 +1591,33 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
             </CFormSelect>
             <ErrMsg msg={errors.paymentType} />
           </CCol>
-          <CCol md={6}>
-            <CFormLabel style={labelStyle}>Referred By</CFormLabel>
-            <Select styles={rsStyles}
-              value={
-                referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) ||
-                (bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)
-              }
-              getOptionLabel={(o) => o.referralId === 'OTHER'
-                ? 'Others'
-                : `${o.fullName} - ${o.mobileNumber}`
-              }
-              getOptionValue={(o) => o.referralId}
-              onChange={(sel) => {
-                const v = sel ? sel.referralId : ''
-                setBookingDetails((p) => ({
-                  ...p, doctorRefCode: v,
-                  referredByType: v === 'OTHER' ? '' : p.referredByType,
-                  referredByName: v === 'OTHER' ? '' : p.referredByName,
-                }))
-              }}
-              options={[...referDoctor, { referralId: 'OTHER', fullName: 'Others' }]}
-              placeholder="Select or search..." isSearchable />
-          </CCol>
+          {
+            visitType === 'first' && (<CCol md={6}>
+              <CFormLabel style={labelStyle}>Referred By</CFormLabel>
+              <Select styles={rsStyles}
+                value={
+                  referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) ||
+                  (bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)
+                }
+                getOptionLabel={(o) => o.referralId === 'OTHER'
+                  ? 'Others'
+                  : `${o.fullName} - ${o.mobileNumber}`
+                }
+                getOptionValue={(o) => o.referralId}
+                onChange={(sel) => {
+                  const v = sel ? sel.referralId : ''
+                  setBookingDetails((p) => ({
+                    ...p, doctorRefCode: v,
+                    referredByType: v === 'OTHER' ? '' : p.referredByType,
+                    referredByName: v === 'OTHER' ? '' : p.referredByName,
+                  }))
+                }}
+                options={[...referDoctor, { referralId: 'OTHER', fullName: 'Others' }]}
+                placeholder="Select or search..." isSearchable />
+            </CCol>)
+
+          }
+
           {bookingDetails.doctorRefCode === 'OTHER' && (
             <>
               <CCol md={6}>
@@ -1576,8 +1650,12 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         {markedImage && (
           <div className="mt-2">
             <CFormLabel style={labelStyle}>Marked Area Preview</CFormLabel>
-            <img src={`data:image/png;base64,${markedImage}`} width={180} alt="preview"
-              style={{ display: 'block', borderRadius: '6px', border: '1px solid #ddd' }} />
+            <img
+              src={markedImage.startsWith('data:image') || markedImage.startsWith('http') ? markedImage : (markedImage.includes('/') ? `${wifiUrl}/${markedImage}` : `data:image/png;base64,${markedImage}`)}
+              width={180}
+              alt="preview"
+              style={{ display: 'block', borderRadius: '6px', border: '1px solid #ddd' }}
+            />
           </div>
         )}
         {/* <ErrMsg msg={errors.markedImage} /> */}
@@ -1712,9 +1790,10 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
                 }}
                 onClick={visitType === 'followup' ? handleFollowUpSubmit : handleSubmit}>
                 {saveloading ? (
-                  <div className="d-flex align-items-center gap-1">
-                    <span className="spinner-border spinner-border-sm" style={{ width: '12px', height: '12px' }} />
+                  <div className="d-flex align-items-center gap-1 text-white">
+                    <span className="spinner-border spinner-border-sm text-white" style={{ width: '12px', height: '12px' }} />
                     {uploadProgressMsg || 'Submitting…'}
+                    {/* {'Submitting…'} */}
                   </div>
                 ) : '✓ Submit'}
               </CButton>

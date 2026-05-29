@@ -123,13 +123,13 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilStar} customClassName="nav-icon" />,
     },
-    {
-      component: CNavItem,
-      to: '/equipment-management',
-      name: 'Equipment Management',
-      as: NavLink,
-      icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
-    },
+    // {
+    //   component: CNavItem,
+    //   to: '/equipment-management',
+    //   name: 'Equipment Management',
+    //   as: NavLink,
+    //   icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
+    // },
 
     // {
     //   component: CNavItem,
@@ -169,20 +169,20 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilNotes} customClassName="nav-icon" />,
     },
-    {
-      component: CNavItem,
-      to: '/payouts',
-      name: 'Payouts',
-      as: NavLink,
-      icon: <CIcon icon={cilWallet} customClassName="nav-icon" />,
-    },
-    {
-      component: CNavItem,
-      to: '/notification',
-      name: 'Push Notification',
-      as: NavLink,
-      icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
-    },
+    // {
+    //   component: CNavItem,
+    //   to: '/payouts',
+    //   name: 'Payouts',
+    //   as: NavLink,
+    //   icon: <CIcon icon={cilWallet} customClassName="nav-icon" />,
+    // },
+    // {
+    //   component: CNavItem,
+    //   to: '/notification',
+    //   name: 'Push Notification',
+    //   as: NavLink,
+    //   icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
+    // },
     {
       component: CNavItem,
       to: '/attendance',
@@ -190,13 +190,13 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilClipboard} customClassName="nav-icon" />,
     },
-    {
-      component: CNavItem,
-      to: '/analytics',
-      name: 'Analytics',
-      as: NavLink,
-      icon: <CIcon icon={cilLightbulb} customClassName="nav-icon" />,
-    },
+    // {
+    //   component: CNavItem,
+    //   to: '/analytics',
+    //   name: 'Analytics',
+    //   as: NavLink,
+    //   icon: <CIcon icon={cilLightbulb} customClassName="nav-icon" />,
+    // },
     {
       component: CNavItem,
       to: '/help',

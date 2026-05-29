@@ -362,7 +362,69 @@ const styles = `
     padding: 12px 16px;
     border-top: 1px solid #F3F4F6;
     background: #FAFAFA;
-  }
+  }.tm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.tm-modal {
+  width: 320px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.tm-header h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.tm-body {
+  margin-top: 20px;
+}
+
+.tm-time-input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #D1D5DB;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 15px;
+}
+
+.tm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.tm-cancel {
+  border: none;
+  background: #E5E7EB;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.tm-save {
+  border: none;
+  background: #2563EB;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+}.tm-save:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 `;
 
 function getStatusBadge(status) {
@@ -390,11 +452,14 @@ export default function AttendanceReport() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const [timeModal, setTimeModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [attendanceType, setAttendanceType] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
+  const [saveLoading, setSaveLoading] = useState(false);
   const fetchAttendance = useCallback(async () => {
     setLoading(true);
     try {
@@ -419,46 +484,102 @@ export default function AttendanceReport() {
     setCurrentPage(1);
   }, [filterRole, searchQuery]);
 
-  const handleManualLogin = async (userId) => {
+  const openTimeModal = (userId, type) => {
+    const now = new Date();
+
+    const currentTime =
+      now.getHours().toString().padStart(2, "0") +
+      ":" +
+      now.getMinutes().toString().padStart(2, "0");
+
+    setSelectedUser(userId);
+    setAttendanceType(type);
+    setSelectedTime(currentTime);
+    setTimeModal(true);
+  };
+
+  const getCurrentLocation = () => {
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => reject(error)
+      );
+    });
+  };
+
+  const handleManualLogin = async (userId, manualTime) => {
+
     try {
-      const time = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+      setSaveLoading(true);
+
+      const location = await getCurrentLocation();
+
       const payload = {
         date: selectedDate,
         login: {
-          time: time,
-          latitude: "17.433071",
-          longitude: "78.407807"
+          time: manualTime,
+          latitude: String(location.latitude),
+          longitude: String(location.longitude)
         },
-        latitude: "17.433071",
-        longitude: "78.407807",
-        time: time,
+        latitude: String(location.latitude),
+        longitude: String(location.longitude),
+        time: manualTime,
         userId: userId
       };
-      const res = await http.post(`${BASE_URL}/${SaveUserAttendence}`, payload);
+
+      const res = await http.post(
+        `${BASE_URL}/${SaveUserAttendence}`,
+        payload
+      );
+
       if (res.status === 200 || res.status === 201) {
+        setTimeModal(false);
         fetchAttendance();
       }
+
     } catch (error) {
       console.error("Error manual login:", error);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
-  const handleManualLogout = async (userId) => {
+  const handleManualLogout = async (userId, manualTime) => {
+
     try {
-      const time = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+      setSaveLoading(true);
+
+      const location = await getCurrentLocation();
+
       const payload = {
         date: selectedDate,
-        logoutLatitude: "17.433071",
-        logoutLongtitude: "78.407807",
-        logoutTime: time,
+        logoutLatitude: String(location.latitude),
+        logoutLongtitude: String(location.longitude),
+        logoutTime: manualTime,
         userId: userId
       };
-      const res = await http.put(`${BASE_URL}/${UpdateUserAttendence}`, payload);
+
+      const res = await http.put(
+        `${BASE_URL}/${UpdateUserAttendence}`,
+        payload
+      );
+
       if (res.status === 200) {
+        setTimeModal(false);
         fetchAttendance();
       }
+
     } catch (error) {
       console.error("Error manual logout:", error);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -567,7 +688,7 @@ export default function AttendanceReport() {
                         ) : selectedDate <= today ? (
                           <button
                             className="ar-action-btn ar-btn-login"
-                            onClick={() => handleManualLogin(att.userId)}
+                            onClick={() => openTimeModal(att.userId, "login")}
                           >
                             <CheckCircle2 size={13} /> Login
                           </button>
@@ -581,7 +702,7 @@ export default function AttendanceReport() {
                         ) : selectedDate <= today && att.login?.time ? (
                           <button
                             className="ar-action-btn ar-btn-logout"
-                            onClick={() => handleManualLogout(att.userId)}
+                            onClick={() => openTimeModal(att.userId, "logout")}
                           >
                             <Clock size={13} /> Logout
                           </button>
@@ -634,6 +755,66 @@ export default function AttendanceReport() {
               onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
             />
           </div>
+
+          {timeModal && (
+            <div className="tm-overlay">
+              <div className="tm-modal">
+
+                <div className="tm-header">
+                  <h4>
+                    Select {attendanceType === "login"
+                      ? "Login"
+                      : "Logout"} Time
+                  </h4>
+                </div>
+
+                <div className="tm-body">
+                  <input
+                    type="time"
+                    value={selectedTime}
+                    onChange={(e) =>
+                      setSelectedTime(e.target.value)
+                    }
+                    className="tm-time-input"
+                  />
+                </div>
+
+                <div className="tm-footer">
+                  <button
+                    className="tm-cancel"
+                    onClick={() => setTimeModal(false)}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    className="tm-save"
+                    disabled={saveLoading}
+                    onClick={() => {
+
+                      if (saveLoading) return;
+
+                      if (attendanceType === "login") {
+                        handleManualLogin(
+                          selectedUser,
+                          selectedTime
+                        );
+                      } else {
+                        handleManualLogout(
+                          selectedUser,
+                          selectedTime
+                        );
+                      }
+                    }}
+                  >
+                    {saveLoading ? "Saving..." : "Save"}
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

@@ -553,7 +553,7 @@ const CustomerManagement = () => {
                 />
               </Field> */}
 
-              <Field label="Mobile Number" required error={formErrors.mobileNumber}>
+              <Field label="Mobile Number (WhatsApp)" required error={formErrors.mobileNumber}>
                 <CFormInput
                   name="mobileNumber"
                   value={formData.mobileNumber}
@@ -591,21 +591,77 @@ const CustomerManagement = () => {
               </Field>
 
               <Field label="Post Office" required error={formErrors.postOffice}>
-                <CFormSelect
-                  className="cm-input"
-                  value={selectedPO?.Name || formData.address.city || ''}
-                  onChange={(e) => {
-                    const po = postOffices.find((p) => p.Name === e.target.value)
-                    setSelectedPO(po)
-                    setFormErrors((prev) => ({ ...prev, postOffice: '' }))
-                    if (po) {
-                      handleNestedChange('address', 'city', po.Name || '')
-                      handleNestedChange('address', 'state', po.State || '')
-                    }
-                  }}>
-                  <option value="">-- Select Post Office --</option>
-                  {postOffices.map((po) => <option key={po.Name} value={po.Name}>{po.Name}</option>)}
-                </CFormSelect>
+
+                {postOffices.length > 0 ? (
+                  <CFormSelect
+                    className="cm-input"
+                    value={selectedPO?.Name || formData.address.city || ''}
+                    onChange={(e) => {
+                      const po = postOffices.find(
+                        (p) => p.Name === e.target.value
+                      )
+
+                      setSelectedPO(po)
+
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        postOffice: ''
+                      }))
+
+                      if (po) {
+                        handleNestedChange(
+                          'address',
+                          'city',
+                          po.Name || ''
+                        )
+
+                        handleNestedChange(
+                          'address',
+                          'state',
+                          po.State || ''
+                        )
+
+                        handleNestedChange(
+                          'address',
+                          'district',
+                          po.District || ''
+                        )
+                      }
+                    }}
+                  >
+                    <option value="">
+                      -- Select Post Office --
+                    </option>
+
+                    {postOffices.map((po) => (
+                      <option
+                        key={po.Name}
+                        value={po.Name}
+                      >
+                        {po.Name}
+                      </option>
+                    ))}
+                  </CFormSelect>
+                ) : (
+                  <CFormInput
+                    className="cm-input"
+                    placeholder="Enter Post Office"
+                    value={formData.address.city || ''}
+                    onChange={(e) => {
+                      handleNestedChange(
+                        'address',
+                        'city',
+                        e.target.value
+                      )
+
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        postOffice: ''
+                      }))
+                    }}
+                  />
+                )}
+
               </Field>
 
               <Field label="Landmark">
@@ -776,7 +832,7 @@ const CustomerManagement = () => {
         }
         .cm-empty      { color: #9ca3af; font-size: 15px; }
         .cm-empty-icon { color: #d0dce9; }
-        .cm-error-msg  { color: #a32d2d; font-size: 14px; }
+        .cm-error-msg  { color: var(--color-primary); font-size: 14px; }
 
         .cm-form-wrapper {
           background: #fff; border: 0.5px solid #d0dce9;
