@@ -28,11 +28,11 @@ const DoctorCard = ({ doctor }) => {
 
   const initials = doctor.doctorName
     ? doctor.doctorName
-        .split(' ')
-        .slice(0, 2)
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
+      .split(' ')
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
     : 'DR'
 
   return (
@@ -40,14 +40,17 @@ const DoctorCard = ({ doctor }) => {
       {/* Avatar */}
       <div className="dc-avatar">
         {doctor.doctorPicture ? (
-          <img
-            src={doctor.doctorPicture}
-            alt={`Dr. ${doctor.doctorName}`}
-            onError={(e) => {
-              e.target.style.display = 'none'
-              e.target.nextSibling.style.display = 'flex'
-            }}
-          />
+          // <img
+          //   src={doctor.doctorPicture}
+          //   alt={`Dr. ${doctor.doctorName}`}
+          //   onError={(e) => {
+          //     e.target.style.display = 'none'
+          //     e.target.nextSibling.style.display = 'flex'
+          //   }}
+          // />
+
+          <img src={doctor.doctorPicture} alt={`Dr. ${doctor.doctorName}`} />
+
         ) : null}
         <div
           className="dc-initials"

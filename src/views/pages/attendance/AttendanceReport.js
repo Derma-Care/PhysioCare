@@ -587,11 +587,11 @@ export default function AttendanceReport() {
     if (filterRole !== "all" && att.role?.toLowerCase() !== filterRole.toLowerCase()) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const matchesName = att.name.toLowerCase().includes(q);
+      const matchesName = att.name?.toLowerCase().includes(q);
       const matchesRole = att.role?.toLowerCase().includes(q);
-      const matchesStatus = att.status?.toLowerCase().includes(q);
-      const matchesUserId = att.userId?.toLowerCase().includes(q);
-      if (!matchesName && !matchesRole && !matchesStatus && !matchesUserId) return false;
+      // const matchesStatus = att.status?.toLowerCase().includes(q);
+      // const matchesUserId = att.userId?.toLowerCase().includes(q);
+      if (!matchesName && !matchesRole) return false;
     }
     return true;
   });

@@ -37,6 +37,7 @@ import { showCustomToast } from '../../Utils/Toaster'
 import Pagination from '../../Utils/Pagination'
 import { emailPattern } from '../../Constant/Constants'
 import { use } from 'react'
+import { uploadFile } from '../widgets/S3UploadServiceDoctor'
 
 /* ─── Brand token ─────────────────────────────── */
 const B = {
@@ -66,6 +67,8 @@ const initialForm = {
   profileDescription: '',
   doctorSignature: null,
   doctorSignatureFileName: null,
+  doctorSignatureFile: null,
+  doctorPictureFile: null,
   doctorFees: { inClinicFee: '' },
   focusAreas: [],
   languages: [],
@@ -76,6 +79,14 @@ const initialForm = {
   emergencyContact: '',
   aadharID: '',
   dateofBirth: '',
+  bankAccountDetails: {
+    accountHolderName: '',
+    accountNumber: '',
+    bankName: '',
+    branchName: '',
+    ifscCode: '',
+    panCardNumber: ''
+  }
 }
 
 const SectionHeading = ({ text }) => (
@@ -103,6 +114,7 @@ const DoctorManagement = () => {
   const [loading, setLoading] = useState(false)
   const [saveloading, setSaveLoading] = useState(false)
   const [showErrorMessage, setShowErrorMessage] = useState('')
+  const [isFetchingBankDetails, setIsFetchingBankDetails] = useState(false)
 
   const [newService, setNewService] = useState({ serviceName: '', serviceId: '' })
   const [selectedServices, setSelectedServices] = useState([])
@@ -136,6 +148,31 @@ const DoctorManagement = () => {
     '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM',
     '07:00 PM', '08:00 PM', '09:00 PM', '10:00 PM',
   ]
+
+  const fetchBankDetails = async (ifsc) => {
+    if (ifsc.length !== 11) return
+    setIsFetchingBankDetails(true)
+    try {
+      const response = await axios.get(`https://ifsc.razorpay.com/${ifsc}`)
+      if (response.data) {
+        setForm((p) => ({
+          ...p,
+          bankAccountDetails: {
+            ...p.bankAccountDetails,
+            bankName: response.data.BANK || '',
+            branchName: response.data.BRANCH || ''
+          }
+        }))
+        clearFieldError('bankName')
+        clearFieldError('branchName')
+        showCustomToast('Bank details fetched successfully', 'success')
+      }
+    } catch (error) {
+      showCustomToast('Could not fetch bank details. Please enter manually.', 'warning')
+    } finally {
+      setIsFetchingBankDetails(false)
+    }
+  }
 
 
   /* ─── helpers ──────────────────────────────────── */
@@ -328,6 +365,13 @@ const DoctorManagement = () => {
       errs.emergencyContact = 'Enter valid 10-digit emergency contact'
     }
 
+    if (!form.bankAccountDetails.accountHolderName.trim()) errs.accountHolderName = 'Account holder name is required'
+    if (!form.bankAccountDetails.accountNumber.trim() || !/^\d{9,18}$/.test(form.bankAccountDetails.accountNumber)) errs.accountNumber = 'Valid account number is required'
+    if (!form.bankAccountDetails.bankName.trim()) errs.bankName = 'Bank name is required'
+    if (!form.bankAccountDetails.branchName.trim()) errs.branchName = 'Branch name is required'
+    if (!form.bankAccountDetails.ifscCode.trim() || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(form.bankAccountDetails.ifscCode.toUpperCase())) errs.ifscCode = 'Valid IFSC code is required'
+    if (!form.bankAccountDetails.panCardNumber.trim() || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.bankAccountDetails.panCardNumber.toUpperCase())) errs.panCardNumber = 'Valid PAN card number is required'
+
     setFormErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -354,12 +398,33 @@ const DoctorManagement = () => {
       if (emailExists) { showCustomToast('Email already exists', 'error'); setIsSaving(false); return }
 
       setSaveLoading(true)
+      let uploadedDoctorPicture = form.doctorPicture
+      let uploadedDoctorSignature = form.doctorSignature
+
+      if (form.doctorPictureFile) {
+        try {
+          uploadedDoctorPicture = await uploadFile('doctorPicture', form.doctorPictureFile)
+        } catch (err) {
+          showCustomToast('Failed to upload doctor picture', 'error')
+          setIsSaving(false); setSaveLoading(false); return
+        }
+      }
+
+      if (form.doctorSignatureFile) {
+        try {
+          uploadedDoctorSignature = await uploadFile('doctorSignature', form.doctorSignatureFile)
+        } catch (err) {
+          showCustomToast('Failed to upload doctor signature', 'error')
+          setIsSaving(false); setSaveLoading(false); return
+        }
+      }
+
       const payload = {
         branchId: localStorage.getItem('branchId'),
         createdBy: localStorage.getItem('staffId') || 'admin',
         hospitalId,
-        doctorPicture: form.doctorPicture,
-        doctorSignature: form.doctorSignature,
+        doctorPicture: uploadedDoctorPicture,
+        doctorSignature: uploadedDoctorSignature,
         doctorName: form.doctorName,
         doctorMobileNumber: form.doctorMobileNumber,
         doctorEmail: form.doctorEmail,
@@ -384,7 +449,8 @@ const DoctorManagement = () => {
         emergencyContact: form.emergencyContact,
         aadharID: form.aadharID,
         dateofBirth: form.dateofBirth,
-        role: "doctor"
+        role: "doctor",
+        bankAccountDetails: form.bankAccountDetails
         // consultation: {
         //   serviceAndTreatments: form.availableConsultations.includes('Services & Treatments') ? 3 : 0,
         //   inClinic: form.availableConsultations.includes('In-Clinic') ? 1 : 0,
@@ -834,7 +900,7 @@ const DoctorManagement = () => {
                     }
                     const r = new FileReader()
                     r.onloadend = () => {
-                      setForm((p) => ({ ...p, doctorPicture: r.result }))
+                      setForm((p) => ({ ...p, doctorPicture: r.result, doctorPictureFile: file }))
                       clearFieldError('doctorPicture')
                     }
                     r.readAsDataURL(file)
@@ -1027,6 +1093,110 @@ const DoctorManagement = () => {
               onAdd={(items) => { const v = items.filter((i) => !/^\d+$/.test(i.trim())); setForm((p) => ({ ...p, highlights: v })) }} />
           </div>
 
+          {/* Section 6: Bank Account Details */}
+          <SectionHeading text="Bank Account Details" />
+          <CRow className="g-3 mb-2">
+            <CCol md={6}>
+              <label className="dm-label">Account Holder Name <span className="req">*</span></label>
+              <CFormInput
+                className="dm-input"
+                value={form.bankAccountDetails.accountHolderName}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                  setForm((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, accountHolderName: v } }))
+                  if (v.trim().length > 2) clearFieldError('accountHolderName')
+                }}
+                invalid={!!formErrors.accountHolderName}
+                placeholder="Account Holder Name"
+              />
+              <Err field="accountHolderName" />
+            </CCol>
+            <CCol md={6}>
+              <label className="dm-label">Account Number <span className="req">*</span></label>
+              <CFormInput
+                className="dm-input"
+                value={form.bankAccountDetails.accountNumber}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '')
+                  setForm((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, accountNumber: v } }))
+                  if (v.length >= 9) clearFieldError('accountNumber')
+                }}
+                invalid={!!formErrors.accountNumber}
+                placeholder="Account Number"
+              />
+              <Err field="accountNumber" />
+            </CCol>
+            <CCol md={6}>
+              <label className="dm-label">IFSC Code <span className="req">*</span></label>
+              <CFormInput
+                className="dm-input"
+                value={form.bankAccountDetails.ifscCode}
+                onChange={(e) => {
+                  const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11)
+                  setForm((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, ifscCode: v } }))
+                  if (/^[A-Z]{4}0[A-Z0-9]{6}$/.test(v)) {
+                    clearFieldError('ifscCode')
+                  }
+                  if (v.length === 11) {
+                    fetchBankDetails(v)
+                  }
+                }}
+                invalid={!!formErrors.ifscCode}
+                placeholder="IFSC Code"
+              />
+              <Err field="ifscCode" />
+              {isFetchingBankDetails && <small style={{ color: '#185fa5', fontSize: '11px', marginTop: '4px', display: 'block' }}>Fetching bank details...</small>}
+            </CCol>
+            <CCol md={6}>
+              <label className="dm-label">Bank Name <span className="req">*</span></label>
+              <CFormInput
+                className="dm-input"
+                value={form.bankAccountDetails.bankName}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                  setForm((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, bankName: v } }))
+                  if (v.trim().length > 2) clearFieldError('bankName')
+                }}
+                invalid={!!formErrors.bankName}
+                placeholder="Bank Name"
+              />
+              <Err field="bankName" />
+            </CCol>
+            <CCol md={6}>
+              <label className="dm-label">Branch Name <span className="req">*</span></label>
+              <CFormInput
+                className="dm-input"
+                value={form.bankAccountDetails.branchName}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                  setForm((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, branchName: v } }))
+                  if (v.trim().length > 2) clearFieldError('branchName')
+                }}
+                invalid={!!formErrors.branchName}
+                placeholder="Branch Name"
+              />
+              <Err field="branchName" />
+            </CCol>
+
+            <CCol md={6}>
+              <label className="dm-label">PAN Card Number <span className="req">*</span></label>
+              <CFormInput
+                className="dm-input"
+                value={form.bankAccountDetails.panCardNumber}
+                onChange={(e) => {
+                  const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)
+                  setForm((p) => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, panCardNumber: v } }))
+                  if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v)) clearFieldError('panCardNumber')
+                }}
+                invalid={!!formErrors.panCardNumber}
+                placeholder="PAN Card Number"
+              />
+              <Err field="panCardNumber" />
+            </CCol>
+          </CRow>
+
+          <div className="dm-divider" />
+
           {/* Signature */}
           <div className="dm-signature-row">
             <div style={{ flex: 1 }}>
@@ -1052,7 +1222,7 @@ const DoctorManagement = () => {
                   if (file.size > 250 * 1024) { setFormErrors((p) => ({ ...p, doctorSignature: 'Max 250 KB' })); return }
                   const r = new FileReader()
                   r.onloadend = () => {
-                    setForm((p) => ({ ...p, doctorSignature: r.result, doctorSignatureFileName: file.name }))
+                    setForm((p) => ({ ...p, doctorSignature: r.result, doctorSignatureFileName: file.name, doctorSignatureFile: file }))
                     clearFieldError('doctorSignature')
                   }
                   r.readAsDataURL(file)

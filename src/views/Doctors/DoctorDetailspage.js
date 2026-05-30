@@ -34,6 +34,7 @@ import {
 } from '../ProcedureManagement/ProcedureManagementAPI'
 import { fetchDoctorSlots } from '../../APIs/GenerateSlots'
 import { showCustomToast } from '../../Utils/Toaster'
+import { uploadFile } from '../widgets/S3UploadServiceDoctor'
 
 /* ─── Design Tokens ─── */
 const t = {
@@ -118,6 +119,14 @@ const normalizeDoctorPayload = (doctor = {}) => ({
   dateOfJoining: formatDateForInput(doctor.dateOfJoining || doctor.dateofJoining),
   emergencyContact: doctor.emergencyContact || doctor.emergencyContactNumber || '',
   aadharId: doctor.aadharId || doctor.aadharID || doctor.aadhar || '',
+  bankAccountDetails: doctor.bankAccountDetails || {
+    accountHolderName: '',
+    accountNumber: '',
+    bankName: '',
+    branchName: '',
+    ifscCode: '',
+    panCardNumber: ''
+  }
 })
 
 /* ─── Main Component ─── */
@@ -165,6 +174,31 @@ const DoctorDetailsPage = () => {
   const [showModal, setShowModal] = useState(false)
   const [availableSlots, setAvailableSlots] = useState([])
   const [selectedToDelete, setSelectedToDelete] = useState([])
+  const [isFetchingBankDetails, setIsFetchingBankDetails] = useState(false)
+
+  const fetchBankDetails = async (ifsc) => {
+    if (ifsc.length !== 11) return
+    setIsFetchingBankDetails(true)
+    try {
+      const response = await axios.get(`https://ifsc.razorpay.com/${ifsc}`)
+      if (response.data) {
+        setFormData((p) => ({
+          ...p,
+          bankAccountDetails: {
+            ...p.bankAccountDetails,
+            bankName: response.data.BANK || '',
+            branchName: response.data.BRANCH || ''
+          }
+        }))
+        setErrors(p => ({ ...p, bankName: '', branchName: '' }))
+        showCustomToast('Bank details fetched successfully', 'success')
+      }
+    } catch (error) {
+      showCustomToast('Could not fetch bank details. Please enter manually.', 'warning')
+    } finally {
+      setIsFetchingBankDetails(false)
+    }
+  }
 
   const handleEditToggle = () => setIsEditing(!isEditing)
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
@@ -217,8 +251,55 @@ const DoctorDetailsPage = () => {
   const handleUpdate = async () => {
     try {
       setSaveLoading(true)
+      
+      let doctorPictureKey = formData.doctorPicture;
+      let doctorSignatureKey = formData.doctorSignature;
+
+      const extractKey = (url) => {
+        if (!url || typeof url !== 'string') return url;
+        if (url.startsWith('http')) {
+          try {
+            return new URL(url).pathname.substring(1);
+          } catch (e) {
+            return url;
+          }
+        }
+        return url;
+      };
+
+      doctorPictureKey = extractKey(doctorPictureKey);
+      doctorSignatureKey = extractKey(doctorSignatureKey);
+      
+      const extraParams = {
+        hospitalId: localStorage.getItem('HospitalId'),
+        branchId: localStorage.getItem('branchId'),
+        doctorId: doctorData.doctorId
+      }
+
+      if (formData.doctorPictureFile) {
+        try {
+          doctorPictureKey = await uploadFile('doctorPicture', formData.doctorPictureFile, extraParams)
+        } catch (err) {
+          showCustomToast('Failed to upload profile picture', 'error')
+          setSaveLoading(false)
+          return
+        }
+      }
+
+      if (formData.doctorSignatureFile) {
+        try {
+          doctorSignatureKey = await uploadFile('doctorSignature', formData.doctorSignatureFile, extraParams)
+        } catch (err) {
+          showCustomToast('Failed to upload signature', 'error')
+          setSaveLoading(false)
+          return
+        }
+      }
+
       const payload = {
         ...formData,
+        doctorPicture: doctorPictureKey,
+        doctorSignature: doctorSignatureKey,
         consultation: buildConsultationPayload(formData.availableConsultations),
         branches: formData.branch?.map(b => ({ branchId: b.branchId, branchName: b.branchName })) || [],
         category: formData.category || [],
@@ -368,6 +449,16 @@ const DoctorDetailsPage = () => {
     if (!formData.profileDescription?.trim()) newErrors.profileDescription = 'Profile description is required.'
     if (!formData.doctorSignature) newErrors.doctorSignature = 'Signature is required.'
     if (!formData.branch?.length) newErrors.branch = 'Select at least one branch.'
+
+    if (formData.bankAccountDetails) {
+      const bank = formData.bankAccountDetails
+      if (!bank.accountHolderName?.trim()) newErrors.accountHolderName = 'Account holder name is required'
+      if (!bank.accountNumber?.trim() || !/^\d{9,18}$/.test(bank.accountNumber)) newErrors.accountNumber = 'Valid account number is required'
+      if (!bank.bankName?.trim()) newErrors.bankName = 'Bank name is required'
+      if (!bank.branchName?.trim()) newErrors.branchName = 'Branch name is required'
+      if (!bank.ifscCode?.trim() || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bank.ifscCode.toUpperCase())) newErrors.ifscCode = 'Valid IFSC code is required'
+      if (!bank.panCardNumber?.trim() || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(bank.panCardNumber.toUpperCase())) newErrors.panCardNumber = 'Valid PAN card number is required'
+    }
 
     // Date of Joining validation
     if (!formData.dateOfJoining) {
@@ -702,7 +793,7 @@ const DoctorDetailsPage = () => {
                       const file = e.target.files[0]
                       if (!file) return
                       if (file.size > 2 * 1024 * 1024) { showCustomToast('File size exceeds 2 MB!', 'error'); e.target.value = ''; return }
-                      try { const base64 = await toBase64(file); setFormData(prev => ({ ...prev, doctorPicture: base64 })); e.target.value = '' }
+                      try { const base64 = await toBase64(file); setFormData(prev => ({ ...prev, doctorPicture: base64, doctorPictureFile: file })); e.target.value = '' }
                       catch (err) { e.target.value = '' }
                     }} />
                   </label>
@@ -863,6 +954,56 @@ const DoctorDetailsPage = () => {
 
             <Divider />
 
+            {/* ── Bank Account Details ── */}
+            <SectionHeading title="Bank Account Details" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px', marginBottom: '8px' }}>
+              <FormField label="Account Holder Name" error={errors.accountHolderName} required>
+                {isEditing
+                  ? <CFormInput value={formData.bankAccountDetails?.accountHolderName || ''} invalid={!!errors.accountHolderName} onChange={e => { const v = e.target.value.replace(/[^A-Za-z\s]/g, ''); setFormData(p => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, accountHolderName: v } })); setErrors(p => ({ ...p, accountHolderName: '' })) }} style={{ fontSize: '13px' }} />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.bankAccountDetails?.accountHolderName || '—'}</div>}
+              </FormField>
+
+              <FormField label="Account Number" error={errors.accountNumber} required>
+                {isEditing
+                  ? <CFormInput value={formData.bankAccountDetails?.accountNumber || ''} invalid={!!errors.accountNumber} onChange={e => { const v = e.target.value.replace(/\D/g, ''); setFormData(p => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, accountNumber: v } })); setErrors(p => ({ ...p, accountNumber: '' })) }} style={{ fontSize: '13px' }} />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.bankAccountDetails?.accountNumber || '—'}</div>}
+              </FormField>
+
+              <FormField label="Bank Name" error={errors.bankName} required>
+                {isEditing
+                  ? <CFormInput value={formData.bankAccountDetails?.bankName || ''} invalid={!!errors.bankName} onChange={e => { const v = e.target.value.replace(/[^A-Za-z\s]/g, ''); setFormData(p => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, bankName: v } })); setErrors(p => ({ ...p, bankName: '' })) }} style={{ fontSize: '13px' }} />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.bankAccountDetails?.bankName || '—'}</div>}
+              </FormField>
+
+              <FormField label="Branch Name" error={errors.branchName} required>
+                {isEditing
+                  ? <CFormInput value={formData.bankAccountDetails?.branchName || ''} invalid={!!errors.branchName} onChange={e => { const v = e.target.value.replace(/[^A-Za-z\s]/g, ''); setFormData(p => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, branchName: v } })); setErrors(p => ({ ...p, branchName: '' })) }} style={{ fontSize: '13px' }} />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.bankAccountDetails?.branchName || '—'}</div>}
+              </FormField>
+
+              <FormField label="IFSC Code" error={errors.ifscCode} required>
+                {isEditing
+                  ? <div>
+                      <CFormInput value={formData.bankAccountDetails?.ifscCode || ''} invalid={!!errors.ifscCode} onChange={e => {
+                        const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11)
+                        setFormData(p => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, ifscCode: v } }))
+                        if (/^[A-Z]{4}0[A-Z0-9]{6}$/.test(v)) setErrors(p => ({ ...p, ifscCode: '' }))
+                        if (v.length === 11) fetchBankDetails(v)
+                      }} style={{ fontSize: '13px' }} />
+                      {isFetchingBankDetails && <small style={{ color: '#185fa5', fontSize: '11px', marginTop: '4px', display: 'block' }}>Fetching bank details...</small>}
+                    </div>
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.bankAccountDetails?.ifscCode || '—'}</div>}
+              </FormField>
+
+              <FormField label="PAN Card Number" error={errors.panCardNumber} required>
+                {isEditing
+                  ? <CFormInput value={formData.bankAccountDetails?.panCardNumber || ''} invalid={!!errors.panCardNumber} onChange={e => { const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10); setFormData(p => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, panCardNumber: v } })); if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v)) setErrors(p => ({ ...p, panCardNumber: '' })) }} style={{ fontSize: '13px' }} />
+                  : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.bankAccountDetails?.panCardNumber || '—'}</div>}
+              </FormField>
+            </div>
+
+            <Divider />
+
             {/* ── Additional Info ── */}
             <SectionHeading title="Additional Information" />
             <FormField label="Association / Membership">
@@ -916,7 +1057,7 @@ const DoctorDetailsPage = () => {
                     if (!['image/jpeg', 'image/png'].includes(file.type)) { setErrors(p => ({ ...p, doctorSignature: 'Only JPG and PNG images are allowed' })); return }
                     if (file.size > 200 * 1024) { setErrors(p => ({ ...p, doctorSignature: 'File size must be less than 200 KB' })); return }
                     const reader = new FileReader()
-                    reader.onloadend = () => { setFormData(p => ({ ...p, doctorSignature: reader.result })); setErrors(p => ({ ...p, doctorSignature: '' })) }
+                    reader.onloadend = () => { setFormData(p => ({ ...p, doctorSignature: reader.result, doctorSignatureFile: file })); setErrors(p => ({ ...p, doctorSignature: '' })) }
                     reader.readAsDataURL(file)
                   }}
                   invalid={!!errors.doctorSignature}

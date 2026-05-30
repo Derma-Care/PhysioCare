@@ -145,7 +145,7 @@ const PageLayout = ({ title, children, branch }) => {
                         e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'
                       }}
                     >
-                      <h6 className="fw-bold mb-2" style={{ color: 'var(--color-black)' }}>
+                      <h6 className="fw-bold mb-2" style={{ color: 'var(--color-bgcolor)' }}>
                         {b.branchName}
                       </h6>
                       <p className="mb-1 d-flex align-items-center text-secondary gap-2">
