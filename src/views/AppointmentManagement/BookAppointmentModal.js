@@ -44,7 +44,6 @@ const TABS = [
   { id: 'booking', label: 'Booking Details' },
   { id: 'slots', label: 'Available Slots' },
   { id: 'medical', label: 'Medical History' },
-  { id: 'payment', label: 'Payment' },
   { id: 'assessment', label: 'Pain Assessment' },
 ]
 
@@ -87,6 +86,29 @@ const activityOptions = ['Sedentary', 'Moderate', 'Active', 'Athlete']
 const reasonOptions = ['Chronic Pain', 'Sports Rehab', 'Neuro Rehab', 'Others']
 
 const ErrMsg = ({ msg }) => msg ? <p style={errStyle}>{msg}</p> : null
+
+const getRawImageMimeType = (value = '') => {
+  if (value.startsWith('iVBOR')) return 'image/png'
+  if (value.startsWith('/9j/')) return 'image/jpeg'
+  if (value.startsWith('R0lGOD')) return 'image/gif'
+  if (value.startsWith('UklGR')) return 'image/webp'
+  return ''
+}
+
+const isRawImageBase64 = (value) =>
+  typeof value === 'string' && Boolean(getRawImageMimeType(value.trim()))
+
+const getPainAssessmentImageSrc = (value) => {
+  if (typeof value !== 'string') return ''
+  const image = value.trim()
+  if (!image) return ''
+  if (image.startsWith('data:image') || image.startsWith('http') || image.startsWith('blob:')) return image
+
+  const mimeType = getRawImageMimeType(image)
+  if (mimeType) return `data:${mimeType};base64,${image}`
+
+  return `${wifiUrl}/${image.replace(/^\/+/, '')}`
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 const BookAppointmentModal = ({ visible, onClose, editData }) => {
@@ -175,7 +197,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     let uploadedAttachments = []
 
     // 1. Upload partImage (markedImage) if it's base64
-    if (markedImage && (markedImage.startsWith('data:image') || !markedImage.startsWith('http'))) {
+    if (markedImage && (markedImage.startsWith('data:image') || isRawImageBase64(markedImage))) {
       try {
         setUploadProgressMsg('Compressing & uploading pain assessment image...')
         const file = base64ToFile(markedImage, 'pain_assessment.png')
@@ -642,6 +664,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         branchId: '', branchname: '',
         doctorId: '', doctorName: '', doctorDeviceId: '',
         consultationFee: 0, foc: 'Paid', focReason: '',
+        paymentType: '', doctorRefCode: '', referredByType: '', referredByName: '',
         // serviceDate and servicetime persist during tab reset
       }))
     }
@@ -657,11 +680,6 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         previousInjuries: '', currentMedications: '', allergies: '',
         occupation: '', reasonforVisit: '', activityLevels: [],
         insuranceProvider: '', policyNumber: '', attachments: [],
-      }))
-    }
-    if (tabId === 'payment') {
-      setBookingDetails((p) => ({
-        ...p, paymentType: '', doctorRefCode: '', referredByType: '', referredByName: '',
       }))
     }
     if (tabId === 'assessment') {
@@ -716,6 +734,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       if (!bookingDetails.branchId) e.branchname = 'Select branch'
       if (!bookingDetails.doctorId) e.doctorName = 'Select doctor'
       if (bookingDetails.foc === 'FOC' && !bookingDetails.focReason?.trim()) e.focReason = 'Enter FOC reason'
+      if (!bookingDetails.paymentType) e.paymentType = 'Select payment type'
     }
 
     if (tabId === 'slots') {
@@ -728,10 +747,6 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         if (!bookingDetails.symptomsDuration) e.symptomsDuration = 'Duration required'
         if (!bookingDetails.unit) e.unit = 'Select unit'
       }
-    }
-
-    if (tabId === 'payment') {
-      if (!bookingDetails.paymentType) e.paymentType = 'Select payment type'
     }
 
     // assessment tab — optional, no required fields
@@ -1299,6 +1314,64 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
               <ErrMsg msg={errors.focReason} />
             </CCol>
           )}
+
+          <CCol md={6}>
+            <CFormLabel style={labelStyle}>Payment Type <span className="text-danger">*</span></CFormLabel>
+            <CFormSelect name="paymentType" value={bookingDetails.paymentType} style={selectStyle(errors.paymentType)}
+              onChange={(e) => {
+                setBookingDetails((p) => ({ ...p, paymentType: e.target.value }))
+                e.target.value ? clearErr('paymentType') : setErr('paymentType', 'Select payment type')
+              }}>
+              <option value="">Select Payment Type</option>
+              {['Cash', 'Card', 'UPI', 'Not Paid'].map((t) => <option key={t}>{t}</option>)}
+            </CFormSelect>
+            <ErrMsg msg={errors.paymentType} />
+          </CCol>
+          {
+            visitType === 'first' && (<CCol md={6}>
+              <CFormLabel style={labelStyle}>Referred By</CFormLabel>
+              <Select styles={rsStyles}
+                value={
+                  referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) ||
+                  (bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)
+                }
+                getOptionLabel={(o) => o.referralId === 'OTHER'
+                  ? 'Others'
+                  : `${o.fullName} - ${o.mobileNumber}`
+                }
+                getOptionValue={(o) => o.referralId}
+                onChange={(sel) => {
+                  const v = sel ? sel.referralId : ''
+                  setBookingDetails((p) => ({
+                    ...p, doctorRefCode: v,
+                    referredByType: v === 'OTHER' ? '' : p.referredByType,
+                    referredByName: v === 'OTHER' ? '' : p.referredByName,
+                  }))
+                }}
+                options={[...referDoctor, { referralId: 'OTHER', fullName: 'Others' }]}
+                placeholder="Select or search..." isSearchable />
+            </CCol>)
+          }
+
+          {bookingDetails.doctorRefCode === 'OTHER' && (
+            <>
+              <CCol md={6}>
+                <CFormLabel style={labelStyle}>Referred By Type</CFormLabel>
+                <CFormSelect value={bookingDetails.referredByType || ''} style={selectStyle(false)}
+                  onChange={(e) => setBookingDetails((p) => ({ ...p, referredByType: e.target.value }))}>
+                  <option value="">Select Type</option>
+                  {['Friend', 'Family', 'Facebook', 'Instagram', 'Google', 'Advertisement', 'Other'].map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </CFormSelect>
+              </CCol>
+              <CCol md={6}>
+                <CFormLabel style={labelStyle}>Referred Person Name</CFormLabel>
+                <CFormInput value={bookingDetails.referredByName || ''} style={inputStyle(false)}
+                  onChange={(e) => setBookingDetails((p) => ({ ...p, referredByName: e.target.value }))} />
+              </CCol>
+            </>
+          )}
         </CRow>
       </div>
     )
@@ -1574,90 +1647,32 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       </div>
     )
 
-    // ── 6. PAYMENT ────────────────────────────────────────────────────────
-    if (tabId === 'payment') return (
-      <div>
-        <p style={sectionHeadStyle}>Payment Details</p>
-        <CRow className="g-3">
-          <CCol md={6}>
-            <CFormLabel style={labelStyle}>Payment Type <span className="text-danger">*</span></CFormLabel>
-            <CFormSelect name="paymentType" value={bookingDetails.paymentType} style={selectStyle(errors.paymentType)}
-              onChange={(e) => {
-                setBookingDetails((p) => ({ ...p, paymentType: e.target.value }))
-                e.target.value ? clearErr('paymentType') : setErr('paymentType', 'Select payment type')
-              }}>
-              <option value="">Select Payment Type</option>
-              {['Cash', 'Card', 'UPI', 'Not Paid'].map((t) => <option key={t}>{t}</option>)}
-            </CFormSelect>
-            <ErrMsg msg={errors.paymentType} />
-          </CCol>
-          {
-            visitType === 'first' && (<CCol md={6}>
-              <CFormLabel style={labelStyle}>Referred By</CFormLabel>
-              <Select styles={rsStyles}
-                value={
-                  referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) ||
-                  (bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)
-                }
-                getOptionLabel={(o) => o.referralId === 'OTHER'
-                  ? 'Others'
-                  : `${o.fullName} - ${o.mobileNumber}`
-                }
-                getOptionValue={(o) => o.referralId}
-                onChange={(sel) => {
-                  const v = sel ? sel.referralId : ''
-                  setBookingDetails((p) => ({
-                    ...p, doctorRefCode: v,
-                    referredByType: v === 'OTHER' ? '' : p.referredByType,
-                    referredByName: v === 'OTHER' ? '' : p.referredByName,
-                  }))
-                }}
-                options={[...referDoctor, { referralId: 'OTHER', fullName: 'Others' }]}
-                placeholder="Select or search..." isSearchable />
-            </CCol>)
-
-          }
-
-          {bookingDetails.doctorRefCode === 'OTHER' && (
-            <>
-              <CCol md={6}>
-                <CFormLabel style={labelStyle}>Referred By Type</CFormLabel>
-                <CFormSelect value={bookingDetails.referredByType || ''} style={selectStyle(false)}
-                  onChange={(e) => setBookingDetails((p) => ({ ...p, referredByType: e.target.value }))}>
-                  <option value="">Select Type</option>
-                  {['Friend', 'Family', 'Facebook', 'Instagram', 'Google', 'Advertisement', 'Other'].map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </CFormSelect>
-              </CCol>
-              <CCol md={6}>
-                <CFormLabel style={labelStyle}>Referred Person Name</CFormLabel>
-                <CFormInput value={bookingDetails.referredByName || ''} style={inputStyle(false)}
-                  onChange={(e) => setBookingDetails((p) => ({ ...p, referredByName: e.target.value }))} />
-              </CCol>
-            </>
-          )}
-        </CRow>
-      </div>
-    )
-
-    // ── 7. PAIN ASSESSMENT ────────────────────────────────────────────────
+    // ── 6. PAIN ASSESSMENT ────────────────────────────────────────────────
     if (tabId === 'assessment') return (
       <div>
         <p style={sectionHeadStyle}>Pain Assessment</p>
         <BodyAssessment onPartClick={handlePartClick} initialSelected={part} initialAnswers={theraphyQuestions} initialImage={markedImage} />
         <ErrMsg msg={errors.part} />
-        {markedImage && (
+        {/* {markedImage && typeof markedImage === "string" && (
           <div className="mt-2">
             <CFormLabel style={labelStyle}>Marked Area Preview</CFormLabel>
+
             <img
-              src={markedImage.startsWith('data:image') || markedImage.startsWith('http') ? markedImage : (markedImage.includes('/') ? `${wifiUrl}/${markedImage}` : `data:image/png;base64,${markedImage}`)}
+              src={getPainAssessmentImageSrc(markedImage)}
               width={180}
               alt="preview"
-              style={{ display: 'block', borderRadius: '6px', border: '1px solid #ddd' }}
+              onError={(e) => {
+                console.log("Image load error");
+                console.log(e.target.src);
+              }}
+              style={{
+                display: "block",
+                borderRadius: "6px",
+                border: "1px solid #ddd",
+              }}
             />
           </div>
-        )}
+        )} */}
         {/* <ErrMsg msg={errors.markedImage} /> */}
         {(!selectedBooking || !selectedBooking.customerId) && !editData && (
           <div className="form-check mt-3">

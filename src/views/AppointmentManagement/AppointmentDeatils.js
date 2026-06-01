@@ -308,7 +308,7 @@ const AppointmentDetails = () => {
   const showConfirmed = ['active', 'confirmed', 'in-progress', 'follow-up'].includes(normalizedStatus)
   const showCompletedOrActive = ['completed', 'active'].includes(normalizedStatus)
   const showVitalsCard = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
-  const showPayment = ['active', 'follow-up'].includes(normalizedStatus)
+  const showPayment = ['active', 'follow-up', 'completed'].includes(normalizedStatus)
   const showConfirmedOrCompleted = ['confirmed', 'completed', 'active'].includes(normalizedStatus)
   const showPrescription = ['active', 'completed'].includes(normalizedStatus) && appointment?.prescriptionPdf
   const showAccordion = ['confirmed', 'active', 'completed'].includes(normalizedStatus)
@@ -472,7 +472,7 @@ const AppointmentDetails = () => {
   }
 
   const handlePaymentClick = () => {
-    if (showPayment && normalizedStatus === 'active' || appointment?.status === 'in-progress' || normalizedStatus === 'follow-up') {
+    if (showPayment && normalizedStatus === 'active' || appointment?.status === 'in-progress' || normalizedStatus === 'follow-up' || normalizedStatus === 'completed') {
       navigate('/program-payment' + `/${id}`, {
         state: {
           bookingId: appointment.bookingId, doctorId: appointment.doctorId,
@@ -572,7 +572,7 @@ const AppointmentDetails = () => {
               <CreditCard size={13} /> Payment
             </ActionBtn>
           )}
-          {vitals && !appointment?.consentFormPdf && (
+          {!appointment?.consentFormPdf && (
             <ActionBtn style={{ backgroundColor: COLORS.white, color: COLORS.primary }} onClick={() => navigate('/physio-consent-form', { state: { bookingDetails: appointment, vitals, doctorsign: doctor?.doctorSignature } })}>
               <FileText size={13} /> Consent Form
             </ActionBtn>
@@ -786,7 +786,7 @@ const AppointmentDetails = () => {
                 padding: '16px', backgroundColor: tokens.surface,
               }}>
                 <img
-                  src={getDoctorImage(doctor.doctorPicture)}
+                  src={doctor.doctorPicture}
                   alt={doctor.doctorName}
                   style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: `2px solid var(--color-bgcolor)` }}
                 />

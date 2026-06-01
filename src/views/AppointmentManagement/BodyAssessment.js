@@ -232,13 +232,17 @@ export default function BodyAssessment({ onPartClick, initialSelected = [], init
             </button>
           </div>
         </div>
-        {/* {previewImage && (
-        <div>
-          <h4>Generated Image</h4>
-         
-          <img src={previewImage}  alt="preview" />
-        </div>
-      )} */}
+        {previewImage && (
+          <div className="mt-3">
+            <h6 style={{ color: COLORS.primary }}>Generated Image Preview</h6>
+            <img
+              src={`data:image/png;base64,${previewImage}`}
+              width={180}
+              alt="Pain assessment preview"
+              style={{ display: 'block', borderRadius: '6px', border: '1px solid #ddd' }}
+            />
+          </div>
+        )}
         {modalPart && (
           <QuestionModal
             visible={true}

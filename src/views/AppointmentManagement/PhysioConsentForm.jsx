@@ -26,6 +26,8 @@ const ConsentForm = () => {
   const [pdfPreview, setPdfPreview] = useState("");
   const [loadingSubmit, setLoadingSubmit] = useState(false);
 
+  const [loadingDownload, setLoadingDownload] = useState(false);
+  const [loadingPdf, setLoadingPdf] = useState(false);
   const formRef = useRef();
   const patientSignRef = useRef();
   const [patientSign, setPatientSign] = useState("");
@@ -58,6 +60,7 @@ const ConsentForm = () => {
   const upload = async () => {
     try {
       setLoadingSubmit(true);
+      setLoadingPdf(true);
       const hiddenEls = document.querySelectorAll(".no-print");
       hiddenEls.forEach((el) => (el.style.display = "none"));
 
@@ -83,6 +86,7 @@ const ConsentForm = () => {
       hiddenEls.forEach((el) => (el.style.display = ""));
 
       const pdfBlob = pdf.output("blob");
+      setLoadingPdf(false);
       // S3 presigned URL limits consentPdf to 204800 bytes
       const file = new File([pdfBlob], `${booking?.name || "Patient"}_Consent.pdf`, { type: "application/pdf" });
 
@@ -138,28 +142,65 @@ const ConsentForm = () => {
   };
 
   const downloadPDF = async () => {
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pages = document.querySelectorAll(".a4-page");
-    const hiddenEls = document.querySelectorAll(".no-print");
-    hiddenEls.forEach((el) => (el.style.display = "none"));
+    try {
+      setLoadingDownload(true);
 
-    for (let i = 0; i < pages.length; i++) {
-      const canvas = await html2canvas(pages[i], {
-        scale: 4,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        scrollY: -window.scrollY,
-        width: pages[i].offsetWidth,
-        height: pages[i].offsetHeight,
+      const pdf = new jsPDF("p", "mm", "a4", true);
+
+      const pages = document.querySelectorAll(".a4-page");
+
+      const hiddenEls = document.querySelectorAll(".no-print");
+
+      hiddenEls.forEach((el) => {
+        el.style.display = "none";
       });
 
-      const imgData = canvas.toDataURL("image/jpeg", 1.0);
-      if (i > 0) pdf.addPage();
-      pdf.addImage(imgData, "JPEG", 0, 0, 210, 297, undefined, "FAST");
-    }
+      for (let i = 0; i < pages.length; i++) {
 
-    hiddenEls.forEach((el) => (el.style.display = ""));
-    pdf.save(`${booking?.name}_Consent.pdf`);
+        const canvas = await html2canvas(pages[i], {
+          scale: 1.2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+        });
+
+        const imgData = canvas.toDataURL("image/jpeg", 0.35);
+
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        pdf.addImage(
+          imgData,
+          "JPEG",
+          0,
+          0,
+          210,
+          297,
+          undefined,
+          "FAST"
+        );
+      }
+
+      hiddenEls.forEach((el) => {
+        el.style.display = "";
+      });
+
+      const pdfBlob = pdf.output("blob");
+
+      console.log(
+        "PDF Size:",
+        (pdfBlob.size / 1024).toFixed(2),
+        "KB"
+      );
+
+      pdf.save(`${booking?.name || "Consent"}_Consent.pdf`);
+
+    } catch (error) {
+      console.error("PDF Download Error:", error);
+    } finally {
+      setLoadingDownload(false);
+    }
   };
 
   const getFileUrl = (str) => {
@@ -244,7 +285,17 @@ const ConsentForm = () => {
 
   return (
     <>
-      {loadingSubmit && <FullScreenLoader message="Generating PDF & Uploading..." />}
+      {loadingPdf && (
+        <FullScreenLoader message="Generating PDF..." />
+      )}
+
+      {loadingDownload && (
+        <FullScreenLoader message="Downloading PDF..." />
+      )}
+
+      {loadingSubmit && (
+        <FullScreenLoader message="Uploading PDF..." />
+      )}
       {hasConsentFile ? (
         <div className="preview-box">
           <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -444,7 +495,7 @@ const ConsentForm = () => {
                     </div>
 
                     {/* Doctor Signature */}
-                    <div className="sign-card">
+                    {/* <div className="sign-card">
                       <div className="sign-title text-center">Physiotherapist Signature</div>
                       <div className="doctor-box">
                         <img
@@ -453,7 +504,7 @@ const ConsentForm = () => {
                           className="doctor-sign-img"
                         />
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </PrintLetterHead>
               </div>
@@ -478,8 +529,9 @@ const ConsentForm = () => {
                       color: COLORS.white,
                     }}
                     onClick={downloadPDF}
+                    disabled={loadingDownload}
                   >
-                    Download PDF
+                    {loadingDownload ? "Downloading..." : "Download PDF"}
                   </CButton>
                   <CButton
                     style={{
@@ -487,9 +539,9 @@ const ConsentForm = () => {
                       color: COLORS.white,
                     }}
                     onClick={upload}
-                    disabled={!patientSign}
+                    disabled={!patientSign || loadingSubmit}
                   >
-                    Submit
+                    {loadingSubmit ? "Uploading..." : "Submit"}
                   </CButton>
                   <UploadButton bookingId={booking?.bookingId} />
                 </div>
