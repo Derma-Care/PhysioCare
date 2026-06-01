@@ -1043,10 +1043,16 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
               }} />
           </CCol>
         </CRow>
+        {/* <BookingSearch
+          visitType={visitType}
+          fetchSlots={fetchSlots}
+          onSelectBooking={(b) => setSelectedBooking(b)}
+        /> */}
         <BookingSearch
           visitType={visitType}
           fetchSlots={fetchSlots}
           onSelectBooking={(b) => setSelectedBooking(b)}
+          onProceed={() => setTabId('slots')}  // ← advances to next tab
         />
       </div>
     )
