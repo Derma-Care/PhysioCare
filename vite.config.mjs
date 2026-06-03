@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
 import autoprefixer from 'autoprefixer'
+import { COLORS } from './src/Constant/Themes'
 
 export default defineConfig(() => {
   return {
@@ -34,7 +36,36 @@ export default defineConfig(() => {
         },
       },
     },
-    plugins: [react()],
+    plugins: [
+      react(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        manifest: {
+          name: 'Clinic Admin',
+          short_name: 'Clinic Admin',
+          description: 'PhysioCare Clinic Administration Panel',
+          theme_color: COLORS.sideColor,
+          background_color: '#ffffff',
+          display: 'standalone',
+          start_url: '/',
+          icons: [
+            {
+              src: './src/assets/images/DermaCare.png',
+              sizes: '192x192',
+              type: 'image/png'
+            },
+            {
+              src: './src/assets/images/DermaCare.png',
+              sizes: '512x512',
+              type: 'image/png'
+            }
+          ]
+        },
+        devOptions: {
+          enabled: true
+        }
+      })
+    ],
     resolve: {
       alias: [
         {
