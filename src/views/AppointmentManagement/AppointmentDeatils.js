@@ -15,6 +15,7 @@ import {
   CAccordion,
   CAccordionHeader,
   CAccordionBody,
+  CFormCheck,
 } from '@coreui/react'
 import axios from 'axios'
 import jsPDF from 'jspdf'
@@ -182,6 +183,8 @@ const AppointmentDetails = () => {
   const [loading, setLoading] = useState(false)
   const [appointment, setAppointment] = useState(null)
   const [loadingAppt, setLoadingAppt] = useState(true)
+  const [enableVitals, setEnableVitals] = useState(false)
+
 
   useEffect(() => {
     if (id) {
@@ -371,7 +374,7 @@ const AppointmentDetails = () => {
   }
 
   const handleSubmitVitals = async () => {
-    if (!validateVitals()) { showCustomToast('Please fix validation errors before submitting.', 'error'); return }
+    // if (!validateVitals()) { showCustomToast('Please fix validation errors before submitting.', 'error'); return }
     try {
       setLoading(true)
       const payload = {
@@ -502,7 +505,12 @@ const AppointmentDetails = () => {
       {children}
     </button>
   )
-
+  const isAnyFieldFilled =
+    formData.height ||
+    formData.weight ||
+    formData.bloodPressure ||
+    formData.temperature ||
+    formData.bmi
   /* ── form field ── FIX: added onBlur prop ── */
   const renderField = (label, name, placeholder) => (
     <div style={{ marginBottom: '14px' }} key={name}>
@@ -606,6 +614,13 @@ const AppointmentDetails = () => {
             <InfoItem label="Visit Type" value={appointment?.visitType} />
             <InfoItem label="Symptoms Duration" value={appointment?.symptomsDuration} />
             <InfoItem label="Free Follow-ups" value={appointment?.freeFollowUpsLeft !== null ? `${appointment.freeFollowUpsLeft} of ${appointment.freeFollowUps}` : null} />
+            <InfoItem label="Payment Type" value={appointment?.foc == "FOC" ? `FOC` : 'Paid'} />
+            {
+              appointment?.foc == "FOC" && (
+                <InfoItem label="FOC Reason" value={appointment?.focReason} />
+
+              )
+            }
           </div>
 
           {appointment?.problem && (
@@ -620,6 +635,21 @@ const AppointmentDetails = () => {
               <div style={{ fontSize: '13px', color: '#1e293b' }}>{appointment.problem}</div>
             </div>
           )}
+
+          {appointment?.parts && (
+            <div style={{
+              backgroundColor: tokens.surface,
+              border: `1px solid ${tokens.border}`,
+              borderRadius: tokens.radiusSm,
+              padding: '10px 14px',
+              marginTop: '4px',
+            }}>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Selected Body Parts</div>
+              <div style={{ fontSize: '13px', color: '#1e293b' }}>{appointment?.parts?.join(', ')}</div>
+            </div>
+          )}
+
+
 
           {(appointment?.partImage || (appointment?.theraphyAnswers && Object.keys(appointment.theraphyAnswers).length > 0)) && (
             <div style={{ marginTop: '24px' }}>
@@ -673,7 +703,7 @@ const AppointmentDetails = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0 24px' }}>
             <InfoItem label="Date" value={appointment?.serviceDate} />
             <InfoItem label="Time" value={appointment?.servicetime} />
-            <InfoItem label="Paid Amount" value={appointment?.totalFee ? `₹${appointment.totalFee}` : null} />
+            {/* <InfoItem label="Paid Amount" value={appointment?.totalFee ? `₹${appointment.totalFee}` : null} /> */}
             <InfoItem label="Consultation Fee" value={appointment?.listOfConsultationFee?.[0]?.consulationFee ? `₹${appointment.listOfConsultationFee[0].consulationFee}` : 'N/A'} />
           </div>
         </div>
@@ -826,28 +856,54 @@ const AppointmentDetails = () => {
 
         <CModalBody style={{ padding: '20px' }}>
           <CForm>
-            {renderField("Height (cm)", "height", "e.g. 170")}
-            {renderField("Weight (kg)", "weight", "e.g. 65")}
-            {renderField("Blood Pressure", "bloodPressure", "e.g. 120/80")}
-            {renderField("Temperature (°F / °C)", "temperature", "e.g. 98.6")}
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ fontSize: '12px', fontWeight: '600', color: tokens.muted, display: 'block', marginBottom: '4px' }}>
-                BMI (auto-calculated)
-              </label>
-              <CFormInput
-                name="bmi"
-                value={formData.bmi}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="e.g. 22.5"
-                invalid={!!validationErrors.bmi}
-                style={{ fontSize: '13px', borderRadius: tokens.radiusSm, backgroundColor: '#f8fafc' }}
-                readOnly={!!(formData.height && formData.weight)}
-              />
-              {validationErrors.bmi && (
-                <small style={{ color: tokens.danger, fontSize: '11px' }}>{validationErrors.bmi}</small>
-              )}
-            </div>
+
+
+
+
+            {/* Fields */}
+
+            <>
+              {renderField("Height (cm)", "height", "e.g. 170")}
+              {renderField("Weight (kg)", "weight", "e.g. 65")}
+              {renderField("Blood Pressure", "bloodPressure", "e.g. 120/80")}
+              {renderField("Temperature (°F / °C)", "temperature", "e.g. 98.6")}
+
+              <div style={{ marginBottom: '14px' }}>
+                <label
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: tokens.muted,
+                    display: 'block',
+                    marginBottom: '4px',
+                  }}
+                >
+                  BMI (auto-calculated)
+                </label>
+
+                <CFormInput
+                  name="bmi"
+                  value={formData.bmi}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="e.g. 22.5"
+                  invalid={!!validationErrors.bmi}
+                  style={{
+                    fontSize: '13px',
+                    borderRadius: tokens.radiusSm,
+                    backgroundColor: '#f8fafc',
+                  }}
+                  readOnly={!!(formData.height && formData.weight)}
+                />
+
+                {validationErrors.bmi && (
+                  <small style={{ color: tokens.danger, fontSize: '11px' }}>
+                    {validationErrors.bmi}
+                  </small>
+                )}
+              </div>
+            </>
+
           </CForm>
         </CModalBody>
 
@@ -865,11 +921,17 @@ const AppointmentDetails = () => {
           >
             Cancel
           </button>
-          <ActionBtn onClick={handleSubmitVitals} style={{ padding: '6px 20px', backgroundColor: COLORS.primary }}>
-            {loading ? (
-              <><span className="spinner-border spinner-border-sm me-1" style={{ width: '12px', height: '12px' }} /> Saving...</>
-            ) : 'Save Vitals'}
-          </ActionBtn>
+          {
+            (enableVitals || isAnyFieldFilled) && (
+
+              <ActionBtn onClick={handleSubmitVitals} style={{ padding: '6px 20px', backgroundColor: COLORS.primary }}>
+                {loading ? (
+                  <><span className="spinner-border spinner-border-sm me-1" style={{ width: '12px', height: '12px' }} /> Saving...</>
+                ) : 'Save Vitals'}
+              </ActionBtn>
+            )
+          }
+
         </CModalFooter>
       </CModal>
       {/* ── Edit Appointment Modal ──────────────────── */}

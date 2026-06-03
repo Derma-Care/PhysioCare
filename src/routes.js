@@ -55,17 +55,17 @@ const AdminManagement = React.lazy(
 const OtherStaffManagement = React.lazy(
   () => import('./views/EmployeeManagement/OtherStaff/OtherStaffManagement'),
 )
-const PharmacyManagement = React.lazy(
-  () => import('./components/PharmacyManagement/PharmacyManagement'),
-)
+// const PharmacyManagement = React.lazy(
+//   () => import('./components/PharmacyManagement/PharmacyManagement'),
+// )
 const ActiveAppointmentsScreen = React.lazy(
   () => import('./views/AppointmentManagement/In-progressAppointmnets'),
 
 )
 const PatientManagement = React.lazy(() => import('./views/Patients/Patientmanagement'))
-const ViewPurchaseBills = React.lazy(
-  () => import('./components/PharmacyManagement/ViewPurchaseBills'),
-)
+// const ViewPurchaseBills = React.lazy(
+//   () => import('./components/PharmacyManagement/ViewPurchaseBills'),
+// )
 
 const EmployeeList = React.lazy(() => import('./views/pages/attendance/EmployeeList'))
 
@@ -117,7 +117,7 @@ const routes = [
   { path: '/employee-management/security', name: 'Security', element: SecurityManagement },
   { path: '/employee-management/otherstaff', name: 'Other Staff', element: OtherStaffManagement },
   { path: '/employee-management/frontdesk', name: 'Front Desk', element: FrontDeskManagement },
-  { path: '/pharmacy/purchases/bills', name: 'View purchase bills', element: ViewPurchaseBills },
+  // { path: '/pharmacy/purchases/bills', name: 'View purchase bills', element: ViewPurchaseBills },
   {
     path: '/employee-management/lab-technician',
     name: 'Lab Technician',
@@ -136,7 +136,7 @@ const routes = [
   { path: '/employee-management/pharmacist', name: 'Pharmacist', element: PharmacistManagement },
 
 
-  { path: '/pharmacy-management', name: 'Pharmacy Management', element: PharmacyManagement },
+  // { path: '/pharmacy-management', name: 'Pharmacy Management', element: PharmacyManagement },
 
   {
     path: '/therapy-programs',

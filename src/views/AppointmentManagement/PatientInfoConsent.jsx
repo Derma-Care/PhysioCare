@@ -140,13 +140,13 @@ const PatientRegistration = ({ booking, vitals }) => {
       </div>
 
       <div className="two-col-row">
-        <div className="label"><strong>Referring Doctor (if any):</strong> {booking?.doctorName || "-"}</div>
+        <div className="label"><strong>Referred By (if any):</strong> {booking?.referredByName || "-"}</div>
         <div className="label"><strong>Current Medications:</strong> {booking?.currentMedications || "-"}</div>
       </div>
 
       <div className="two-col-row">
         <div className="label"><strong>Allergies:</strong> {booking?.allergies || "-"}</div>
-        <div className="label"><strong>Past Medical Surgeries:</strong> {booking?.previousInjuries || "-"}</div>
+        <div className="label"><strong>Previous Injuries:</strong> {booking?.previousInjuries || "-"}</div>
       </div>
 
       {/* INSURANCE */}

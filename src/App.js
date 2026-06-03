@@ -16,7 +16,7 @@ const Page500 = React.lazy(() => import('./views/pages/page500/Page500'))
 
 import ProtectedRoute from './components/ProtectedRoute'
 import { injectTheme } from './Constant/Themes'
-import SupplierApp from './components/PharmacyManagement/Reorder/SupplierApp'
+// import SupplierApp from './components/PharmacyManagement/Reorder/SupplierApp'
 import { LogoLoader } from './Utils/LogoLoder'
 
 const App = () => {
@@ -42,7 +42,7 @@ const App = () => {
             <Route path="/register" element={<Register />} />
             <Route path="/404" element={<Page404 />} />
             <Route path="/500" element={<Page500 />} />
-            <Route path="/supplier-Dashboard" element={<SupplierApp />} />
+            {/* <Route path="/supplier-Dashboard" element={<SupplierApp />} /> */}
             <Route
               path="*"
               element={

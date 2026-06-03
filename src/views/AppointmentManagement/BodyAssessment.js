@@ -232,7 +232,7 @@ export default function BodyAssessment({ onPartClick, initialSelected = [], init
             </button>
           </div>
         </div>
-        {previewImage && (
+        {/* {previewImage && (
           <div className="mt-3">
             <h6 style={{ color: COLORS.primary }}>Generated Image Preview</h6>
             <img
@@ -242,7 +242,7 @@ export default function BodyAssessment({ onPartClick, initialSelected = [], init
               style={{ display: 'block', borderRadius: '6px', border: '1px solid #ddd' }}
             />
           </div>
-        )}
+        )} */}
         {modalPart && (
           <QuestionModal
             visible={true}

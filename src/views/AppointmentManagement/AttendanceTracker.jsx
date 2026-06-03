@@ -65,7 +65,7 @@ const AttendanceTracker = () => {
   const therapistData = location.state || (storedData ? JSON.parse(storedData) : {});
 
   // Get data from location state or localStorage
-  const userId = location.state?.userId || therapistData?.therapistId || localStorage.getItem('staffId') || "0001";
+  const userId = location.state?.userId || localStorage.getItem('staffId') || localStorage.getItem('branchId') || "";
   const clinicId = localStorage.getItem('HospitalId') || therapistData?.clinicId || "C001";
   const branchId = localStorage.getItem('branchId') || therapistData?.branchId || "B001";
   const role = location.state?.role || therapistData?.role || localStorage.getItem('role') || "THERAPIST";

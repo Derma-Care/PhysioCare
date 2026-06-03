@@ -14,7 +14,7 @@ import { attachInterceptors } from './Utils/Interceptors' // <-- interceptor fil
 import './views/Style/toastify.css'
 import { NavigationProvider } from './views/Usecontext/NavigationProvider'
 import { BrowserRouter } from 'react-router-dom'
-import { MedicineProvider } from './Context/MedicineContext'
+// import { MedicineProvider } from './Context/MedicineContext'
 import EmployeeList from './views/pages/attendance/EmployeeList'
 import AttendanceMenu from './views/pages/attendance/AttendanceMenu'
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -44,31 +44,31 @@ function Root() {
           <GlobalSearchProvider>
             <HospitalProvider>
               {/* ✅ Toast container globally */}
-              <MedicineProvider>
-                <ToastContainer
-                  position="top-right"
-                  limit={3}
-                  theme="dark" // base dark theme
-                  toastStyle={{
-                    backgroundColor: COLORS.primary,
-                    color: 'white',
-                  }}
-                />
-                <App />
+              {/* <MedicineProvider> */}
+              <ToastContainer
+                position="top-right"
+                limit={3}
+                theme="dark" // base dark theme
+                toastStyle={{
+                  backgroundColor: COLORS.primary,
+                  color: 'white',
+                }}
+              />
+              <App />
 
 
-                {/* <EquipmentManagement /> */}
+              {/* <EquipmentManagement /> */}
 
 
 
-                {/* <ExerciseTable /> */}
-                {/* <TherapistDashboard /> */}
-              </MedicineProvider>
+              {/* <ExerciseTable /> */}
+              {/* <TherapistDashboard /> */}
+              {/* </MedicineProvider> */}
             </HospitalProvider>
           </GlobalSearchProvider>
         </NavigationProvider>
       </BrowserRouter>
-    </Provider>
+    </Provider >
   )
 }
 

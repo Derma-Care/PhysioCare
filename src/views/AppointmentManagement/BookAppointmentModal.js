@@ -1659,7 +1659,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         <p style={sectionHeadStyle}>Pain Assessment</p>
         <BodyAssessment onPartClick={handlePartClick} initialSelected={part} initialAnswers={theraphyQuestions} initialImage={markedImage} />
         <ErrMsg msg={errors.part} />
-        {/* {markedImage && typeof markedImage === "string" && (
+        {markedImage && typeof markedImage === "string" && (
           <div className="mt-2">
             <CFormLabel style={labelStyle}>Marked Area Preview</CFormLabel>
 
@@ -1678,7 +1678,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
               }}
             />
           </div>
-        )} */}
+        )}
         {/* <ErrMsg msg={errors.markedImage} /> */}
         {(!selectedBooking || !selectedBooking.customerId) && !editData && (
           <div className="form-check mt-3">
