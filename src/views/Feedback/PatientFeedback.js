@@ -82,7 +82,7 @@ const PatientFeedback = () => {
   const fetchFeedbacks = async () => {
     setLoading(true);
     try {
-      const res = await getAllOverallFeedback();
+      const res = await getAllOverallFeedback(hospitalId, branchId);
       if (res?.data?.data) setFeedbacks(res.data.data);
       else if (res?.data) setFeedbacks(res.data);
       else if (Array.isArray(res)) setFeedbacks(res);

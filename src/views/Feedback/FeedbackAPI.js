@@ -8,8 +8,8 @@ import { BASE_URL } from '../../baseUrl';
  */
 
 // GET: Fetch all overall feedback records
-export const getAllOverallFeedback = () => {
-  return http.get(`${BASE_URL}/getAllPatientFeedback`);
+export const getAllOverallFeedback = (CID, BID) => {
+  return http.get(`${BASE_URL}/getAllByUsingClinicIdAndBranchId/${CID}/${BID}`);
 };
 
 // POST: Create new overall feedback
