@@ -66,8 +66,8 @@ const AttendanceTracker = () => {
 
   // Get data from location state or localStorage
   const userId = location.state?.userId || localStorage.getItem('staffId') || localStorage.getItem('branchId') || "";
-  const clinicId = localStorage.getItem('HospitalId') || therapistData?.clinicId || "C001";
-  const branchId = localStorage.getItem('branchId') || therapistData?.branchId || "B001";
+  const clinicId = localStorage.getItem('HospitalId');
+  const branchId = localStorage.getItem('branchId');
   const role = location.state?.role || therapistData?.role || localStorage.getItem('role') || "THERAPIST";
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -239,10 +239,14 @@ const AttendanceTracker = () => {
       const payload = {
         userId,
         date: dateStr,
+        clinicId: clinicId,
+        branchId: branchId,
         login: {
           time: time,
-          latitude: loginCoords.latitude,
-          longitude: loginCoords.longitude
+          // latitude: loginCoords.latitude, //17.433307
+          latitude: "17.433307", //17.433307
+          // longitude: loginCoords.longitude //78.408188
+          longitude: "78.408188" //78.408188
         },
         // loginLocation: loginAddr,
         // loginLatitude: loginCoords.latitude,
@@ -254,7 +258,7 @@ const AttendanceTracker = () => {
         setLoggedIn(true);
         setLoginTime(time);
         setLoginLocation(loginAddr);
-        showCustomToast("Logged in successfully", "success");
+        showCustomToast(res.data.message || "Logged in successfully", "success");
         await fetchDailyData();
         await fetchMonthlyData();
       } else {
@@ -284,7 +288,7 @@ const AttendanceTracker = () => {
         logoutTime: time,
         // logoutLocation: address,
         logoutLatitude: coords.latitude,
-        logoutLongtitude: coords.longitude
+        logoutLongitude: coords.longitude
       };
 
       const res = await axios.put(`${BASE_URL}/updateUserAttendence`, payload);
@@ -294,7 +298,7 @@ const AttendanceTracker = () => {
         setLogoutTime(time);
         setLogoutLocation(address);
         setIsLogoutModalVisible(false);
-        showCustomToast("Logged out successfully", "success");
+        showCustomToast(res.data.message || "Logged out successfully", "success");
         await fetchDailyData();
         await fetchMonthlyData();
       } else {
@@ -345,14 +349,14 @@ const AttendanceTracker = () => {
             duration: durationStr,
             location: address,
             latitude: coords.latitude,
-            longtitude: coords.longitude
+            longitude: coords.longitude
           }
         ]
       };
 
       const res = await axios.post(`${BASE_URL}/saveUserAttendence`, payload);
       if (res.data.success) {
-        showCustomToast("Activity added successfully", "success");
+        showCustomToast(res.data.message || "Activity added successfully", "success");
         await fetchDailyData();
         await fetchMonthlyData();
 

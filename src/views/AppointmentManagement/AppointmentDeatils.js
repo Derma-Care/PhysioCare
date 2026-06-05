@@ -608,7 +608,7 @@ const AppointmentDetails = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0 24px' }}>
             <InfoItem label="Patient Name" value={appointment?.name} />
             <InfoItem label="Mobile Number" value={appointment?.patientMobileNumber} />
-            <InfoItem label="Booking For" value={appointment?.bookingFor} />
+            <InfoItem label="Booking ID" value={appointment?.bookingId} />
             <InfoItem label="Age" value={appointment?.age ? `${appointment.age} Yrs` : null} />
             <InfoItem label="Gender" value={appointment?.gender} />
             <InfoItem label="Visit Type" value={appointment?.visitType} />

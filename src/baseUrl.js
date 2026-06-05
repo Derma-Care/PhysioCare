@@ -1,8 +1,8 @@
 //Testing
-export let wifiUrl = 'http://3.7.216.95:9090'
+// export let wifiUrl = 'http://3.7.216.95:9090'
 
 //Dev
-// export let wifiUrl = 'http://3.7.165.97:9090'
+export let wifiUrl = 'https://api.ccmstestserver.online'
 export let splrUrl = 'http:/localhost:8801'
 // export let wifiUrl = '192.168.1.5'
 // http://3.6.119.57:9090

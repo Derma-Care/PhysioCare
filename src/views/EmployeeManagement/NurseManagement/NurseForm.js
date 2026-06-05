@@ -175,7 +175,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     branchId: localStorage.getItem('branchId'),
     role: 'physiotherapist',
     fullName: '', contactNumber: '', emailId: '',
-    gender: '', dateofBirth: '', qualification: '',
+    gender: '', dateOfBirth: '', qualification: '',
     yearsOfExperience: '', services: [], specializations: [],
     expertiseAreas: [], treatmentTypes: [],
     availability: { days: [], startTime: '', endTime: '', startDay: '', endDay: '' },
@@ -238,17 +238,17 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     if (!formData.fullName?.trim()) e.fullName = 'Full name is required'
     if (!/^[6-9]\d{9}$/.test(formData.contactNumber || '')) e.contactNumber = 'Enter valid 10-digit number'
     if (!formData.gender) e.gender = 'Select gender'
-    if (!formData.dateofBirth) {
-      e.dateofBirth = 'Select DOB'
+    if (!formData.dateOfBirth) {
+      e.dateOfBirth = 'Select DOB'
     } else {
-      const dob = new Date(formData.dateofBirth)
+      const dob = new Date(formData.dateOfBirth)
       const now = new Date()
       let age = now.getFullYear() - dob.getFullYear()
       const m = now.getMonth() - dob.getMonth()
       if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--
 
-      if (age < 21) e.dateofBirth = 'Must be at least 21 years'
-      else if (age > 100) e.dateofBirth = 'Age cannot exceed 100 years'
+      if (age < 21) e.dateOfBirth = 'Must be at least 21 years'
+      else if (age > 100) e.dateOfBirth = 'Age cannot exceed 100 years'
     }
     // ✅ Email validation
     if (!formData.emailId?.trim()) {
@@ -354,10 +354,10 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     if (!file) return
 
     if (field === 'licenseCertificate' || field === 'degreeCertificate') {
-      const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
+      const allowed = ['application/pdf']
       if (!allowed.includes(file.type)) {
-        showCustomToast('Only PDF or JPG/PNG allowed', 'error')
-        setErrors(prev => ({ ...prev, [field]: 'Only PDF/Image allowed' }))
+        showCustomToast('Only PDF allowed', 'error')
+        setErrors(prev => ({ ...prev, [field]: 'Only PDF allowed' }))
         return
       }
       if (file.size > 250 * 1024) {
@@ -419,6 +419,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
       await onSave({
         ...formData,
         role: formData.physioType === 'intern' ? 'intern' : 'physiotherapist',
+        // dateOfBirth: formData.dateofBirth,
         availability: {
           days: selectedDays,
           startTime,
@@ -522,7 +523,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                 <InfoRow label="Contact" value={formData.contactNumber} />
                 <InfoRow label="Email" value={formData.emailId} required error={errors.emailId} />
                 <InfoRow label="Gender" value={formData.gender} />
-                <InfoRow label="Date of Birth" value={formData.dateofBirth} />
+                <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
                 <InfoRow label="Date of Joining" value={formData.dateofJoining} />
                 <InfoRow label="Emergency Contact" value={formData.emergencyContact} />
                 <InfoRow label="Aadhar ID" value={formData.aadharID} />
@@ -650,11 +651,11 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                   </Field>
                 </div>
                 <div className="pf-col-third">
-                  <Field label="Date of Birth" required error={errors.dateofBirth}>
-                    <input type="date" className="pf-input" value={formData.dateofBirth}
+                  <Field label="Date of Birth" required error={errors.dateOfBirth}>
+                    <input type="date" className="pf-input" value={formData.dateOfBirth}
                       max={new Date(new Date().setFullYear(new Date().getFullYear() - 21)).toISOString().split('T')[0]}
                       min={new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split('T')[0]}
-                      onChange={(e) => handleChange('dateofBirth', e.target.value)} />
+                      onChange={(e) => handleChange('dateOfBirth', e.target.value)} />
                   </Field>
                 </div>
                 <div className="pf-col-third">
@@ -899,14 +900,14 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
               <div className="pf-row">
                 <div className="pf-col-third">
                   <Field label="License Certificate" required error={errors.licenseCertificate}>
-                    <input type="file" className="pf-input" accept="application/pdf, image/*"
+                    <input type="file" className="pf-input" accept="application/pdf"
                       onChange={(e) => handleFileChange('licenseCertificate', e.target.files[0])} />
                     {formData.documents?.licenseCertificate && !formData.documents.licenseCertificate.startsWith('JVBERi0') && (
                       <div style={{ marginTop: 8 }}>
-                        <img 
-                          src={`data:image/jpeg;base64,${formData.documents.licenseCertificate}`} 
-                          alt="License Preview" 
-                          style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', border: '1px solid #d0dce9' }} 
+                        <img
+                          src={`data:image/jpeg;base64,${formData.documents.licenseCertificate}`}
+                          alt="License Preview"
+                          style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', border: '1px solid #d0dce9' }}
                         />
                       </div>
                     )}
@@ -914,14 +915,14 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                 </div>
                 <div className="pf-col-third">
                   <Field label="Degree Certificate" required error={errors.degreeCertificate}>
-                    <input type="file" className="pf-input" accept="application/pdf, image/*"
+                    <input type="file" className="pf-input" accept="application/pdf"
                       onChange={(e) => handleFileChange('degreeCertificate', e.target.files[0])} />
                     {formData.documents?.degreeCertificate && !formData.documents.degreeCertificate.startsWith('JVBERi0') && (
                       <div style={{ marginTop: 8 }}>
-                        <img 
-                          src={`data:image/jpeg;base64,${formData.documents.degreeCertificate}`} 
-                          alt="Degree Preview" 
-                          style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', border: '1px solid #d0dce9' }} 
+                        <img
+                          src={`data:image/jpeg;base64,${formData.documents.degreeCertificate}`}
+                          alt="Degree Preview"
+                          style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', border: '1px solid #d0dce9' }}
                         />
                       </div>
                     )}
@@ -933,10 +934,10 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                       onChange={(e) => handleFileChange('profilePhoto', e.target.files[0])} />
                     {formData.documents?.profilePhoto && (
                       <div style={{ marginTop: 8 }}>
-                        <img 
-                          src={`data:image/jpeg;base64,${formData.documents.profilePhoto}`} 
-                          alt="Profile Preview" 
-                          style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', border: '1px solid #d0dce9' }} 
+                        <img
+                          src={`data:image/jpeg;base64,${formData.documents.profilePhoto}`}
+                          alt="Profile Preview"
+                          style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', border: '1px solid #d0dce9' }}
                         />
                       </div>
                     )}

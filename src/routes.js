@@ -148,7 +148,7 @@ const routes = [
   { path: '/disease', name: 'Disease Management', element: Disease },
   { path: '/tests', name: 'Tests', element: Tests },
   { path: '/treatments', name: 'Treatments', element: Treatments },
-  { path: '/procedure-management', name: 'Procedure Management', element: ProcedureManagement },
+  { path: '/therapy-management', name: 'Procedure Management', element: ProcedureManagement },
 
   { path: '/payouts', name: 'Payouts', element: Payouts },
   { path: '/notification', name: 'Notification', element: NotificationPanel },

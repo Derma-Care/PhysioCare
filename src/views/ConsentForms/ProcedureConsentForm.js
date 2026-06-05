@@ -642,7 +642,7 @@ const ProcedureConsentForm = () => {
                   <div className="text-danger mt-2">
                     Some selected Procedures are missing details like price or final cost.
                     <br />
-                    <a href="/procedure-Management" className="text-primary">
+                    <a href="/therapy-Management" className="text-primary">
                       Please add Procedure details
                     </a>
                   </div>

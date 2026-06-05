@@ -93,7 +93,7 @@ export const getNavigation = (permissions = {}) => {
     },
     {
       component: CNavItem,
-      to: '/Procedure-Management',
+      to: '/therapy-Management',
       name: 'Therapy Management',
 
       as: NavLink,

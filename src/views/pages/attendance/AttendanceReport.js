@@ -7,6 +7,7 @@ import { Search, X, Calendar, Clock, Users, CheckCircle2, UserCheck, Filter } fr
 import { http } from "../../../Utils/Interceptors";
 import { BASE_URL, GetAllUsersDailyByClinicAndBranch, SaveUserAttendence, UpdateUserAttendence } from "../../../baseUrl";
 import capitalizeWords from "../../../Utils/capitalizeWords";
+import { showCustomToast } from "../../../Utils/Toaster";
 
 const styles = `
   .ar-wrapper {
@@ -522,14 +523,19 @@ export default function AttendanceReport() {
 
       const payload = {
         date: selectedDate,
+        clinicId: localStorage.getItem("HospitalId"),
+        branchId: localStorage.getItem("branchId"),
         login: {
-          time: manualTime,
+          // time: manualTime,
+          // latitude: "17.433307", //TODO:
+          // longitude: "78.408188"
+
           latitude: String(location.latitude),
           longitude: String(location.longitude)
         },
-        latitude: String(location.latitude),
-        longitude: String(location.longitude),
-        time: manualTime,
+        // latitude: String(location.latitude),
+        // longitude: String(location.longitude),
+        // time: manualTime,
         userId: userId
       };
 
@@ -540,11 +546,13 @@ export default function AttendanceReport() {
 
       if (res.status === 200 || res.status === 201) {
         setTimeModal(false);
+        showCustomToast(res.data.message || "Logged in successfully", "success");
         fetchAttendance();
       }
 
     } catch (error) {
       console.error("Error manual login:", error);
+      showCustomToast("Something went wrong", "error");
     } finally {
       setSaveLoading(false);
     }
