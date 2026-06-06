@@ -469,13 +469,21 @@ const ConsentForm = () => {
                     <div className="sign-card text-center">
                       <div className="sign-head-row">
                         <div className="sign-title">Signature</div>
-                        <div className="action-right no-print">
-                          <CButton size="sm" onClick={savePatientSign}>
+                        <div className="action-right no-print d-flex gap-2">
+                          <CButton size="sm" className="text-white" onClick={savePatientSign} title="Save Signature">
                             <CIcon icon={cilCheck} />
                           </CButton>
                           <CButton
                             size="sm"
-                            onClick={() => patientSignRef.current.clear()}
+
+                            className="text-white"
+                            title="Clear Signature"
+                            onClick={() => {
+                              if (patientSignRef.current) {
+                                patientSignRef.current.clear();
+                              }
+                              setPatientSign(null);
+                            }}
                           >
                             <CIcon icon={cilX} />
                           </CButton>

@@ -58,6 +58,8 @@ export default function ProgramPayment() {
   const [backendServiceType, setBackendServiceType] = useState("");
   const [allPaid, setAllPaid] = useState(false);
   const [isFollowUpPayment, setIsFollowUpPayment] = useState(false);
+  const [noSessionMsg, setNoSessionMsg] = useState("");
+  const [isInitializing, setIsInitializing] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [totalPaid, setTotalPaid] = useState(0);
   const [balanceAmount, setBalanceAmount] = useState(0);
@@ -77,6 +79,7 @@ export default function ProgramPayment() {
 
   // Step 1: Check payment API first for sessionTableCreatedStatus
   const initializePayment = async () => {
+    setIsInitializing(true);
     try {
       const res = await fetch(`${wifiUrl}/api/physiotherapy-doctor/payment/${bookingId}`);
       const data = await res.json();
@@ -135,6 +138,8 @@ export default function ProgramPayment() {
       console.error("Init payment check error:", err);
       // Fallback: fetch therapy sessions anyway
       await fetchTherapySessions();
+    } finally {
+      setIsInitializing(false);
     }
   };
 
@@ -143,6 +148,11 @@ export default function ProgramPayment() {
       const res = await fetch(
         `${wifiUrl}/api/physiotherapy-doctor/getTherapySessionsByServiceType/${clinicId}/${branchId}/${patientId}/${bookingId}`
       );
+      if (res.status === 204) {
+        setApiData([]);
+        setNoSessionMsg("No session for this booking");
+        return;
+      }
       const data = await res.json();
       const apiResponse = data?.data || [];
       if (!apiResponse.length) { setApiData([]); return; }
@@ -478,6 +488,15 @@ export default function ProgramPayment() {
       showCustomToast("Please select a start date before generating the table.", "error");
       return;
     }
+    // ── Guard: prevent duplicate runs if already loading ──────────────
+    if (loading) return;
+
+    // ── Reset all previously generated data before re-generating ──────
+    setTableData([]);
+    setformattedData([]);
+    setSessionRows([]);
+    setShowTable(false);
+
     try {
       setLoading(true);
       const payload = { startDate, clinicId, branchId, patientId, bookingId, therapistRecordId };
@@ -1072,7 +1091,26 @@ export default function ProgramPayment() {
       )}
 
       {/* ── STEP 1: Generate Table ── */}
-      {!showTable && (
+      {isInitializing ? (
+        <div style={{ textAlign: "center", padding: "40px" }}>
+          <span
+            style={{
+              display: "inline-block",
+              width: "24px", height: "24px",
+              border: "3px solid #ccc",
+              borderTopColor: COLORS.primary,
+              borderRadius: "50%",
+              animation: "spin 0.7s linear infinite",
+              marginBottom: "10px"
+            }}
+          />
+          <p style={{ color: "#6b7280", fontWeight: "600", fontSize: "14px" }}>Loading Payment Details...</p>
+        </div>
+      ) : noSessionMsg ? (
+        <div style={{ padding: "20px", textAlign: "center", color: "#dc2626", fontWeight: "600", border: "1px solid #fca5a5", backgroundColor: "#fef2f2", borderRadius: "8px", marginBottom: "16px" }}>
+          {noSessionMsg}
+        </div>
+      ) : !showTable && (
         <div style={{
           background: "#fff", border: "0.5px solid #d0dce9",
           borderRadius: "10px", padding: "16px 20px", marginBottom: "16px",

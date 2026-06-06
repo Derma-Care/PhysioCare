@@ -455,6 +455,7 @@ export default function AttendanceReport() {
   const [loading, setLoading] = useState(false);
   const [timeModal, setTimeModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUserRole, setSelectedUserRole] = useState("");
   const [attendanceType, setAttendanceType] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   // Pagination state
@@ -485,7 +486,7 @@ export default function AttendanceReport() {
     setCurrentPage(1);
   }, [filterRole, searchQuery]);
 
-  const openTimeModal = (userId, type) => {
+  const openTimeModal = (userId, type, role) => {
     const now = new Date();
 
     const currentTime =
@@ -494,6 +495,7 @@ export default function AttendanceReport() {
       now.getMinutes().toString().padStart(2, "0");
 
     setSelectedUser(userId);
+    setSelectedUserRole(role || "");
     setAttendanceType(type);
     setSelectedTime(currentTime);
     setTimeModal(true);
@@ -525,13 +527,14 @@ export default function AttendanceReport() {
         date: selectedDate,
         clinicId: localStorage.getItem("HospitalId"),
         branchId: localStorage.getItem("branchId"),
+        role: selectedUserRole,
         login: {
-          // time: manualTime,
-          // latitude: "17.433307", //TODO:
-          // longitude: "78.408188"
+          time: manualTime,
+          latitude: "17.433307", //TODO:
+          longitude: "78.408188"
 
-          latitude: String(location.latitude),
-          longitude: String(location.longitude)
+          // latitude: String(location.latitude),
+          // longitude: String(location.longitude)
         },
         // latitude: String(location.latitude),
         // longitude: String(location.longitude),
@@ -571,6 +574,7 @@ export default function AttendanceReport() {
         logoutLatitude: String(location.latitude),
         logoutLongtitude: String(location.longitude),
         logoutTime: manualTime,
+        role: selectedUserRole,
         userId: userId
       };
 
@@ -696,7 +700,7 @@ export default function AttendanceReport() {
                         ) : selectedDate <= today ? (
                           <button
                             className="ar-action-btn ar-btn-login"
-                            onClick={() => openTimeModal(att.userId, "login")}
+                            onClick={() => openTimeModal(att.userId, "login", att.role)}
                           >
                             <CheckCircle2 size={13} /> Login
                           </button>
@@ -710,7 +714,7 @@ export default function AttendanceReport() {
                         ) : selectedDate <= today && att.login?.time ? (
                           <button
                             className="ar-action-btn ar-btn-logout"
-                            onClick={() => openTimeModal(att.userId, "logout")}
+                            onClick={() => openTimeModal(att.userId, "logout", att.role)}
                           >
                             <Clock size={13} /> Logout
                           </button>
