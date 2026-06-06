@@ -251,7 +251,7 @@ const DoctorDetailsPage = () => {
   const handleUpdate = async () => {
     try {
       setSaveLoading(true)
-      
+
       let doctorPictureKey = formData.doctorPicture;
       let doctorSignatureKey = formData.doctorSignature;
 
@@ -269,7 +269,7 @@ const DoctorDetailsPage = () => {
 
       doctorPictureKey = extractKey(doctorPictureKey);
       doctorSignatureKey = extractKey(doctorSignatureKey);
-      
+
       const extraParams = {
         hospitalId: localStorage.getItem('HospitalId'),
         branchId: localStorage.getItem('branchId'),
@@ -466,10 +466,7 @@ const DoctorDetailsPage = () => {
     } else {
       const doj = new Date(formData.dateOfJoining)
       const now = new Date()
-      const oneYearAgo = new Date()
-      oneYearAgo.setFullYear(now.getFullYear() - 1)
       if (doj > now) newErrors.dateOfJoining = 'Joining cannot be in the future.'
-      else if (doj < oneYearAgo) newErrors.dateOfJoining = 'Joining must be within the last 1 year.'
     }
 
     // Date of Birth validation (18 to 100 years)
@@ -984,14 +981,14 @@ const DoctorDetailsPage = () => {
               <FormField label="IFSC Code" error={errors.ifscCode} required>
                 {isEditing
                   ? <div>
-                      <CFormInput value={formData.bankAccountDetails?.ifscCode || ''} invalid={!!errors.ifscCode} onChange={e => {
-                        const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11)
-                        setFormData(p => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, ifscCode: v } }))
-                        if (/^[A-Z]{4}0[A-Z0-9]{6}$/.test(v)) setErrors(p => ({ ...p, ifscCode: '' }))
-                        if (v.length === 11) fetchBankDetails(v)
-                      }} style={{ fontSize: '13px' }} />
-                      {isFetchingBankDetails && <small style={{ color: '#185fa5', fontSize: '11px', marginTop: '4px', display: 'block' }}>Fetching bank details...</small>}
-                    </div>
+                    <CFormInput value={formData.bankAccountDetails?.ifscCode || ''} invalid={!!errors.ifscCode} onChange={e => {
+                      const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11)
+                      setFormData(p => ({ ...p, bankAccountDetails: { ...p.bankAccountDetails, ifscCode: v } }))
+                      if (/^[A-Z]{4}0[A-Z0-9]{6}$/.test(v)) setErrors(p => ({ ...p, ifscCode: '' }))
+                      if (v.length === 11) fetchBankDetails(v)
+                    }} style={{ fontSize: '13px' }} />
+                    {isFetchingBankDetails && <small style={{ color: '#185fa5', fontSize: '11px', marginTop: '4px', display: 'block' }}>Fetching bank details...</small>}
+                  </div>
                   : <div style={{ fontSize: '13px', color: t.text, fontWeight: '500', padding: '4px 0' }}>{doctorData.bankAccountDetails?.ifscCode || '—'}</div>}
               </FormField>
 

@@ -1119,7 +1119,7 @@ export default function ProgramPayment() {
       )}
 
       {
-        showTable && (
+        showTable && !allPaid && (
           <div
             style={{
               display: "flex",

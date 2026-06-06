@@ -68,6 +68,8 @@ const PatientFeedback = () => {
   const branchId = localStorage.getItem('branchId');
 
   const [form, setForm] = useState({
+    clinicId: hospitalId,
+    branchId: branchId,
     patientId: '',
     patientName: '',
     patientPhone: '',
@@ -206,6 +208,8 @@ const PatientFeedback = () => {
 
     // Construct payload for backend
     const payload = {
+      clinicId: hospitalId,
+      branchId: branchId,
       patientId: form.patientId,
       patientName: form.patientName,
       patientPhone: form.patientPhone,

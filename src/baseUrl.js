@@ -3,6 +3,7 @@
 
 //Dev
 export let wifiUrl = 'https://api.ccmstestserver.online'
+// export let wifiUrl = 'https://api.ccmsphysioelite.com'
 export let splrUrl = 'http:/localhost:8801'
 // export let wifiUrl = '192.168.1.5'
 // http://3.6.119.57:9090

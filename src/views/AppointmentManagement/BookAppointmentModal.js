@@ -630,7 +630,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
   const handlePartClick = async (data) => {
     let actualData = data
-    if (Array.isArray(data.answerData)) actualData = data.answerData[0]
+    if (Array.isArray(data.answerData)) actualData = data.answerData[data.answerData.length - 1]
     const base64Image = data.image ? await convertToBase64(data.image) : ''
     setPart(actualData.parts || [])
     setMarkedImage(base64Image)
@@ -1771,15 +1771,21 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
             </CButton>
 
             {/* Reset current tab */}
-            <CButton size="sm"
-              title={`Reset "${visibleTabs[currentTab]?.label}" fields only`}
-              style={{
-                fontSize: FS, padding: '4px 14px',
-                backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107',
-              }}
-              onClick={handleTabReset}>
-              🔄 Reset
-            </CButton>
+
+            {
+              visibleTabs[currentTab]?.id !== 'assessment' && (
+                <CButton size="sm"
+                  title={`Reset "${visibleTabs[currentTab]?.label}" fields only`}
+                  style={{
+                    fontSize: FS, padding: '4px 14px',
+                    backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107',
+                  }}
+                  onClick={handleTabReset}>
+                  🔄 Reset
+                </CButton>
+              )
+            }
+
 
             {/* Back */}
             {currentTab > 0 && (

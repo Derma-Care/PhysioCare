@@ -19,11 +19,11 @@ import { useGlobalSearch } from '../views/Usecontext/GlobalSearchContext'
 const AppHeader = () => {
   const headerRef = useRef()
   const { colorMode, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
-  const { 
-    notificationCount, setNotificationCount, 
-    notifications, setNotifications 
+  const {
+    notificationCount, setNotificationCount,
+    notifications, setNotifications
   } = useHospital() || {}
-  
+
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.sidebarShow)
   const navigate = useNavigate()
@@ -37,25 +37,25 @@ const AppHeader = () => {
     : localStorage.getItem('HospitalName')?.split(' ')[0] || 'Hospital'
   const branch = localStorage.getItem('branchName') || 'branchName'
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
-        setShowNotifPanel(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    
-    const handleScroll = () => {
-      headerRef.current &&
-        headerRef.current.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0)
-    }
-    document.addEventListener('scroll', handleScroll)
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('scroll', handleScroll)
-    }
-  }, [])
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (notifRef.current && !notifRef.current.contains(event.target)) {
+  //       setShowNotifPanel(false)
+  //     }
+  //   }
+  //   document.addEventListener('mousedown', handleClickOutside)
+
+  //   const handleScroll = () => {
+  //     headerRef.current &&
+  //       headerRef.current.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0)
+  //   }
+  //   document.addEventListener('scroll', handleScroll)
+
+  //   return () => {
+  //     document.removeEventListener('mousedown', handleClickOutside)
+  //     document.removeEventListener('scroll', handleScroll)
+  //   }
+  // }, [])
 
   const handleNotifClick = (notif) => {
     setShowNotifPanel(false)
@@ -96,7 +96,7 @@ const AppHeader = () => {
                 <span className="ah-bell-badge">{notificationCount}</span>
               )}
             </div>
-            
+
             {showNotifPanel && (
               <div className="ah-notif-panel">
                 <div className="ah-notif-header">

@@ -675,19 +675,25 @@ const AppointmentDetails = () => {
                 )}
 
                 {appointment?.theraphyAnswers && Object.entries(appointment.theraphyAnswers).length > 0 && (
-                  <div style={{ textAlign: 'left' }}>
+                  <div style={{ textAlign: 'left', marginTop: '12px' }}>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: tokens.primary, marginBottom: '8px' }}>Therapy Q&A</div>
-                    {Object.entries(appointment.theraphyAnswers).map(([part, questions]) => (
-                      <div key={part} style={{ marginBottom: '12px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'capitalize', color: tokens.muted, marginBottom: '4px' }}>{part}</div>
-                        {questions?.map((q, i) => (
-                          <div key={i} style={{ backgroundColor: tokens.surface, padding: '8px 12px', borderRadius: tokens.radiusSm, marginBottom: '4px' }}>
-                            <div style={{ fontSize: '12px', fontWeight: '600', color: tokens.black }}>Q: {q?.question || 'N/A'}</div>
-                            <div style={{ fontSize: '12px', color: tokens.black }}>A: {q?.answer || 'N/A'}</div>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
+                    <CAccordion alwaysOpen>
+                      {Object.entries(appointment.theraphyAnswers).map(([part, questions], index) => (
+                        <CAccordionItem itemKey={index + 1} key={part} style={{ marginBottom: '8px', border: `1px solid ${tokens.border}`, borderRadius: tokens.radiusSm }}>
+                          <CAccordionHeader>
+                            <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'capitalize', color: tokens.black }}>{part} ({questions?.length || 0})</span>
+                          </CAccordionHeader>
+                          <CAccordionBody style={{ padding: '12px', backgroundColor: '#fff' }}>
+                            {questions?.map((q, i) => (
+                              <div key={i} style={{ backgroundColor: tokens.surface, padding: '8px 12px', borderRadius: tokens.radiusSm, marginBottom: '6px', border: `1px solid ${tokens.border}` }}>
+                                <div style={{ fontSize: '12px', fontWeight: '600', color: tokens.black, marginBottom: '4px' }}>Q: {q?.question || 'N/A'}</div>
+                                <div style={{ fontSize: '12px', color: tokens.black }}>A: {q?.answer || 'N/A'}</div>
+                              </div>
+                            ))}
+                          </CAccordionBody>
+                        </CAccordionItem>
+                      ))}
+                    </CAccordion>
                   </div>
                 )}
               </div>

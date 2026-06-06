@@ -152,7 +152,11 @@ export default function QuestionModal({
 
   const handleMultiSelect = (key, value) => {
     setAnswers((prev) => {
-      const existing = prev[key] || [];
+      let existing = prev[key];
+      if (!existing) existing = [];
+      else if (!Array.isArray(existing)) {
+        existing = existing.split(',').map(s => s.trim()).filter(Boolean);
+      }
 
       if (existing.includes(value)) {
         // remove
@@ -249,7 +253,7 @@ export default function QuestionModal({
                       {q.type === "TEXT" && (
                         <CFormInput
                           type="text"
-                          value={answers[key] || ""}
+                          value={answers[key] !== undefined && answers[key] !== null ? answers[key] : ""}
                           onChange={(e) => handleChange(key, e.target.value)}
                           style={{
                             color: COLORS.primary,
@@ -262,7 +266,7 @@ export default function QuestionModal({
                       {q.type === "NUMBER" && (
                         <CFormInput
                           type="number"
-                          value={answers[key] || ""}
+                          value={answers[key] !== undefined && answers[key] !== null ? answers[key] : ""}
                           onChange={(e) => handleChange(key, e.target.value)}
                           style={{
                             color: COLORS.primary,
@@ -280,7 +284,7 @@ export default function QuestionModal({
                               type="checkbox"
                               label={opt}
                               value={opt}
-                              checked={answers[key]?.includes(opt)}
+                              checked={Array.isArray(answers[key]) ? answers[key].includes(opt) : (answers[key] ? answers[key].split(',').map(s=>s.trim()).includes(opt) : false)}
                               onChange={() => handleMultiSelect(key, opt)}
                               style={{ color: COLORS.primary }}
                             />
