@@ -91,13 +91,25 @@ const ReportDetails = () => {
     const fetchRecommendedTests = async () => {
       try {
         if (!appointmentInfo?.bookingId) return
-        const response = await http.get(`${BASE_URL}/getReportByBookingId/${appointmentInfo.bookingId}`)
+
+        const response = await http.get(
+          `${wifiUrl}/api/physiotherapy-doctor/investigations/${appointmentInfo.bookingId}/${appointmentInfo.patientId}`
+        )
+
         const reportsArray = response.data?.data || []
-        setRecommendedTests(reportsArray.flatMap((item) => item.reportsList || []))
+
+        console.log("reportsArray", reportsArray)
+
+        // Extract tests array
+        const tests = reportsArray.flatMap((item) => item.tests || [])
+
+        setRecommendedTests(tests)
+
       } catch (error) {
         console.error('Error fetching recommended tests:', error)
       }
     }
+
     fetchRecommendedTests()
   }, [appointmentInfo?.bookingId])
 
@@ -426,11 +438,16 @@ const ReportDetails = () => {
 
           {/* Recommended Tests */}
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '0.5px solid #eef2f7' }}>
-            <p className="rd-info-label" style={{ marginBottom: 8 }}>Recommended Tests</p>
+            <p className="rd-info-label" style={{ marginBottom: 8 }}>
+              Recommended Tests
+            </p>
+
             {recommendedTests.length > 0 ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {recommendedTests.map((test, index) => (
-                  <span key={test.id || index} className="rd-badge">{test.reportName}</span>
+                  <span key={index} className="rd-badge">
+                    {test}
+                  </span>
                 ))}
               </div>
             ) : (
