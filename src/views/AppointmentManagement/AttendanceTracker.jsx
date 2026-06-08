@@ -243,10 +243,10 @@ const AttendanceTracker = () => {
         branchId: branchId,
         login: {
           time: time,
-          // latitude: loginCoords.latitude, //17.433307
-          latitude: "17.433307", //17.433307
-          // longitude: loginCoords.longitude //78.408188
-          longitude: "78.408188" //78.408188
+          latitude: loginCoords.latitude, //17.433307
+          // latitude: "17.433307", //17.433307
+          longitude: loginCoords.longitude //78.408188
+          // longitude: "78.408188" //78.408188
         },
         // loginLocation: loginAddr,
         // loginLatitude: loginCoords.latitude,

@@ -530,11 +530,11 @@ export default function AttendanceReport() {
         role: selectedUserRole,
         login: {
           time: manualTime,
-          latitude: "17.433307", //TODO:
-          longitude: "78.408188"
+          // latitude: "17.433307", //TODO:
+          // longitude: "78.408188"
 
-          // latitude: String(location.latitude),
-          // longitude: String(location.longitude)
+          latitude: String(location.latitude),
+          longitude: String(location.longitude)
         },
         // latitude: String(location.latitude),
         // longitude: String(location.longitude),
