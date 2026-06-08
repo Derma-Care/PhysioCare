@@ -468,7 +468,7 @@ export default function AttendanceReport() {
       const hospitalId = localStorage.getItem("HospitalId");
       const branchId = localStorage.getItem("branchId");
       const res = await http.get(`${BASE_URL}/${GetAllUsersDailyByClinicAndBranch}/${hospitalId}/${branchId}/${selectedDate}`);
-      if (res.status === 200 && res.data && res.data.success) {
+      if (res.status === 200 && res.data.success === true) {
         setAttendanceData(res.data.data || []);
       }
     } catch (err) {
@@ -547,10 +547,12 @@ export default function AttendanceReport() {
         payload
       );
 
-      if (res.status === 200 || res.status === 201) {
+      if (res.status === 200 || res.status === 201 && res.data.success) {
         setTimeModal(false);
         showCustomToast(res.data.message || "Logged in successfully", "success");
         fetchAttendance();
+      } else {
+        showCustomToast(res.data.message || "Failed to login", "error");
       }
 
     } catch (error) {
@@ -583,7 +585,7 @@ export default function AttendanceReport() {
         payload
       );
 
-      if (res.status === 200) {
+      if (res.status === 200 && res.success) {
         setTimeModal(false);
         fetchAttendance();
       }

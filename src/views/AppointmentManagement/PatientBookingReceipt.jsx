@@ -7,13 +7,13 @@ import {
   CCol,
   CBadge,
 } from '@coreui/react'
-import { 
-  User, 
-  Calendar, 
-  Clock, 
-  Stethoscope, 
-  MapPin, 
-  Activity, 
+import {
+  User,
+  Calendar,
+  Clock,
+  Stethoscope,
+  MapPin,
+  Activity,
   FileText
 } from 'lucide-react'
 
@@ -53,13 +53,13 @@ const PatientBookingReceipt = ({ data }) => {
               <p className="text-muted small mb-0">Reference ID: <span className="fw-bold text-dark">{patient.bookingId}</span></p>
             </div>
             <div className="text-end">
-              <CBadge 
-                style={{ 
+              <CBadge
+                style={{
                   backgroundColor: normalizedStatus === 'in-progress' ? '#fef3c7' : '#dcfce7',
                   color: normalizedStatus === 'in-progress' ? '#92400e' : '#15803d',
-                  padding: '8px 16px', 
-                  borderRadius: '20px', 
-                  fontSize: '11px', 
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  fontSize: '11px',
                   fontWeight: 700,
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em'
@@ -77,13 +77,13 @@ const PatientBookingReceipt = ({ data }) => {
                 <div style={{ background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)', height: '6px' }} />
                 <CCardBody className="p-4">
                   <div className="d-flex align-items-center mb-4">
-                    <div style={{ 
-                      width: '64px', 
-                      height: '64px', 
-                      borderRadius: '16px', 
-                      backgroundColor: '#f1f5f9', 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '16px',
+                      backgroundColor: '#f1f5f9',
+                      display: 'flex',
+                      alignItems: 'center',
                       justifyContent: 'center',
                       marginRight: '16px',
                       border: `1px solid ${tokens.border}`
@@ -103,7 +103,7 @@ const PatientBookingReceipt = ({ data }) => {
                   <h6 className="mb-3 d-flex align-items-center" style={{ fontWeight: 700, color: tokens.slate }}>
                     <Activity size={18} className="me-2" style={{ color: tokens.primary }} /> Clinical Assessment
                   </h6>
-                  
+
                   <div className="p-3 mb-3" style={{ backgroundColor: '#f8fafc', borderRadius: '12px', border: `1px solid ${tokens.border}` }}>
                     <CRow className="g-3">
                       <CCol xs={6}>
@@ -121,10 +121,10 @@ const PatientBookingReceipt = ({ data }) => {
                     <div className="mt-4">
                       <small className="text-muted text-uppercase fw-bold d-block mb-2" style={{ fontSize: '10px', letterSpacing: '0.05em' }}>Pain Area Mapping</small>
                       <div className="border rounded-3 p-3 text-center bg-white shadow-sm">
-                        <img 
-                          src={`data:image/png;base64,${patient.partImage}`} 
-                          alt="Body Assessment" 
-                          style={{ maxWidth: '100%', height: 'auto', maxHeight: '350px' }} 
+                        <img
+                          src={`data:image/png;base64,${patient.partImage}`}
+                          alt="Body Assessment"
+                          style={{ maxWidth: '100%', height: 'auto', maxHeight: '350px' }}
                         />
                       </div>
                     </div>
@@ -141,10 +141,10 @@ const PatientBookingReceipt = ({ data }) => {
                     <div className="d-flex flex-wrap gap-3">
                       {patient.attachments.map((at, idx) => (
                         <div key={idx} className="text-center" style={{ width: '100px' }}>
-                          <div 
-                            style={{ 
-                              width: '100px', 
-                              height: '100px', 
+                          <div
+                            style={{
+                              width: '100px',
+                              height: '100px',
                               backgroundColor: '#f1f5f9',
                               borderRadius: '12px',
                               border: `1px solid ${tokens.border}`,
@@ -155,11 +155,11 @@ const PatientBookingReceipt = ({ data }) => {
                               overflow: 'hidden'
                             }}
                             onClick={() => {
-                               const win = window.open();
-                               win.document.write(`<body style="margin:0;display:flex;justify-content:center;align-items:center;background:#000"><img src="data:image/png;base64,${at}" style="max-width:100%;max-height:100vh"/></body>`);
+                              const win = window.open();
+                              win.document.write(`<body style="margin:0;display:flex;justify-content:center;align-items:center;background:#000"><img src="data:image/png;base64,${at}" style="max-width:100%;max-height:100vh"/></body>`);
                             }}
                           >
-                             <img src={`data:image/png;base64,${at}`} alt="Clinical report" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={`data:image/png;base64,${at}`} alt="Clinical report" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
                           <small className="text-muted mt-2 d-block" style={{ fontSize: '10px' }}>Report {idx + 1}</small>
                         </div>
@@ -179,7 +179,7 @@ const PatientBookingReceipt = ({ data }) => {
               <CCard className="mb-4" style={{ borderRadius: tokens.radius, border: 'none', boxShadow: tokens.shadow }}>
                 <CCardBody className="p-4">
                   <h6 className="mb-4" style={{ fontWeight: 700, color: tokens.slate }}>Schedule Details</h6>
-                  
+
                   <div className="mb-4">
                     <div className="d-flex align-items-start mb-4">
                       <div className="p-2 rounded-3 me-3" style={{ backgroundColor: '#eef2ff' }}>
@@ -239,12 +239,12 @@ const PatientBookingReceipt = ({ data }) => {
                     </div>
                   </div>
 
-                  <CButton 
-                    className="w-100 mt-4 border-0" 
-                    style={{ 
-                      backgroundColor: tokens.primary, 
-                      padding: '14px', 
-                      borderRadius: '12px', 
+                  <CButton
+                    className="w-100 mt-4 border-0"
+                    style={{
+                      backgroundColor: tokens.primary,
+                      padding: '14px',
+                      borderRadius: '12px',
                       fontWeight: 700,
                       boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.4)'
                     }}
@@ -257,7 +257,7 @@ const PatientBookingReceipt = ({ data }) => {
 
               <CCard style={{ borderRadius: tokens.radius, border: 'none', boxShadow: tokens.shadow, backgroundColor: tokens.slate, color: '#fff' }}>
                 <CCardBody className="p-4 text-center">
-                   <p className="mb-0 small" style={{ opacity: 0.7 }}>Powered by PhysioCare Clinical Dashboard</p>
+                  <p className="mb-0 small" style={{ opacity: 0.7 }}>Powered by Kinetix Wellness Care</p>
                 </CCardBody>
               </CCard>
             </CCol>

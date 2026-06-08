@@ -15,6 +15,7 @@ import {
 import { emailPattern } from '../../../Constant/Constants'
 import { showCustomToast } from '../../../Utils/Toaster'
 import LoadingIndicator from '../../../Utils/loader'
+import { uploadFile } from '../../widgets/S3UploadServiceDoctor'
 
 /* ─────────────────────────────────────────────────────────────
    ⚠️  CRITICAL: These helpers MUST live outside PhysioForm.
@@ -151,6 +152,31 @@ const Field = ({ label, error, required, children }) => (
 const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   const isView = viewMode
 
+  const handleOpenDocument = (url) => {
+    if (url) window.open(url, '_blank');
+  }
+
+  const getDocSrc = (value, type = 'image/jpeg') => {
+    if (!value) return null;
+
+    let cleanedValue = value;
+    // Attempt to fix double-encoded S3 URLs
+    if (typeof value === 'string' && value.startsWith('https://') && value.includes('https%3A%2F%2F')) {
+      try {
+        const decoded = decodeURIComponent(value);
+        // Heuristic: if decoding results in a valid-looking S3 URL, use it
+        if (decoded.startsWith('https://') && decoded.includes('.s3.')) {
+          cleanedValue = decoded;
+        }
+      } catch (e) { /* ignore decoding errors */ }
+    }
+
+    if (cleanedValue.startsWith('http') || cleanedValue.startsWith('blob:') || cleanedValue.startsWith('data:')) {
+      return cleanedValue;
+    }
+    return `data:${type};base64,${cleanedValue}`;
+  };
+
   const serviceOptions = [
     { value: 'home', label: 'Home' },
     { value: 'clinic', label: 'Clinic' },
@@ -189,6 +215,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
 
   const [formData, setFormData] = useState(emptyForm)
   const [errors, setErrors] = useState({})
+  const [pendingFiles, setPendingFiles] = useState({})
   const [saving, setSaving] = useState(false)
   /* ── Populate form on open ── */
   useEffect(() => {
@@ -229,6 +256,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
       })
     } else {
       setFormData(emptyForm)
+      setPendingFiles({})
     }
     setErrors({})
   }, [initialData, visible])
@@ -389,6 +417,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         [field]: base64,
       },
     }))
+    setPendingFiles(prev => ({ ...prev, [field]: file }))
 
     setErrors((prev) => ({
       ...prev,
@@ -398,6 +427,24 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) return
+
+    // ── S3 UPLOADS ──
+    const updatedDocs = { ...formData.documents }
+
+    // Upload License
+    if (pendingFiles.licenseCertificate) {
+      updatedDocs.licenseCertificate = await uploadFile('therapistLicenseCertificate', pendingFiles.licenseCertificate)
+    }
+
+    // Upload Degree
+    if (pendingFiles.degreeCertificate) {
+      updatedDocs.degreeCertificate = await uploadFile('therapistDegreeCertificate', pendingFiles.degreeCertificate)
+    }
+
+    // Upload Profile Photo
+    if (pendingFiles.profilePhoto) {
+      updatedDocs.profilePhoto = await uploadFile('therapistProfilePhoto', pendingFiles.profilePhoto)
+    }
 
     try {
       setSaving(true)
@@ -418,6 +465,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
 
       await onSave({
         ...formData,
+        documents: updatedDocs, // Pass the updated documents with S3 keys
         role: formData.physioType === 'intern' ? 'intern' : 'physiotherapist',
         // dateOfBirth: formData.dateofBirth,
         availability: {
@@ -498,15 +546,13 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         {isView ? (
           <>
             <div className="pf-profile-header">
-              <img
-                src={
-                  formData.documents?.profilePhoto
-                    ? `data:image/jpeg;base64,${formData.documents.profilePhoto}`
-                    : '/assets/images/default-avatar.png'
-                }
-                alt={formData.fullName}
-                className="pf-profile-avatar"
-              />
+              <button type="button" className="pf-profile-avatar-wrapper" onClick={() => handleOpenDocument(getDocSrc(formData.documents?.profilePhoto))}>
+                <img
+                  src={getDocSrc(formData.documents?.profilePhoto) || '/assets/images/default-avatar.png'}
+                  alt={formData.fullName}
+                  className="pf-profile-avatar"
+                />
+              </button>
               <div>
                 <div className="pf-profile-name">{formData.fullName || '—'}</div>
                 <div className="pf-profile-sub">
@@ -571,16 +617,23 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                 {[
                   { label: 'License Certificate', key: 'licenseCertificate' },
                   { label: 'Degree Certificate', key: 'degreeCertificate' },
-                ].map(({ label, key }) => (
+                ].map(({ label, key }) => ( // Changed to use getDocSrc
                   <div key={key}>
                     <div className="pf-info-label" style={{ marginBottom: 6 }}>{label}</div>
                     {formData.documents?.[key]
-                      ? <iframe
-                        src={`data:application/pdf;base64,${formData.documents[key]}`}
-                        width="100%" height="220px"
-                        style={{ borderRadius: 8, border: '0.5px solid #d0dce9' }}
-                      />
-                      : <span style={{ fontSize: 13, color: '#9ca3af' }}>Not provided</span>
+                      ? (
+                        <>
+                          <iframe
+                            src={getDocSrc(formData.documents[key], 'application/pdf')}
+                            width="100%" height="220px"
+                            style={{ borderRadius: 8, border: '0.5px solid #d0dce9' }}
+                            title={`${label} Preview`}
+                          />
+                          <button type="button" className="pf-view-doc-btn" onClick={() => handleOpenDocument(getDocSrc(formData.documents[key], 'application/pdf'))}>
+                            View Document
+                          </button>
+                        </>
+                      ) : <span style={{ fontSize: 13, color: '#9ca3af' }}>Not provided</span>
                     }
                   </div>
                 ))}
@@ -902,13 +955,18 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                   <Field label="License Certificate" required error={errors.licenseCertificate}>
                     <input type="file" className="pf-input" accept="application/pdf"
                       onChange={(e) => handleFileChange('licenseCertificate', e.target.files[0])} />
-                    {formData.documents?.licenseCertificate && !formData.documents.licenseCertificate.startsWith('JVBERi0') && (
+                    {formData.documents?.licenseCertificate && (
                       <div style={{ marginTop: 8 }}>
-                        <img
-                          src={`data:image/jpeg;base64,${formData.documents.licenseCertificate}`}
-                          alt="License Preview"
-                          style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', border: '1px solid #d0dce9' }}
+                        <iframe
+                          src={getDocSrc(formData.documents.licenseCertificate, 'application/pdf')}
+                          width="100%"
+                          height="150px"
+                          style={{ borderRadius: 8, border: '0.5px solid #d0dce9' }}
+                          title="License Certificate Preview"
                         />
+                        <button type="button" className="pf-view-doc-btn" onClick={() => handleOpenDocument(getDocSrc(formData.documents.licenseCertificate, 'application/pdf'))}>
+                          View Document
+                        </button>
                       </div>
                     )}
                   </Field>
@@ -917,13 +975,18 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                   <Field label="Degree Certificate" required error={errors.degreeCertificate}>
                     <input type="file" className="pf-input" accept="application/pdf"
                       onChange={(e) => handleFileChange('degreeCertificate', e.target.files[0])} />
-                    {formData.documents?.degreeCertificate && !formData.documents.degreeCertificate.startsWith('JVBERi0') && (
+                    {formData.documents?.degreeCertificate && (
                       <div style={{ marginTop: 8 }}>
-                        <img
-                          src={`data:image/jpeg;base64,${formData.documents.degreeCertificate}`}
-                          alt="Degree Preview"
-                          style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', border: '1px solid #d0dce9' }}
+                        <iframe
+                          src={getDocSrc(formData.documents.degreeCertificate, 'application/pdf')}
+                          width="100%"
+                          height="150px"
+                          style={{ borderRadius: 8, border: '0.5px solid #d0dce9' }}
+                          title="Degree Certificate Preview"
                         />
+                        <button type="button" className="pf-view-doc-btn" onClick={() => handleOpenDocument(getDocSrc(formData.documents.degreeCertificate, 'application/pdf'))}>
+                          View Document
+                        </button>
                       </div>
                     )}
                   </Field>
@@ -935,9 +998,11 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                     {formData.documents?.profilePhoto && (
                       <div style={{ marginTop: 8 }}>
                         <img
-                          src={`data:image/jpeg;base64,${formData.documents.profilePhoto}`}
+                          src={getDocSrc(formData.documents.profilePhoto)}
                           alt="Profile Preview"
                           style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', border: '1px solid #d0dce9' }}
+                          onClick={() => handleOpenDocument(getDocSrc(formData.documents.profilePhoto))}
+
                         />
                       </div>
                     )}
@@ -996,6 +1061,17 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           border-radius: 20px; margin-top: 2px;
         }
         .pf-card { border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+        .pf-profile-avatar-wrapper {
+          background: none; border: none; padding: 0; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transition: transform 0.15s;
+        }
+        .pf-profile-avatar-wrapper:hover { transform: scale(1.05); }
+        .pf-view-doc-btn {
+          background: #e6f1fb; color: #185fa5; border: 0.5px solid #b5d4f4;
+          border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600;
+          cursor: pointer; margin-top: 8px; display: inline-flex; align-items: center; justify-content: center;
+        }
         .pf-card-header {
           display: flex; align-items: center; gap: 8px;
           background: #185fa5; color: #fff;

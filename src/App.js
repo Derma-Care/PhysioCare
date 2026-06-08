@@ -7,6 +7,7 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { HospitalProvider } from './views/Usecontext/HospitalContext'
 import { GlobalSearchProvider } from './views/Usecontext/GlobalSearchContext'
+// import { listenNotification } from './firebase'
 
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'))
 const Login = React.lazy(() => import('./views/pages/login/Login'))
@@ -30,6 +31,8 @@ const App = () => {
   useEffect(() => {
     injectTheme()
     setColorMode('light')
+    // ✅ Start listening for foreground push notifications
+    // listenNotification()
   }, [])
 
   useEffect(() => {
@@ -38,8 +41,11 @@ const App = () => {
     return () => { clearTimeout(fadeTimer); clearTimeout(removeTimer) }
   }, [])
 
-  const hospitalData = JSON.parse(localStorage.getItem('hospitalDetails') || '{}')
-  const hospitalName = hospitalData?.hospitalName || hospitalData?.clinicName || 'PhysioCare Clinic'
+  const data = JSON.parse(localStorage.getItem('selectedHospital') || '{}')
+  const hospitalData = data.data;
+  console.log(hospitalData, 'hospitalData')
+  console.log(data, 'data')
+  const hospitalName = hospitalData?.name || hospitalData?.clinicName || "Kinetix Wellness Care"
   const hospitalLogo = hospitalData?.hospitalLogo
     ? `data:image/webp;base64,${hospitalData.hospitalLogo}`
     : appLogo

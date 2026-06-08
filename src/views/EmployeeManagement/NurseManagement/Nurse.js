@@ -117,6 +117,31 @@ const PhysioManagement = () => {
   const totalPages = Math.ceil(filteredData.length / rowsPerPage)
   const displayData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
+  const handleOpenDocument = (url) => {
+    if (url) window.open(url, '_blank');
+  }
+
+  const getDocSrc = (value, type = 'image/jpeg') => {
+    if (!value) return null;
+
+    let cleanedValue = value;
+    // Attempt to fix double-encoded S3 URLs
+    if (typeof value === 'string' && value.startsWith('https://') && value.includes('https%3A%2F%2F')) {
+      try {
+        const decoded = decodeURIComponent(value);
+        // Heuristic: if decoding results in a valid-looking S3 URL, use it
+        if (decoded.startsWith('https://') && decoded.includes('.s3.')) {
+          cleanedValue = decoded;
+        }
+      } catch (e) { /* ignore decoding errors */ }
+    }
+
+    if (cleanedValue.startsWith('http') || cleanedValue.startsWith('blob:') || cleanedValue.startsWith('data:')) {
+      return cleanedValue;
+    }
+    return `data:${type};base64,${cleanedValue}`;
+  };
+
   return (
     <>
       {/* <ToastContainer /> */}
@@ -197,17 +222,15 @@ const PhysioManagement = () => {
                     </CTableDataCell>
 
                     <CTableDataCell className="pm-td">
-                      <img
-                        src={
-                          p.documents?.profilePhoto
-                            ? `data:image/jpeg;base64,${p.documents.profilePhoto}`
-                            : '/assets/images/default-avatar.png'
-                        }
-                        alt={p.fullName}
-                        width="36"
-                        height="36"
-                        style={{ borderRadius: '50%', objectFit: 'cover', border: '2px solid #b5d4f4' }}
-                      />
+                      <button type="button" className="pm-avatar-btn" onClick={() => handleOpenDocument(getDocSrc(p.documents?.profilePhoto))}>
+                        <img
+                          src={getDocSrc(p.documents?.profilePhoto) || '/assets/images/default-avatar.png'}
+                          alt={p.fullName}
+                          width="36"
+                          height="36"
+                          style={{ borderRadius: '50%', objectFit: 'cover', border: '2px solid #b5d4f4' }}
+                        />
+                      </button>
                     </CTableDataCell>
 
                     <CTableDataCell className="pm-td">
@@ -367,6 +390,12 @@ const PhysioManagement = () => {
           gap: 10px; padding: 40px 0; color: #9ca3af; font-size: 14px;
         }
         .pm-empty-icon { color: #d0dce9; }
+        .pm-avatar-btn {
+          background: none; border: none; padding: 0; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transition: transform 0.15s;
+        }
+        .pm-avatar-btn:hover { transform: scale(1.05); }
       `}</style>
     </>
   )

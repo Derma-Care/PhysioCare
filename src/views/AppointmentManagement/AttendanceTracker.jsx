@@ -23,6 +23,7 @@ import axios from "axios";
 import { BASE_URL } from "../../baseUrl";
 import ConfirmModal from "../../components/ConfirmLogoutModal";
 import { showCustomToast } from "../../Utils/Toaster";
+import { http } from "../../Utils/Interceptors";
 
 
 
@@ -253,7 +254,7 @@ const AttendanceTracker = () => {
         // loginLongtitude: loginCoords.longitude
       };
 
-      const res = await axios.post(`${BASE_URL}/saveUserAttendence`, payload);
+      const res = await http.post(`${BASE_URL}/saveUserAttendence`, payload);
       if (res.data.success) {
         setLoggedIn(true);
         setLoginTime(time);
@@ -291,7 +292,7 @@ const AttendanceTracker = () => {
         logoutLongitude: coords.longitude
       };
 
-      const res = await axios.put(`${BASE_URL}/updateUserAttendence`, payload);
+      const res = await http.put(`${BASE_URL}/updateUserAttendence`, payload);
       if (res.data.success) {
         setLoggedIn(false);
         setLoggedOut(true);
@@ -354,7 +355,7 @@ const AttendanceTracker = () => {
         ]
       };
 
-      const res = await axios.post(`${BASE_URL}/saveUserAttendence`, payload);
+      const res = await http.post(`${BASE_URL}/saveUserAttendence`, payload);
       if (res.data.success) {
         showCustomToast(res.data.message || "Activity added successfully", "success");
         await fetchDailyData();
