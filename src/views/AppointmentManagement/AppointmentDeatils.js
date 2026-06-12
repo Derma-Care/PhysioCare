@@ -26,7 +26,7 @@ import { AppointmentData, deleteBookingData, GetBookingByClinicIdData } from './
 import { GetdoctorsByClinicIdData } from './appointmentAPI'
 import { FaEye, FaDownload } from 'react-icons/fa'
 import { deleteVitalsData, postVitalsData, updateVitalsData, VitalsDataById } from './VitalsAPI'
-import { Download, Eye, ArrowLeft, Activity, FileText, User, Stethoscope, CreditCard, ChevronRight, Pencil } from 'lucide-react'
+import { Download, Eye, ArrowLeft, Activity, FileText, User, Stethoscope, CreditCard, ChevronRight, Pencil, Search } from 'lucide-react'
 import BookAppointmentModal from './BookAppointmentModal'
 import { useHospital } from '../Usecontext/HospitalContext'
 // import { GetProcedureFormData } from '../ConsentForms/ConsentFormsAPI'
@@ -631,12 +631,12 @@ const AppointmentDetails = () => {
               padding: '10px 14px',
               marginTop: '4px',
             }}>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Chief Complaint / Problem</div>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Chief Complaint / Problem  </div>
               <div style={{ fontSize: '13px', color: '#1e293b' }}>{appointment.problem}</div>
             </div>
           )}
 
-          {appointment?.parts && (
+          {appointment?.parts?.length > 0 && (
             <div style={{
               backgroundColor: tokens.surface,
               border: `1px solid ${tokens.border}`,

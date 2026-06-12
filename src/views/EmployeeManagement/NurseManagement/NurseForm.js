@@ -254,6 +254,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           endDay,
         },
       })
+      setPendingFiles({});
     } else {
       setFormData(emptyForm)
       setPendingFiles({})

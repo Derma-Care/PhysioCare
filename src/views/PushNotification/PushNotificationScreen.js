@@ -88,10 +88,15 @@ const FCMNotification = () => {
 
   // ── Loading spinner ─────────────────────────────────────
   const [isLoading, setIsLoading] = useState(false)
+  const [sendIsLoading, setSendIsLoading] = useState(false)
 
   // ── Permissions ─────────────────────────────────────────
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
+  const [selectedNotifications, setSelectedNotifications] = useState([]);
+  const [bulkDeleteModal, setBulkDeleteModal] = useState(false);
+
+  const [deleteType, setDeleteType] = useState(''); // single | multiple | all
 
   // ── Pagination ──────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1)
@@ -226,7 +231,7 @@ const FCMNotification = () => {
     }
 
     try {
-      setIsLoading(true)
+      setSendIsLoading(true)
       const res = form.isEditing && form.editId
         ? await http.put(`${BASE_URL}/pricedrop/${form.editId}`, payload)
         : await http.post(`${BASE_URL}/pricedrop`, payload)
@@ -241,7 +246,7 @@ const FCMNotification = () => {
     } catch (err) {
       console.error('[FCM] handleSubmit:', err)
     } finally {
-      setIsLoading(false)
+      setSendIsLoading(false)
     }
   }
 
@@ -249,10 +254,37 @@ const FCMNotification = () => {
   // DELETE
   // ───────────────────────────────────────────────────────
   const handleDeleteClick = (n) => {
-    setNotifToDelete({ id: n._id || n.id, title: n.title })
-    setDeleteModalVisible(true)
-  }
+    setDeleteType('single');
+    setNotifToDelete({ id: n._id || n.id, title: n.title });
+    setDeleteModalVisible(true);
+  };
 
+  const handleMultipleDelete = () => {
+    setDeleteType('multiple');
+    setDeleteModalVisible(true);
+  };
+  const handleClearAll = () => {
+    setDeleteType('all');
+    setDeleteModalVisible(true);
+  };
+  const handleConfirmDelete = async () => {
+    try {
+      setIsLoading(true);
+
+      if (deleteType === 'single') {
+        await confirmDelete();
+      } else if (deleteType === 'multiple') {
+        await confirmBulkDelete();
+      } else if (deleteType === 'all') {
+        await clearAllNotifications();
+      }
+    } finally {
+      setDeleteModalVisible(false);
+      setNotifToDelete(null);
+      setDeleteType('');
+      setIsLoading(false);
+    }
+  };
   const confirmDelete = async () => {
     if (!notifToDelete) return
     const clinicId = localStorage.getItem('HospitalId')
@@ -325,6 +357,53 @@ const FCMNotification = () => {
     menuPortal: (b) => ({ ...b, zIndex: 9999 }),
   }
 
+
+  const handleSelectNotification = (id) => {
+    setSelectedNotifications((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    const pageIds = paginatedNotifications.map((n) => n._id || n.id);
+
+    if (selectedNotifications.length === pageIds.length) {
+      setSelectedNotifications([]);
+    } else {
+      setSelectedNotifications(pageIds);
+    }
+  };
+  const confirmBulkDelete = async () => {
+    try {
+      setIsLoading(true);
+
+      const clinicId = localStorage.getItem('HospitalId');
+      const branchId = localStorage.getItem('branchId');
+
+      await Promise.all(
+        selectedNotifications.map((id) =>
+          http.delete(
+            `${BASE_URL}/deletePriceDropNotification/${clinicId}/${branchId}/${id}`
+          )
+        )
+      );
+
+      showCustomToast(
+        `${selectedNotifications.length} notifications deleted successfully!`
+      );
+
+      setSelectedNotifications([]);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+      showCustomToast('Delete failed!', 'error');
+    } finally {
+      setIsLoading(false);
+      setBulkDeleteModal(false);
+    }
+  };
   // ─────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────
@@ -432,7 +511,7 @@ const FCMNotification = () => {
         {/* Actions */}
         <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
           <button className="fcm-send-btn" onClick={handleSubmit} disabled={isLoading}>
-            {isLoading
+            {sendIsLoading
               ? <><span className="spinner-border spinner-border-sm me-2" />{form.isEditing ? 'Updating...' : 'Sending...'}</>
               : <><Send size={14} />{form.isEditing ? 'Update Notification' : 'Send Notification'}</>
             }
@@ -449,11 +528,31 @@ const FCMNotification = () => {
         <span className="fcm-count-pill">{sentNotifications.length} total</span>
       </div>
 
+      <CTableHeaderCell>
+        <input
+          type="checkbox"
+          checked={
+            paginatedNotifications.length > 0 &&
+            selectedNotifications.length === paginatedNotifications.length
+          }
+          onChange={handleSelectAll}
+        />  Select All
+      </CTableHeaderCell>
+      {selectedNotifications.length > 0 && (
+        <button
+          className="fcm-delete-btn"
+          onClick={() => setBulkDeleteModal(true)}
+        >
+          Delete Selected ({selectedNotifications.length})
+        </button>
+      )}
       <div className="fcm-table-wrapper">
         <CTable className="fcm-table">
           <CTableHead>
             <CTableRow>
-              <CTableHeaderCell className="fcm-th" style={{ width: 56 }}>#</CTableHeaderCell>
+
+              <CTableHeaderCell className="fcm-th" style={{ width: 56 }}>Select</CTableHeaderCell>
+              <CTableHeaderCell className="fcm-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
               <CTableHeaderCell className="fcm-th">Title</CTableHeaderCell>
               <CTableHeaderCell className="fcm-th">Body</CTableHeaderCell>
               <CTableHeaderCell className="fcm-th">Date</CTableHeaderCell>
@@ -479,6 +578,13 @@ const FCMNotification = () => {
 
                 return (
                   <CTableRow key={n._id || idx} className="fcm-tr">
+                    <CTableDataCell>
+                      <input
+                        type="checkbox"
+                        checked={selectedNotifications.includes(n._id || n.id)}
+                        onChange={() => handleSelectNotification(n._id || n.id)}
+                      />
+                    </CTableDataCell>
                     <CTableDataCell className="fcm-td fcm-td-num">
                       {(currentPage - 1) * pageSize + idx + 1}
                     </CTableDataCell>
@@ -537,7 +643,41 @@ const FCMNotification = () => {
           </CTableBody>
         </CTable>
       </div>
+      <CModal
+        visible={bulkDeleteModal}
+        onClose={() => setBulkDeleteModal(false)}
+        alignment="center"
+      >
+        <CModalHeader>
+          <CModalTitle>
+            <AlertTriangle size={18} color="#e24b4a" />
+            Confirm Delete
+          </CModalTitle>
+        </CModalHeader>
 
+        <CModalBody>
+          Are you sure you want to delete
+          <strong> {selectedNotifications.length} notifications</strong>?
+          <br />
+          <small>This action cannot be undone.</small>
+        </CModalBody>
+
+        <CModalFooter>
+          <button
+            className="fcm-cancel-btn"
+            onClick={() => setBulkDeleteModal(false)}
+          >
+            Cancel
+          </button>
+
+          <button
+            className="fcm-delete-btn"
+            onClick={confirmBulkDelete}
+          >
+            Yes, Delete
+          </button>
+        </CModalFooter>
+      </CModal>
       <div className="mt-3 mb-3">
         <Pagination
           currentPage={currentPage}
@@ -661,27 +801,64 @@ const FCMNotification = () => {
         </CModalHeader>
 
         <CModalBody style={{ padding: '20px', fontSize: 13, color: '#374151' }}>
-          Are you sure you want to delete{' '}
-          <strong style={{ color: '#0c447c' }}>{notifToDelete?.title}</strong>?
+          {deleteType === 'single' && (
+            <>
+              Are you sure you want to delete{' '}
+              <strong style={{ color: '#0c447c' }}>
+                {notifToDelete?.title}
+              </strong>
+              ?
+            </>
+          )}
+
+          {deleteType === 'multiple' && (
+            <>
+              Are you sure you want to delete{' '}
+              <strong style={{ color: '#0c447c' }}>
+                {selectedNotifications.length} selected notifications
+              </strong>
+              ?
+            </>
+          )}
+
+          {deleteType === 'all' && (
+            <>
+              Are you sure you want to delete{' '}
+              <strong style={{ color: '#0c447c' }}>
+                all notifications
+              </strong>
+              ?
+            </>
+          )}
+
           <br />
-          <span style={{ color: '#9ca3af', fontSize: 12, marginTop: 6, display: 'block' }}>
+
+          <span
+            style={{
+              color: '#9ca3af',
+              fontSize: 12,
+              marginTop: 6,
+              display: 'block',
+            }}
+          >
             This action cannot be undone.
           </span>
         </CModalBody>
 
         <CModalFooter style={{ borderTop: '0.5px solid #d0dce9', padding: '12px 20px', gap: 8 }}>
           <button
-            className="fcm-cancel-btn"
-            style={{ marginLeft: 0 }}
-            onClick={() => { setDeleteModalVisible(false); setNotifToDelete(null) }}
+            className="fcm-delete-btn"
+            onClick={handleConfirmDelete}
+            disabled={isLoading}
           >
-            Cancel
-          </button>
-          <button className="fcm-delete-btn" onClick={confirmDelete} disabled={isLoading}>
-            {isLoading
-              ? <><span className="spinner-border spinner-border-sm me-2 text-white" />Deleting...</>
-              : 'Delete'
-            }
+            {isLoading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2 text-white" />
+                Deleting...
+              </>
+            ) : (
+              'Delete'
+            )}
           </button>
         </CModalFooter>
       </CModal>
