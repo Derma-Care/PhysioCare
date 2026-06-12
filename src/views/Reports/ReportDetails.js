@@ -341,9 +341,9 @@ const ReportDetails = () => {
       const res = await Delete_ReportById(reportId.parentId)
       if (res?.data?.success) {
         setReport((prev) => prev.filter((r) => r.id !== reportId.parentId))
-        fetchReportDetails(); showDeleteModal(false); toast.success('Report deleted successfully')
-      } else { toast.error('Failed to delete report') }
-    } catch (error) { toast.error('Error deleting report') }
+        fetchReportDetails(); showDeleteModal(false); showCustomToast('Report deleted successfully', "success")
+      } else { showCustomToast('Failed to delete report', "error") }
+    } catch (error) { showCustomToast('Error deleting report', "error") }
     finally { SetDelloading(false) }
   }
 

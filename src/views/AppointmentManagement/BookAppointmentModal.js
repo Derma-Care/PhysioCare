@@ -810,7 +810,15 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     setErrors(e)
     return Object.keys(e).length === 0
   }
-
+  useEffect(() => {
+    if (bookingDetails.foc?.toUpperCase() === 'FOC') {
+      setBookingDetails(prev => ({
+        ...prev,
+        paymentType: 'Not Paid',
+      }));
+      clearErr('paymentType');
+    }
+  }, [bookingDetails.foc]);
   // ── Submit handlers ───────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!validate()) {
@@ -1323,14 +1331,29 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
           <CCol md={6}>
             <CFormLabel style={labelStyle}>Payment Type <span className="text-danger">*</span></CFormLabel>
-            <CFormSelect name="paymentType" value={bookingDetails.paymentType} style={selectStyle(errors.paymentType)}
+            <CFormSelect
+              name="paymentType"
+              value={bookingDetails.foc?.toUpperCase() === 'FOC' ? 'Not Paid' : bookingDetails.paymentType}
+              disabled={bookingDetails.foc?.toUpperCase() === 'FOC'}
+              style={{
+                ...selectStyle(errors.paymentType),
+                ...(bookingDetails.foc?.toUpperCase() === 'FOC'
+                  ? { backgroundColor: '#f0f0f0', color: '#6c757d', cursor: 'not-allowed' }
+                  : {}),
+              }}
               onChange={(e) => {
                 setBookingDetails((p) => ({ ...p, paymentType: e.target.value }))
                 e.target.value ? clearErr('paymentType') : setErr('paymentType', 'Select payment type')
-              }}>
+              }}
+            >
               <option value="">Select Payment Type</option>
               {['Cash', 'Card', 'UPI', 'Not Paid'].map((t) => <option key={t}>{t}</option>)}
             </CFormSelect>
+            {bookingDetails.foc?.toUpperCase() === 'FOC' && (
+              <small style={{ color: '#6c757d', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                🔒 Auto-set to "Not Paid" for FOC appointments
+              </small>
+            )}
             <ErrMsg msg={errors.paymentType} />
           </CCol>
           {

@@ -645,7 +645,7 @@ const WidgetsDropdown = (props) => {
                             {item.paymentType}
                           </CTableDataCell>
                           <CTableDataCell className="wd-td" style={{ position: 'relative', overflow: 'visible' }}>
-                            {item.status?.toLowerCase() === 'pending' || item.paymentType == "Not Paid" ? (
+                            {item.status?.toLowerCase() === 'pending' ? (
                               <div
                                 className="wd-pay-dropdown"
                                 ref={openPayDropdown === item.bookingId ? payDropdownRef : null}

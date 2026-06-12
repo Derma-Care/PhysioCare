@@ -65,6 +65,7 @@ export default function ProgramPayment() {
   const [balanceAmount, setBalanceAmount] = useState(0);
   const [totalForSelection, setTotalForSelection] = useState(0);
   const [payAfterService, setPayAfterService] = useState(false);
+  const [treatmentName, setTreatmentName] = useState("");
 
   useEffect(() => {
     if (bookingId && patientId && clinicId && branchId) {
@@ -123,6 +124,7 @@ export default function ProgramPayment() {
           const formatted = formatTherapyTable(result.therapyWithSessions);
           setTableData(formatted);
           setShowTable(true);
+          setTreatmentName(result.treatmentName)
           setSessionTableAlreadyCreated(true); // mark as pre-existing, hide session details
           if (validHistory.length > 0) setIsFollowUpPayment(true);
 
@@ -706,6 +708,7 @@ export default function ProgramPayment() {
     amount: Number(finalAmount || 0), paymentMode: paymentMode.toUpperCase(), paymentType: paymentType.toUpperCase(),
     totalSessionCount: 2, discountAmount: Number(discountAmount || 0), discountIssuedBy,
     payAfterService: true,
+    treatmentName: treatmentName,
     paymentDate: new Date().toISOString().split("T")[0],
     paymentTarget: {
       packageIds: selectedType === "package" ? [packageId] : [],
@@ -896,7 +899,8 @@ export default function ProgramPayment() {
             clinicId, branchId, bookingId, patientId, sessionStartDate: startDate, doctorId, doctorName, therapistId, therapistName, therapistRecordId,
             serviceType: backendServiceType === "activity" ? "EXERCISE" : backendServiceType.toUpperCase(),
             payAfterService: false,
-            therapyWithSessions: therapyWithSessionsData
+            therapyWithSessions: therapyWithSessionsData,
+
           };
         } else {
           payload = createPayloadData;
@@ -1408,6 +1412,18 @@ export default function ProgramPayment() {
                   <option value="full">Full</option>
                   <option value="partial">Partial</option>
                 </CFormSelect>
+              </CCol>
+
+              <CCol md={3}>
+                <CFormLabel style={labelStyle}>Treatment Name</CFormLabel>
+                <CFormInput
+                  value={treatmentName}
+                  onChange={(e) => {
+                    const rawValue = e.target.value;
+                    setTreatmentName(rawValue);
+                  }}
+                  style={inputStyle}
+                />
               </CCol>
 
             </CRow>

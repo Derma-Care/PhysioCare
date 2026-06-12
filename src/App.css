@@ -637,3 +637,64 @@ details[open]>summary .pv-acc-arrow {
   color: #ef4444;
   background: #fee2e2;
 }
+
+.cm-action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.1s;
+  flex-shrink: 0;
+}
+
+.cm-action-btn.view {
+  background: #e6f1fb;
+  color: #185fa5;
+}
+
+.cm-action-btn.edit {
+  background: #eaf3de;
+  color: #3b6d11;
+}
+
+.cm-action-btn.delete {
+  background: #fcebeb;
+  color: #a32d2d;
+}
+
+.cm-action-btn:hover {
+  filter: brightness(0.92);
+  transform: scale(1.07);
+}
+
+.cm-action-btn:active {
+  transform: scale(0.95);
+}
+
+.pm-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #185fa5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(24, 95, 165, 0.2);
+  transition: background 0.15s, transform 0.1s;
+}
+
+.pm-add-btn:hover {
+  background: #0c447c;
+}
+
+.pm-add-btn:active {
+  transform: scale(0.97);
+}

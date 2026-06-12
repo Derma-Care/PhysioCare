@@ -183,6 +183,7 @@ export default function FollowupDashboard() {
   const [bookingIdToDelete, setBookingIdToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [editData, setEditData] = useState(null)
+
   /* ══════════════════════════════════════════════════════════════════
      INITIAL LOAD
   ══════════════════════════════════════════════════════════════════ */
@@ -235,8 +236,13 @@ export default function FollowupDashboard() {
         bookingId,
         followupStatus: status.toLowerCase(),
         reason,
+        ...(status === "Investigation Done" && {
+          status,
+        }),
       }
-
+      if (status === "Investigation Done") {
+        payload.status = status
+      }
       if (status === "Rescheduled") {
         payload.serviceDate = newDate
         payload.servicetime = newTime

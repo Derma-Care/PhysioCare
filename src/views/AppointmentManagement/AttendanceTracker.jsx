@@ -248,6 +248,15 @@ const AttendanceTracker = () => {
           // latitude: "17.433307", //17.433307
           longitude: loginCoords.longitude //78.408188
           // longitude: "78.408188" //78.408188
+
+
+          //10 meters
+          // latitude: "17.433397",
+          // longitude: "78.408278"
+
+          //30 meters
+          // latitude: "17.433577",
+          // longitude: "78.408458"
         },
         // loginLocation: loginAddr,
         // loginLatitude: loginCoords.latitude,

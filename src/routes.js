@@ -1,5 +1,6 @@
 import React from 'react'
 import NotificationPanel from './views/PushNotification/PushNotificationScreen'
+import EquipmentManager from './views/RecovarySupport/RecovarySupport'
 
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const Doctors = React.lazy(() => import('./views/Doctors/DoctorManagement'))
@@ -102,6 +103,7 @@ const AttendanceTracker = React.lazy(() => import('./views/AppointmentManagement
 const PatientFeedback = React.lazy(() => import('./views/Feedback/PatientFeedback'))
 const SessionFeedback = React.lazy(() => import('./views/Feedback/SessionFeedback'))
 const EquipmentManagement = React.lazy(() => import('./views/EquipmentManagement/EquipmentManagement'))
+
 
 const routes = [
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
@@ -218,7 +220,9 @@ const routes = [
 
 
   { path: "/followupDashboard", element: FollowupDashboard },
-  { path: "/paymentDetails", element: PaymentDetailsUI }
+  { path: "/paymentDetails", element: PaymentDetailsUI },
+  { path: "/recoverySupport", element: EquipmentManager }
+
 
 
   // { path: "/attendance", element: AttendanceMenu },
