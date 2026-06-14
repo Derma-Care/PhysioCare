@@ -1,6 +1,7 @@
 import React from 'react'
 import { AppContent, AppSidebar, AppFooter, AppHeader } from '../components/index'
 import NotificationOverlay from '../components/NotificationOverlay'
+import ClinicSummaryPopup from '../components/ClinicSummaryPopup'
 
 const DefaultLayout = () => {
   return (
@@ -9,6 +10,7 @@ const DefaultLayout = () => {
       <div className="wrapper d-flex flex-column min-vh-100">
         <AppHeader />
         <NotificationOverlay />
+        <ClinicSummaryPopup />
         <div className="body flex-grow-1">
           <AppContent />
         </div>

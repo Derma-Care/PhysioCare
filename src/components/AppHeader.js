@@ -37,32 +37,64 @@ const AppHeader = () => {
     : localStorage.getItem('HospitalName')?.split(' ')[0] || 'Hospital'
   const branch = localStorage.getItem('branchName') || 'branchName'
 
-  // useEffect(() => {
-  //   const handleClickOutside = (event) => {
-  //     if (notifRef.current && !notifRef.current.contains(event.target)) {
-  //       setShowNotifPanel(false)
-  //     }
-  //   }
-  //   document.addEventListener('mousedown', handleClickOutside)
+  useEffect(() => {
+    import('../firebase').then(({ listenNotification }) => {
+      listenNotification((payload) => {
+        const newNotif = {
+          id: Date.now(),
+          title: payload.notification?.title || 'New Notification',
+          message: payload.notification?.body || '',
+          patientName: payload.data?.patientName || '',
+          mobileNumber: payload.data?.mobileNumber || '',
+          patientId: payload.data?.patientId || '',
+          bookingId: payload.data?.bookingId || '',
+          type: payload.data?.type || '',
+          path: payload.data?.path || '',
+        }
+        
+        setNotifications((prev) => [newNotif, ...(prev || [])])
+        setNotificationCount((prev) => (prev || 0) + 1)
+        
+        // Show browser notification if permitted
+        if (Notification.permission === 'granted') {
+          new Notification(newNotif.title, {
+            body: newNotif.message,
+            icon: '/src/assets/images/dermalogo.png',
+          })
+        }
+      })
+    }).catch(err => console.log('Firebase not initialized yet', err))
 
-  //   const handleScroll = () => {
-  //     headerRef.current &&
-  //       headerRef.current.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0)
-  //   }
-  //   document.addEventListener('scroll', handleScroll)
+    const handleClickOutside = (event) => {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setShowNotifPanel(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
 
-  //   return () => {
-  //     document.removeEventListener('mousedown', handleClickOutside)
-  //     document.removeEventListener('scroll', handleScroll)
-  //   }
-  // }, [])
+    const handleScroll = () => {
+      headerRef.current &&
+        headerRef.current.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0)
+    }
+    document.addEventListener('scroll', handleScroll)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('scroll', handleScroll)
+    }
+  }, [setNotifications, setNotificationCount])
 
   const handleNotifClick = (notif) => {
     setShowNotifPanel(false)
-    if (notif.patientId) {
+    // Only navigate if it has a patientId AND is meant for session feedback,
+    // or if a specific path is provided in the payload.
+    if (notif.path && notif.path.includes('session-feedback')) {
+      navigate(notif.path)
+    } else if (notif.patientId && (notif.type === 'SESSION_FEEDBACK' || String(notif.title).toLowerCase().includes('feedback'))) {
       const bookingParam = notif.bookingId ? `&bookingId=${notif.bookingId}` : '';
       navigate(`/session-feedback?patientId=${notif.patientId}${bookingParam}`)
     }
+    // Otherwise, just close the panel (do nothing else)
   }
 
   const removeNotification = (id) => {

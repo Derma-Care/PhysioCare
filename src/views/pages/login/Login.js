@@ -33,8 +33,7 @@ import DermaLogo from 'src/assets/images/DermaCare.png' // adjust path if needed
 import { COLORS } from '../../../Constant/Themes'
 import { toast, ToastContainer } from 'react-toastify'
 import { showCustomToast } from '../../../Utils/Toaster'
-// import { getFCMToken } from '../../../firebase'
-
+import { getFCMToken } from '../../../firebase'
 const Login = () => {
   const [activeTab, setActiveTab] = useState('clinic') // clinic | doctor
   const [userName, setUserName] = useState('')
@@ -74,14 +73,14 @@ const Login = () => {
     try {
       // ✅ get FCM token first
       await Notification.requestPermission()
-      // const fcmToken = await getFCMToken()
-      // console.log(fcmToken)
+      const fcmToken = await getFCMToken()
+      console.log(fcmToken)
       let res
       const loginBody = {
         userName,
         password,
         role,
-        // fcmToken: fcmToken || '',
+        fcmToken: fcmToken || '',
         deviceType: 'web',
       }
 

@@ -25,12 +25,17 @@ const NotificationOverlay = () => {
 
   const handleAction = () => {
     setVisible(false);
-    if (activeNotification.patientId) {
+    if (activeNotification.path && activeNotification.path.includes('session-feedback')) {
+      navigate(activeNotification.path);
+    } else if (activeNotification.patientId && (activeNotification.type === 'SESSION_FEEDBACK' || String(activeNotification.title).toLowerCase().includes('feedback'))) {
       const bookingParam = activeNotification.bookingId ? `&bookingId=${activeNotification.bookingId}` : '';
       navigate(`/session-feedback?patientId=${activeNotification.patientId}${bookingParam}`);
-    } else {
-      navigate('/session-feedback');
     }
+    // If it's a general notification, just closing (setVisible(false)) is enough!
+  };
+
+  const handleClose = () => {
+    setVisible(false);
   };
 
   return (
@@ -38,9 +43,8 @@ const NotificationOverlay = () => {
       <div className={`notif-card ${visible ? 'notif-animate-in' : 'notif-animate-out'}`}>
         <div className="notif-header">
           <FontAwesomeIcon icon={faBell} className="notif-bell-icon" />
-          <span>Session Milestone</span>
-          {/* Close button also navigates as requested */}
-          <button className="notif-close" onClick={handleAction} title="Open Form">
+          <span>{(activeNotification.type === 'SESSION_FEEDBACK' || String(activeNotification.title).toLowerCase().includes('feedback')) ? 'Session Milestone' : 'Clinic Notification'}</span>
+          <button className="notif-close" onClick={handleClose} title="Close">
             <FontAwesomeIcon icon={faTimes} />
           </button>
         </div>
@@ -60,7 +64,7 @@ const NotificationOverlay = () => {
         </div>
         <div className="notif-footer">
           <button className="notif-action-btn" onClick={handleAction}>
-            View Feedback & Action
+            {(activeNotification.type === 'SESSION_FEEDBACK' || String(activeNotification.title).toLowerCase().includes('feedback')) ? 'View Feedback & Action' : 'Acknowledge & Close'}
           </button>
         </div>
       </div>
