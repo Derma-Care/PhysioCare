@@ -72,7 +72,7 @@ const PrintLetterHead = ({ children, printDate }) => {
         </div>
 
         <div className="print-info">
-          <div>Date : {date}</div>
+          <div>Date : {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}</div>
           <div>Time : {time}</div>
         </div>
       </div>

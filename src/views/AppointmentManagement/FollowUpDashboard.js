@@ -236,12 +236,16 @@ export default function FollowupDashboard() {
         bookingId,
         followupStatus: status.toLowerCase(),
         reason,
-        ...(status === "Investigation Done" && {
+        ...((status.toLowerCase() === "investigation done" ||
+          status.toLowerCase() === "due for investigation") && {
           status,
         }),
       }
-      if (status === "Investigation Done") {
-        payload.status = status
+      if (
+        status === "Investigation Done" ||
+        status === "Due for Investigation"
+      ) {
+        payload.status = status;
       }
       if (status === "Rescheduled") {
         payload.serviceDate = newDate
@@ -889,7 +893,7 @@ export default function FollowupDashboard() {
                                     {rowSessions.map((item, i) => (
                                       <CTableRow key={i}>
                                         <CTableDataCell><div>
-                                          <p className='mb-0'>{item.activityName || "Shoulder Abduction & Rotation"}</p>
+                                          {/* <p className='mb-0'>{item.activityName || "Shoulder Abduction & Rotation"}</p> */}
                                           <small className='text-muted'>Session - {item.sessionNo}</small> <br></br>
                                           <small className='text-muted'>ID - {item.sessionId}</small>
                                         </div></CTableDataCell>

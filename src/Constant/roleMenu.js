@@ -45,6 +45,7 @@ export const roleMenu = {
     Dashboard: ['read'],
     Appointments: ['create', 'read', 'update'],
     Payouts: ['read'],
+    Billing: ['create', 'read', 'update', 'delete'],
     Help: ['read'],
   },
   //Nurse Permissions
@@ -52,6 +53,7 @@ export const roleMenu = {
     'Disease-Management': ['create', 'read', 'update', 'delete'],
     Appointments: ['create', 'read', 'update'],
     Payouts: ['read'],
+    Billing: ['create', 'read', 'update', 'delete'],
     Help: ['read'],
     Test: ['read'],
     Treatments: ['read'],

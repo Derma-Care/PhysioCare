@@ -178,6 +178,13 @@ export const getNavigation = (permissions = {}) => {
     // },
     {
       component: CNavItem,
+      to: '/billing',
+      name: 'Billing',
+      as: NavLink,
+      icon: <CIcon icon={cilWallet} customClassName="nav-icon" />,
+    },
+    {
+      component: CNavItem,
       to: '/notification',
       name: 'Push Notification',
       as: NavLink,

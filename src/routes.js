@@ -103,6 +103,7 @@ const AttendanceTracker = React.lazy(() => import('./views/AppointmentManagement
 const PatientFeedback = React.lazy(() => import('./views/Feedback/PatientFeedback'))
 const SessionFeedback = React.lazy(() => import('./views/Feedback/SessionFeedback'))
 const EquipmentManagement = React.lazy(() => import('./views/EquipmentManagement/EquipmentManagement'))
+const Billing = React.lazy(() => import('./views/Billing/Billing'))
 
 
 const routes = [
@@ -111,6 +112,7 @@ const routes = [
   { path: '/feedback', name: 'Patient Feedback', element: PatientFeedback },
   { path: '/session-feedback', name: 'Session Feedback', element: SessionFeedback },
   { path: '/equipment-management', name: 'Equipment Management', element: EquipmentManagement },
+  { path: '/billing', name: 'Billing', element: Billing },
   { path: '/employee-management/doctor', name: 'Doctors', element: Doctors },
   { path: '/consent-forms', name: 'Consent Forms', element: ConsentForms },
 

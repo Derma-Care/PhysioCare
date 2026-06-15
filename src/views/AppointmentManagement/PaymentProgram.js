@@ -10,13 +10,15 @@ import { BASE_URL, wifiUrl } from "../../baseUrl";
 import { useLocation, useNavigate } from "react-router-dom";
 import { showCustomToast } from "../../Utils/Toaster";
 import { COLORS } from "../../Constant/Themes";
+import PrintLetterHead from "../../Utils/PrintLetterHead";
+import { CalendarOff, Info } from "lucide-react";
 
-export default function ProgramPayment() {
+export default function ProgramPayment({ paymentProps, isBillingTab }) {
   const location = useLocation();
 
-  console.log("Received data:", location.state);
+  console.log("Received data:", location.state || paymentProps);
 
-  const { bookingId, doctorId, clinicId, branchId, patientId } = location.state || {};
+  const { bookingId, doctorId, clinicId, branchId, patientId } = paymentProps || location.state || {};
 
   const [startDate, setStartDate] = useState("");
   const [tableData, setTableData] = useState([]);
@@ -66,6 +68,7 @@ export default function ProgramPayment() {
   const [totalForSelection, setTotalForSelection] = useState(0);
   const [payAfterService, setPayAfterService] = useState(false);
   const [treatmentName, setTreatmentName] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (bookingId && patientId && clinicId && branchId) {
@@ -201,6 +204,7 @@ export default function ProgramPayment() {
         }));
       }
       console.log("NORMALIZED:", normalized);
+      setNoSessionMsg("");
       setApiData(normalized);
       const normalizedType = type === "exercise" ? "activity" : type;
       if (!backendServiceType) setBackendServiceType(normalizedType);
@@ -810,6 +814,11 @@ export default function ProgramPayment() {
   };
 
   const handleSubmit = async () => {
+    if (!treatmentName || !treatmentName.trim()) {
+      showCustomToast("Treatment Name is required.", "error");
+      return;
+    }
+
     const hasPaidOnceSubmit = Number(totalPaid || 0) > 0 || (Array.isArray(paymentHistory) ? paymentHistory.length > 0 : false);
     const isApprovalRequired = !payAfterService && !hasPaidOnceSubmit && (Number(paymentPercent) < 50 || Number(discount || 0) > 0 || Number(discountAmount || 0) > 0);
     if (isApprovalRequired && !discountIssuedBy.trim()) {
@@ -1111,8 +1120,67 @@ export default function ProgramPayment() {
           <p style={{ color: "#6b7280", fontWeight: "600", fontSize: "14px" }}>Loading Payment Details...</p>
         </div>
       ) : noSessionMsg ? (
-        <div style={{ padding: "20px", textAlign: "center", color: "#dc2626", fontWeight: "600", border: "1px solid #fca5a5", backgroundColor: "#fef2f2", borderRadius: "8px", marginBottom: "16px" }}>
-          {noSessionMsg}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "3rem 1rem",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "16px",
+              maxWidth: "380px",
+              width: "100%",
+              textAlign: "center",
+            }}
+          >
+            {/* Icon circle */}
+            <div
+              style={{
+                width: "64px",
+                height: "64px",
+                borderRadius: "50%",
+                backgroundColor: "#FFF7ED",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <CalendarOff size={28} color={COLORS.primary} strokeWidth={1.5} />
+            </div>
+
+            {/* Text */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <p style={{ margin: 0, fontSize: "15px", fontWeight: 500, color: "#111" }}>
+                No sessions found
+              </p>
+              <p style={{ margin: 0, fontSize: "13px", color: "#6B7280", lineHeight: 1.5 }}>
+                {noSessionMsg}
+              </p>
+            </div>
+
+            {/* Hint pill */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 16px",
+                border: "1px solid #E5E7EB",
+                borderRadius: "8px",
+                fontSize: "13px",
+                color: "#6B7280",
+              }}
+            >
+              <Info size={25} strokeWidth={1.5} />
+              Session details will appear here once the doctor schedules the sessions.
+            </div>
+          </div>
         </div>
       ) : !showTable && (
         <div style={{
@@ -1415,7 +1483,10 @@ export default function ProgramPayment() {
               </CCol>
 
               <CCol md={3}>
-                <CFormLabel style={labelStyle}>Treatment Name</CFormLabel>
+                <CFormLabel style={labelStyle}>
+                  Treatment Name
+                  <span style={{ color: "#dc2626" }}> *</span>
+                </CFormLabel>
                 <CFormInput
                   value={treatmentName}
                   onChange={(e) => {
@@ -1654,7 +1725,13 @@ export default function ProgramPayment() {
 
             <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "0.5px solid #d0dce9", display: "flex", justifyContent: "flex-end" }}>
               <button
-                onClick={handleSubmit}
+                onClick={() => {
+                  if (!treatmentName || !treatmentName.trim()) {
+                    showCustomToast("Treatment Name is required.", "error");
+                    return;
+                  }
+                  setShowConfirm(true);
+                }}
                 disabled={submitLoading}
                 style={{ ...primaryBtn, opacity: submitLoading ? 0.75 : 1, display: "flex", alignItems: "center", gap: "8px", minWidth: "160px", justifyContent: "center" }}
               >
@@ -1706,7 +1783,7 @@ export default function ProgramPayment() {
             </p>
             <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "0.5px solid #d0dce9", display: "flex", justifyContent: "flex-end" }}>
               <button
-                onClick={handleSubmit}
+                onClick={() => setShowConfirm(true)}
                 disabled={submitLoading}
                 style={{ ...primaryBtn, opacity: submitLoading ? 0.75 : 1, display: "flex", alignItems: "center", gap: "8px", minWidth: "180px", justifyContent: "center" }}
               >
@@ -1739,6 +1816,70 @@ export default function ProgramPayment() {
         select.pm-input:focus, input.pm-input:focus { border-color: #185fa5; outline: none; box-shadow: 0 0 0 2px rgba(24,95,165,0.15); }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
+
+      {/* ── Confirmation Modal ── */}
+      {showConfirm && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: "14px", padding: "32px 28px",
+            maxWidth: "400px", width: "90%",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+            textAlign: "center",
+          }}>
+            {/* Icon */}
+            <div style={{
+              width: 56, height: 56, borderRadius: "50%",
+              background: isFollowUpPayment ? "#fff8e1" : "#e8f5e9",
+              border: `2px solid ${isFollowUpPayment ? "#ffc107" : "#4caf50"}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 16px", fontSize: 24,
+            }}>
+              {isFollowUpPayment ? "✏️" : "💳"}
+            </div>
+
+            <h5 style={{ fontWeight: 700, color: "#1a1a2e", marginBottom: 8, fontSize: 16 }}>
+              {isFollowUpPayment ? "Update Payment?" : "Confirm Payment Submission?"}
+            </h5>
+            <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 24, lineHeight: 1.6 }}>
+              {isFollowUpPayment
+                ? "Are you sure you want to update this payment record? This action will modify the existing payment."
+                : `You are about to submit a payment of ₹${Number(finalAmount || 0).toFixed(2)} for Treatment: "${treatmentName}". Please confirm to proceed.`
+              }
+            </p>
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button
+                onClick={() => setShowConfirm(false)}
+                style={{
+                  padding: "9px 24px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  border: "1px solid #d1d5db", background: "#fff", color: "#374151",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirm(false);
+                  handleSubmit();
+                }}
+                style={{
+                  padding: "9px 24px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  border: "none",
+                  background: isFollowUpPayment ? "#f57f17" : "#185fa5",
+                  color: "#fff", cursor: "pointer",
+                }}
+              >
+                {isFollowUpPayment ? "Yes, Update" : "Yes, Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

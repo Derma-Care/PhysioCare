@@ -13,11 +13,12 @@ import {
   faCalendarDays,
   faHospital,
 } from '@fortawesome/free-solid-svg-icons'
+import { http } from '../Utils/Interceptors'
 
 // ── Metric config ─────────────────────────────────────────────────────────────
 const METRICS = [
   {
-    key: 'Pending',
+    key: 'pending',
     label: 'Pending',
     icon: faClock,
     bg: '#FAEEDA', iconColor: '#854F0B',
@@ -25,7 +26,7 @@ const METRICS = [
     bar: '#EF9F27',
   },
   {
-    key: 'Confirmed',
+    key: 'confirmed',
     label: 'Confirmed',
     icon: faCircleCheck,
     bg: '#EAF3DE', iconColor: '#3B6D11',
@@ -33,7 +34,7 @@ const METRICS = [
     bar: '#639922',
   },
   {
-    key: 'Due for Investigation',
+    key: 'dueForInvestigation',
     label: 'Due for investigation',
     icon: faMicroscope,
     bg: '#E6F1FB', iconColor: '#185FA5',
@@ -41,7 +42,7 @@ const METRICS = [
     bar: '#378ADD',
   },
   {
-    key: 'Investigation Done',
+    key: 'investigationDone',
     label: 'Investigation done',
     icon: faClipboardCheck,
     bg: '#E1F5EE', iconColor: '#0F6E56',
@@ -49,7 +50,7 @@ const METRICS = [
     bar: '#1D9E75',
   },
   {
-    key: 'Follow-up Needed',
+    key: 'followupNeeded',
     label: 'Follow-up needed',
     icon: faBell,
     bg: '#EEEDFE', iconColor: '#534AB7',
@@ -57,7 +58,7 @@ const METRICS = [
     bar: '#7F77DD',
   },
   {
-    key: 'Follow-Up',
+    key: 'followupDue',
     label: 'Follow-up',
     icon: faCalendarDays,
     bg: '#FAECE7', iconColor: '#993C1D',
@@ -65,16 +66,6 @@ const METRICS = [
     bar: '#D85A30',
   },
 ]
-
-// ── Dummy data (replace with API response) ────────────────────────────────────
-const DUMMY_COUNTS = {
-  'Pending': 34,
-  'Confirmed': 58,
-  'Due for Investigation': 21,
-  'Investigation Done': 17,
-  'Follow-up Needed': 29,
-  'Follow-Up': 12,
-}
 
 // ── StatCard ──────────────────────────────────────────────────────────────────
 const StatCard = ({ config, count, total }) => {
@@ -135,17 +126,23 @@ const ClinicSummaryPopup = () => {
   // ── unchanged: read hospital data ─────────────────────────────────────────
   const data = JSON.parse(localStorage.getItem('selectedHospital') || '{}')
   const hospitalData = data.data || {}
+  const clinicId = localStorage.getItem('HospitalId')
+  const branchId = localStorage.getItem('branchId')
+  const role = localStorage.getItem('role')
 
-  // ── unchanged: fetch / dummy logic ────────────────────────────────────────
+  // ── fetch logic ───────────────────────────────────────────────────────────
   const checkSummary = async () => {
+    // if (role?.toUpperCase() !== 'RECEPTIONIST') return;
+
     try {
-      // DUMMY DATA FOR TESTING
-      setSummaryData({
-        status: 'PENDING',
-        name: hospitalData.name,
-        ...DUMMY_COUNTS,
-      })
-      setVisible(true)
+      const res = await http.post(`/getReceptionistDashboard/${clinicId}/${branchId}/${role}`)
+      if (res.data?.success) {
+        setSummaryData({
+          name: hospitalData.name,
+          ...res.data.data,
+        })
+        setVisible(true)
+      }
     } catch (error) {
       console.error('Error fetching clinic summary:', error)
     }
@@ -153,7 +150,7 @@ const ClinicSummaryPopup = () => {
 
   // ── mount + interval logic ─────────────────────────────────────────────────
   useEffect(() => {
-    checkSummary()
+    // checkSummary()
 
     // Helper: parse both "10:00 PM" (12-hr) and "22:00" (24-hr) into { hour, min }
     const parseTimeStr = (timeStr) => {
@@ -173,8 +170,8 @@ const ClinicSummaryPopup = () => {
     const interval = setInterval(() => {
       const now = new Date()
 
-      const startTimeStr = hospitalData.startTime || hospitalData.openingTime || '08:00'
-      const closeTimeStr = hospitalData.closeTime || hospitalData.closingTime || '20:00'
+      const startTimeStr = hospitalData.openingTime || hospitalData.startTime || '08:00'
+      const closeTimeStr = hospitalData.closingTime || hospitalData.closeTime || '20:00'
 
       const { hour: startHour, min: startMin } = parseTimeStr(startTimeStr)
       const { hour: closeHour, min: closeMin } = parseTimeStr(closeTimeStr)
@@ -214,9 +211,19 @@ const ClinicSummaryPopup = () => {
     return () => clearInterval(interval)
   }, [])
 
-  // ── unchanged: ok handler ─────────────────────────────────────────────────
+  // ── ok handler ────────────────────────────────────────────────────────────
   const handleOk = async () => {
-    console.log('Dummy Ok clicked! Status updated to true.')
+    try {
+      if (role?.toUpperCase() === 'RECEPTIONIST') {
+        await http.put(`/updateReceptionistDashboard/${clinicId}/${branchId}/${role}`, {
+          status: true
+        })
+        console.log('Status updated to true in the backend.')
+      }
+    } catch (error) {
+      console.error('Error updating dashboard status:', error)
+    }
+
     setVisible(false)
     if (window.location.pathname !== '/followupDashboard') {
       navigate('/followupDashboard')

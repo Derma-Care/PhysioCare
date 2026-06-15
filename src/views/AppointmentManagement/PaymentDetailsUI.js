@@ -18,6 +18,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { FONT_SIZES } from "../../Constant/Themes";
 import { getBookingsByPatientId } from "../../APIs/GetpatinetData";
+import PrintLetterHead from "../../Utils/PrintLetterHead";
 
 
 const StatusBadge = ({ status }) => {
@@ -41,6 +42,31 @@ const StatusBadge = ({ status }) => {
         </span>
     )
 }
+
+/* ── Print receipt helper components ── */
+const PrintRow = ({ label, value }) => (
+    <div style={{ display: "flex", gap: "6px", marginBottom: "4px" }}>
+        <span style={{ color: "#888", minWidth: "70px", fontSize: "12px" }}>{label}:</span>
+        <span style={{ fontWeight: 600, color: "#1a1a2e", fontSize: "12px" }}>{value || "N/A"}</span>
+    </div>
+)
+
+const Section = ({ title, children }) => (
+    <div style={{ marginBottom: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "#0c447c", textTransform: "uppercase", letterSpacing: "0.8px" }}>{title}</span>
+            <div style={{ flex: 1, height: "1px", background: "#dce6f0" }} />
+        </div>
+        {children}
+    </div>
+)
+
+const TotalRow = ({ label, value, bg, color }) => (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 16px", background: bg, borderBottom: "1px solid #eef2f7" }}>
+        <span style={{ color: "#555", fontSize: "13px" }}>{label}</span>
+        <strong style={{ color, fontSize: "13px" }}>{value}</strong>
+    </div>
+)
 
 export default function PaymentDetailsUI() {
     const navigate = useNavigate();
@@ -165,12 +191,90 @@ export default function PaymentDetailsUI() {
     const percent = allSessions.length > 0
         ? Math.round((paidSessions / allSessions.length) * 100)
         : 0;
+    const latestPayment = data?.paymentHistory?.length
+        ? data.paymentHistory[data.paymentHistory.length - 1]
+        : null;
 
+    const receiptNumber =
+        latestPayment?.receiptNumber ||
+        `REC-${data.bookingId}-${data.paymentHistory?.length || 1}`;
+
+    const consentNumber =
+        data?.consentNumber ||
+        `CONS-${data.bookingId}`;
+    const handlePrint = (elementId) => {
+        const printContent = document.getElementById(elementId);
+        if (printContent) {
+            const iframe = document.createElement("iframe");
+            iframe.style.position = "absolute";
+            iframe.style.width = "0px";
+            iframe.style.height = "0px";
+            iframe.style.border = "none";
+
+            document.body.appendChild(iframe);
+            const doc = iframe.contentWindow.document;
+
+            doc.open();
+            doc.write("<html><head><title>Print</title>");
+
+            // Copy existing styles to iframe
+            const styles = document.querySelectorAll("style, link[rel='stylesheet']");
+            styles.forEach((s) => {
+                doc.write(s.outerHTML);
+            });
+
+            doc.write("</head><body>");
+            doc.write(printContent.innerHTML);
+            doc.write("</body></html>");
+            doc.close();
+
+            iframe.contentWindow.focus();
+
+            // Wait for styles to load before printing
+            setTimeout(() => {
+                iframe.contentWindow.print();
+                document.body.removeChild(iframe);
+            }, 500);
+        }
+    };
     return (
         <div style={{ background: "#f4f6f9", minHeight: "100vh", padding: "20px" }}>
-            <h2 style={{ fontSize: FONT_SIZES.xl, fontWeight: 600, color: "#0c447c", marginBottom: "20px" }}>
-                Patient Payment Dashboard
-            </h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h2 style={{ fontSize: FONT_SIZES.xl, fontWeight: 600, color: "#0c447c", margin: 0 }}>
+                    Patient Payment Dashboard
+                </h2>
+                <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                        onClick={() => handlePrint("printable-consent")}
+                        style={{
+                            background: "#0c447c",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 16px",
+                            cursor: "pointer",
+                            fontWeight: 600
+                        }}
+                    >
+                        Consolidated Receipts
+                    </button>
+
+                    <button
+                        onClick={() => handlePrint("printable-receipt")}
+                        style={{
+                            background: "#16a34a",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 16px",
+                            cursor: "pointer",
+                            fontWeight: 600
+                        }}
+                    >
+                        Print Receipt
+                    </button>
+                </div>
+            </div>
 
             {/* 🔹 Top Summary */}
             <CRow className="g-3 mb-4">
@@ -413,7 +517,7 @@ export default function PaymentDetailsUI() {
                 <CTable hover responsive className="mb-0" style={{ fontSize: "12px" }}>
                     <CTableHead>
                         <CTableRow>
-                            {["#", "Date", "Amount", "Mode", "Type", "Level"].map(h => (
+                            {["#", "Receipt No.", "Date", "Amount", "Mode", "Type", "Level"].map(h => (
                                 <CTableHeaderCell key={h} style={{
                                     background: "#f0f5fb", color: "#6b7280",
                                     fontSize: "11px", fontWeight: 600,
@@ -428,6 +532,7 @@ export default function PaymentDetailsUI() {
                         {(data.paymentHistory || []).filter(item => item?.amount !== null && item?.amount !== undefined).map((item, i) => (
                             <CTableRow key={i}>
                                 <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", color: "#9ca3af" }}>{i + 1}</CTableDataCell>
+                                <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", color: "#0c447c", fontWeight: 600 }}>{item.receiptNumber || `REC-${data.bookingId}-${i + 1}`}</CTableDataCell>
                                 <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", color: "#374151" }}>{item.paymentDate}</CTableDataCell>
                                 <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", fontWeight: 600, color: "#0c447c" }}>₹{item.amount}</CTableDataCell>
                                 <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7" }}>
@@ -462,6 +567,423 @@ export default function PaymentDetailsUI() {
                     </button>
                 </div>
             </div>
+
+            {/* ── Hidden Printable Receipt ── */}
+            <div id="printable-receipt" style={{ display: "none" }}>
+                <style>{`
+                    .letter-header,
+                    .letter-footer {
+                        padding-left: 40px !important;
+                        padding-right: 40px !important;
+                        padding-top: 40px !important;
+                        
+                    }
+                `}</style>
+                <PrintLetterHead printDate={new Date()}>
+                    <div style={{
+                        padding: "0 40px",
+
+                        color: "#1a1a2e",
+                        fontSize: "13px",
+                        lineHeight: 1.6,
+                    }}>
+
+                        {/* ── Title ── */}
+                        <div style={{
+                            textAlign: "center",
+                            marginBottom: "28px",
+                            paddingBottom: "20px",
+                            borderBottom: "2.5px solid #0c447c",
+                        }}>
+                            <h2 style={{
+                                margin: 0,
+                                fontSize: "20px",
+                                fontWeight: 700,
+                                color: "#0c447c",
+                                letterSpacing: "0.5px",
+                                textTransform: "uppercase",
+                            }}>
+                                Payment Receipt
+                            </h2>
+                            <span style={{ fontWeight: 600, color: "#1a1a2e" }} className="text-muted">Receipt No.: {receiptNumber}</span>
+                        </div>
+
+                        {/* ── Patient Info Grid ── */}
+                        <div style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: "0",
+                            marginBottom: "24px",
+                            border: "1px solid #dce6f0",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                        }}>
+                            {/* Left block */}
+                            <div style={{ padding: "16px 20px", background: "#f7fafd", borderRight: "1px solid #dce6f0" }}>
+                                <p style={{ margin: "0 0 2px", fontSize: "10px", fontWeight: 700, color: "#0c447c", textTransform: "uppercase", letterSpacing: "0.8px" }}>Patient</p>
+                                <p style={{ margin: "0 0 10px", fontSize: "15px", fontWeight: 700, color: "#1a1a2e" }}>{patientInfo.name}</p>
+                                <PrintRow label="Patient ID" value={data.patientId} />
+                                <PrintRow label="Mobile" value={patientInfo.mobileNumber} />
+                            </div>
+                            {/* Right block */}
+                            <div style={{ padding: "16px 20px", background: "#f7fafd" }}>
+                                <p style={{ margin: "0 0 2px", fontSize: "10px", fontWeight: 700, color: "#0c447c", textTransform: "uppercase", letterSpacing: "0.8px" }}>Booking</p>
+                                <p style={{ margin: "0 0 10px", fontSize: "15px", fontWeight: 700, color: "#1a1a2e" }}>#{data.bookingId}</p>
+                                <PrintRow label="Doctor" value={data.doctorName} />
+                                <PrintRow label="Date" value={new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} />
+                            </div>
+                        </div>
+
+                        {/* ── Treatments ── */}
+                        <Section title="Treatments">
+                            <div style={{ padding: "4px 0" }}>
+                                {(data?.therapyWithSessions && data.therapyWithSessions.length > 0)
+                                    ? data.therapyWithSessions.map((pkg, pi) => {
+                                        const therapiesList = []
+                                        if (pkg?.programs) {
+                                            pkg.programs.forEach(p => (p.therapyData || []).forEach(t => t.therapyName && therapiesList.push(t.therapyName)))
+                                        } else if (pkg?.therapyData) {
+                                            pkg.therapyData.forEach(t => t.therapyName && therapiesList.push(t.therapyName))
+                                        }
+                                        const treatmentValue = data?.treatmentName || (therapiesList.length > 0 ? therapiesList.join(", ") : "Therapy Session")
+                                        return (
+                                            <div key={pi} style={{
+                                                display: "flex", alignItems: "flex-start", gap: "10px",
+                                                padding: "10px 14px", background: "#f0f6ff",
+                                                borderRadius: "6px", marginBottom: pi < data.therapyWithSessions.length - 1 ? "8px" : 0,
+                                                borderLeft: "3px solid #0c447c",
+                                            }}>
+                                                <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px", flexShrink: 0 }}>✦</span>
+                                                <div>
+                                                    <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
+                                                    <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{treatmentValue}</span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })
+                                    : (
+                                        <div style={{
+                                            display: "flex", alignItems: "flex-start", gap: "10px",
+                                            padding: "10px 14px", background: "#f0f6ff",
+                                            borderRadius: "6px", borderLeft: "3px solid #0c447c",
+                                        }}>
+                                            <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px" }}>✦</span>
+                                            <div>
+                                                <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
+                                                <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{data?.treatmentName || "N/A"}</span>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+                            </div>
+                        </Section>
+
+                        {/* ── Payment (latest only) ── */}
+                        <Section title="Payment">
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
+                                <thead>
+                                    <tr style={{ background: "#0c447c" }}>
+                                        {["Date", "Mode", "Type", "Amount"].map((h, i) => (
+                                            <th key={h} style={{
+                                                padding: "9px 12px",
+                                                color: "#fff",
+                                                fontWeight: 600,
+                                                textAlign: i === 3 ? "right" : "left",
+                                                fontSize: "11px",
+                                                letterSpacing: "0.4px",
+                                                textTransform: "uppercase",
+                                            }}>
+                                                {h}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {latestPayment && latestPayment.amount !== null && latestPayment.amount !== undefined && (
+                                        <tr style={{ background: "#fff" }}>
+                                            <td style={{ padding: "9px 12px", borderBottom: "1px solid #eef2f7", color: "#444" }}>{latestPayment.paymentDate}</td>
+                                            <td style={{ padding: "9px 12px", borderBottom: "1px solid #eef2f7" }}>
+                                                <span style={{
+                                                    fontSize: "11px", fontWeight: 600, padding: "2px 8px",
+                                                    borderRadius: "10px", background: "#e8f0fb", color: "#0c447c",
+                                                }}>{latestPayment.paymentMode}</span>
+                                            </td>
+                                            <td style={{ padding: "9px 12px", borderBottom: "1px solid #eef2f7", color: "#555" }}>
+                                                {latestPayment.paymentType}{latestPayment.paymentLevel ? ` · ${latestPayment.paymentLevel}` : ""}
+                                            </td>
+                                            <td style={{ padding: "9px 12px", borderBottom: "1px solid #eef2f7", textAlign: "right", fontWeight: 600, color: "#1a1a2e" }}>
+                                                ₹{latestPayment.amount}
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </Section>
+
+                        {/* ── Totals ── */}
+                        <div style={{
+                            width: "280px",
+                            marginLeft: "auto",
+                            marginTop: "4px",
+                            border: "1px solid #dce6f0",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                        }}>
+                            <TotalRow label="Total Amount" value={`₹${data.totalAmount}`} bg="#f7fafd" color="#333" />
+                            <TotalRow label="Discount" value={`₹${data.discountAmount}`} bg="#fff9f0" color="#854f0b" />
+                            <TotalRow label="Total Paid" value={`₹${data.totalPaid}`} bg="#f0fbf4" color="#27500a" />
+                            <div style={{
+                                display: "flex", justifyContent: "space-between", alignItems: "center",
+                                padding: "12px 16px",
+                                background: data.balanceAmount > 0 ? "#fff5f5" : "#f0fbf4",
+                                borderTop: "2px solid " + (data.balanceAmount > 0 ? "#a32d2d" : "#27500a"),
+                            }}>
+                                <span style={{ fontWeight: 700, fontSize: "14px", color: data.balanceAmount > 0 ? "#a32d2d" : "#27500a" }}>
+                                    Balance Due
+                                </span>
+                                <strong style={{ fontSize: "15px", color: data.balanceAmount > 0 ? "#a32d2d" : "#27500a" }}>
+                                    ₹{data.balanceAmount}
+                                </strong>
+                            </div>
+                        </div>
+
+                        {/* ── Footer ── */}
+                        <div style={{
+                            marginTop: "40px",
+                            paddingTop: "16px",
+                            borderTop: "1px dashed #ccd6e4",
+                            textAlign: "center",
+                            fontSize: "12px",
+                            color: "#888",
+                        }}>
+                            <p style={{ margin: "0 0 2px", fontWeight: 600, color: "#0c447c" }}>Thank you for choosing us!</p>
+                            <p style={{ margin: 0 }}>This is a computer-generated receipt and does not require a signature.</p>
+                        </div>
+
+                    </div>
+                </PrintLetterHead>
+            </div>
+
+            {/* ── Hidden Printable Consent (ALL payment history) ── */}
+            <div id="printable-consent" style={{ display: "none" }}>
+                <style>{`
+                    .letter-header,
+                    .letter-footer {
+                        padding-left: 40px !important;
+                        padding-right: 40px !important;
+                        padding-top: 40px !important;
+                    }
+                `}</style>
+                <PrintLetterHead printDate={new Date()}>
+                    <div style={{
+                        padding: "0 40px",
+                        color: "#1a1a2e",
+                        fontSize: "13px",
+                        lineHeight: 1.6,
+                    }}>
+
+                        {/* ── Title ── */}
+                        <div style={{
+                            textAlign: "center",
+                            marginBottom: "28px",
+                            paddingBottom: "20px",
+                            borderBottom: "2.5px solid #0c447c",
+                        }}>
+                            <h2 style={{
+                                margin: 0,
+                                fontSize: "20px",
+                                fontWeight: 700,
+                                color: "#0c447c",
+                                letterSpacing: "0.5px",
+                                textTransform: "uppercase",
+                            }}>
+                                CONSOLIDATED RECEIPTS
+                            </h2>
+                            <span style={{ fontWeight: 600, color: "#1a1a2e" }} className="text-muted">Overall Receipt No.: {data.overallReceiptNumber || `REC-${data.bookingId}`}</span>
+                        </div>
+
+                        {/* ── Patient Info Grid ── */}
+                        <div style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: "0",
+                            marginBottom: "24px",
+                            border: "1px solid #dce6f0",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                        }}>
+                            <div style={{ padding: "16px 20px", background: "#f7fafd", borderRight: "1px solid #dce6f0" }}>
+                                <p style={{ margin: "0 0 2px", fontSize: "10px", fontWeight: 700, color: "#0c447c", textTransform: "uppercase", letterSpacing: "0.8px" }}>Patient</p>
+                                <p style={{ margin: "0 0 10px", fontSize: "15px", fontWeight: 700, color: "#1a1a2e" }}>{patientInfo.name}</p>
+                                <PrintRow label="Patient ID" value={data.patientId} />
+                                <PrintRow label="Mobile" value={patientInfo.mobileNumber} />
+                            </div>
+                            <div style={{ padding: "16px 20px", background: "#f7fafd" }}>
+                                <p style={{ margin: "0 0 2px", fontSize: "10px", fontWeight: 700, color: "#0c447c", textTransform: "uppercase", letterSpacing: "0.8px" }}>Booking</p>
+                                <p style={{ margin: "0 0 10px", fontSize: "15px", fontWeight: 700, color: "#1a1a2e" }}>#{data.bookingId}</p>
+                                <PrintRow label="Doctor" value={data.doctorName} />
+                                <PrintRow label="Date" value={new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} />
+                            </div>
+                        </div>
+
+                        {/* ── Treatments ── */}
+                        <Section title="Treatments">
+                            <div style={{ padding: "4px 0" }}>
+                                {(data?.therapyWithSessions && data.therapyWithSessions.length > 0)
+                                    ? data.therapyWithSessions.map((pkg, pi) => {
+                                        const therapiesList = []
+                                        if (pkg?.programs) {
+                                            pkg.programs.forEach(p => (p.therapyData || []).forEach(t => t.therapyName && therapiesList.push(t.therapyName)))
+                                        } else if (pkg?.therapyData) {
+                                            pkg.therapyData.forEach(t => t.therapyName && therapiesList.push(t.therapyName))
+                                        }
+                                        const treatmentValue = data?.treatmentName || (therapiesList.length > 0 ? therapiesList.join(", ") : "Therapy Session")
+                                        return (
+                                            <div key={pi} style={{
+                                                display: "flex", alignItems: "flex-start", gap: "10px",
+                                                padding: "10px 14px", background: "#f0f6ff",
+                                                borderRadius: "6px", marginBottom: pi < data.therapyWithSessions.length - 1 ? "8px" : 0,
+                                                borderLeft: "3px solid #0c447c",
+                                            }}>
+                                                <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px", flexShrink: 0 }}>✦</span>
+                                                <div>
+                                                    <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
+                                                    <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{treatmentValue}</span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })
+                                    : (
+                                        <div style={{
+                                            display: "flex", alignItems: "flex-start", gap: "10px",
+                                            padding: "10px 14px", background: "#f0f6ff",
+                                            borderRadius: "6px", borderLeft: "3px solid #0c447c",
+                                        }}>
+                                            <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px" }}>✦</span>
+                                            <div>
+                                                <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
+                                                <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{data?.treatmentName || "N/A"}</span>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+                            </div>
+                        </Section>
+
+                        {/* ── Full Payment History ── */}
+                        <Section title="Payment History">
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
+                                <thead>
+                                    <tr style={{ background: "#0c447c" }}>
+                                        {["Date", "Mode", "Type", "Amount"].map((h, i) => (
+                                            <th key={h} style={{
+                                                padding: "9px 12px",
+                                                color: "#fff",
+                                                fontWeight: 600,
+                                                textAlign: i === 3 ? "right" : "left",
+                                                fontSize: "11px",
+                                                letterSpacing: "0.4px",
+                                                textTransform: "uppercase",
+                                            }}>
+                                                {h}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(data.paymentHistory || [])
+                                        .filter(item => item?.amount !== null && item?.amount !== undefined)
+                                        .map((item, i) => (
+                                            <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f7fafd" }}>
+                                                <td style={{ padding: "9px 12px", borderBottom: "1px solid #eef2f7", color: "#444" }}>{item.paymentDate}</td>
+                                                <td style={{ padding: "9px 12px", borderBottom: "1px solid #eef2f7" }}>
+                                                    <span style={{
+                                                        fontSize: "11px", fontWeight: 600, padding: "2px 8px",
+                                                        borderRadius: "10px", background: "#e8f0fb", color: "#0c447c",
+                                                    }}>{item.paymentMode}</span>
+                                                </td>
+                                                <td style={{ padding: "9px 12px", borderBottom: "1px solid #eef2f7", color: "#555" }}>
+                                                    {item.paymentType}{item.paymentLevel ? ` · ${item.paymentLevel}` : ""}
+                                                </td>
+                                                <td style={{ padding: "9px 12px", borderBottom: "1px solid #eef2f7", textAlign: "right", fontWeight: 600, color: "#1a1a2e" }}>
+                                                    ₹{item.amount}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                </tbody>
+                            </table>
+                        </Section>
+
+                        {/* ── Totals ── */}
+                        <div style={{
+                            width: "280px",
+                            marginLeft: "auto",
+                            marginTop: "4px",
+                            border: "1px solid #dce6f0",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                        }}>
+                            <TotalRow label="Total Amount" value={`₹${data.totalAmount}`} bg="#f7fafd" color="#333" />
+                            <TotalRow label="Discount" value={`₹${data.discountAmount}`} bg="#fff9f0" color="#854f0b" />
+                            <TotalRow label="Total Paid" value={`₹${data.totalPaid}`} bg="#f0fbf4" color="#27500a" />
+                            <div style={{
+                                display: "flex", justifyContent: "space-between", alignItems: "center",
+                                padding: "12px 16px",
+                                background: data.balanceAmount > 0 ? "#fff5f5" : "#f0fbf4",
+                                borderTop: "2px solid " + (data.balanceAmount > 0 ? "#a32d2d" : "#27500a"),
+                            }}>
+                                <span style={{ fontWeight: 700, fontSize: "14px", color: data.balanceAmount > 0 ? "#a32d2d" : "#27500a" }}>
+                                    Balance Due
+                                </span>
+                                <strong style={{ fontSize: "15px", color: data.balanceAmount > 0 ? "#a32d2d" : "#27500a" }}>
+                                    ₹{data.balanceAmount}
+                                </strong>
+                            </div>
+                        </div>
+
+                        {/* ── Footer ── */}
+                        <div style={{
+                            marginTop: "40px",
+                            paddingTop: "16px",
+                            borderTop: "1px dashed #ccd6e4",
+                            textAlign: "center",
+                            fontSize: "12px",
+                            color: "#888",
+                        }}>
+                            <p style={{ margin: "0 0 2px", fontWeight: 600, color: "#0c447c" }}>Thank you for choosing us!</p>
+                            <p style={{ margin: 0 }}>This is a computer-generated statement and does not require a signature.</p>
+                        </div>
+
+                    </div>
+                </PrintLetterHead>
+            </div>
+
+            {/* ── Helpers (define outside or inline as needed) ── */}
+            {/* 
+  const Row = ({ label, value }) => (
+    <div style={{ display: "flex", gap: "6px", marginBottom: "4px" }}>
+      <span style={{ color: "#888", minWidth: "70px", fontSize: "12px" }}>{label}:</span>
+      <span style={{ fontWeight: 600, color: "#1a1a2e", fontSize: "12px" }}>{value || "N/A"}</span>
+    </div>
+  )
+
+  const Section = ({ title, children }) => (
+    <div style={{ marginBottom: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+        <span style={{ fontSize: "11px", fontWeight: 700, color: "#0c447c", textTransform: "uppercase", letterSpacing: "0.8px" }}>{title}</span>
+        <div style={{ flex: 1, height: "1px", background: "#dce6f0" }} />
+      </div>
+      {children}
+    </div>
+  )
+
+  const TotalRow = ({ label, value, bg, color }) => (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 16px", background: bg, borderBottom: "1px solid #eef2f7" }}>
+      <span style={{ color: "#555", fontSize: "13px" }}>{label}</span>
+      <strong style={{ color, fontSize: "13px" }}>{value}</strong>
+    </div>
+  )
+*/}
         </div>
     );
 }
