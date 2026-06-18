@@ -132,7 +132,7 @@ const ClinicSummaryPopup = () => {
 
   // ── fetch logic ───────────────────────────────────────────────────────────
   const checkSummary = async () => {
-    // if (role?.toUpperCase() !== 'RECEPTIONIST') return;
+    if (role?.toUpperCase() !== 'RECEPTIONIST') return;
 
     try {
       const res = await http.post(`/getReceptionistDashboard/${clinicId}/${branchId}/${role}`)
@@ -150,7 +150,7 @@ const ClinicSummaryPopup = () => {
 
   // ── mount + interval logic ─────────────────────────────────────────────────
   useEffect(() => {
-    // checkSummary()
+    checkSummary()
 
     // Helper: parse both "10:00 PM" (12-hr) and "22:00" (24-hr) into { hour, min }
     const parseTimeStr = (timeStr) => {

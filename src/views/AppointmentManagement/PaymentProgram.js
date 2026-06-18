@@ -814,10 +814,13 @@ export default function ProgramPayment({ paymentProps, isBillingTab }) {
   };
 
   const handleSubmit = async () => {
-    if (!treatmentName || !treatmentName.trim()) {
-      showCustomToast("Treatment Name is required.", "error");
-      return;
+    if (!payAfterService) {
+      if (!treatmentName || !treatmentName.trim()) {
+        showCustomToast("Treatment Name is required.", "error");
+        return;
+      }
     }
+
 
     const hasPaidOnceSubmit = Number(totalPaid || 0) > 0 || (Array.isArray(paymentHistory) ? paymentHistory.length > 0 : false);
     const isApprovalRequired = !payAfterService && !hasPaidOnceSubmit && (Number(paymentPercent) < 50 || Number(discount || 0) > 0 || Number(discountAmount || 0) > 0);
@@ -1847,7 +1850,9 @@ export default function ProgramPayment({ paymentProps, isBillingTab }) {
             <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 24, lineHeight: 1.6 }}>
               {isFollowUpPayment
                 ? "Are you sure you want to update this payment record? This action will modify the existing payment."
-                : `You are about to submit a payment of ₹${Number(finalAmount || 0).toFixed(2)} for Treatment: "${treatmentName}". Please confirm to proceed.`
+                : payAfterService === true
+                  ? "This treatment is configured for payment collection after service completion. No payment will be collected at this time. Please confirm to proceed."
+                  : `You are about to submit a payment of ₹${Number(finalAmount || 0).toFixed(2)} for Treatment: "${treatmentName}". Please confirm to proceed.`
               }
             </p>
 

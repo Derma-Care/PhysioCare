@@ -217,6 +217,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   const [errors, setErrors] = useState({})
   const [pendingFiles, setPendingFiles] = useState({})
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false);
   /* ── Populate form on open ── */
   useEffect(() => {
     if (!visible) return
@@ -301,16 +302,19 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     // if (!formData.expertiseAreas?.length) e.expertiseAreas = 'Add expertise'
     if (!formData.languages?.length) e.languages = 'Add language'
     // ✅ Documents validation
-    if (!formData.documents?.licenseCertificate) {
-      e.licenseCertificate = "License certificate is required"
-    }
+    // Only require documents while creating
+    if (!initialData) {
+      if (!formData.documents?.licenseCertificate) {
+        e.licenseCertificate = "License certificate is required"
+      }
 
-    if (!formData.documents?.degreeCertificate) {
-      e.degreeCertificate = "Degree certificate is required"
-    }
+      if (!formData.documents?.degreeCertificate) {
+        e.degreeCertificate = "Degree certificate is required"
+      }
 
-    if (!formData.documents?.profilePhoto) {
-      e.profilePhoto = "Profile photo is required"
+      if (!formData.documents?.profilePhoto) {
+        e.profilePhoto = "Profile photo is required"
+      }
     }
     if (!formData.dateofJoining) {
       e.dateofJoining = 'Select date of joining'
@@ -380,74 +384,119 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   }
 
   const handleFileChange = async (field, file) => {
-    if (!file) return
+    if (!file) return;
 
-    if (field === 'licenseCertificate' || field === 'degreeCertificate') {
-      const allowed = ['application/pdf']
-      if (!allowed.includes(file.type)) {
-        showCustomToast('Only PDF allowed', 'error')
-        setErrors(prev => ({ ...prev, [field]: 'Only PDF allowed' }))
-        return
+    try {
+
+
+      if (field === 'licenseCertificate' || field === 'degreeCertificate') {
+        const allowed = ['application/pdf'];
+
+        if (!allowed.includes(file.type)) {
+          showCustomToast('Only PDF allowed', 'error');
+          setErrors(prev => ({ ...prev, [field]: 'Only PDF allowed' }));
+          return;
+        }
+
+        if (file.size > 250 * 1024) {
+          showCustomToast('Max size 250 KB for certificates', 'error');
+          setErrors(prev => ({ ...prev, [field]: 'Max 250 KB' }));
+          return;
+        }
       }
-      if (file.size > 250 * 1024) {
-        showCustomToast('Max size 250 KB for certificates', 'error')
-        setErrors(prev => ({ ...prev, [field]: 'Max 250 KB' }))
-        return
+
+      if (field === 'profilePhoto') {
+        if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+          showCustomToast('Only JPG/PNG allowed for profile photo', 'error');
+          setErrors(prev => ({ ...prev, profilePhoto: 'Only JPG/PNG allowed' }));
+          return;
+        }
+
+        if (file.size > 250 * 1024) {
+          showCustomToast('Max size 250 KB for profile photo', 'error');
+          setErrors(prev => ({ ...prev, profilePhoto: 'Max 250 KB' }));
+          return;
+        }
       }
+
+      const base64 = await convertToBase64(file);
+
+      setFormData((prev) => ({
+        ...prev,
+        documents: {
+          ...prev.documents,
+          [field]: base64,
+        },
+      }));
+
+      setPendingFiles(prev => ({
+        ...prev,
+        [field]: file,
+      }));
+
+      setErrors(prev => ({
+        ...prev,
+        [field]: '',
+      }));
+
+      showCustomToast('File selected successfully', 'success');
+
+    } catch (error) {
+      console.error('File upload error:', error);
+
+      showCustomToast(
+        error?.message || 'Failed to process file',
+        'error'
+      );
+
+      setErrors(prev => ({
+        ...prev,
+        [field]: 'Failed to process file',
+      }));
     }
+  };
+  const getKeyFromUrl = (url) => {
+    if (!url || !url.startsWith('http')) return url
 
-    if (field === 'profilePhoto') {
-      if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
-        showCustomToast('Only JPG/PNG allowed for profile photo', 'error');
-        setErrors(prev => ({ ...prev, profilePhoto: 'Only JPG/PNG allowed' }));
-        return;
-      }
-      if (file.size > 250 * 1024) {
-        showCustomToast('Max size 250 KB for profile photo', 'error');
-        setErrors(prev => ({ ...prev, profilePhoto: 'Max 250 KB' }));
-        return;
-      }
-    }
+    const match = url.match(
+      /(therapist-profile-photos\/[^?]+|therapist-license-certificates\/[^?]+|therapist-degree-certificates\/[^?]+)/
+    )
 
-    const base64 = await convertToBase64(file)
-
-    setFormData((prev) => ({
-      ...prev,
-      documents: {
-        ...prev.documents,
-        [field]: base64,
-      },
-    }))
-    setPendingFiles(prev => ({ ...prev, [field]: file }))
-
-    setErrors((prev) => ({
-      ...prev,
-      [field]: "",
-    }))
+    return match ? match[0] : url
   }
 
+  const updatedDocs = {
+    profilePhoto: getKeyFromUrl(formData.documents?.profilePhoto),
+    licenseCertificate: getKeyFromUrl(formData.documents?.licenseCertificate),
+    degreeCertificate: getKeyFromUrl(formData.documents?.degreeCertificate),
+  }
   const handleSubmit = async () => {
     if (!validateForm()) return
 
     // ── S3 UPLOADS ──
-    const updatedDocs = { ...formData.documents }
-
-    // Upload License
-    if (pendingFiles.licenseCertificate) {
-      updatedDocs.licenseCertificate = await uploadFile('therapistLicenseCertificate', pendingFiles.licenseCertificate)
-    }
-
-    // Upload Degree
-    if (pendingFiles.degreeCertificate) {
-      updatedDocs.degreeCertificate = await uploadFile('therapistDegreeCertificate', pendingFiles.degreeCertificate)
-    }
-
-    // Upload Profile Photo
     if (pendingFiles.profilePhoto) {
-      updatedDocs.profilePhoto = await uploadFile('therapistProfilePhoto', pendingFiles.profilePhoto)
+      updatedDocs.profilePhoto = await uploadFile(
+        'therapistProfilePhoto',
+        pendingFiles.profilePhoto
+      )
+    }
+
+    if (pendingFiles.licenseCertificate) {
+      updatedDocs.licenseCertificate = await uploadFile(
+        'therapistLicenseCertificate',
+        pendingFiles.licenseCertificate
+      )
+    }
+
+    if (pendingFiles.degreeCertificate) {
+      updatedDocs.degreeCertificate = await uploadFile(
+        'therapistDegreeCertificate',
+        pendingFiles.degreeCertificate
+      )
     }
 
     try {
+      setUploading(true);
       setSaving(true)
 
       const { startDay, endDay, startTime, endTime } =
@@ -464,11 +513,9 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
             ...DAY_ORDER.slice(0, ei + 1),
           ]
 
-      await onSave({
+      const payload = {
         ...formData,
-        documents: updatedDocs, // Pass the updated documents with S3 keys
         role: formData.physioType === 'intern' ? 'intern' : 'physiotherapist',
-        // dateOfBirth: formData.dateofBirth,
         availability: {
           days: selectedDays,
           startTime,
@@ -476,8 +523,23 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
           startDay,
           endDay,
         },
-      })
+      }
+
+      delete payload.documents
+
+      if (
+        pendingFiles.profilePhoto ||
+        pendingFiles.licenseCertificate ||
+        pendingFiles.degreeCertificate
+      ) {
+        payload.documents = updatedDocs
+      }
+
+      console.log("FINAL PAYLOAD", payload);
+
+      await onSave(payload);
     } finally {
+      setUploading(false);
       setSaving(false)
     }
   }
@@ -1017,18 +1079,38 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
       </CModalBody>
 
       {/* ── Footer ── */}
-      <CModalFooter style={{ borderTop: '0.5px solid #d0dce9', padding: '12px 20px', gap: 8 }}>
+      <CModalFooter
+        style={{
+          borderTop: '0.5px solid #d0dce9',
+          padding: '12px 20px',
+          gap: 8,
+        }}
+      >
         {isView ? (
-          <button className="pf-btn-cancel" onClick={onClose}><X size={13} /> Close</button>
+          <button className="pf-btn-cancel" onClick={onClose}>
+            <X size={13} /> Close
+          </button>
         ) : (
           <>
-            <button className="pf-btn-cancel" onClick={onClose}><X size={13} /> Cancel</button>
+            <button
+              className="pf-btn-cancel"
+              onClick={onClose}
+              disabled={saving || uploading}
+            >
+              <X size={13} /> Cancel
+            </button>
+
             <button
               className="pf-btn-save"
               onClick={handleSubmit}
-              disabled={saving}
+              disabled={saving || uploading}
             >
-              {saving ? (
+              {uploading ? (
+                <>
+                  <Loader size={13} className="pf-spinner" />
+                  Uploading Files...
+                </>
+              ) : saving ? (
                 <>
                   <Loader size={13} className="pf-spinner" />
                   Saving...
@@ -1036,7 +1118,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
               ) : (
                 <>
                   <Save size={13} />
-                  Save Therapist
+                  {'Save Therapist'}
                 </>
               )}
             </button>

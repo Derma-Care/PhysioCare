@@ -19,7 +19,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { FONT_SIZES } from "../../Constant/Themes";
 import { getBookingsByPatientId } from "../../APIs/GetpatinetData";
 import PrintLetterHead from "../../Utils/PrintLetterHead";
-
+import { ToWords } from 'to-words';
 
 const StatusBadge = ({ status }) => {
     const styles = {
@@ -79,6 +79,21 @@ export default function PaymentDetailsUI() {
         name: "",
         mobileNumber: ""
     });
+
+
+
+    const toWords = new ToWords({
+        localeCode: 'en-IN',
+        converterOptions: {
+            currency: true,
+            ignoreDecimal: false,
+            ignoreZeroCurrency: false,
+        },
+    });
+
+    const amountInWords = (amount) => {
+        return toWords.convert(Number(amount || 0));
+    };
     useEffect(() => {
         const patientId = data?.patientId;
 
@@ -295,13 +310,13 @@ export default function PaymentDetailsUI() {
                                 {item.label}
                             </p>
                             <p style={{ fontSize: "14px", fontWeight: 600, color: "#0c447c", margin: 0 }}>
-                                {item.value}
+                                {item.value}{item.sub ? <span style={{ fontSize: "11px", color: "#6b7280", margin: "2px 0 0" }}>- {item.sub}</span> : null}
                             </p>
-                            {item.sub && (
+                            {/* {item.sub && (
                                 <p style={{ fontSize: "11px", color: "#6b7280", margin: "2px 0 0" }}>
                                     {item.sub}
                                 </p>
-                            )}
+                            )} */}
                         </div>
                     </CCol>
                 ))}
@@ -711,14 +726,33 @@ export default function PaymentDetailsUI() {
                                             <td style={{ padding: "9px 12px", borderBottom: "1px solid #eef2f7", color: "#555" }}>
                                                 {latestPayment.paymentType}{latestPayment.paymentLevel ? ` · ${latestPayment.paymentLevel}` : ""}
                                             </td>
-                                            <td style={{ padding: "9px 12px", borderBottom: "1px solid #eef2f7", textAlign: "right", fontWeight: 600, color: "#1a1a2e" }}>
+                                            <td
+                                                style={{
+                                                    padding: "9px 12px",
+                                                    borderBottom: "1px solid #eef2f7",
+                                                    textAlign: "right",
+                                                    fontWeight: 600,
+                                                    color: "#1a1a2e",
+                                                }}
+                                            >
                                                 ₹{latestPayment.amount}
+                                                <div
+                                                    style={{
+                                                        fontSize: "11px",
+                                                        fontWeight: 400,
+                                                        color: "#666",
+                                                        marginTop: "2px",
+                                                    }}
+                                                >
+                                                    ({amountInWords(latestPayment.amount)})
+                                                </div>
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
                         </Section>
+
 
                         {/* ── Totals ── */}
                         <div style={{
@@ -926,6 +960,7 @@ export default function PaymentDetailsUI() {
                             <TotalRow label="Total Amount" value={`₹${data.totalAmount}`} bg="#f7fafd" color="#333" />
                             <TotalRow label="Discount" value={`₹${data.discountAmount}`} bg="#fff9f0" color="#854f0b" />
                             <TotalRow label="Total Paid" value={`₹${data.totalPaid}`} bg="#f0fbf4" color="#27500a" />
+                            <TotalRow label="" value={`${amountInWords(data.totalPaid)}`} bg="#f0fbf4" color="#27500a" />
                             <div style={{
                                 display: "flex", justifyContent: "space-between", alignItems: "center",
                                 padding: "12px 16px",

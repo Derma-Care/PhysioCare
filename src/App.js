@@ -24,7 +24,7 @@ import appLogo from './assets/images/DermaCare.png'
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
   const storedTheme = useSelector((state) => state.theme)
-
+  const [isMobile, setIsMobile] = useState(false)
   const [splashVisible, setSplashVisible] = useState(true)
   const [splashFading, setSplashFading] = useState(false)
 
@@ -33,6 +33,13 @@ const App = () => {
     setColorMode('light')
     // ✅ Start listening for foreground push notifications
     // listenNotification()
+  }, [])
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768)
+    onResize()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   useEffect(() => {
@@ -49,6 +56,29 @@ const App = () => {
   const hospitalLogo = hospitalData?.hospitalLogo
     ? `data:image/webp;base64,${hospitalData.hospitalLogo}`
     : appLogo
+
+  if (isMobile) {
+    return (
+      <div
+        style={{
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          textAlign: 'center',
+          padding: 20,
+          backgroundColor: '#f4f6f8',
+        }}
+      >
+        <div style={{ fontSize: 60, color: '#ff4d4f', marginBottom: 20 }}>📵</div>
+        <h2 style={{ marginBottom: 10 }}>Mobile View Not Supported</h2>
+        <p style={{ maxWidth: 300 }}>
+          This application is optimized for desktop use. Please open it on a laptop or desktop.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <>

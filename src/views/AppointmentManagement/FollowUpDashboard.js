@@ -893,7 +893,7 @@ export default function FollowupDashboard() {
                                     {rowSessions.map((item, i) => (
                                       <CTableRow key={i}>
                                         <CTableDataCell><div>
-                                          {/* <p className='mb-0'>{item.activityName || "Shoulder Abduction & Rotation"}</p> */}
+                                          <p className='mb-0'>{item.exerciseName}</p>
                                           <small className='text-muted'>Session - {item.sessionNo}</small> <br></br>
                                           <small className='text-muted'>ID - {item.sessionId}</small>
                                         </div></CTableDataCell>

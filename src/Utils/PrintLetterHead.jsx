@@ -86,7 +86,7 @@ const PrintLetterHead = ({ children, printDate }) => {
       <div className="letter-footer">
         <div className="footer-line"></div>
         <div className="footer-content">
-          <div className="footer-left">Authorized Signature</div>
+          {/* <div className="footer-left">Authorized Signature</div> */}
           <div className="footer-right">Thank You. Visit Again!</div>
         </div>
       </div>
@@ -149,7 +149,7 @@ const PrintLetterHead = ({ children, printDate }) => {
 
         .footer-content {
           display: flex;
-          justify-content: space-between;
+          justify-content: end;
           font-size: 13px;
         }
 

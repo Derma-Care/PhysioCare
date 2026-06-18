@@ -14,6 +14,7 @@ import { BASE_URL } from '../../baseUrl';
 import { http } from '../../Utils/Interceptors';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { showCustomToast } from '../../Utils/Toaster';
+import LoadingIndicator from '../../Utils/loader';
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 
@@ -151,7 +152,7 @@ const EquipmentManager = () => {
     const [uploading, setUploading] = useState(false);
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-
+    const [imageChanged, setImageChanged] = useState(false);
     // ── GET all ──
     const loadRecoverySupports = async () => {
         const clinicId = localStorage.getItem("HospitalId")
@@ -181,13 +182,14 @@ const EquipmentManager = () => {
 
     const openEdit = (item) => {
         setEditingItem(item);
+        setImageChanged(false);
         setForm({
             name: item.name,
             description: item.description,
-            image: item.image,
+            image: item.image, // store key
+            imagePreview: item.image,           // store url for preview
             category: item.category,
-            imageType: item.image?.startsWith('http') ? 'url' : 'upload',
-            imagePreview: item.image
+            imageType: 'upload'
         });
         setShowForm(true);
     };
@@ -195,6 +197,7 @@ const EquipmentManager = () => {
     const closeForm = () => {
         setShowForm(false);
         setEditingItem(null);
+        setImageChanged(false); // ADD THIS
         setForm(EMPTY_FORM);
     };
 
@@ -225,7 +228,7 @@ const EquipmentManager = () => {
                 "recoverySupportImage",
                 file
             );
-
+            setImageChanged(true);
             setForm((prev) => ({
                 ...prev,
                 image: fileKey,
@@ -266,15 +269,28 @@ const EquipmentManager = () => {
             showCustomToast(error.message, "error");
         }
     };
+    const getImageKey = (url) => {
+        if (!url) return null;
+
+        // already a key
+        if (!url.startsWith("http")) return url;
+
+        const match = url.match(/recovery-support-images\/[^?]+/);
+
+        return match ? match[0] : url;
+    };
     const updateRecoverySupport = async () => {
         try {
             const payload = {
                 clinicId: localStorage.getItem("HospitalId"),
                 name: form.name,
                 description: form.description,
-                image: form.image,
-                category: form.category
+                category: form.category,
+                image: getImageKey(form.image),
             };
+            if (imageChanged) {
+                payload.image = form.image;
+            }
 
             const res = await http.put(
                 `/updateRecoverySupportById/${editingItem.id}`,
@@ -379,7 +395,7 @@ const EquipmentManager = () => {
             {/* Header */}
             <div style={styles.header}>
                 <div>
-                    <h1 style={styles.pageTitle}>Recovery Supports</h1>
+                    <h1 style={styles.pageTitle}>Recovery Support</h1>
                     <p style={styles.pageSub}>
                         {items.length} item{items.length !== 1 ? 's' : ''} in inventory
                     </p>
@@ -464,7 +480,7 @@ const EquipmentManager = () => {
                                         checked={form.imageType === 'upload'}
                                         onChange={() => setForm({ ...form, imageType: 'upload', image: '', imagePreview: '' })}
                                     />
-                                    Upload File (S3)
+                                    Upload File
                                 </label>
                                 {/* <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: 500 }}>
                                     <input 
@@ -517,11 +533,13 @@ const EquipmentManager = () => {
                         onClick={handleSubmit}
                         disabled={submitting || uploading}
                     >
-                        {submitting || uploading
-                            ? "Saving..."
-                            : editingItem
-                                ? "Update Item"
-                                : "Save Item"}
+                        {uploading
+                            ? "Uploading Image..."
+                            : submitting
+                                ? "Saving..."
+                                : editingItem
+                                    ? "Update Item"
+                                    : "Save Item"}
                     </CButton>
                 </CModalFooter>
             </CModal>
@@ -548,12 +566,9 @@ const EquipmentManager = () => {
 
             {/* Loading */}
             {loading && (
-                <div style={styles.center}>
-                    <div style={styles.spinner} />
-                    <p style={{ color: '#888780', marginTop: 12, fontSize: 14 }}>
-                        Loading equipment…
-                    </p>
-                </div>
+
+                <LoadingIndicator message='Loading equipment…' />
+
             )}
 
             {/* Empty state */}
