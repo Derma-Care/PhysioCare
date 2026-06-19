@@ -365,7 +365,7 @@ const PatientFeedback = () => {
           </div>
           {!isFormVisible ? (
             <div className="d-flex gap-2">
-              <button className="pf-add-btn sf-btn-alt" onClick={() => addNotification({
+              {/* <button className="pf-add-btn sf-btn-alt" onClick={() => addNotification({
                 type: 'SESSION_COMPLETE',
                 title: 'Full Session Completed',
                 message: 'Patient has successfully completed all assigned sessions.',
@@ -375,7 +375,7 @@ const PatientFeedback = () => {
                 bookingId: 'BK-2024-001'
               })} style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047' }}>
                 <FontAwesomeIcon icon={faHistory} /> Test Notif
-              </button>
+              </button> */}
               <button className="pf-add-btn sf-btn-alt" onClick={() => navigate('/session-feedback')}>
                 <FontAwesomeIcon icon={faHistory} /> Session Feedback
               </button>

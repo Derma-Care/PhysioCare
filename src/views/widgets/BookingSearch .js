@@ -43,7 +43,7 @@ const BookingSearch = ({ visitType, fetchSlots, onSelectBooking, onProceed }) =>
         if (visitType !== 'followup') showCustomToast('No patient records found.', 'info')
       } else {
         setBookingData(validItems.map((item) => ({
-          ...item, patientAddress: formatAddress(item.patientAddress),
+          ...item, patientAddress: visitType === 'followup' ? item?.patientAddress : formatAddress(item.patientAddress),
         })))
       }
     } catch (err) {
@@ -106,6 +106,8 @@ const BookingSearch = ({ visitType, fetchSlots, onSelectBooking, onProceed }) =>
     background: isFollowup ? '#faeeda' : '#eaf3de',
     color: isFollowup ? '#854f0b' : '#3b6d11',
   })
+
+  console.log(selectedBooking)
 
   return (
     <div>
@@ -209,7 +211,7 @@ const BookingSearch = ({ visitType, fetchSlots, onSelectBooking, onProceed }) =>
                 {[
                   ['Customer ID', selectedBooking.customerId],
                   ['Age / Gender', `${selectedBooking.age}y, ${selectedBooking.gender}`],
-                  ['Mobile', selectedBooking.mobileNumber],
+                  ['Mobile', selectedBooking.mobileNumber || selectedBooking.patientMobileNumber],
                   ['Doctor', selectedBooking.doctorName],
                 ].map(([label, val]) => (
                   <div key={label}>
@@ -231,8 +233,8 @@ const BookingSearch = ({ visitType, fetchSlots, onSelectBooking, onProceed }) =>
                       ['Visit Type', selectedBooking.visitType],
                       ['Consultation Type', selectedBooking.consultationType],
                       ['Consultation Fee', `₹${selectedBooking.consultationFee}`],
-                      ['Total Fee', `₹${selectedBooking.totalFee}`],
-                      ['Service Date', selectedBooking.serviceDate],
+                      // ['Total Fee', `₹${selectedBooking.totalFee}`],
+                      ['Service Start Date', selectedBooking.serviceDate],
                       ['Service Time', selectedBooking.servicetime],
                       ['Clinic', selectedBooking.clinicName],
                       ['Branch', selectedBooking.branchname],

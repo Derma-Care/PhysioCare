@@ -528,24 +528,31 @@ const FCMNotification = () => {
         <span className="fcm-count-pill">{sentNotifications.length} total</span>
       </div>
 
-      <CTableHeaderCell>
-        <input
-          type="checkbox"
-          checked={
-            paginatedNotifications.length > 0 &&
-            selectedNotifications.length === paginatedNotifications.length
-          }
-          onChange={handleSelectAll}
-        />  Select All
+      <CTableHeaderCell className='d-flex justify-content-between align-items-center mb-2'>
+        <div >
+          <input
+            type="checkbox"
+            checked={
+              paginatedNotifications.length > 0 &&
+              selectedNotifications.length === paginatedNotifications.length
+            }
+            onChange={handleSelectAll}
+          />  Select All
+          <p className='text-muted' style={{ fontSize: 12 }}>*Selecting only this visible notification.</p>
+        </div>
+
+        <div>
+          {selectedNotifications.length > 0 && (
+            <button
+              className="fcm-delete-btn"
+              onClick={() => setBulkDeleteModal(true)}
+            >
+              Delete Selected ({selectedNotifications.length})
+            </button>
+          )}
+        </div>
       </CTableHeaderCell>
-      {selectedNotifications.length > 0 && (
-        <button
-          className="fcm-delete-btn"
-          onClick={() => setBulkDeleteModal(true)}
-        >
-          Delete Selected ({selectedNotifications.length})
-        </button>
-      )}
+
       <div className="fcm-table-wrapper">
         <CTable className="fcm-table">
           <CTableHead>

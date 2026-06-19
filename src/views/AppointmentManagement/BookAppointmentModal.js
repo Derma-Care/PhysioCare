@@ -1298,7 +1298,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
             <CFormInput
               type="number"
-              value={bookingDetails?.consultationFee ?? ''}
+              value={bookingDetails?.consultationFee ?? '0'}
               onChange={(e) =>
                 setBookingDetails((prev) => ({
                   ...prev,

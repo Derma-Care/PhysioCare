@@ -2,6 +2,10 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { http } from '../../Utils/Interceptors'
 // import { GetSubServices_ByClinicId } from '../ProcedureManagement/ProcedureManagementAPI'
 import { getDoctorByClinicId } from '../../baseUrl'
+import {
+  readPendingNotificationsFromIDB,
+  subscribeToBroadcastChannel,
+} from '../../firebase'
 
 const HospitalContext = createContext()
 
@@ -30,6 +34,66 @@ export const HospitalProvider = ({ children }) => {
   const addNotification = useCallback((notif) => {
     setNotifications(prev => [{ ...notif, id: Date.now(), read: false }, ...prev])
     setNotificationCount(prev => (parseInt(prev) || 0) + 1)
+  }, [])
+
+  // ─── Restore & receive SW notifications in all app states ────────────────────
+  useEffect(() => {
+    // Helper: drain IDB and merge into state
+    const drainIDB = () => {
+      readPendingNotificationsFromIDB().then((items) => {
+        if (!items || items.length === 0) return
+        setNotifications((prev) => {
+          const existingIds = new Set(prev.map((n) => n.id))
+          const newItems = items.filter((n) => !existingIds.has(n.id))
+          if (newItems.length === 0) return prev
+          setNotificationCount((c) => (parseInt(c) || 0) + newItems.length)
+          return [...newItems, ...prev]
+        })
+      })
+    }
+
+    // Helper: merge a single notification object into state
+    const mergeNotif = (notif) => {
+      if (!notif) return
+      setNotifications((prev) => {
+        const existingIds = new Set(prev.map((n) => n.id))
+        if (existingIds.has(notif.id)) return prev
+        setNotificationCount((c) => (parseInt(c) || 0) + 1)
+        return [notif, ...prev]
+      })
+    }
+
+    // 1. Drain IDB on mount (catches notifications from when app was killed)
+    drainIDB()
+
+    // 2. Drain IDB every time the user navigates BACK to this tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        drainIDB()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    // 3. Direct postMessage from service worker (most reliable for backgrounded tabs)
+    const handleSWMessage = (event) => {
+      if (event.data?.type === 'BACKGROUND_NOTIFICATION' && event.data?.notif) {
+        mergeNotif(event.data.notif)
+      }
+    }
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', handleSWMessage)
+    }
+
+    // 4. BroadcastChannel as additional fallback
+    const unsubscribeBroadcast = subscribeToBroadcastChannel(mergeNotif)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.removeEventListener('message', handleSWMessage)
+      }
+      unsubscribeBroadcast()
+    }
   }, [])
 
   // Persist user & hospital to localStorage

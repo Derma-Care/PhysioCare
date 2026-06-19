@@ -11,10 +11,76 @@ const firebaseConfig = {
 }
 
 const app = initializeApp(firebaseConfig)
-
 const messaging = getMessaging(app)
 
-// ✅ GET TOKEN
+// ─── Shared IndexedDB constants (must match service worker) ───────────────────
+const IDB_NAME = 'physio_sw_store'
+const IDB_STORE = 'pending_notifications'
+
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1)
+    req.onupgradeneeded = (e) => {
+      e.target.result.createObjectStore(IDB_STORE, { keyPath: 'id' })
+    }
+    req.onsuccess = (e) => resolve(e.target.result)
+    req.onerror = (e) => reject(e.target.error)
+  })
+}
+
+/**
+ * Reads ALL pending notifications that the service worker stored while
+ * the app was killed / in the background, then clears them from IDB.
+ * Returns an array of notification objects (may be empty).
+ */
+export const readPendingNotificationsFromIDB = async () => {
+  try {
+    const db = await openIDB()
+    const tx = db.transaction(IDB_STORE, 'readwrite')
+    const store = tx.objectStore(IDB_STORE)
+
+    const items = await new Promise((res, rej) => {
+      const req = store.getAll()
+      req.onsuccess = () => res(req.result)
+      req.onerror = () => rej(req.error)
+    })
+
+    // Clear after reading so we don't show duplicates on next refresh
+    await new Promise((res, rej) => {
+      const clearReq = store.clear()
+      clearReq.onsuccess = res
+      clearReq.onerror = rej
+    })
+
+    await new Promise((res, rej) => {
+      tx.oncomplete = res
+      tx.onerror = rej
+    })
+    db.close()
+    return items || []
+  } catch (e) {
+    console.error('[firebase.js] readPendingNotificationsFromIDB error:', e)
+    return []
+  }
+}
+
+/**
+ * Subscribes to the BroadcastChannel that the service worker uses to
+ * notify open tabs of background messages in real-time.
+ * Returns an unsubscribe function — call it on component unmount.
+ */
+export const subscribeToBroadcastChannel = (onNotif) => {
+  if (!('BroadcastChannel' in window)) return () => { }
+  const channel = new BroadcastChannel('fcm_background_channel')
+  channel.onmessage = (event) => {
+    if (event.data?.type === 'BACKGROUND_NOTIFICATION' && event.data?.notif) {
+      onNotif(event.data.notif)
+    }
+  }
+  return () => channel.close()
+}
+
+// ─── GET TOKEN ────────────────────────────────────────────────────────────────
 export const getFCMToken = async () => {
   try {
     const permission = await Notification.requestPermission()
@@ -23,8 +89,13 @@ export const getFCMToken = async () => {
       return ''
     }
 
-    // Explicitly register the service worker
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    const registration = await navigator.serviceWorker.register(
+      '/firebase-messaging-sw.js'
+    );
+
+    await navigator.serviceWorker.ready;
+
+    console.log("SW registered:", registration);
 
     const token = await getToken(messaging, {
       vapidKey: 'BLzhc9fU0Jm5Xxqp1pLAzphwK2ff20MLyjZGVO_B93KNFcBoiK1Q0EsEvVKNBcS0-KD5xeWjLfGzhs6t7HH-nls',
@@ -35,39 +106,31 @@ export const getFCMToken = async () => {
     return token
   } catch (err) {
     console.error('An error occurred while retrieving token. ', err)
-    
+
     // Auto-fix for VersionError / IndexedDB corruption
     if (err.message && err.message.includes('VersionError')) {
       console.log('Attempting to clear corrupted Firebase IndexedDB...')
       try {
         const dbs = await window.indexedDB.databases()
-        dbs.forEach(db => {
+        dbs.forEach((db) => {
           if (db.name.includes('firebase') || db.name.includes('fcm')) {
             window.indexedDB.deleteDatabase(db.name)
           }
         })
-        console.log('Firebase IndexedDB cleared. Please refresh the page and try logging in again.')
-        // We could retry here, but usually a refresh is safer to re-init firebase.
+        console.log('Firebase IndexedDB cleared. Please refresh.')
       } catch (dbErr) {
         console.error('Failed to clear IndexedDB:', dbErr)
       }
     }
-    
+
     return ''
   }
 }
 
-// ✅ FOREGROUND LISTENER
+// ─── FOREGROUND LISTENER ──────────────────────────────────────────────────────
 export const listenNotification = (onMessageReceived) => {
   onMessage(messaging, (payload) => {
-    console.log('Foreground message:', payload)
-
-    // Optional: trigger browser native notification
-    // new Notification(payload.notification?.title || 'Notification', {
-    //   body: payload.notification?.body,
-    //   icon: '/src/assets/images/dermalogo.png',
-    // })
-
+    console.log('[firebase.js] Foreground message:', payload)
     if (onMessageReceived) {
       onMessageReceived(payload)
     }

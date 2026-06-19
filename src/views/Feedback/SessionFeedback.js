@@ -408,7 +408,7 @@ const SessionFeedback = () => {
                                 {(!s.patientName || s.patientName === 'null') ? 'N/A' : s.patientName}
                               </span>
                               <span className="sf-pat-phone">
-                                {(!s.patientPhone || s.patientPhone === 'null' || s.mobileNumber === 'null') ? (s.mobileNumber || '—') : s.patientPhone}
+                                {s.mobileNumber || "_"}
                               </span>
                             </div>
                           </td>
@@ -419,9 +419,10 @@ const SessionFeedback = () => {
                             </div>
                           </td>
                           <td>
-                            <div className="sf-service-cell">
-                              <span className="sf-service-type">{s.serviceType || '—'}</span>
-
+                            <div>
+                              {s?.serviceType?.toLowerCase() === "exercise"
+                                ? "Activity"
+                                : s?.serviceType}
                             </div>
                           </td>
                           <td>
@@ -500,7 +501,11 @@ const SessionFeedback = () => {
                     <label className="sf-label">Service Type</label>
                     <input
                       type="text" className="sf-input" readOnly
-                      value={form.serviceType || '—'}
+                      value={
+                        form.serviceType?.toLowerCase() === 'exercise'
+                          ? 'Activity'
+                          : form.serviceType || '—'
+                      }
                       style={{ background: '#f8fafc', color: '#64748b' }}
                     />
                   </CCol>

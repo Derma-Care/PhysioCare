@@ -3,13 +3,49 @@ import { useHospital } from '../views/Usecontext/HospitalContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell, faCheckCircle, faExclamationCircle, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { readPendingNotificationsFromIDB } from '../firebase';
 
 const NotificationOverlay = () => {
   const { notifications } = useHospital() || {};
   const [activeNotification, setActiveNotification] = useState(null);
   const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
+  useEffect(() => {
+    console.log("notifications changed:", notifications);
 
+    if (notifications && notifications.length > 0) {
+      const latest = notifications[0];
+
+      console.log("latest notification:", latest);
+
+      if (Date.now() - latest.id < 5000) {
+        console.log("SHOWING OVERLAY");
+        setActiveNotification(latest);
+        setVisible(true);
+      }
+    }
+  }, [notifications]);
+  useEffect(() => {
+
+    const loadPendingNotifications = async () => {
+
+      const pending = await readPendingNotificationsFromIDB();
+
+      console.log("Recovered notifications:", pending);
+
+      if (pending.length > 0) {
+
+        const latest = pending[pending.length - 1];
+
+        setActiveNotification(latest);
+        setVisible(true);
+
+      }
+    };
+
+    loadPendingNotifications();
+
+  }, []);
   useEffect(() => {
     if (notifications && notifications.length > 0) {
       const latest = notifications[0];
@@ -22,6 +58,8 @@ const NotificationOverlay = () => {
   }, [notifications]);
 
   if (!activeNotification || !visible) return null;
+
+
 
   const handleAction = () => {
     setVisible(false);
@@ -57,6 +95,7 @@ const NotificationOverlay = () => {
             <div className="notif-pat-info">
               <span className="notif-pat-name">{activeNotification.patientName}</span>
               <span className="notif-pat-mobile">{activeNotification.mobileNumber}</span>
+
             </div>
             {activeNotification.bookingId && <span className="notif-booking">ID: #{activeNotification.bookingId}</span>}
             <p className="notif-msg">{activeNotification.message}</p>

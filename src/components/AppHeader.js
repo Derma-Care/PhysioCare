@@ -46,15 +46,16 @@ const AppHeader = () => {
           message: payload.notification?.body || '',
           patientName: payload.data?.patientName || '',
           mobileNumber: payload.data?.mobileNumber || '',
+
           patientId: payload.data?.patientId || '',
           bookingId: payload.data?.bookingId || '',
           type: payload.data?.type || '',
           path: payload.data?.path || '',
         }
-        
+
         setNotifications((prev) => [newNotif, ...(prev || [])])
         setNotificationCount((prev) => (prev || 0) + 1)
-        
+
         // Show browser notification if permitted
         if (Notification.permission === 'granted') {
           new Notification(newNotif.title, {
@@ -154,6 +155,7 @@ const AppHeader = () => {
                             <div className="ah-notif-pat-summary">
                               <span className="name">{n.patientName}</span>
                               <span className="mobile">{n.mobileNumber}</span>
+                              <span className="mobile">{n.bookingId}</span>
                             </div>
                             <p>{n.message}</p>
                             <span className="ah-notif-time">Just now</span>
