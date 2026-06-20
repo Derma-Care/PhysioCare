@@ -35,8 +35,8 @@ export const deleteOverallFeedback = (id) => {
  */
 
 // GET: Fetch all submitted session feedback records
-export const getAllSessionFeedback = () => {
-  return http.get(`${BASE_URL}/getAllFeedback`);
+export const getAllSessionFeedback = (CID, BID) => {
+  return http.get(`${BASE_URL}/getAllByUsingClinicIdAndBranchId/${CID}/${BID}`);
 };
 
 // GET: Fetch patients needing feedback details

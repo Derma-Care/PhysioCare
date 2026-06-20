@@ -599,6 +599,8 @@
       <li><a href="#admin-packages">Therapy &amp; Packages</a></li>
       <li><a href="#admin-medical">Medical Configs &amp; Labs</a></li>
       <li><a href="#admin-reports">Reports &amp; Marketing</a></li>
+      <li><a href="#admin-recovery-support">Recovery Support</a></li>
+      <li><a href="#admin-equipment">Equipment Management</a></li>
       <li><a href="#admin-additional">Additional Admin APIs</a></li>
       <li><a href="#admin-more-extracted">Deep Extracted APIs</a></li>
     </ul>
@@ -2048,6 +2050,268 @@
 
     <div class="doc-section-divider"></div>
 
+    <!-- ADMIN RECOVERY SUPPORT -->
+    <section id="admin-recovery-support" class="doc-section api-group" data-category="admin-recovery-support">
+      <div class="section-title">Clinic Admin - Recovery Support <span class="tag">AdminPortal</span></div>
+
+      <div class="card api-card" data-method="get">
+        <div class="card-header">
+          <div class="endpoint-meta">
+            <span class="method get">GET</span>
+            <span class="url">/getAllRecoverySupportsByClinicId/{clinicId}</span>
+          </div>
+          <span class="source-label">RecovarySupport.jsx</span>
+        </div>
+        <div class="card-body">
+          <p class="desc">Retrieves all recovery support items for a specific clinic.</p>
+        </div>
+      </div>
+
+      <div class="card api-card" data-method="post">
+        <div class="card-header">
+          <div class="endpoint-meta">
+            <span class="method post">POST</span>
+            <span class="url">/saveRecoverySupport</span>
+          </div>
+          <span class="source-label">RecovarySupport.jsx</span>
+        </div>
+        <div class="card-body">
+          <p class="desc">Creates and saves a new recovery support entry.</p>
+        </div>
+      </div>
+
+      <div class="card api-card" data-method="put">
+        <div class="card-header">
+          <div class="endpoint-meta">
+            <span class="method put">PUT</span>
+            <span class="url">/updateRecoverySupportById/{id}</span>
+          </div>
+          <span class="source-label">RecovarySupport.jsx</span>
+        </div>
+        <div class="card-body">
+          <p class="desc">Updates an existing recovery support entry by its ID.</p>
+        </div>
+      </div>
+
+      <div class="card api-card" data-method="delete">
+        <div class="card-header">
+          <div class="endpoint-meta">
+            <span class="method delete">DELETE</span>
+            <span class="url">/deleteRecoverySupportById/{id}</span>
+          </div>
+          <span class="source-label">RecovarySupport.jsx</span>
+        </div>
+        <div class="card-body">
+          <p class="desc">Deletes a recovery support entry by its ID.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="doc-section-divider"></div>
+
+    <!-- ADMIN EQUIPMENT MANAGEMENT -->
+    <section id="admin-equipment" class="doc-section api-group" data-category="admin-equipment">
+      <div class="section-title">Clinic Admin - Equipment Management <span class="tag">AdminPortal</span></div>
+      <p class="desc">API definitions for managing clinic equipment, inventory, maintenance schedules, and comprehensive vendor details.</p>
+
+      <!-- GET All Equipment -->
+      <div class="card api-card" data-method="get">
+        <div class="card-header">
+          <div class="endpoint-meta">
+            <span class="method get">GET</span>
+            <span class="url">/api/clinic-admin/equipment/getAll/{clinicId}/{branchId}</span>
+          </div>
+          <span class="source-label">Equipment API</span>
+        </div>
+        <div class="card-body">
+          <p class="desc">Retrieves all equipment and machinery associated with a specific clinic and branch.</p>
+          <div class="details-grid">
+            <div class="grid-col">
+              <h4>Path Parameters</h4>
+              <table class="params-table">
+                <thead>
+                  <tr><th>Name</th><th>Type</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="param-name">clinicId</td><td class="param-type">String</td><td>ID of the clinic</td></tr>
+                  <tr><td class="param-name">branchId</td><td class="param-type">String</td><td>ID of the branch</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="grid-col">
+              <h4>Response Details</h4>
+              <pre>[
+  {
+    "id": "EQ-0001",
+    "clinicId": "CL-1001",
+    "branchId": "BR-001",
+    "name": "Ultrasound Machine",
+    "category": "Diagnostic",
+    "type": "Machine",
+    "brand": "Siemens",
+    "model": "ACUSON X300",
+    "serialNo": "SN-20240101",
+    "status": "Active",
+    "department": "Physiotherapy",
+    "purchaseDate": "2024-01-15",
+    "warrantyExpiry": "2026-01-15",
+    "amcStartDate": "2024-01-15",
+    "amcEndDate": "2025-01-15",
+    "purchaseCost": 450000,
+    "currentValue": 380000,
+    "nextServiceDate": "2025-06-15",
+    "lastServiceDate": "2025-01-10",
+    "assignedStaff": "Dr. Rajan",
+    "imageUrl": "https://example.com/images/equipment/eq-0001.jpg",
+    "notes": "Handle with care.",
+    "vendorDetails": {
+      "vendorName": "MediEquip Pvt Ltd",
+      "contactPerson": "Ravi Kumar",
+      "phone": "+91-9876543210",
+      "email": "support@mediequip.com",
+      "address": "123 Health Street, Medical District, NY",
+      "supportContractDetails": "24/7 Priority Support"
+    }
+  }
+]</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST Save Equipment -->
+      <div class="card api-card" data-method="post">
+        <div class="card-header">
+          <div class="endpoint-meta">
+            <span class="method post">POST</span>
+            <span class="url">/api/clinic-admin/equipment/save</span>
+          </div>
+          <span class="source-label">Equipment API</span>
+        </div>
+        <div class="card-body">
+          <p class="desc">Creates and saves a new equipment entry for a specific clinic and branch.</p>
+          <div class="details-grid">
+            <div class="grid-col">
+              <h4>Request Body (Payload)</h4>
+              <pre>{
+  "clinicId": "CL-1001",
+  "branchId": "BR-001",
+  "name": "Ultrasound Machine",
+  "category": "Diagnostic",
+  "type": "Machine",
+  "brand": "Siemens",
+  "model": "ACUSON X300",
+  "serialNo": "SN-20240101",
+  "status": "Active",
+  "department": "Physiotherapy",
+  "purchaseDate": "2024-01-15",
+  "warrantyExpiry": "2026-01-15",
+  "amcStartDate": "2024-01-15",
+  "amcEndDate": "2025-01-15",
+  "purchaseCost": 450000,
+  "currentValue": 380000,
+  "nextServiceDate": "2025-06-15",
+  "lastServiceDate": "2025-01-10",
+  "assignedStaff": "Dr. Rajan",
+  "imageUrl": "https://example.com/images/equipment/eq-0001.jpg",
+  "notes": "Handle with care.",
+  "vendorDetails": {
+    "vendorName": "MediEquip Pvt Ltd",
+    "contactPerson": "Ravi Kumar",
+    "phone": "+91-9876543210",
+    "email": "support@mediequip.com",
+    "address": "123 Health Street, Medical District, NY",
+    "supportContractDetails": "24/7 Priority Support"
+  }
+}</pre>
+            </div>
+            <div class="grid-col">
+              <h4>Response Details</h4>
+              <pre>{
+  "success": true,
+  "message": "Equipment added successfully",
+  "data": {
+    "id": "EQ-0001",
+    "clinicId": "CL-1001",
+    "branchId": "BR-001",
+    "status": "Active"
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUT Update Equipment -->
+      <div class="card api-card" data-method="put">
+        <div class="card-header">
+          <div class="endpoint-meta">
+            <span class="method put">PUT</span>
+            <span class="url">/api/clinic-admin/equipment/update/{id}</span>
+          </div>
+          <span class="source-label">Equipment API</span>
+        </div>
+        <div class="card-body">
+          <p class="desc">Updates an existing equipment entry (including vendor details and maintenance schedules).</p>
+          <div class="details-grid">
+            <div class="grid-col">
+              <h4>Request Body (Payload)</h4>
+              <pre>{
+  "clinicId": "CL-1001",
+  "branchId": "BR-001",
+  "status": "Under Maintenance",
+  "nextServiceDate": "2025-08-15",
+  "imageUrl": "https://example.com/images/equipment/eq-0001-updated.jpg",
+  "vendorDetails": {
+    "vendorName": "FitTech Solutions",
+    "contactPerson": "Vikram Singh",
+    "phone": "+91-8877665544",
+    "email": "service@fittech.com",
+    "address": "Industrial Area Phase II, Delhi",
+    "supportContractDetails": "On-call maintenance"
+  }
+}</pre>
+            </div>
+            <div class="grid-col">
+              <h4>Response Details</h4>
+              <pre>{
+  "success": true,
+  "message": "Equipment updated successfully",
+  "data": {
+    "id": "EQ-0001",
+    "status": "Under Maintenance"
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DELETE Equipment -->
+      <div class="card api-card" data-method="delete">
+        <div class="card-header">
+          <div class="endpoint-meta">
+            <span class="method delete">DELETE</span>
+            <span class="url">/api/clinic-admin/equipment/delete/{id}</span>
+          </div>
+          <span class="source-label">Equipment API</span>
+        </div>
+        <div class="card-body">
+          <p class="desc">Removes an equipment entry from the inventory.</p>
+          <div class="details-grid">
+            <div class="grid-col">
+              <h4>Response Details</h4>
+              <pre>{
+  "success": true,
+  "message": "Equipment deleted successfully"
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="doc-section-divider"></div>
 
     <!-- ADDITIONAL CLINIC ADMIN APIS -->
     <section id="admin-additional" class="doc-section api-group" data-category="admin-additional">
@@ -4316,7 +4580,7 @@
         <div class="card-header">
           <div class="endpoint-meta">
             <span class="method get">GET</span>
-            <span class="url">/getAllFeedback</span>
+            <span class="url">/getAllByUsingClinicIdAndBranchId/{CID}/{BID}</span>
           </div>
           <span class="source-label">FeedbackAPI.js</span>
         </div>

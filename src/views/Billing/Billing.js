@@ -370,6 +370,7 @@ export default function Billing() {
       {/* Payment component */}
       {selectedBooking && (
         <ProgramPayment
+          key={selectedBooking.bookingId}
           paymentProps={{
             bookingId: selectedBooking.bookingId,
             doctorId: selectedBooking.doctorId,

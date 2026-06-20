@@ -15,7 +15,10 @@ import {
   CCard,
   CCardBody,
 } from '@coreui/react'
-import { RefreshCw } from 'lucide-react'
+import {
+  RefreshCw, Banknote, CreditCard, QrCode, Ban, Check
+} from 'lucide-react'
+
 
 import { GetClinicBranches, getDoctorByClinicIdData } from '../Doctors/DoctorAPI'
 import { useNavigate } from 'react-router-dom'
@@ -146,7 +149,12 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
   const [uploadProgressMsg, setUploadProgressMsg] = useState('')
   const [loadingPincode, setLoadingPincode] = useState(false)
   const [errors, setErrors] = useState({})
-
+  const paymentOptions = [
+    { label: "Cash", icon: "💵", desc: "Physical currency" },
+    { label: "Card", icon: "💳", desc: "Debit / Credit" },
+    { label: "UPI", icon: "📲", desc: "GPay / PhonePe" },
+    { label: "Not Paid", icon: "🚫", desc: "No payment" },
+  ];
   // Helper to convert base64 to File object
   const base64ToFile = (base64String, filename = 'partImage.png') => {
     try {
@@ -254,7 +262,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     insuranceProvider: '', policyNumber: '',
     doctorId: '', doctorName: '', doctorDeviceId: '', doctorRefCode: '',
     consultationType: 'Services & Treatments',
-    consultationFee: [],
+    consultationFee: 0,
     consultationExpiration: selectedHospital?.data?.consultationExpiration || '',
     paymentType: '', partAmount: '', visitType: 'first', servicecost: '',
     bookingFor: 'Self', name: '', patientAddress: '',
@@ -382,6 +390,17 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     }
   }, [bookingDetails.branchId, currentTab, visibleTabs])
 
+  // Update fee when doctors array loads, if currently 0 but should be paid
+  useEffect(() => {
+    if (doctors.length > 0 && bookingDetails.doctorId && bookingDetails.foc === 'Paid' && !bookingDetails.consultationFee && !isFollowupStatus) {
+      const doc = doctors.find((d) => d.doctorId === bookingDetails.doctorId)
+      if (doc && doc.doctorFees?.inClinicFee) {
+        setBookingDetails((p) => ({ ...p, consultationFee: doc.doctorFees.inClinicFee }))
+        setOriginalConsultationFee(doc.doctorFees.inClinicFee)
+      }
+    }
+  }, [doctors])
+
   useEffect(() => {
     setBookingDetails((p) => ({ ...p, activityLevels }))
   }, [activityLevels])
@@ -458,6 +477,9 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     const parts = (selectedBooking.patientAddress || '').split(',')
     const docId = selectedBooking.doctorId || ''
 
+    const previousFee = selectedBooking?.listOfConsultationFee?.[0]?.consulationFee || selectedBooking.consultationFee || 0;
+    setOriginalConsultationFee(previousFee);
+
     setBookingDetails((p) => ({
       ...p,
       name: selectedBooking.name || '',
@@ -469,10 +491,10 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       branchId: selectedBooking.branchId || p.branchId,
       branchname: selectedBooking.branchname || p.branchname,
       doctorId: docId || p.doctorId,
-      doctorName: selectedBooking.doctorName || p.doctorName,
+      doctorName: selectedBooking.doctorName || selectedBooking.doctorname || p.doctorName,
       doctorDeviceId: selectedBooking.doctorDeviceId || p.doctorDeviceId,
       foc: isFollowupStatus ? 'FOC' : p.foc,
-      consultationFee: isFollowupStatus ? 0 : p.consultationFee,
+      consultationFee: isFollowupStatus ? 0 : (previousFee || 0),
       email: selectedBooking.email || '',
       address: {
         houseNo: parts[0]?.trim() || '', street: parts[1]?.trim() || '',
@@ -486,6 +508,10 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       fetchSlots(docId)
     }
   }, [selectedBooking, isFollowupStatus])
+  const visitTypeOptions = [
+    { label: "First Visit", value: "first", icon: "🆕", desc: "New patient" },
+    { label: "Follow-Up", value: "followup", icon: "🔁", desc: "Existing patient" },
+  ];
 
   // ── Error helpers ─────────────────────────────────────────────────────────
   const clearErr = (key) => setErrors((p) => { const e = { ...p }; delete e[key]; return e })
@@ -1021,46 +1047,81 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
     // ── 1. VISIT TYPE ─────────────────────────────────────────────────────
     if (tabId === 'visit') return (
+
       <div>
         <p style={sectionHeadStyle}>Visit Type</p>
-        <CRow className="mb-3">
-          <CCol md={6} style={{ color: COLORS.primary }}>
-            <CFormCheck type="radio" label={<span style={{ color: COLORS.primary }}>First Visit</span>} name="visitTypeRadio" value="first"
-              checked={visitType === 'first'} style={{ fontSize: FS, color: COLORS.primary }}
-              onChange={() => {
-                setVisitType('first')
-                setBookingDetails((p) => ({
-                  ...p, visitType: 'first',
-                  foc: 'Paid',
-                  consultationFee: originalConsultationFee || 0,
-                }))
-                setSlotsForSelectedDate([]); setSelectedDate(new Date().toISOString().split('T')[0]); setSelectedSlots([])
-              }} />
-          </CCol>
-          <CCol md={6} style={{ color: COLORS.primary }}>
-            <CFormCheck type="radio" label={<span style={{ color: COLORS.primary }}>Follow-Up</span>} name="visitTypeRadio" value="followup"
-              checked={visitType === 'followup'} style={{ fontSize: FS, color: COLORS.primary }}
-              onChange={() => {
-                setVisitType('followup')
-                setBookingDetails((p) => ({
-                  ...p, visitType: 'follow-up',
-                  foc: (Number(selectedBooking?.freeFollowUpsLeft || 0) > 0) ? 'FOC' : p.foc,
-                  consultationFee: (Number(selectedBooking?.freeFollowUpsLeft || 0) > 0) ? 0 : p.consultationFee,
-                }))
-                setSlotsForSelectedDate([]); setSelectedDate(new Date().toISOString().split('T')[0]); setSelectedSlots([])
-              }} />
-          </CCol>
-        </CRow>
-        {/* <BookingSearch
-          visitType={visitType}
-          fetchSlots={fetchSlots}
-          onSelectBooking={(b) => setSelectedBooking(b)}
-        /> */}
+        <div className="d-flex flex-column gap-2 mb-3" style={{ maxWidth: "320px" }}>
+          <div style={{ display: "flex", gap: "6px" }}>
+            {visitTypeOptions.map(({ label, value, icon, desc }) => {
+              const isSelected = visitType === value;
+
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  title={desc}
+                  onClick={() => {
+                    setVisitType(value);
+                    if (value === "first") {
+                      setBookingDetails((p) => ({
+                        ...p,
+                        visitType: "first",
+                        foc: "Paid",
+                        consultationFee: originalConsultationFee || 0,
+                      }));
+                    } else {
+                      setBookingDetails((p) => ({
+                        ...p,
+                        visitType: "follow-up",
+                        foc:
+                          Number(selectedBooking?.freeFollowUpsLeft || 0) > 0
+                            ? "FOC"
+                            : p.foc,
+                        consultationFee:
+                          Number(selectedBooking?.freeFollowUpsLeft || 0) > 0
+                            ? 0
+                            : p.consultationFee,
+                      }));
+                    }
+                    setSlotsForSelectedDate([]);
+                    setSelectedDate(new Date().toISOString().split("T")[0]);
+                    setSelectedSlots([]);
+                  }}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "8px 4px",
+                    borderRadius: "8px",
+                    border: isSelected ? "1.5px solid #0d6efd" : "1px solid #ddd",
+                    background: isSelected ? "#e7f1ff" : "#fff",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <span style={{ fontSize: "18px", lineHeight: 1 }}>{icon}</span>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      color: isSelected ? "#0d6efd" : "#212529",
+                    }}
+                  >
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <BookingSearch
           visitType={visitType}
           fetchSlots={fetchSlots}
           onSelectBooking={(b) => setSelectedBooking(b)}
-          onProceed={() => setTabId('slots')}  // ← advances to next tab
+          onProceed={() => setTabId("slots")}
         />
       </div>
     )
@@ -1331,24 +1392,67 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
           <CCol md={6}>
             <CFormLabel style={labelStyle}>Payment Type <span className="text-danger">*</span></CFormLabel>
-            <CFormSelect
-              name="paymentType"
-              value={bookingDetails.foc?.toUpperCase() === 'FOC' ? 'Not Paid' : bookingDetails.paymentType}
-              disabled={bookingDetails.foc?.toUpperCase() === 'FOC'}
-              style={{
-                ...selectStyle(errors.paymentType),
-                ...(bookingDetails.foc?.toUpperCase() === 'FOC'
-                  ? { backgroundColor: '#f0f0f0', color: '#6c757d', cursor: 'not-allowed' }
-                  : {}),
-              }}
-              onChange={(e) => {
-                setBookingDetails((p) => ({ ...p, paymentType: e.target.value }))
-                e.target.value ? clearErr('paymentType') : setErr('paymentType', 'Select payment type')
-              }}
-            >
-              <option value="">Select Payment Type</option>
-              {['Cash', 'Card', 'UPI', 'Not Paid'].map((t) => <option key={t}>{t}</option>)}
-            </CFormSelect>
+
+
+            <div className="d-flex flex-column gap-2" style={{ maxWidth: "320px" }}>
+
+
+
+              <div style={{ display: "flex", gap: "6px" }}>
+                {paymentOptions.map(({ label, icon, desc }) => {
+                  const isFOC = bookingDetails.foc?.toUpperCase() === "FOC";
+                  const isSelected = isFOC
+                    ? label === "Not Paid"
+                    : bookingDetails.paymentType === label;
+                  const isDisabled = isFOC && label !== "Not Paid";
+
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      disabled={isDisabled}
+                      title={desc}
+                      onClick={() => {
+                        if (isDisabled) return;
+                        setBookingDetails((p) => ({ ...p, paymentType: label }));
+                        clearErr("paymentType");
+                      }}
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "8px 4px",
+                        borderRadius: "8px",
+                        border: isSelected
+                          ? "1.5px solid #0d6efd"
+                          : errors.paymentType
+                            ? "1px solid red"
+                            : "1px solid #ddd",
+                        background: isSelected ? "#e7f1ff" : "#fff",
+                        cursor: isDisabled ? "not-allowed" : "pointer",
+                        opacity: isDisabled ? 0.6 : 1,
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <span style={{ fontSize: "18px", lineHeight: 1 }}>{icon}</span>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 500,
+                          color: isSelected ? "#0d6efd" : "#212529",
+                        }}
+                      >
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+            </div>
+
             {bookingDetails.foc?.toUpperCase() === 'FOC' && (
               <small style={{ color: '#6c757d', fontSize: '11px', marginTop: '4px', display: 'block' }}>
                 🔒 Auto-set to "Not Paid" for FOC appointments

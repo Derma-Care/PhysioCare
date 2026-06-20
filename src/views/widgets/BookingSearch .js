@@ -117,8 +117,9 @@ const BookingSearch = ({ visitType, fetchSlots, onSelectBooking, onProceed }) =>
           <CFormInput
             type="text"
             placeholder={visitType === 'followup' ? 'Search by Booking ID' : 'Search by Name / Patient ID / Mobile'}
-            value={patientSearch.toUpperCase()}
-            onChange={(e) => setPatientSearch(e.target.value)}
+            value={patientSearch}
+            // style={{ textTransform: 'uppercase' }}
+            onChange={(e) => setPatientSearch(e.target.value.trimStart())}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
         </CCol>
@@ -212,7 +213,7 @@ const BookingSearch = ({ visitType, fetchSlots, onSelectBooking, onProceed }) =>
                   ['Customer ID', selectedBooking.customerId],
                   ['Age / Gender', `${selectedBooking.age}y, ${selectedBooking.gender}`],
                   ['Mobile', selectedBooking.mobileNumber || selectedBooking.patientMobileNumber],
-                  ['Doctor', selectedBooking.doctorName],
+
                 ].map(([label, val]) => (
                   <div key={label}>
                     <div style={{ fontSize: 11, color: '#6c757d', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</div>
@@ -231,8 +232,9 @@ const BookingSearch = ({ visitType, fetchSlots, onSelectBooking, onProceed }) =>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px' }}>
                     {[
                       ['Visit Type', selectedBooking.visitType],
+                      ['Doctor', selectedBooking.doctorName],
                       ['Consultation Type', selectedBooking.consultationType],
-                      ['Consultation Fee', `₹${selectedBooking.consultationFee}`],
+                      ['Consultation Fee', `₹${selectedBooking?.listOfConsultationFee?.[0]?.consulationFee || selectedBooking.consultationFee || 0}`],
                       // ['Total Fee', `₹${selectedBooking.totalFee}`],
                       ['Service Start Date', selectedBooking.serviceDate],
                       ['Service Time', selectedBooking.servicetime],

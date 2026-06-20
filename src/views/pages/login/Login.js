@@ -336,7 +336,7 @@ const Login = () => {
                           <CFormInput
                             placeholder="Username"
                             value={userName}
-                            onChange={(e) => setUserName(e.target.value)}
+                            onChange={(e) => setUserName(e.target.value.trim())}
                           />
                         </CInputGroup>
 
@@ -352,7 +352,7 @@ const Login = () => {
                             type={showPassword ? "text" : "password"}
                             placeholder="Password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => setPassword(e.target.value.trim())}
                           />
                         </CInputGroup>
                         <div
