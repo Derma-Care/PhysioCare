@@ -379,6 +379,7 @@ export default function Billing() {
             patientId: selectedBooking.patientId,
           }}
           isBillingTab={true}
+          onPaymentSuccess={() => setSelectedBooking(null)}
         />
       )}
     </div>

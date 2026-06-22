@@ -123,13 +123,13 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilStar} customClassName="nav-icon" />,
     },
-    // {
-    //   component: CNavItem,
-    //   to: '/equipment-management',
-    //   name: 'Equipment Management',
-    //   as: NavLink,
-    //   icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
-    // },
+    {
+      component: CNavItem,
+      to: '/equipment-management',
+      name: 'Equipment Management',
+      as: NavLink,
+      icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
+    },
 
     // {
     //   component: CNavItem,
@@ -187,6 +187,7 @@ export const getNavigation = (permissions = {}) => {
       component: CNavItem,
       to: '/notification',
       name: 'Push Notification',
+
       as: NavLink,
       icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
     },
@@ -233,6 +234,7 @@ export const getNavigation = (permissions = {}) => {
   return allNav.filter(
     (item) =>
       permissions[item.name] || item.name === 'Attendance Reports' || item.name === 'Recovery Support'
+    // permissions[item.name]
 
 
 

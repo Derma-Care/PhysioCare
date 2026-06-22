@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
     CCard,
     CCardBody,
@@ -14,9 +14,15 @@ import {
     CTableHeaderCell,
     CTableBody,
     CTableDataCell,
+    CModal,
+    CModalHeader,
+    CModalTitle,
+    CModalBody,
+    CModalFooter,
+    CFormInput,
 } from "@coreui/react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FONT_SIZES } from "../../Constant/Themes";
+import { COLORS, FONT_SIZES } from "../../Constant/Themes";
 import { getBookingsByPatientId } from "../../APIs/GetpatinetData";
 import PrintLetterHead from "../../Utils/PrintLetterHead";
 import { ToWords } from 'to-words';
@@ -79,6 +85,12 @@ export default function PaymentDetailsUI() {
         name: "",
         mobileNumber: ""
     });
+
+    const [dateModalVisible, setDateModalVisible] = useState(false);
+    const [startDateInput, setStartDateInput] = useState("");
+    const [endDateInput, setEndDateInput] = useState("");
+    const [printStartDate, setPrintStartDate] = useState("");
+    const [printEndDate, setPrintEndDate] = useState("");
 
 
 
@@ -217,7 +229,12 @@ export default function PaymentDetailsUI() {
     const consentNumber =
         data?.consentNumber ||
         `CONS-${data.bookingId}`;
+    const isPrintingRef = useRef(false);
+
     const handlePrint = (elementId) => {
+        if (isPrintingRef.current) return;
+        isPrintingRef.current = true;
+
         const printContent = document.getElementById(elementId);
         if (printContent) {
             const iframe = document.createElement("iframe");
@@ -247,9 +264,23 @@ export default function PaymentDetailsUI() {
 
             // Wait for styles to load before printing
             setTimeout(() => {
-                iframe.contentWindow.print();
-                document.body.removeChild(iframe);
+                try {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                } catch (e) {
+                    console.error("Print error", e);
+                }
+
+                // Remove iframe safely after print dialog closes
+                setTimeout(() => {
+                    if (document.body.contains(iframe)) {
+                        document.body.removeChild(iframe);
+                    }
+                    isPrintingRef.current = false;
+                }, 2000);
             }, 500);
+        } else {
+            isPrintingRef.current = false;
         }
     };
     return (
@@ -260,7 +291,13 @@ export default function PaymentDetailsUI() {
                 </h2>
                 <div style={{ display: "flex", gap: "10px" }}>
                     <button
-                        onClick={() => handlePrint("printable-consent")}
+                        onClick={() => {
+                            const defaultStart = data.sessionStartDate ? new Date(data.sessionStartDate).toISOString().split('T')[0] : (data.bookingDate ? new Date(data.bookingDate).toISOString().split('T')[0] : "");
+                            const defaultEnd = data.sessionEndDate ? new Date(data.sessionEndDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                            setStartDateInput(defaultStart);
+                            setEndDateInput(defaultEnd);
+                            setDateModalVisible(true);
+                        }}
                         style={{
                             background: "#0c447c",
                             color: "#fff",
@@ -268,7 +305,7 @@ export default function PaymentDetailsUI() {
                             borderRadius: "8px",
                             padding: "8px 16px",
                             cursor: "pointer",
-                            fontWeight: 600
+
                         }}
                     >
                         Consolidated Receipts
@@ -283,7 +320,7 @@ export default function PaymentDetailsUI() {
                             borderRadius: "8px",
                             padding: "8px 16px",
                             cursor: "pointer",
-                            fontWeight: 600
+
                         }}
                     >
                         Print Receipt
@@ -651,45 +688,17 @@ export default function PaymentDetailsUI() {
 
                         {/* ── Treatments ── */}
                         <Section title="Treatments">
-                            <div style={{ padding: "4px 0" }}>
-                                {(data?.therapyWithSessions && data.therapyWithSessions.length > 0)
-                                    ? data.therapyWithSessions.map((pkg, pi) => {
-                                        const therapiesList = []
-                                        if (pkg?.programs) {
-                                            pkg.programs.forEach(p => (p.therapyData || []).forEach(t => t.therapyName && therapiesList.push(t.therapyName)))
-                                        } else if (pkg?.therapyData) {
-                                            pkg.therapyData.forEach(t => t.therapyName && therapiesList.push(t.therapyName))
-                                        }
-                                        const treatmentValue = data?.treatmentName || (therapiesList.length > 0 ? therapiesList.join(", ") : "Therapy Session")
-                                        return (
-                                            <div key={pi} style={{
-                                                display: "flex", alignItems: "flex-start", gap: "10px",
-                                                padding: "10px 14px", background: "#f0f6ff",
-                                                borderRadius: "6px", marginBottom: pi < data.therapyWithSessions.length - 1 ? "8px" : 0,
-                                                borderLeft: "3px solid #0c447c",
-                                            }}>
-                                                <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px", flexShrink: 0 }}>✦</span>
-                                                <div>
-                                                    <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
-                                                    <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{treatmentValue}</span>
-                                                </div>
-                                            </div>
-                                        )
-                                    })
-                                    : (
-                                        <div style={{
-                                            display: "flex", alignItems: "flex-start", gap: "10px",
-                                            padding: "10px 14px", background: "#f0f6ff",
-                                            borderRadius: "6px", borderLeft: "3px solid #0c447c",
-                                        }}>
-                                            <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px" }}>✦</span>
-                                            <div>
-                                                <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
-                                                <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{data?.treatmentName || "N/A"}</span>
-                                            </div>
-                                        </div>
-                                    )
-                                }
+                            <div style={{
+                                display: "flex", alignItems: "flex-start", gap: "10px",
+                                padding: "10px 14px", background: "#f0f6ff",
+                                borderRadius: "6px", marginBottom: "8px",
+                                borderLeft: "3px solid #0c447c",
+                            }}>
+                                <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px", flexShrink: 0 }}>✦</span>
+                                <div>
+                                    <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
+                                    <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{data.treatmentName}</span>
+                                </div>
                             </div>
                         </Section>
 
@@ -862,45 +871,24 @@ export default function PaymentDetailsUI() {
 
                         {/* ── Treatments ── */}
                         <Section title="Treatments">
-                            <div style={{ padding: "4px 0" }}>
-                                {(data?.therapyWithSessions && data.therapyWithSessions.length > 0)
-                                    ? data.therapyWithSessions.map((pkg, pi) => {
-                                        const therapiesList = []
-                                        if (pkg?.programs) {
-                                            pkg.programs.forEach(p => (p.therapyData || []).forEach(t => t.therapyName && therapiesList.push(t.therapyName)))
-                                        } else if (pkg?.therapyData) {
-                                            pkg.therapyData.forEach(t => t.therapyName && therapiesList.push(t.therapyName))
-                                        }
-                                        const treatmentValue = data?.treatmentName || (therapiesList.length > 0 ? therapiesList.join(", ") : "Therapy Session")
-                                        return (
-                                            <div key={pi} style={{
-                                                display: "flex", alignItems: "flex-start", gap: "10px",
-                                                padding: "10px 14px", background: "#f0f6ff",
-                                                borderRadius: "6px", marginBottom: pi < data.therapyWithSessions.length - 1 ? "8px" : 0,
-                                                borderLeft: "3px solid #0c447c",
-                                            }}>
-                                                <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px", flexShrink: 0 }}>✦</span>
-                                                <div>
-                                                    <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
-                                                    <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{treatmentValue}</span>
-                                                </div>
-                                            </div>
-                                        )
-                                    })
-                                    : (
-                                        <div style={{
-                                            display: "flex", alignItems: "flex-start", gap: "10px",
-                                            padding: "10px 14px", background: "#f0f6ff",
-                                            borderRadius: "6px", borderLeft: "3px solid #0c447c",
-                                        }}>
-                                            <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px" }}>✦</span>
-                                            <div>
-                                                <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
-                                                <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{data?.treatmentName || "N/A"}</span>
-                                            </div>
+                            <div style={{
+                                display: "flex", alignItems: "flex-start", gap: "10px",
+                                padding: "10px 14px", background: "#f0f6ff",
+                                borderRadius: "6px", marginBottom: "8px",
+                                borderLeft: "3px solid #0c447c",
+                            }}>
+                                <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px", flexShrink: 0 }}>✦</span>
+                                <div>
+                                    <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
+                                    <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{data.treatmentName}</span>
+                                    {(printStartDate || printEndDate) && (
+                                        <div style={{ marginTop: '4px', fontSize: '11px', color: '#555' }}>
+                                            {printStartDate && <span>Start Date: {printStartDate}</span>}
+                                            {printStartDate && printEndDate && <span style={{ margin: '0 6px' }}>|</span>}
+                                            {printEndDate && <span>End Date: {printEndDate}</span>}
                                         </div>
-                                    )
-                                }
+                                    )}
+                                </div>
                             </div>
                         </Section>
 
@@ -1019,6 +1007,42 @@ export default function PaymentDetailsUI() {
     </div>
   )
 */}
+            {/* Date Range Modal for Consolidated Receipts */}
+            <CModal visible={dateModalVisible} onClose={() => setDateModalVisible(false)} alignment="center">
+                <CModalHeader>
+                    <CModalTitle>Print Date Range</CModalTitle>
+                </CModalHeader>
+                <CModalBody>
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                        <div style={{ flex: 1 }}>
+                            <CFormInput type="date" label="Start Date" value={startDateInput} onChange={(e) => setStartDateInput(e.target.value)} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <CFormInput type="date" label="End Date" value={endDateInput} onChange={(e) => setEndDateInput(e.target.value)} />
+                        </div>
+                    </div>
+                </CModalBody>
+                <CModalFooter>
+                    <CButton color="secondary" onClick={() => {
+                        const defaultStart = data.sessionStartDate ? new Date(data.sessionStartDate).toISOString().split('T')[0] : (data.bookingDate ? new Date(data.bookingDate).toISOString().split('T')[0] : "");
+                        const defaultEnd = data.sessionEndDate ? new Date(data.sessionEndDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                        setPrintStartDate(defaultStart);
+                        setPrintEndDate(defaultEnd);
+                        setDateModalVisible(false);
+                        setTimeout(() => handlePrint("printable-consent"), 300);
+                    }}>
+                        Skip & Print
+                    </CButton>
+                    <CButton style={{ backgroundColor: COLORS.primary, color: "white" }} onClick={() => {
+                        setPrintStartDate(startDateInput);
+                        setPrintEndDate(endDateInput);
+                        setDateModalVisible(false);
+                        setTimeout(() => handlePrint("printable-consent"), 300);
+                    }}>
+                        Print with Dates
+                    </CButton>
+                </CModalFooter>
+            </CModal>
         </div>
     );
 }

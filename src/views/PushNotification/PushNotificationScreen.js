@@ -17,7 +17,7 @@ import {
   CModalFooter,
 } from '@coreui/react'
 import Select from 'react-select'
-import { AlertTriangle, Bell, Edit2, Eye, Send, Trash2 } from 'lucide-react'
+import { AlertTriangle, Bell, Edit2, Eye, Send, Trash2, MessageCircle, Mail, Smartphone } from 'lucide-react'
 import { useHospital } from '../Usecontext/HospitalContext'
 import { CustomerData } from '../customerManagement/CustomerManagementAPI'
 import { http } from '../../Utils/Interceptors'
@@ -67,6 +67,8 @@ const BLANK = {
 // COMPONENT
 // ─────────────────────────────────────────────────────────────
 const FCMNotification = () => {
+
+  const [activeTab, setActiveTab] = useState('whatsapp')
 
   // ── Consolidated form state ─────────────────────────────
   const [form, setForm] = useState(BLANK)
@@ -136,8 +138,16 @@ const FCMNotification = () => {
       const customers = response || []
       setCustomerOptions(
         customers
-          .filter((c) => c.fullName && c.deviceId)
-          .map((c) => ({ value: c.deviceId, label: `${c.fullName} (${c.patientId})` })),
+          .filter((c) => c.fullName)
+          .map((c) => ({
+            value: c.deviceId || c.patientId || Math.random().toString(),
+            label: `${c.fullName} (${c.patientId || 'No ID'})`,
+            patientId: c.patientId,
+            name: c.fullName,
+            email: c.email || c.gmailId || '',
+            deviceId: c.deviceId || null,
+            mobileNumber: c.mobileNumber || c.mobile || ''
+          })),
       )
     } catch (err) {
       console.error('[FCM] fetchCustomers:', err)
@@ -173,7 +183,7 @@ const FCMNotification = () => {
           let customers = []
           if (n.tokens && Array.isArray(n.tokens)) {
             customers = n.tokens
-              .map((token) => customerOptions.find((c) => c.value === token))
+              .map((token) => customerOptions.find((c) => c.deviceId === token || c.value === token))
               .filter(Boolean)
           } else if (n.customerData && Array.isArray(n.customerData)) {
             customers = n.customerData.map((c) => {
@@ -218,35 +228,106 @@ const FCMNotification = () => {
     }
     const clinicId = localStorage.getItem('HospitalId')
     const branchId = localStorage.getItem('branchId')
-    const tokens = form.sendAll ? [] : form.selectedCustomers.map((c) => c.value)
 
-    const payload = {
-      clinicId,
-      branchId,
-      title: form.title,
-      body: form.body,
-      image: stripDataUrl(form.image),
-      sendAll: form.sendAll,
-      tokens,
-    }
+    if (activeTab === 'inapp') {
+      const tokens = form.sendAll ? [] : form.selectedCustomers.map((c) => c.deviceId).filter(Boolean)
 
-    try {
-      setSendIsLoading(true)
-      const res = form.isEditing && form.editId
-        ? await http.put(`${BASE_URL}/pricedrop/${form.editId}`, payload)
-        : await http.post(`${BASE_URL}/pricedrop`, payload)
-
-      if (res.data.success) {
-        showCustomToast(form.isEditing ? 'Updated successfully!' : 'Sent successfully!')
-        resetForm()
-        fetchNotifications()
-      } else {
-        showCustomToast('Operation failed!', 'error')
+      const payload = {
+        clinicId,
+        branchId,
+        title: form.title,
+        body: form.body,
+        image: stripDataUrl(form.image),
+        sendAll: form.sendAll,
+        tokens,
       }
-    } catch (err) {
-      console.error('[FCM] handleSubmit:', err)
-    } finally {
-      setSendIsLoading(false)
+
+      try {
+        setSendIsLoading(true)
+        const res = form.isEditing && form.editId
+          ? await http.put(`${BASE_URL}/pricedrop/${form.editId}`, payload)
+          : await http.post(`${BASE_URL}/pricedrop`, payload)
+
+        if (res.data?.success) {
+          showCustomToast(form.isEditing ? 'Updated successfully!' : 'Sent successfully!')
+          resetForm()
+          fetchNotifications()
+        } else {
+          showCustomToast('Operation failed!', 'error')
+        }
+      } catch (err) {
+        console.error('[FCM] handleSubmit inapp:', err)
+        showCustomToast('Operation failed!', 'error')
+      } finally {
+        setSendIsLoading(false)
+      }
+    } else if (activeTab === 'whatsapp') {
+      const selected = form.sendAll ? customerOptions : form.selectedCustomers;
+      const list = selected.map((c) => ({
+        patientId: c.patientId,
+        name: c.name,
+        mobileNumber: c.mobileNumber
+      }))
+
+      const payload = {
+        // clinicId,
+        // branchId,
+        clinicName: localStorage.getItem('HospitalName'),
+        branchName: localStorage.getItem('branchName'),
+        title: form.title,
+        body: selected.length > 0 ? `Hi ${selected[0].name}. ${form.body}` : form.body,
+        // body: `Hello, ${selected[0].name}\n\n${form.body}`,
+        list
+      }
+
+      try {
+        setSendIsLoading(true)
+        const res = await http.post(`${BASE_URL}/notifications/whatsapp/custom`, payload)
+        if (res.data?.statusCode === 200) {
+          showCustomToast(res.data?.message || 'WhatsApp notifications sent successfully!')
+          resetForm()
+        } else {
+          showCustomToast(res.data?.message || 'Operation failed!', 'error')
+        }
+      } catch (err) {
+        console.error('[FCM] handleSubmit whatsapp:', err)
+        showCustomToast('Operation failed!', 'error')
+      } finally {
+        setSendIsLoading(false)
+      }
+    } else if (activeTab === 'gmail') {
+      const selected = form.sendAll ? customerOptions.filter(c => c.email) : form.selectedCustomers;
+      const list = selected.map((c) => ({
+        patientId: c.patientId,
+        patientName: c.name,
+        patientEmail: c.email
+      }))
+
+      const payload = {
+        clinicId,
+        branchId,
+        clinicName: localStorage.getItem('HospitalName'),
+        branchName: localStorage.getItem('branchName'),
+        title: form.title,
+        body: form.body,
+        list
+      }
+
+      try {
+        setSendIsLoading(true)
+        const res = await http.post(`${BASE_URL}/savePatientMessage`, payload)
+        if (res.data?.success) {
+          showCustomToast(res.data.message || 'Gmail notifications sent successfully!')
+          resetForm()
+        } else {
+          showCustomToast(res.data.message || 'Operation failed!', 'error')
+        }
+      } catch (err) {
+        console.error('[FCM] handleSubmit gmail:', err)
+        showCustomToast('Operation failed!', 'error')
+      } finally {
+        setSendIsLoading(false)
+      }
     }
   }
 
@@ -416,12 +497,34 @@ const FCMNotification = () => {
         <div className="fcm-page-title-group">
           <div className="fcm-page-icon"><Bell size={20} /></div>
           <div>
-            <h4 className="fcm-page-title">Push Notifications</h4>
+            <h4 className="fcm-page-title">Notifications</h4>
             <p className="fcm-page-sub">
-              {sentNotifications.length} notification{sentNotifications.length !== 1 ? 's' : ''} sent
+              Manage your WhatsApp, Gmail, and In-App notifications
             </p>
           </div>
         </div>
+      </div>
+
+      {/* ── TAB BAR ──────────────────────────────────── */}
+      <div className="fcm-tab-bar">
+        <button
+          className={`fcm-tab-btn ${activeTab === 'whatsapp' ? 'fcm-tab-active' : ''}`}
+          onClick={() => { setActiveTab('whatsapp'); resetForm(); }}
+        >
+          <MessageCircle size={16} /> WhatsApp
+        </button>
+        <button
+          className={`fcm-tab-btn ${activeTab === 'gmail' ? 'fcm-tab-active' : ''}`}
+          onClick={() => { setActiveTab('gmail'); resetForm(); }}
+        >
+          <Mail size={16} /> Gmail
+        </button>
+        <button
+          className={`fcm-tab-btn ${activeTab === 'inapp' ? 'fcm-tab-active' : ''}`}
+          onClick={() => { setActiveTab('inapp'); resetForm(); }}
+        >
+          <Smartphone size={16} /> In-App Notification
+        </button>
       </div>
 
       {/* ── COMPOSE / EDIT FORM ──────────────────────── */}
@@ -431,7 +534,58 @@ const FCMNotification = () => {
         </div>
 
         <div className="fcm-form-grid">
-          {/* Left */}
+          {/* Left Column */}
+          <div className="fcm-form-col">
+            {/* Customer selector */}
+            {(activeTab === 'whatsapp' || !form.sendAll) && (
+              <div className="fcm-field">
+                <CFormLabel className="fcm-label">Select Customer{activeTab !== 'whatsapp' ? 's' : ''}</CFormLabel>
+                <Select
+                  isMulti={activeTab !== 'whatsapp'}
+                  options={
+                    activeTab === 'whatsapp'
+                      ? customerOptions.map(c => ({ ...c, label: `${c.name} (${c.patientId || 'No ID'}) - ${c.mobileNumber || 'No Mobile'}` }))
+                      : activeTab === 'gmail'
+                        ? customerOptions.filter(c => c.email).map(c => ({ ...c, label: `${c.name} (${c.patientId || 'No ID'}) - ${c.email}` }))
+                        : customerOptions
+                  }
+                  value={activeTab === 'whatsapp' ? (form.selectedCustomers[0] || null) : form.selectedCustomers}
+                  onChange={(val) => {
+                    if (activeTab === 'whatsapp') {
+                      setF({ selectedCustomers: val ? [val] : [] })
+                    } else {
+                      setF({ selectedCustomers: val || [] })
+                    }
+                  }}
+                  isLoading={loading}
+                  placeholder={activeTab === 'whatsapp' ? "Search & select a customer..." : "Search & select customers..."}
+                  closeMenuOnSelect={activeTab === 'whatsapp'}
+                  menuPlacement="auto"
+                  menuPortalTarget={document.body}
+                  styles={selectStyles}
+                />
+              </div>
+            )}
+
+            <div className="fcm-field">
+              <CFormLabel className="fcm-label">Body <span className="fcm-req">*</span></CFormLabel>
+              {activeTab === 'whatsapp' && (
+                <div style={{ padding: '8px 12px', backgroundColor: '#f3f4f6', border: '0.5px solid #d0dce9', borderBottom: 'none', borderRadius: '6px 6px 0 0', color: '#6b7280', fontSize: '13px' }}>
+                  Hello, {form.selectedCustomers?.[0]?.name || '[Patient Name]'}
+                </div>
+              )}
+              <CFormTextarea
+                className="fcm-input fcm-textarea"
+                rows={4}
+                placeholder="Enter message..."
+                value={form.body}
+                onChange={(e) => setF({ body: e.target.value })}
+                style={activeTab === 'whatsapp' ? { borderTopLeftRadius: 0, borderTopRightRadius: 0 } : {}}
+              />
+            </div>
+          </div>
+
+          {/* Right Column */}
           <div className="fcm-form-col">
             <div className="fcm-field">
               <CFormLabel className="fcm-label">Title <span className="fcm-req">*</span></CFormLabel>
@@ -443,70 +597,41 @@ const FCMNotification = () => {
               />
             </div>
 
-            <div className="fcm-field">
-              <CFormLabel className="fcm-label">Image (Optional)</CFormLabel>
-              <CFormInput
-                className="fcm-input"
-                type="file"
-                accept="image/*"
-                ref={fileInputRef}
-                onChange={handleImageChange}
-              />
-              {/* ✅ Preview — shown whenever form.image has a value (from file pick OR edit load) */}
-              {form.image && (
-                <img
-                  src={form.image}
-                  alt="preview"
-                  style={{ width: '100%', maxHeight: 180, objectFit: 'contain', borderRadius: 8, marginTop: 8, border: '0.5px solid #d0dce9' }}
-                  onError={(e) => { e.currentTarget.style.display = 'none' }}
+            {activeTab !== 'whatsapp' && (
+              <div className="fcm-field">
+                <CFormCheck
+                  className="fcm-check"
+                  type="checkbox"
+                  label="Send to all users"
+                  checked={form.sendAll}
+                  onChange={(e) => setF({ sendAll: e.target.checked })}
                 />
-              )}
-            </div>
-          </div>
+              </div>
+            )}
 
-          {/* Right */}
-          <div className="fcm-form-col">
-            <div className="fcm-field">
-              <CFormLabel className="fcm-label">Body <span className="fcm-req">*</span></CFormLabel>
-              <CFormTextarea
-                className="fcm-input fcm-textarea"
-                rows={4}
-                placeholder="Enter message..."
-                value={form.body}
-                onChange={(e) => setF({ body: e.target.value })}
-              />
-            </div>
-
-            <div className="fcm-field">
-              <CFormCheck
-                className="fcm-check"
-                type="checkbox"
-                label="Send to all users"
-                checked={form.sendAll}
-                onChange={(e) => setF({ sendAll: e.target.checked })}
-              />
-            </div>
+            {activeTab === 'inapp' && (
+              <div className="fcm-field">
+                <CFormLabel className="fcm-label">Image (Optional)</CFormLabel>
+                <CFormInput
+                  className="fcm-input"
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                />
+                {/* ✅ Preview — shown whenever form.image has a value (from file pick OR edit load) */}
+                {form.image && (
+                  <img
+                    src={form.image}
+                    alt="preview"
+                    style={{ width: '100%', maxHeight: 180, objectFit: 'contain', borderRadius: 8, marginTop: 8, border: '0.5px solid #d0dce9' }}
+                    onError={(e) => { e.currentTarget.style.display = 'none' }}
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Customer selector */}
-        {!form.sendAll && (
-          <div className="fcm-field" style={{ marginTop: 4 }}>
-            <CFormLabel className="fcm-label">Select Customers</CFormLabel>
-            <Select
-              isMulti
-              options={customerOptions}
-              value={form.selectedCustomers}
-              onChange={(val) => setF({ selectedCustomers: val || [] })}
-              isLoading={loading}
-              placeholder="Search & select customers..."
-              closeMenuOnSelect={false}
-              menuPlacement="auto"
-              menuPortalTarget={document.body}
-              styles={selectStyles}
-            />
-          </div>
-        )}
 
         {/* Actions */}
         <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -522,178 +647,182 @@ const FCMNotification = () => {
         </div>
       </div>
 
-      {/* ── TABLE ────────────────────────────────────── */}
-      <div className="fcm-table-header">
-        <span className="fcm-section-label" style={{ margin: 0 }}>Sent Notifications Log</span>
-        <span className="fcm-count-pill">{sentNotifications.length} total</span>
-      </div>
+      {activeTab === 'inapp' && (
+        <>
+          {/* ── TABLE ────────────────────────────────────── */}
+          <div className="fcm-table-header">
+            <span className="fcm-section-label" style={{ margin: 0 }}>Sent Notifications Log</span>
+            <span className="fcm-count-pill">{sentNotifications.length} total</span>
+          </div>
 
-      <CTableHeaderCell className='d-flex justify-content-between align-items-center mb-2'>
-        <div >
-          <input
-            type="checkbox"
-            checked={
-              paginatedNotifications.length > 0 &&
-              selectedNotifications.length === paginatedNotifications.length
-            }
-            onChange={handleSelectAll}
-          />  Select All
-          <p className='text-muted' style={{ fontSize: 12 }}>*Selecting only this visible notification.</p>
-        </div>
+          <CTableHeaderCell className='d-flex justify-content-between align-items-center mb-2'>
+            <div >
+              <input
+                type="checkbox"
+                checked={
+                  paginatedNotifications.length > 0 &&
+                  selectedNotifications.length === paginatedNotifications.length
+                }
+                onChange={handleSelectAll}
+              />  Select All
+              <p className='text-muted' style={{ fontSize: 12 }}>*Selecting only this visible notification.</p>
+            </div>
 
-        <div>
-          {selectedNotifications.length > 0 && (
-            <button
-              className="fcm-delete-btn"
-              onClick={() => setBulkDeleteModal(true)}
-            >
-              Delete Selected ({selectedNotifications.length})
-            </button>
-          )}
-        </div>
-      </CTableHeaderCell>
+            <div>
+              {selectedNotifications.length > 0 && (
+                <button
+                  className="fcm-delete-btn"
+                  onClick={() => setBulkDeleteModal(true)}
+                >
+                  Delete Selected ({selectedNotifications.length})
+                </button>
+              )}
+            </div>
+          </CTableHeaderCell>
 
-      <div className="fcm-table-wrapper">
-        <CTable className="fcm-table">
-          <CTableHead>
-            <CTableRow>
+          <div className="fcm-table-wrapper">
+            <CTable className="fcm-table">
+              <CTableHead>
+                <CTableRow>
 
-              <CTableHeaderCell className="fcm-th" style={{ width: 56 }}>Select</CTableHeaderCell>
-              <CTableHeaderCell className="fcm-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
-              <CTableHeaderCell className="fcm-th">Title</CTableHeaderCell>
-              <CTableHeaderCell className="fcm-th">Body</CTableHeaderCell>
-              <CTableHeaderCell className="fcm-th">Date</CTableHeaderCell>
-              <CTableHeaderCell className="fcm-th">Image</CTableHeaderCell>
-              <CTableHeaderCell className="fcm-th" style={{ width: 120 }}>Actions</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
+                  <CTableHeaderCell className="fcm-th" style={{ width: 56 }}>Select</CTableHeaderCell>
+                  <CTableHeaderCell className="fcm-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
+                  <CTableHeaderCell className="fcm-th">Title</CTableHeaderCell>
+                  <CTableHeaderCell className="fcm-th">Body</CTableHeaderCell>
+                  <CTableHeaderCell className="fcm-th">Date</CTableHeaderCell>
+                  <CTableHeaderCell className="fcm-th">Image</CTableHeaderCell>
+                  <CTableHeaderCell className="fcm-th" style={{ width: 120 }}>Actions</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
 
-          <CTableBody>
-            {paginatedNotifications.length === 0 ? (
-              <CTableRow>
-                <CTableDataCell colSpan={6}>
-                  <div className="fcm-empty">
-                    <Bell size={40} className="fcm-empty-icon" />
-                    <p>No notifications sent yet.</p>
-                  </div>
-                </CTableDataCell>
-              </CTableRow>
-            ) : (
-              paginatedNotifications.map((n, idx) => {
-                // ✅ Use pre-resolved _normImage — never null-checks on raw fields here
-                const imgSrc = toImgSrc(n._normImage)
-
-                return (
-                  <CTableRow key={n._id || idx} className="fcm-tr">
-                    <CTableDataCell>
-                      <input
-                        type="checkbox"
-                        checked={selectedNotifications.includes(n._id || n.id)}
-                        onChange={() => handleSelectNotification(n._id || n.id)}
-                      />
-                    </CTableDataCell>
-                    <CTableDataCell className="fcm-td fcm-td-num">
-                      {(currentPage - 1) * pageSize + idx + 1}
-                    </CTableDataCell>
-
-                    <CTableDataCell className="fcm-td">
-                      <span className="fcm-title-cell">{n.title}</span>
-                    </CTableDataCell>
-
-                    <CTableDataCell className="fcm-td fcm-muted fcm-body-cell">
-                      {n.body}
-                    </CTableDataCell>
-
-                    <CTableDataCell className="fcm-td fcm-muted">
-                      {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
-                    </CTableDataCell>
-
-                    {/* ✅ Image cell */}
-                    <CTableDataCell className="fcm-td">
-                      {imgSrc ? (
-                        <img
-                          src={imgSrc}
-                          alt="notif"
-                          style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 6, border: '0.5px solid #d0dce9', display: 'block' }}
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
-                            if (e.currentTarget.nextSibling) e.currentTarget.nextSibling.style.display = 'inline'
-                          }}
-                        />
-                      ) : null}
-                      <span className="fcm-muted" style={{ display: imgSrc ? 'none' : 'inline' }}>—</span>
-                    </CTableDataCell>
-
-                    <CTableDataCell className="fcm-td">
-                      <div className="fcm-actions">
-                        {can('Push Notification', 'read') && (
-                          <button className="fcm-action-btn view" title="View" onClick={() => handleView(n)}>
-                            <Eye size={14} />
-                          </button>
-                        )}
-                        {can('Push Notification', 'update') && (
-                          <button className="fcm-action-btn edit" title="Edit" onClick={() => handleEdit(n)}>
-                            <Edit2 size={14} />
-                          </button>
-                        )}
-                        {can('Push Notification', 'delete') && (
-                          <button className="fcm-action-btn del" title="Delete" onClick={() => handleDeleteClick(n)}>
-                            <Trash2 size={14} />
-                          </button>
-                        )}
+              <CTableBody>
+                {paginatedNotifications.length === 0 ? (
+                  <CTableRow>
+                    <CTableDataCell colSpan={6}>
+                      <div className="fcm-empty">
+                        <Bell size={40} className="fcm-empty-icon" />
+                        <p>No notifications sent yet.</p>
                       </div>
                     </CTableDataCell>
                   </CTableRow>
-                )
-              })
-            )}
-          </CTableBody>
-        </CTable>
-      </div>
-      <CModal
-        visible={bulkDeleteModal}
-        onClose={() => setBulkDeleteModal(false)}
-        alignment="center"
-      >
-        <CModalHeader>
-          <CModalTitle>
-            <AlertTriangle size={18} color="#e24b4a" />
-            Confirm Delete
-          </CModalTitle>
-        </CModalHeader>
+                ) : (
+                  paginatedNotifications.map((n, idx) => {
+                    // ✅ Use pre-resolved _normImage — never null-checks on raw fields here
+                    const imgSrc = toImgSrc(n._normImage)
 
-        <CModalBody>
-          Are you sure you want to delete
-          <strong> {selectedNotifications.length} notifications</strong>?
-          <br />
-          <small>This action cannot be undone.</small>
-        </CModalBody>
+                    return (
+                      <CTableRow key={n._id || idx} className="fcm-tr">
+                        <CTableDataCell>
+                          <input
+                            type="checkbox"
+                            checked={selectedNotifications.includes(n._id || n.id)}
+                            onChange={() => handleSelectNotification(n._id || n.id)}
+                          />
+                        </CTableDataCell>
+                        <CTableDataCell className="fcm-td fcm-td-num">
+                          {(currentPage - 1) * pageSize + idx + 1}
+                        </CTableDataCell>
 
-        <CModalFooter>
-          <button
-            className="fcm-cancel-btn"
-            onClick={() => setBulkDeleteModal(false)}
+                        <CTableDataCell className="fcm-td">
+                          <span className="fcm-title-cell">{n.title}</span>
+                        </CTableDataCell>
+
+                        <CTableDataCell className="fcm-td fcm-muted fcm-body-cell">
+                          {n.body}
+                        </CTableDataCell>
+
+                        <CTableDataCell className="fcm-td fcm-muted">
+                          {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
+                        </CTableDataCell>
+
+                        {/* ✅ Image cell */}
+                        <CTableDataCell className="fcm-td">
+                          {imgSrc ? (
+                            <img
+                              src={imgSrc}
+                              alt="notif"
+                              style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 6, border: '0.5px solid #d0dce9', display: 'block' }}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none'
+                                if (e.currentTarget.nextSibling) e.currentTarget.nextSibling.style.display = 'inline'
+                              }}
+                            />
+                          ) : null}
+                          <span className="fcm-muted" style={{ display: imgSrc ? 'none' : 'inline' }}>—</span>
+                        </CTableDataCell>
+
+                        <CTableDataCell className="fcm-td">
+                          <div className="fcm-actions">
+                            {can('Push Notification', 'read') && (
+                              <button className="fcm-action-btn view" title="View" onClick={() => handleView(n)}>
+                                <Eye size={14} />
+                              </button>
+                            )}
+                            {can('Push Notification', 'update') && (
+                              <button className="fcm-action-btn edit" title="Edit" onClick={() => handleEdit(n)}>
+                                <Edit2 size={14} />
+                              </button>
+                            )}
+                            {can('Push Notification', 'delete') && (
+                              <button className="fcm-action-btn del" title="Delete" onClick={() => handleDeleteClick(n)}>
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </CTableDataCell>
+                      </CTableRow>
+                    )
+                  })
+                )}
+              </CTableBody>
+            </CTable>
+          </div>
+          <CModal
+            visible={bulkDeleteModal}
+            onClose={() => setBulkDeleteModal(false)}
+            alignment="center"
           >
-            Cancel
-          </button>
+            <CModalHeader>
+              <CModalTitle>
+                <AlertTriangle size={18} color="#e24b4a" />
+                Confirm Delete
+              </CModalTitle>
+            </CModalHeader>
 
-          <button
-            className="fcm-delete-btn"
-            onClick={confirmBulkDelete}
-          >
-            Yes, Delete
-          </button>
-        </CModalFooter>
-      </CModal>
-      <div className="mt-3 mb-3">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
-        />
-      </div>
+            <CModalBody>
+              Are you sure you want to delete
+              <strong> {selectedNotifications.length} notifications</strong>?
+              <br />
+              <small>This action cannot be undone.</small>
+            </CModalBody>
+
+            <CModalFooter>
+              <button
+                className="fcm-cancel-btn"
+                onClick={() => setBulkDeleteModal(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="fcm-delete-btn"
+                onClick={confirmBulkDelete}
+              >
+                Yes, Delete
+              </button>
+            </CModalFooter>
+          </CModal>
+          <div className="mt-3 mb-3">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        </>
+      )}
 
       {/* ── VIEW MODAL ───────────────────────────────── */}
       <CModal
@@ -885,6 +1014,19 @@ const FCMNotification = () => {
         }
         .fcm-page-title { font-size: 17px; font-weight: 600; color: #0c447c; margin: 0; }
         .fcm-page-sub   { font-size: 12px; color: #6b7280; margin: 0; }
+        .fcm-tab-bar {
+          display: flex; gap: 8px; border-bottom: 0.5px solid #d0dce9;
+          margin-bottom: 20px; overflow-x: auto;
+        }
+        .fcm-tab-btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 10px 16px; font-size: 13px; font-weight: 600;
+          color: #6b7280; background: transparent; border: none;
+          border-bottom: 2px solid transparent; cursor: pointer;
+          transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+        }
+        .fcm-tab-btn:hover { color: #185fa5; }
+        .fcm-tab-active { color: #185fa5 !important; border-bottom-color: #185fa5 !important; }
         .fcm-compose-card {
           background: #fff; border: 0.5px solid #d0dce9;
           border-radius: 12px; padding: 20px; margin-bottom: 20px;

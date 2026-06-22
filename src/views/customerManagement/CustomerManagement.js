@@ -219,9 +219,15 @@ const CustomerManagement = () => {
     if (!formData.title.trim()) errs.title = 'Title is required'
     if (!formData.firstName.trim()) errs.firstName = 'First name is required'
     if (!/^[1-9]\d{9}$/.test(formData.mobileNumber)) errs.mobileNumber = 'Valid 10-digit number required'
-    if (formData.email && formData.email.trim() && !emailPattern.test(formData.email)) errs.email = 'Valid email required'
+    if (!formData.email || !formData.email.trim()) {
+      errs.email = 'Email is required'
+    } else if (!emailPattern.test(formData.email)) {
+      errs.email = 'Valid email required'
+    }
 
-    if (formData.dateOfBirth && formData.dateOfBirth.trim()) {
+    if (!formData.dateOfBirth || !formData.dateOfBirth.trim()) {
+      errs.dateOfBirth = 'Date of birth is required'
+    } else {
       const dob = new Date(formData.dateOfBirth)
       if (isNaN(dob) || dob > new Date()) {
         errs.dateOfBirth = 'Invalid date of birth'
@@ -502,7 +508,7 @@ const CustomerManagement = () => {
                 </CFormSelect>
               </Field>
 
-              <Field label="Date of Birth" error={formErrors.dateOfBirth}>
+              <Field label="Date of Birth" required error={formErrors.dateOfBirth}>
                 <CFormInput
                   type="date"
                   name="dateOfBirth"
@@ -531,7 +537,7 @@ const CustomerManagement = () => {
                 <CFormInput value={formData.age || ''} className="cm-input cm-input-readonly" readOnly placeholder="Auto-calculated" />
               </Field>
 
-              <Field label="Email" error={formErrors.email}>
+              <Field label="Email" required error={formErrors.email}>
                 <CFormInput
                   type="email"
                   name="email"

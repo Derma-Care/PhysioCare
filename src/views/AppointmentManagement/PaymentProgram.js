@@ -13,7 +13,7 @@ import { COLORS } from "../../Constant/Themes";
 import PrintLetterHead from "../../Utils/PrintLetterHead";
 import { CalendarOff, Info } from "lucide-react";
 
-export default function ProgramPayment({ paymentProps, isBillingTab }) {
+export default function ProgramPayment({ paymentProps, isBillingTab, onPaymentSuccess }) {
   const location = useLocation();
 
   console.log("Received data:", location.state || paymentProps);
@@ -964,7 +964,15 @@ export default function ProgramPayment({ paymentProps, isBillingTab }) {
         setIsFollowUpPayment(true);
         setPrintData({ ...payload, selectedItems: selectedValue, tableData, startDate });
         showCustomToast("Payment processed successfully!", "success");
-        navigate(-1);
+        if (!isBillingTab) {
+          navigate(-1);
+        } else {
+          // Stay in billing tab and refresh the payment details
+          initializePayment();
+          if (onPaymentSuccess) {
+            onPaymentSuccess();
+          }
+        }
       } else {
         showCustomToast(data.message || "Payment processing failed.", "error");
       }

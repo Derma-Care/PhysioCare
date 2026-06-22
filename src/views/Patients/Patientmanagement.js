@@ -260,7 +260,7 @@ const PatientManagement = () => {
                 <InfoRow label="Patient ID" value={selectedPatient.patientId} />
                 <InfoRow label="Full Name" value={selectedPatient.fullName} />
                 <InfoRow label="Gender" value={selectedPatient.gender} />
-                <InfoRow label="Age" value={selectedPatient.age} />
+                <InfoRow label="Age" value={selectedPatient.age + ' Yrs'} />
                 <InfoRow label="Date of Birth" value={selectedPatient.dateOfBirth} />
                 <InfoRow label="Mobile" value={selectedPatient.mobileNumber} />
                 <InfoRow label="Email" value={selectedPatient.email} />

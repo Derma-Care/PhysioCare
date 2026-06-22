@@ -37,7 +37,8 @@ export const features = [
   'Tax reports',
   'Refered By Doctor',
   'Patient Management',
-  'Recovery Support'
+  'Recovery Support',
+  'Attendance Reports',
 ]
 
 export const actions = ['create', 'read', 'update', 'delete']

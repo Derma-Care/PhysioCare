@@ -752,7 +752,11 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         if (isManualAddress && !addr.city?.trim()) addrErrs.city = 'City is required'
         if (isManualAddress && !addr.state?.trim()) addrErrs.state = 'State is required'
         if (Object.keys(addrErrs).length > 0) e.address = addrErrs
-        if (bookingDetails.email && bookingDetails.email.trim() && !emailPattern.test(bookingDetails.email)) e.email = 'Valid email required'
+        if (!bookingDetails.email || !bookingDetails.email.trim()) {
+          e.email = 'Email is required'
+        } else if (!emailPattern.test(bookingDetails.email)) {
+          e.email = 'Valid email required'
+        }
       }
     }
 
@@ -795,6 +799,11 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
       if (!bookingDetails.patientMobileNumber) e.patientMobileNumber = 'Mobile required'
       else if (!/^[6-9]\d{9}$/.test(bookingDetails.patientMobileNumber))
         e.patientMobileNumber = 'Invalid mobile number'
+      if (!bookingDetails.email || !bookingDetails.email.trim()) {
+        e.email = 'Email is required'
+      } else if (!emailPattern.test(bookingDetails.email)) {
+        e.email = 'Valid email required'
+      }
     }
 
     // ── Medical info: required unless service type ───────────────────────────
@@ -1177,10 +1186,10 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
             </CCol>
 
             <CCol md={4}>
-              <CFormLabel style={labelStyle}>Email</CFormLabel>
+              <CFormLabel style={labelStyle}>Email <span className="text-danger">*</span></CFormLabel>
               <CFormInput type="email" name="email" value={bookingDetails.email || ''}
                 onChange={handleBookingChange} className={`cm-input${errors.email ? ' is-invalid' : ''}`} />
-              {/* <ErrMsg msg={errors.patientMobileNumber} /> */}
+              <ErrMsg msg={errors.email} />
             </CCol>
 
 
