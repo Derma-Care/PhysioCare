@@ -233,8 +233,8 @@ export const getNavigation = (permissions = {}) => {
   // return allNav.filter((item) => permissions[item.name])
   return allNav.filter(
     (item) =>
-      permissions[item.name] || item.name === 'Attendance Reports' || item.name === 'Recovery Support'
-    // permissions[item.name]
+      // permissions[item.name] || item.name === 'Attendance Reports' || item.name === 'Recovery Support'
+      permissions[item.name]
 
 
 
