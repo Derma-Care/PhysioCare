@@ -20,6 +20,8 @@ import { wifiUrl } from '../../baseUrl';
 import CIcon from '@coreui/icons-react';
 import { cilCloudDownload, cilImage } from '@coreui/icons';
 import ConfirmationModal from "../../components/ConfirmationModal";
+import Pagination from '../../Utils/Pagination';
+import { useHospital } from '../Usecontext/HospitalContext';
 
 
 // ─── Dropdown Constants ─────────────────────────────────────────────────────
@@ -106,6 +108,7 @@ const EMPTY_FORM = {
 };
 
 const EquipmentManagement = () => {
+  const { setNotifications, setNotificationCount } = useHospital() || {};
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -115,9 +118,13 @@ const EquipmentManagement = () => {
   const [selectedEquip, setSelectedEquip] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
+  const clearError = (field) => setErrors(prev => { const e = { ...prev }; delete e[field]; return e; });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [activeTab, setActiveTab] = useState('list'); // list | add
+  const [dismissedAlerts, setDismissedAlerts] = useState([]);
   const [imageUploading, setImageUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState(null); // local object URL for preview
   const [imageModal, setImageModal] = useState(false);
@@ -147,6 +154,17 @@ const EquipmentManagement = () => {
     });
   }, [equipment, searchQuery, statusFilter]);
 
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
   // ─── Notifications (AMC/Warranty soon) ────────────────────────────────────
   const notifications = useMemo(() => {
     const today = new Date();
@@ -172,6 +190,10 @@ const EquipmentManagement = () => {
     return alerts;
   }, [equipment]);
 
+  const activeNotifications = useMemo(() => {
+    return notifications.filter(n => !dismissedAlerts.includes(`${n.type}-${n.id}`));
+  }, [notifications, dismissedAlerts]);
+
   // ─── Validation ────────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
@@ -187,7 +209,57 @@ const EquipmentManagement = () => {
   // ─── Fetch Real Data ────────────────────────────────────────────────────────
   useEffect(() => {
     fetchEquipmentData();
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
   }, []);
+
+  // Send consolidated Local Browser Notification
+  useEffect(() => {
+    if (notifications.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
+      const serviceCount = notifications.filter(n => n.type === 'Service Due').length;
+      const amcCount = notifications.filter(n => n.type === 'AMC').length;
+      const warrantyCount = notifications.filter(n => n.type === 'Warranty').length;
+      
+      const bodyParts = [];
+      if (serviceCount > 0) bodyParts.push(`${serviceCount} service(s) due`);
+      if (amcCount > 0) bodyParts.push(`${amcCount} AMC expiring`);
+      if (warrantyCount > 0) bodyParts.push(`${warrantyCount} warranty expiring`);
+      
+      if (bodyParts.length > 0) {
+        new Notification("PhysioCare Equipment Alerts", {
+          body: bodyParts.join(', '),
+          icon: '/favicon.ico'
+        });
+      }
+    }
+  }, [notifications]);
+
+  // Synchronize equipment notifications into global AppHeader notifications panel
+  useEffect(() => {
+    if (!setNotifications) return;
+
+    setNotifications((prev) => {
+      // Clean previous equipment alerts to avoid duplicates
+      const cleanPrev = (prev || []).filter(n => n.type !== 'EQUIPMENT_ALERT');
+
+      const newAlerts = activeNotifications.map((n, idx) => ({
+        id: `equip-${n.type}-${n.id || idx}`,
+        title: `${n.type} Alert: ${n.equip}`,
+        message: `${n.equip} is expiring/due in ${n.days} day(s).`,
+        type: 'EQUIPMENT_ALERT',
+        path: '/equipment-management'
+      }));
+
+      const merged = [...newAlerts, ...cleanPrev];
+
+      if (setNotificationCount) {
+        setNotificationCount(merged.length);
+      }
+
+      return merged;
+    });
+  }, [activeNotifications, setNotifications, setNotificationCount]);
 
   const fetchEquipmentData = async () => {
     try {
@@ -331,14 +403,51 @@ const EquipmentManagement = () => {
       </div>
 
       {/* ── Notifications Strip ── */}
-      {notifications.length > 0 && (
-        <div className="em-alerts">
-          <FontAwesomeIcon icon={faBell} className="me-2" />
-          {notifications.map((n, i) => (
-            <span key={i} className="em-alert-pill">
-              {n.equip} — <strong>{n.type}</strong> expiring in {n.days} day{n.days !== 1 ? 's' : ''}
-            </span>
-          ))}
+      {activeNotifications.length > 0 && (
+        <div className="em-alerts-container mb-3">
+          {activeNotifications.map((n, i) => {
+            let icon = faExclamationTriangle;
+            let typeClass = 'warranty';
+            let title = 'Warranty Expiring';
+            
+            if (n.type === 'AMC') {
+              icon = faCog;
+              typeClass = 'amc';
+              title = 'AMC Expiring';
+            } else if (n.type === 'Service Due') {
+              icon = faWrench;
+              typeClass = 'service';
+              title = 'Service Due';
+            }
+            
+            const alertKey = `${n.type}-${n.id}`;
+            
+            return (
+              <div key={i} className={`em-alert-card ${typeClass}`} style={{ position: 'relative', paddingRight: '36px' }}>
+                <div className="em-alert-icon-wrapper">
+                  <FontAwesomeIcon icon={icon} />
+                </div>
+                <div className="em-alert-content">
+                  <span className="em-alert-title">{title}</span>
+                  <span className="em-alert-desc">
+                    <strong>{n.equip}</strong> is expiring/due in <strong>{n.days}</strong> day{n.days !== 1 ? 's' : ''}.
+                  </span>
+                </div>
+                <button
+                  onClick={() => setDismissedAlerts(prev => [...prev, alertKey])}
+                  style={{
+                    position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px',
+                    color: 'inherit', opacity: 0.6, padding: '4px', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', borderRadius: '50%',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.opacity = 1}
+                  onMouseOut={e => e.currentTarget.style.opacity = 0.6}
+                  title="Dismiss alert"
+                >✕</button>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -418,12 +527,12 @@ const EquipmentManagement = () => {
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
-                  {filtered.map((eq, idx) => {
+                  {paginatedData.map((eq, idx) => {
                     const equipId = eq.id || eq._id || eq.equipmentId || `fallback-${idx}`;
                     const eqImg = eq.imageUrl || eq.image;
                     return (
                       <CTableRow key={equipId}>
-                        <CTableDataCell><span className="em-id-badge">{idx + 1}</span></CTableDataCell>
+                        <CTableDataCell><span className="em-id-badge">{(currentPage - 1) * pageSize + idx + 1}</span></CTableDataCell>
 
                         {/* Image cell */}
                         <CTableDataCell style={{ textAlign: 'center' }}>
@@ -460,6 +569,19 @@ const EquipmentManagement = () => {
                 </CTableBody>
               </CTable>
             )}
+            {filtered.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                pageSizeOptions={[5, 10, 20, 50]}
+              />
+            )}
           </div>
         </>
       ) : (
@@ -471,12 +593,12 @@ const EquipmentManagement = () => {
             <CRow>
               <CCol md={4} className="mb-3">
                 <label className="em-label">Equipment Name <span className="em-req">*</span></label>
-                <input className={`em-input ${errors.name ? 'em-input-err' : ''}`} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Ultrasound Machine" />
+                <input className={`em-input ${errors.name ? 'em-input-err' : ''}`} value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); clearError('name'); }} placeholder="e.g. Ultrasound Machine" />
                 {errors.name && <span className="em-err">{errors.name}</span>}
               </CCol>
               <CCol md={4} className="mb-3">
                 <label className="em-label">Category <span className="em-req">*</span></label>
-                <select className={`em-select ${errors.category ? 'em-input-err' : ''}`} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                <select className={`em-select ${errors.category ? 'em-input-err' : ''}`} value={form.category} onChange={e => { setForm({ ...form, category: e.target.value }); clearError('category'); }}>
                   <option value="">Select Category</option>
                   {EQUIPMENT_CATEGORIES.map(c => <option key={c}>{c}</option>)}
                 </select>
@@ -502,11 +624,12 @@ const EquipmentManagement = () => {
                 <input className="em-input" value={form.serialNo} onChange={e => setForm({ ...form, serialNo: e.target.value })} placeholder="e.g. SN-20240101" />
               </CCol>
               <CCol md={4} className="mb-3">
-                <label className="em-label">Department</label>
-                <select className="em-select" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })}>
+                <label className="em-label">Department <span className="em-req">*</span></label>
+                <select className={`em-select ${errors.department ? 'em-input-err' : ''}`} value={form.department} onChange={e => { setForm({ ...form, department: e.target.value }); clearError('department'); }}>
                   <option value="">Select Department</option>
                   {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
                 </select>
+                {errors.department && <span className="em-err">{errors.department}</span>}
               </CCol>
               <CCol md={4} className="mb-3">
                 <label className="em-label">Assigned Staff</label>
@@ -515,10 +638,11 @@ const EquipmentManagement = () => {
 
 
               <CCol md={4} className="mb-3">
-                <label className="em-label">Status</label>
-                <select className="em-select" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                <label className="em-label">Status <span className="em-req">*</span></label>
+                <select className={`em-select ${errors.status ? 'em-input-err' : ''}`} value={form.status} onChange={e => { setForm({ ...form, status: e.target.value }); clearError('status'); }}>
                   {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
                 </select>
+                {errors.status && <span className="em-err">{errors.status}</span>}
               </CCol>
 
               <CCol md={6} className="mb-3">
@@ -653,8 +777,14 @@ const EquipmentManagement = () => {
             <button type="button" className="em-btn em-btn-ghost" onClick={() => { setIsFormVisible(false); setForm(EMPTY_FORM); setErrors({}); setImagePreview(null); }}>
               Cancel
             </button>
-            <button type="submit" className="em-btn em-btn-primary" disabled={loading}>
-              {loading ? <CSpinner size="sm" /> : <><FontAwesomeIcon icon={faCheckCircle} /> {isEditing ? 'Update Equipment' : 'Save Equipment'}</>}
+            <button type="submit" className="em-btn em-btn-primary" disabled={loading || imageUploading}>
+              {loading ? (
+                <><CSpinner size="sm" /> Saving...</>
+              ) : imageUploading ? (
+                <><CSpinner size="sm" /> Uploading image...</>
+              ) : (
+                <><FontAwesomeIcon icon={faCheckCircle} /> {isEditing ? 'Update Equipment' : 'Save Equipment'}</>
+              )}
             </button>
           </div>
         </form>

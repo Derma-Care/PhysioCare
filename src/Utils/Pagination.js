@@ -1,6 +1,6 @@
 import React from 'react'
 
-const Pagination = ({ currentPage, totalPages, pageSize, onPageChange, onPageSizeChange }) => {
+const Pagination = ({ currentPage, totalPages, pageSize, onPageChange, onPageSizeChange, pageSizeOptions = [5, 10, 15, 20, 50] }) => {
   const handlePrev = () => { if (currentPage > 1) onPageChange(currentPage - 1) }
   const handleNext = () => { if (currentPage < totalPages) onPageChange(currentPage + 1) }
 
@@ -22,7 +22,7 @@ const Pagination = ({ currentPage, totalPages, pageSize, onPageChange, onPageSiz
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
         >
-          {[5, 10, 15, 20].map((n) => (
+          {pageSizeOptions.map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
         </select>

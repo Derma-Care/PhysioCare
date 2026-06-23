@@ -87,15 +87,12 @@ const AppHeader = () => {
 
   const handleNotifClick = (notif) => {
     setShowNotifPanel(false)
-    // Only navigate if it has a patientId AND is meant for session feedback,
-    // or if a specific path is provided in the payload.
-    if (notif.path && notif.path.includes('session-feedback')) {
+    if (notif.path) {
       navigate(notif.path)
     } else if (notif.patientId && (notif.type === 'SESSION_FEEDBACK' || String(notif.title).toLowerCase().includes('feedback'))) {
       const bookingParam = notif.bookingId ? `&bookingId=${notif.bookingId}` : '';
       navigate(`/session-feedback?patientId=${notif.patientId}${bookingParam}`)
     }
-    // Otherwise, just close the panel (do nothing else)
   }
 
   const removeNotification = (id) => {
