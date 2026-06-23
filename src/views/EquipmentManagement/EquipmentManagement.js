@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   CRow, CCol, CModal, CModalHeader, CModalTitle,
-  CModalBody, CButton, CSpinner, CModalFooter
+  CModalBody, CButton, CSpinner, CModalFooter,
+  CTable, CTableHead, CTableRow, CTableHeaderCell, CTableBody, CTableDataCell
 } from '@coreui/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -14,9 +15,11 @@ import { showCustomToast } from '../../Utils/Toaster';
 import './EquipmentManagement.css';
 import { Edit, Edit2, Eye, Trash2 } from 'lucide-react';
 import { uploadFile } from '../widgets/S3UploadServiceDoctor';
+import { getAllEquipment, addEquipment, updateEquipment, deleteEquipment } from './EquipmentAPI';
 import { wifiUrl } from '../../baseUrl';
 import CIcon from '@coreui/icons-react';
 import { cilCloudDownload, cilImage } from '@coreui/icons';
+import ConfirmationModal from "../../components/ConfirmationModal";
 
 
 // ─── Dropdown Constants ─────────────────────────────────────────────────────
@@ -103,7 +106,7 @@ const EMPTY_FORM = {
 };
 
 const EquipmentManagement = () => {
-  const [equipment, setEquipment] = useState(MOCK_EQUIPMENT);
+  const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -119,6 +122,11 @@ const EquipmentManagement = () => {
   const [imagePreview, setImagePreview] = useState(null); // local object URL for preview
   const [imageModal, setImageModal] = useState(false);
   const [selectedImageData, setSelectedImageData] = useState({ url: '', name: '' });
+
+  // Delete Modal State
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
   // ─── Derived Stats ─────────────────────────────────────────────────────────
   const stats = useMemo(() => ({
@@ -144,20 +152,21 @@ const EquipmentManagement = () => {
     const today = new Date();
     const alerts = [];
     equipment.forEach(e => {
+      const equipId = e.id || e._id || e.equipmentId;
       const warranty = e.warrantyExpiry ? new Date(e.warrantyExpiry) : null;
       const amc = e.amcEndDate ? new Date(e.amcEndDate) : null;
       const service = e.nextServiceDate ? new Date(e.nextServiceDate) : null;
       if (warranty) {
         const days = Math.ceil((warranty - today) / (1000 * 60 * 60 * 24));
-        if (days <= 15 && days >= 0) alerts.push({ equip: e.name, type: 'Warranty', days, id: e.id });
+        if (days <= 15 && days >= 0) alerts.push({ equip: e.name, type: 'Warranty', days, id: equipId });
       }
       if (amc) {
         const days = Math.ceil((amc - today) / (1000 * 60 * 60 * 24));
-        if (days <= 7 && days >= 0) alerts.push({ equip: e.name, type: 'AMC', days, id: e.id });
+        if (days <= 7 && days >= 0) alerts.push({ equip: e.name, type: 'AMC', days, id: equipId });
       }
       if (service) {
         const days = Math.ceil((service - today) / (1000 * 60 * 60 * 24));
-        if (days <= 2 && days >= 0) alerts.push({ equip: e.name, type: 'Service Due', days, id: e.id });
+        if (days <= 2 && days >= 0) alerts.push({ equip: e.name, type: 'Service Due', days, id: equipId });
       }
     });
     return alerts;
@@ -175,39 +184,94 @@ const EquipmentManagement = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (ev) => {
+  // ─── Fetch Real Data ────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetchEquipmentData();
+  }, []);
+
+  const fetchEquipmentData = async () => {
+    try {
+      const clinicId = localStorage.getItem('HospitalId');
+      const branchId = localStorage.getItem('branchId');
+      if (!clinicId || !branchId) return;
+
+      const res = await getAllEquipment(clinicId, branchId);
+      // Assuming res.data.data or res.data contains the list of equipment
+      const data = res?.data?.data || res?.data || [];
+      // If it's not an array, default to empty array
+      setEquipment(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch equipment", error);
+      showCustomToast('Failed to load equipment data.', 'error');
+    }
+  };
+
+  const handleSubmit = async (ev) => {
     ev.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      const clinicId = localStorage.getItem('HospitalId');
+      const branchId = localStorage.getItem('branchId');
+
+      const payload = {
+        ...form,
+        clinicId,
+        branchId,
+        purchaseCost: Number(form.purchaseCost) || 0,
+        currentValue: Number(form.currentValue) || 0,
+        imageUrl: form.image || form.imageUrl || ''
+      };
+
       if (isEditing) {
-        setEquipment(prev => prev.map(e => e.id === editingId ? { ...form, id: editingId } : e));
+        await updateEquipment(editingId, payload);
         showCustomToast('Equipment updated successfully.', 'success');
       } else {
-        const newId = `EQ-${String(equipment.length + 1).padStart(4, '0')}`;
-        setEquipment(prev => [{ ...form, id: newId }, ...prev]);
+        await addEquipment(payload);
         showCustomToast('Equipment added successfully.', 'success');
       }
-      setLoading(false);
+
+      await fetchEquipmentData(); // Refresh data
+
       setIsFormVisible(false);
       setForm(EMPTY_FORM);
       setIsEditing(false);
-    }, 700);
+    } catch (error) {
+      console.error("Save equipment error", error);
+      showCustomToast('Failed to save equipment.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const openEdit = (equip) => {
     setForm(equip);
     setIsEditing(true);
-    setEditingId(equip.id);
+    setEditingId(equip.equipmentId); // Assuming backend uses id or similar identifier
     setIsFormVisible(true);
     // Restore preview when editing: show existing image as preview
-    setImagePreview(equip.image || null);
+    setImagePreview(equip.imageUrl || null);
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Delete this equipment record?')) {
-      setEquipment(prev => prev.filter(e => e.id !== id));
+    setDeleteId(id);
+    setIsDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setDeleteLoading(true);
+      await deleteEquipment(deleteId);
       showCustomToast('Equipment deleted.', 'info');
+      fetchEquipmentData();
+    } catch (error) {
+      console.error("Delete equipment error", error);
+      showCustomToast('Failed to delete equipment.', 'error');
+    } finally {
+      setDeleteLoading(false);
+      setIsDeleteModalVisible(false);
+      setDeleteId(null);
     }
   };
 
@@ -219,7 +283,7 @@ const EquipmentManagement = () => {
     setImagePreview(URL.createObjectURL(file));
     setImageUploading(true);
     try {
-      const fileKey = await uploadFile('equipmentImage', file);
+      const fileKey = await uploadFile('equipment', file);
       setForm(prev => ({ ...prev, image: fileKey }));
       showCustomToast('Image uploaded successfully.', 'success');
     } catch (err) {
@@ -281,7 +345,7 @@ const EquipmentManagement = () => {
       {/* ── Header ── */}
       <div className="em-header">
         <div>
-          <h4 className="em-title">Equipment Management</h4>
+          <h4 className="em-title">Equipment Management ({filtered.length})</h4>
           <p className="em-subtitle">Track, manage, and maintain all clinic equipment</p>
         </div>
         {isFormVisible ? (
@@ -294,7 +358,7 @@ const EquipmentManagement = () => {
             </button>
           </div>
         ) : (
-          <button className="em-btn em-btn-primary" onClick={() => { setForm(EMPTY_FORM); setIsEditing(false); setErrors({}); setIsFormVisible(true); }}>
+          <button className="em-btn em-btn-primary" onClick={() => { setForm(EMPTY_FORM); setIsEditing(false); setErrors({}); setImagePreview(null); setIsFormVisible(true); }}>
             <FontAwesomeIcon icon={faPlus} /> Add Equipment
           </button>
         )}
@@ -305,10 +369,29 @@ const EquipmentManagement = () => {
         <>
           {/* Filters */}
           <div className="em-filters">
-            <input
-              className="em-search" placeholder="Search by name, brand, serial no..."
-              value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, maxWidth: '340px' }}>
+              <input
+                className="em-search"
+                style={{ width: '100%', paddingRight: searchQuery ? '30px' : '12px' }}
+                placeholder="Search by name, brand, serial no..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    position: 'absolute', right: '8px', background: 'none', border: 'none',
+                    cursor: 'pointer', color: '#94a3b8', fontSize: '14px', lineHeight: 1,
+                    display: 'flex', alignItems: 'center', padding: '2px',
+                    borderRadius: '50%', transition: 'color 0.15s',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.color = '#475569'}
+                  onMouseOut={e => e.currentTarget.style.color = '#94a3b8'}
+                  title="Clear search"
+                >✕</button>
+              )}
+            </div>
             <select className="em-select-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
               <option value="">All Statuses</option>
               {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
@@ -320,58 +403,62 @@ const EquipmentManagement = () => {
             {filtered.length === 0 ? (
               <div className="em-empty"><FontAwesomeIcon icon={faBoxOpen} size="3x" /><h6>No equipment found</h6><p>Add your first equipment record.</p></div>
             ) : (
-              <table className="em-table">
-                <thead>
-                  <tr>
-                    <th>Equip ID</th>
-                    <th>Images</th>
-                    <th>Name</th>
-                    {/* <th>Category</th> */}
-                    <th>Brand / Model</th>
-                    <th>Department</th>
-                    <th>Next Service</th>
-                    <th>Warranty Expiry</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(eq => (
-                    <tr key={eq.id}>
-                      <td><span className="em-id-badge">{eq.id}</span></td>
-                      {/* Image cell — click to open lightbox */}
-                      <td style={{ textAlign: 'center' }}>
-                        {eq.image
-                          ? <img
-                            src={eq.image.startsWith('http') ? eq.image : `${wifiUrl}/${eq.image}`}
-                            alt={eq.name}
-                            title="Click to enlarge"
-                            onClick={() => { setSelectedImageData({ url: eq.image.startsWith('http') ? eq.image : `${wifiUrl}/${eq.image}`, name: eq.name }); setImageModal(true); }}
-                            style={{ width: '42px', height: '42px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'transform 0.15s', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}
-                            onMouseOver={e => e.target.style.transform = 'scale(1.15)'}
-                            onMouseOut={e => e.target.style.transform = 'scale(1)'}
-                          />
-                          : <div style={{ width: '42px', height: '42px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', margin: '0 auto' }}>🔧</div>
-                        }
-                      </td>
-                      {/* Name cell */}
-                      <td><div className="em-name-cell"><strong>{eq.name}</strong><span>{eq.serialNo}</span></div></td>
-                      <td><div className="em-name-cell"><strong>{eq.brand}</strong><span>{eq.model}</span></div></td>
-                      <td>{eq.department}</td>
-                      <td>{eq.nextServiceDate || '—'}</td>
-                      <td>{eq.warrantyExpiry || '—'}</td>
-                      <td><span className={`em-badge ${getStatusClass(eq.status)}`}>{eq.status}</span></td>
-                      <td>
-                        <div className="em-actions">
-                          <button className="em-icon-btn view" onClick={() => handleView(eq)} title="View"><Eye /> </button>
-                          <button className="em-icon-btn edit" onClick={() => openEdit(eq)} title="Edit"><Edit2 /> </button>
-                          <button className="em-icon-btn delete" onClick={() => handleDelete(eq.id)} title="Delete"><Trash2 /> </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <CTable hover responsive className="em-table mb-0" align="middle">
+                <CTableHead color="light">
+                  <CTableRow>
+                    <CTableHeaderCell>#</CTableHeaderCell>
+                    <CTableHeaderCell>Image</CTableHeaderCell>
+                    <CTableHeaderCell>Name / Serial</CTableHeaderCell>
+                    <CTableHeaderCell>Brand / Model</CTableHeaderCell>
+                    <CTableHeaderCell>Department</CTableHeaderCell>
+                    <CTableHeaderCell>Next Service</CTableHeaderCell>
+                    <CTableHeaderCell>Warranty Expiry</CTableHeaderCell>
+                    <CTableHeaderCell>Status</CTableHeaderCell>
+                    <CTableHeaderCell>Actions</CTableHeaderCell>
+                  </CTableRow>
+                </CTableHead>
+                <CTableBody>
+                  {filtered.map((eq, idx) => {
+                    const equipId = eq.id || eq._id || eq.equipmentId || `fallback-${idx}`;
+                    const eqImg = eq.imageUrl || eq.image;
+                    return (
+                      <CTableRow key={equipId}>
+                        <CTableDataCell><span className="em-id-badge">{idx + 1}</span></CTableDataCell>
+
+                        {/* Image cell */}
+                        <CTableDataCell style={{ textAlign: 'center' }}>
+                          {eqImg
+                            ? <img
+                              src={eqImg.startsWith('http') ? eqImg : `${wifiUrl}/${eqImg}`}
+                              alt={eq.name}
+                              title="Click to enlarge"
+                              onClick={() => { setSelectedImageData({ url: eqImg.startsWith('http') ? eqImg : `${wifiUrl}/${eqImg}`, name: eq.name }); setImageModal(true); }}
+                              style={{ width: '42px', height: '42px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'transform 0.15s', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}
+                              onMouseOver={e => e.target.style.transform = 'scale(1.15)'}
+                              onMouseOut={e => e.target.style.transform = 'scale(1)'}
+                            />
+                            : <div style={{ width: '42px', height: '42px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', margin: '0 auto' }}>🔧</div>
+                          }
+                        </CTableDataCell>
+
+                        <CTableDataCell><div className="em-name-cell"><strong>{eq.name}</strong><span>{eq.serialNo}</span></div></CTableDataCell>
+                        <CTableDataCell><div className="em-name-cell"><strong>{eq.brand}</strong><span>{eq.model}</span></div></CTableDataCell>
+                        <CTableDataCell>{eq.department || '—'}</CTableDataCell>
+                        <CTableDataCell>{eq.nextServiceDate || '—'}</CTableDataCell>
+                        <CTableDataCell>{eq.warrantyExpiry || '—'}</CTableDataCell>
+                        <CTableDataCell><span className={`em-badge ${getStatusClass(eq.status)}`}>{eq.status}</span></CTableDataCell>
+                        <CTableDataCell>
+                          <div className="em-actions">
+                            <button className="em-icon-btn view" onClick={() => handleView(eq)} title="View"><Eye /></button>
+                            <button className="em-icon-btn edit" onClick={() => openEdit(eq)} title="Edit"><Edit2 /></button>
+                            <button className="em-icon-btn delete" onClick={() => handleDelete(equipId)} title="Delete"><Trash2 /></button>
+                          </div>
+                        </CTableDataCell>
+                      </CTableRow>
+                    )
+                  })}
+                </CTableBody>
+              </CTable>
             )}
           </div>
         </>
@@ -474,8 +561,8 @@ const EquipmentManagement = () => {
                       >✕ Remove</button>
                     </div>
                   )}
-                  {form.image && !imagePreview && (
-                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Saved: {form.image}</span>
+                  {form.imageUrl && !imagePreview && (
+                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Saved: {form.imageUrl}</span>
                   )}
                 </div>
               </CCol>
@@ -574,8 +661,8 @@ const EquipmentManagement = () => {
       )}
 
       {/* ── View Modal ── */}
-      <CModal visible={viewModal} onClose={() => setViewModal(false)} size="lg" backdrop="static">
-        <CModalHeader><CModalTitle>Equipment Details — {selectedEquip?.id}</CModalTitle></CModalHeader>
+      <CModal visible={viewModal} onClose={() => setViewModal(false)} size="lg" backdrop="static" className='custom-modal'>
+        <CModalHeader><CModalTitle>Equipment Details — {selectedEquip?.equipmentId}</CModalTitle></CModalHeader>
         <CModalBody>
           {selectedEquip && (
             <div className="em-view-grid">
@@ -615,12 +702,12 @@ const EquipmentManagement = () => {
                 <F label="Support Contract" val={selectedEquip.vendorDetails?.supportContractDetails} />
                 <F label="Notes" val={selectedEquip.notes} />
               </div>
-              {selectedEquip.image && (
+              {selectedEquip.imageUrl && (
                 <div className="em-view-section full-width">
                   <h6 className="em-view-sec-title">Equipment Image</h6>
                   <div style={{ marginTop: '10px' }}>
                     <img
-                      src={selectedEquip.image.startsWith('http') ? selectedEquip.image : `${wifiUrl}/${selectedEquip.image}`}
+                      src={selectedEquip.imageUrl.startsWith('http') ? selectedEquip.imageUrl : `${wifiUrl}/${selectedEquip.imageUrl}`}
                       alt="Equipment"
                       style={{ maxWidth: '240px', maxHeight: '200px', borderRadius: '10px', border: '1px solid #e2e8f0', objectFit: 'cover' }}
                       onError={e => e.target.style.display = 'none'}
@@ -728,6 +815,15 @@ const EquipmentManagement = () => {
           </CModalFooter>
         </CModal>
       )}
+
+      {/* ── DELETE CONFIRMATION MODAL ── */}
+      <ConfirmationModal
+        isVisible={isDeleteModalVisible}
+        message="Are you sure you want to delete this equipment record?"
+        onConfirm={confirmDelete}
+        onCancel={() => setIsDeleteModalVisible(false)}
+        isLoading={deleteLoading}
+      />
     </div>
   );
 };

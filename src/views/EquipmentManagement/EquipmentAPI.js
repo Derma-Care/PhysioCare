@@ -5,7 +5,7 @@ export const getAllEquipment = (clinicId, branchId) =>
   http.get(`${BASE_URL}/equipment/getAll/${clinicId}/${branchId}`);
 
 export const addEquipment = (payload) =>
-  http.post(`${BASE_URL}/equipment/add`, payload);
+  http.post(`${BASE_URL}/equipment/save`, payload);
 
 export const updateEquipment = (id, payload) =>
   http.put(`${BASE_URL}/equipment/update/${id}`, payload);

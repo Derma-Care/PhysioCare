@@ -275,7 +275,8 @@ const FCMNotification = () => {
         clinicName: localStorage.getItem('HospitalName'),
         branchName: localStorage.getItem('branchName'),
         title: form.title,
-        body: selected.length > 0 ? `Hi ${selected[0].name}. ${form.body}` : form.body,
+        body: form.body.replace(/\n/g, ' ').trim(),  // ✅ newlines → single space, merged clean
+        // body: selected.length > 0 ? `Hi ${selected[0].name}. ${form.body}` : form.body,
         // body: `Hello, ${selected[0].name}\n\n${form.body}`,
         list
       }

@@ -65,9 +65,12 @@ const IDB_STORE = 'pending_notifications'
 
 function openIDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, 1)
+    const req = indexedDB.open(IDB_NAME, 2) // ✅ must match firebase.js version
     req.onupgradeneeded = (e) => {
-      e.target.result.createObjectStore(IDB_STORE, { keyPath: 'id' })
+      const db = e.target.result
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: 'id' })
+      }
     }
     req.onsuccess = (e) => resolve(e.target.result)
     req.onerror = (e) => reject(e.target.error)

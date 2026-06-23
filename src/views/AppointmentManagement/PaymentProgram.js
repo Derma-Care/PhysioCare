@@ -825,6 +825,7 @@ export default function ProgramPayment({ paymentProps, isBillingTab, onPaymentSu
     payAfterService: true,
     discountAmount: Number(discountAmount || 0),
     discountIssuedBy,
+    treatmentName,
   };
 
   const handleSubmit = async () => {

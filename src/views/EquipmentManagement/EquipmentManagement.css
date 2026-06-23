@@ -318,43 +318,34 @@
   color: #7e22ce;
 }
 
+
+
 .em-actions {
   display: flex;
   gap: 6px;
+  align-items: center;
 }
 
 .em-icon-btn {
   width: 30px;
   height: 30px;
-  border: none;
   border-radius: 7px;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 12px;
-  transition: all 0.12s;
+  transition: filter 0.12s, transform 0.1s;
+  flex-shrink: 0;
 }
 
-.em-icon-btn.view {
-  background: #e6f1fb;
-  color: #185fa5;
-}
+.em-icon-btn.view  { background: #e6f1fb; color: #185fa5; }
+.em-icon-btn.edit  { background: #eaf3de; color: #3b6d11; }
+.em-icon-btn.delete { background: #fcebeb; color: #a32d2d; }
 
-.em-icon-btn.edit {
-  background: #dcfce7;
-  color: #166534;
-}
+.em-icon-btn:hover  { filter: brightness(0.9); transform: scale(1.07); }
+.em-icon-btn:active { transform: scale(0.94); }
 
-.em-icon-btn.delete {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.em-icon-btn:hover {
-  filter: brightness(0.88);
-  transform: scale(1.08);
-}
 
 .em-empty {
   text-align: center;

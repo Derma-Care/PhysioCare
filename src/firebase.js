@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getMessaging, getToken, onMessage } from 'firebase/messaging'
+import { getMessaging, getToken, deleteToken, onMessage } from 'firebase/messaging'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyApKucCeDspoqLR-hLZOFm7ZKMJBza281c',
@@ -19,9 +19,12 @@ const IDB_STORE = 'pending_notifications'
 
 function openIDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, 1)
+    const req = indexedDB.open(IDB_NAME, 2) // ✅ bumped to 2 to match existing browser IDB version
     req.onupgradeneeded = (e) => {
-      e.target.result.createObjectStore(IDB_STORE, { keyPath: 'id' })
+      const db = e.target.result
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: 'id' })
+      }
     }
     req.onsuccess = (e) => resolve(e.target.result)
     req.onerror = (e) => reject(e.target.error)
@@ -81,7 +84,60 @@ export const subscribeToBroadcastChannel = (onNotif) => {
 }
 
 // ─── GET TOKEN ────────────────────────────────────────────────────────────────
-export const getFCMToken = async () => {
+
+/** Deletes all Firebase/FCM-related IndexedDB databases.
+ *  Does NOT unregister service workers — unregistering causes AbortError
+ *  on the next login because the new SW hasn't activated yet. */
+const clearFirebaseIDB = async () => {
+  try {
+    const dbs = await window.indexedDB.databases()
+    const targets = dbs.filter(
+      (db) => db.name && (db.name.includes('firebase') || db.name.includes('fcm'))
+    )
+    await Promise.all(
+      targets.map(
+        (db) =>
+          new Promise((res) => {
+            const req = window.indexedDB.deleteDatabase(db.name)
+            req.onsuccess = res
+            req.onerror = res
+            req.onblocked = res
+          })
+      )
+    )
+    console.log('[firebase.js] Deleted Firebase IDB databases:', targets.map((d) => d.name))
+  } catch (e) {
+    console.warn('[firebase.js] Could not clear Firebase IDB:', e)
+  }
+}
+
+/**
+ * Waits until the given ServiceWorkerRegistration has an active worker.
+ * Handles the race where the SW is still installing when getToken() is called.
+ */
+const waitForSWActive = (registration) =>
+  new Promise((resolve) => {
+    if (registration.active) {
+      resolve(registration)
+      return
+    }
+    // SW is installing or waiting — listen for statechange
+    const sw = registration.installing || registration.waiting
+    if (sw) {
+      const onStateChange = () => {
+        if (sw.state === 'activated') {
+          sw.removeEventListener('statechange', onStateChange)
+          resolve(registration)
+        }
+      }
+      sw.addEventListener('statechange', onStateChange)
+    } else {
+      // Fallback: wait for navigator.serviceWorker.ready
+      navigator.serviceWorker.ready.then(() => resolve(registration))
+    }
+  })
+
+export const getFCMToken = async (isRetry = false) => {
   try {
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') {
@@ -91,35 +147,59 @@ export const getFCMToken = async () => {
 
     const registration = await navigator.serviceWorker.register(
       '/firebase-messaging-sw.js'
-    );
+    )
 
-    await navigator.serviceWorker.ready;
+    // ✅ Wait for SW to be fully ACTIVE before subscribing.
+    // navigator.serviceWorker.ready resolves when *a* SW is active but the
+    // specific registration may still be installing — causing AbortError.
+    await waitForSWActive(registration)
 
-    console.log("SW registered:", registration);
+    console.log('SW registered and active:', registration)
 
     const token = await getToken(messaging, {
       vapidKey: 'BLzhc9fU0Jm5Xxqp1pLAzphwK2ff20MLyjZGVO_B93KNFcBoiK1Q0EsEvVKNBcS0-KD5xeWjLfGzhs6t7HH-nls',
       serviceWorkerRegistration: registration,
     })
 
+    // ✅ If getToken returns empty (stale subscription on 2nd login), force-refresh the token
+    if (!token && !isRetry) {
+      console.warn('[firebase.js] Empty token — deleting stale subscription and retrying...')
+      try {
+        await deleteToken(messaging)
+      } catch (_) {
+        // ignore deleteToken errors, proceed to retry anyway
+      }
+      await new Promise((res) => setTimeout(res, 300))
+      return getFCMToken(true) // retry once with a fresh subscription
+    }
+
+    // ✅ Clear the reload-guard flag on success
+    sessionStorage.removeItem('fcm_idb_reload')
     console.log('FCM TOKEN:', token)
-    return token
+    return token || ''
   } catch (err) {
     console.error('An error occurred while retrieving token. ', err)
 
-    // Auto-fix for VersionError / IndexedDB corruption
+    // ✅ VersionError: Firebase's internal IDB was opened at wrong version.
+    // Firebase IDB connections are made at module-load time, so they cannot be
+    // repaired by retrying in the same session. We must:
+    //   1. Clear the bad IDB databases
+    //   2. Reload the page so Firebase re-initializes cleanly
+    // A sessionStorage flag prevents an infinite reload loop.
     if (err.message && err.message.includes('VersionError')) {
-      console.log('Attempting to clear corrupted Firebase IndexedDB...')
-      try {
-        const dbs = await window.indexedDB.databases()
-        dbs.forEach((db) => {
-          if (db.name.includes('firebase') || db.name.includes('fcm')) {
-            window.indexedDB.deleteDatabase(db.name)
-          }
-        })
-        console.log('Firebase IndexedDB cleared. Please refresh.')
-      } catch (dbErr) {
-        console.error('Failed to clear IndexedDB:', dbErr)
+      const alreadyReloaded = sessionStorage.getItem('fcm_idb_reload')
+      if (!alreadyReloaded) {
+        console.warn('[firebase.js] VersionError — clearing Firebase IDB and reloading page...')
+        sessionStorage.setItem('fcm_idb_reload', '1')
+        await clearFirebaseIDB()
+        // Small delay before reload to ensure IDB delete requests are dispatched
+        await new Promise((res) => setTimeout(res, 400))
+        window.location.reload()
+        return '' // unreachable but satisfies type
+      } else {
+        // Already reloaded once — still failing, give up to avoid loop
+        console.error('[firebase.js] VersionError persists after reload. FCM unavailable.')
+        sessionStorage.removeItem('fcm_idb_reload')
       }
     }
 

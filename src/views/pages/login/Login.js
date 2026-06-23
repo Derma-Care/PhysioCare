@@ -71,10 +71,10 @@ const Login = () => {
     setErrorMessage('')
 
     try {
-      // ✅ get FCM token first
+      // ✅ get FCM token first (this device's own token)
       await Notification.requestPermission()
       const fcmToken = await getFCMToken()
-      console.log(fcmToken)
+      console.log('📱 This device FCM token:', fcmToken)
       let res
       const loginBody = {
         userName,
@@ -151,8 +151,14 @@ const Login = () => {
           localStorage.setItem('token', payload.accessToken)
         }
 
-        // if (token) localStorage.setItem('token', token)
-        // localStorage.setItem('role', role)
+        // ✅ Always save THIS device's own FCM token (not the server's returned one).
+        // The server may return another device's token if multiple devices share the
+        // same account. We must persist our locally generated token so push
+        // notifications are delivered to THIS browser only.
+        if (fcmToken) {
+          localStorage.setItem('fcmToken', fcmToken)
+          console.log('✅ Saved this device FCM token to localStorage:', fcmToken)
+        }
 
         await new Promise((resolve) => setTimeout(resolve, 100))
 

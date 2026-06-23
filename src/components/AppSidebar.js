@@ -9,17 +9,17 @@ import { cilHospital } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 
 const AppSidebar = () => {
-  const dispatch    = useDispatch()
-  const unfoldable  = useSelector((state) => state.sidebarUnfoldable)
+  const dispatch = useDispatch()
+  const unfoldable = useSelector((state) => state.sidebarUnfoldable)
   const sidebarShow = useSelector((state) => state.sidebarShow)
   const { selectedHospital, hydrated, user } = useHospital()
-  const navigate    = useNavigate()
+  const navigate = useNavigate()
 
   if (!hydrated) return null
 
   const hospitalName = selectedHospital?.data.name || 'Hospital Name'
   const hospitalLogo = selectedHospital?.data.hospitalLogo || null
-  const navItems     = getNavigation(user?.permissions || {})
+  const navItems = getNavigation(user?.permissions || {})
 
   const handleHeaderClick = () => {
     const role = localStorage.getItem('role')
@@ -82,6 +82,7 @@ const AppSidebar = () => {
 
         {/* ── Footer ── */}
         <CSidebarFooter className="sb-footer d-none d-lg-flex">
+          <div style={{ color: "#d3d1d18c", fontSize: "10px", textAlign: "center" }}>Powered by Chiselon Technologies Pvt Ltd.</div>
           <CSidebarToggler
             onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
           />
@@ -245,6 +246,7 @@ const AppSidebar = () => {
         /* ─── Footer ────────────────────────────────── */
         .sb-footer {
           background: #152f59 !important;
+          color:"white" !important;
           border-top: 1px solid rgba(255,255,255,0.08) !important;
         }
         .sb-footer .c-sidebar-toggler,

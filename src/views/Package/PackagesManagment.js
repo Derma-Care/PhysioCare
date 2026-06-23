@@ -66,6 +66,8 @@ export default function PackagesManagement() {
   })
   const [errors, setErrors] = useState({})
 
+  const clearError = (field) => setErrors(prev => { const e = { ...prev }; delete e[field]; return e; })
+
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 
@@ -128,6 +130,13 @@ export default function PackagesManagement() {
     let err = {}
     if (!form.packageName.trim()) err.packageName = "Package name is required"
     if (form.programIds.length === 0) err.programIds = "Select at least one program"
+    if (!form.packageAmount && form.packageAmount !== 0) err.packageAmount = "Package amount is required"
+    else if (Number(form.packageAmount) <= 0) err.packageAmount = "Package amount must be greater than 0"
+    
+    if (Number(form.discountPercentage) > 0 || Number(form.discountAmount) > 0) {
+      if (!form.startOfferDate) err.startOfferDate = "Start date is required for discount"
+    }
+
     if (
       form.startOfferDate &&
       form.endOfferDate &&
@@ -426,7 +435,7 @@ export default function PackagesManagement() {
                     className={`pm-input${errors.packageName ? " is-invalid" : ""}`}
                     value={form.packageName}
                     placeholder="e.g. Physiotherapy Starter Pack"
-                    onChange={(e) => setForm({ ...form, packageName: e.target.value })}
+                    onChange={(e) => { setForm({ ...form, packageName: e.target.value }); clearError('packageName'); }}
                   />
                   <CFormText className="pm-err-msg">{errors.packageName}</CFormText>
                 </div>
@@ -444,6 +453,8 @@ export default function PackagesManagement() {
                     onChange={(val) => {
                       const selected = val || [];
                       const total = selected.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0);
+                      clearError('programIds');
+                      clearError('packageAmount');
                       updateDiscount({
                         programs: selected,
                         programIds: selected.map((v) => v.value),
@@ -469,12 +480,16 @@ export default function PackagesManagement() {
 
               <CCol md={6}>
                 <div className="pm-field">
-                  <CFormLabel className="pm-label">Package Amount</CFormLabel>
+                  <CFormLabel className="pm-label">
+                    Package Amount <span style={{ color: 'red' }}>*</span>
+                  </CFormLabel>
                   <CFormInput
-                    className="pm-input" type="number" placeholder="0"
+                    className={`pm-input${errors.packageAmount ? ' is-invalid' : ''}`}
+                    type="number" placeholder="0"
                     value={form.packageAmount}
-                    onChange={(e) => updateDiscount({ packageAmount: e.target.value })}
+                    onChange={(e) => { updateDiscount({ packageAmount: e.target.value }); clearError('packageAmount'); }}
                   />
+                  <CFormText className="pm-err-msg">{errors.packageAmount}</CFormText>
                 </div>
               </CCol>
 
@@ -515,9 +530,11 @@ export default function PackagesManagement() {
                 <div className="pm-field">
                   <CFormLabel className="pm-label">Start Date</CFormLabel>
                   <CFormInput
-                    className="pm-input" type="date" value={form.startOfferDate}
-                    onChange={(e) => setForm({ ...form, startOfferDate: e.target.value })}
+                    className={`pm-input${errors.startOfferDate ? " is-invalid" : ""}`} 
+                    type="date" value={form.startOfferDate}
+                    onChange={(e) => { setForm({ ...form, startOfferDate: e.target.value }); clearError('startOfferDate'); }}
                   />
+                  <CFormText className="pm-err-msg">{errors.startOfferDate}</CFormText>
                 </div>
               </CCol>
 
