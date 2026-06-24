@@ -31,65 +31,7 @@ const DEPARTMENTS = ['Physiotherapy', 'Orthopedics', 'Neurology', 'Cardiology', 
 const STATUS_OPTIONS = ['Active', 'Under Maintenance', 'Out of Service', 'Scrapped', 'In Warranty', 'AMC Active'];
 
 // ─── Mock Dummy Data ─────────────────────────────────────────────────────────
-const MOCK_EQUIPMENT = [
-  {
-    id: 'EQ-0001', name: 'Ultrasound Machine', category: 'Diagnostic', type: 'Machine',
-    brand: 'Siemens', model: 'ACUSON X300', serialNo: 'SN-20240101', status: 'Active',
-    department: 'Physiotherapy', purchaseDate: '2024-01-15', warrantyExpiry: '2026-01-15',
-    amcStartDate: '2024-01-15', amcEndDate: '2025-01-15',
-    purchaseCost: 450000, currentValue: 380000,
-    lastServiceDate: '2025-01-10',
-    vendorDetails: {
-      vendorName: 'MediEquip Pvt Ltd',
-      contactPerson: 'Ravi Kumar',
-      phone: '+91-9876543210',
-      email: 'support@mediequip.com',
-      address: '123 Health Street, NY',
-      supportContractDetails: '24/7 Priority Support'
-    },
-    image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=200&h=200&fit=crop',
-    assignedStaff: 'Dr. Rajan',
-    notes: 'Handle with care. Calibration every 6 months.'
-  },
-  {
-    id: 'EQ-0002', name: 'TENS Unit', category: 'Physiotherapy', type: 'Device',
-    brand: 'Enraf Nonius', model: 'Sonopuls 492', serialNo: 'SN-20240202', status: 'In Warranty',
-    department: 'Physiotherapy', purchaseDate: '2024-06-10', warrantyExpiry: '2026-06-10',
-    amcStartDate: '2025-06-10', amcEndDate: '2026-06-10',
-    purchaseCost: 85000, currentValue: 75000,
-    nextServiceDate: '2025-07-10', lastServiceDate: '2025-01-05',
-    vendorDetails: {
-      vendorName: 'PhysioSupplies Co.',
-      contactPerson: 'Anjali Desai',
-      phone: '+91-9988776655',
-      email: 'sales@physiosupplies.in',
-      address: '45 Wellness Blvd, Mumbai',
-      supportContractDetails: 'Standard 1 year replacement'
-    },
-    image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200&h=200&fit=crop',
-    assignedStaff: 'Meera Das',
-    notes: 'Check electrodes monthly.'
-  },
-  {
-    id: 'EQ-0003', name: 'Treadmill (Motorized)', category: 'Rehabilitation', type: 'Machine',
-    brand: 'Cosco', model: 'CT-500', serialNo: 'SN-20230811', status: 'Under Maintenance',
-    department: 'Physiotherapy', purchaseDate: '2023-08-11', warrantyExpiry: '2025-08-11',
-    amcStartDate: '2023-08-11', amcEndDate: '2024-08-11',
-    purchaseCost: 120000, currentValue: 80000,
-    nextServiceDate: '2025-05-20', lastServiceDate: '2024-11-20',
-    vendorDetails: {
-      vendorName: 'FitTech Solutions',
-      contactPerson: 'Vikram Singh',
-      phone: '+91-8877665544',
-      email: 'service@fittech.com',
-      address: 'Industrial Area Phase II, Delhi',
-      supportContractDetails: 'On-call maintenance'
-    },
-    image: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=200&h=200&fit=crop',
-    assignedStaff: 'Suresh Babu',
-    notes: 'Belt replacement due soon.'
-  }
-];
+
 
 const EMPTY_FORM = {
   name: '', category: '', type: '', brand: '', model: '',
@@ -129,7 +71,7 @@ const EquipmentManagement = () => {
   const [imagePreview, setImagePreview] = useState(null); // local object URL for preview
   const [imageModal, setImageModal] = useState(false);
   const [selectedImageData, setSelectedImageData] = useState({ url: '', name: '' });
-
+  const [imageChanged, setImageChanged] = useState(false);
   // Delete Modal State
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -220,12 +162,12 @@ const EquipmentManagement = () => {
       const serviceCount = notifications.filter(n => n.type === 'Service Due').length;
       const amcCount = notifications.filter(n => n.type === 'AMC').length;
       const warrantyCount = notifications.filter(n => n.type === 'Warranty').length;
-      
+
       const bodyParts = [];
       if (serviceCount > 0) bodyParts.push(`${serviceCount} service(s) due`);
       if (amcCount > 0) bodyParts.push(`${amcCount} AMC expiring`);
       if (warrantyCount > 0) bodyParts.push(`${warrantyCount} warranty expiring`);
-      
+
       if (bodyParts.length > 0) {
         new Notification("PhysioCare Equipment Alerts", {
           body: bodyParts.join(', '),
@@ -287,14 +229,30 @@ const EquipmentManagement = () => {
       const clinicId = localStorage.getItem('HospitalId');
       const branchId = localStorage.getItem('branchId');
 
+      // Preserve image: new upload takes priority, else keep existing imageUrl or image from backend
+      const existingImage = form.imageUrl || form.image || form.equipmentImage || '';
+      const finalImageUrl = existingImage;
+
+      console.log('[EquipmentMgmt] Submit image debug:', {
+        'form.image': form.image,
+        'form.imageUrl': form.imageUrl,
+        finalImageUrl,
+        isEditing,
+      });
+
       const payload = {
         ...form,
         clinicId,
         branchId,
         purchaseCost: Number(form.purchaseCost) || 0,
         currentValue: Number(form.currentValue) || 0,
-        imageUrl: form.image || form.imageUrl || ''
+        imageUrl: finalImageUrl,
+        image: finalImageUrl,
       };
+      if (!imageChanged) {
+        delete payload.image;
+        delete payload.imageUrl;
+      }
 
       if (isEditing) {
         await updateEquipment(editingId, payload);
@@ -318,12 +276,25 @@ const EquipmentManagement = () => {
   };
 
   const openEdit = (equip) => {
-    setForm(equip);
+    // Determine the stored image key from whichever field backend used
+    const imgKey = equip.imageUrl || equip.image || equip.equipmentImage || '';
+
+    // Merge with EMPTY_FORM; copy imgKey into BOTH image and imageUrl so it survives onChange spreads
+    setForm({ ...EMPTY_FORM, ...equip, image: imgKey, imageUrl: imgKey });
+    setImageChanged(false);
     setIsEditing(true);
-    setEditingId(equip.equipmentId); // Assuming backend uses id or similar identifier
+    setEditingId(equip.equipmentId);
     setIsFormVisible(true);
-    // Restore preview when editing: show existing image as preview
-    setImagePreview(equip.imageUrl || null);
+
+    // Resolve S3 key → full URL for the preview panel
+    if (imgKey) {
+      const resolvedUrl = (imgKey.startsWith('http') || imgKey.startsWith('blob:'))
+        ? imgKey
+        : `${wifiUrl}/${imgKey}`;
+      setImagePreview(resolvedUrl);
+    } else {
+      setImagePreview(null);
+    }
   };
 
   const handleDelete = (id) => {
@@ -356,7 +327,9 @@ const EquipmentManagement = () => {
     setImageUploading(true);
     try {
       const fileKey = await uploadFile('equipment', file);
-      setForm(prev => ({ ...prev, image: fileKey }));
+      // Store in BOTH fields so imageUrl is never stale
+      setForm(prev => ({ ...prev, image: fileKey, imageUrl: fileKey }));
+      setImageChanged(true);
       showCustomToast('Image uploaded successfully.', 'success');
     } catch (err) {
       console.error('Image upload failed:', err);
@@ -409,7 +382,7 @@ const EquipmentManagement = () => {
             let icon = faExclamationTriangle;
             let typeClass = 'warranty';
             let title = 'Warranty Expiring';
-            
+
             if (n.type === 'AMC') {
               icon = faCog;
               typeClass = 'amc';
@@ -419,9 +392,9 @@ const EquipmentManagement = () => {
               typeClass = 'service';
               title = 'Service Due';
             }
-            
+
             const alertKey = `${n.type}-${n.id}`;
-            
+
             return (
               <div key={i} className={`em-alert-card ${typeClass}`} style={{ position: 'relative', paddingRight: '36px' }}>
                 <div className="em-alert-icon-wrapper">
@@ -680,7 +653,7 @@ const EquipmentManagement = () => {
                       <button
                         type="button"
                         title="Remove image"
-                        onClick={() => { setImagePreview(null); setForm(prev => ({ ...prev, image: '' })); }}
+                        onClick={() => { setImagePreview(null); setForm(prev => ({ ...prev, image: '', imageUrl: '' })); }}
                         style={{ background: '#fee2e2', border: 'none', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer', color: '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}
                       >✕ Remove</button>
                     </div>

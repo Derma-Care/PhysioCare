@@ -89,37 +89,103 @@ const ImagePreview = ({ url }) => {
 
 const EquipmentCard = ({ item, onEdit, onDelete }) => {
     const [imgBroken, setImgBroken] = useState(false);
+    const [showViewModal, setShowViewModal] = useState(false);
 
     return (
-        <div style={styles.card}>
-            <div style={styles.cardImg}>
-                {item.image && !imgBroken ? (
-                    <img
-                        src={item.image}
-                        alt={item.name}
-                        onError={() => setImgBroken(true)}
-                        style={{ width: '100%', height: 140, objectFit: 'cover' }}
-                    />
-                ) : (
-                    <div style={styles.cardImgPlaceholder}>🖼️</div>
-                )}
-            </div>
+        <>
+            <div style={styles.card}>
+                <div
+                    style={{
+                        ...styles.cardImg,
+                        cursor: 'pointer',
+                        position: 'relative',
+                    }}
+                    onClick={() => setShowViewModal(true)}
+                    title="Click to view"
+                >
+                    {/* Category Badge */}
+                    <span
+                        style={{
+                            ...getBadgeStyle(item.category),
+                            position: 'absolute',
+                            top: '10px',
+                            right: '10px',
+                            marginBottom: 0,
+                            zIndex: 1,
+                        }}
+                    >
+                        {item.category}
+                    </span>
 
-            <div style={styles.cardBody}>
-                <div>
-                    <div style={styles.cardName}>{item.name}</div>
-                    <span style={getBadgeStyle(item.category)}>{item.category}</span>
-
-                    <div style={styles.cardDesc}>
-                        {item.description || 'No description'}
-                    </div>
+                    {item.image && !imgBroken ? (
+                        <img
+                            src={item.image}
+                            alt={item.name}
+                            onError={() => setImgBroken(true)}
+                            style={{
+                                width: '100%',
+                                height: 140,
+                                objectFit: 'cover',
+                            }}
+                        />
+                    ) : (
+                        <div style={styles.cardImgPlaceholder}>🖼️</div>
+                    )}
                 </div>
 
-                <div style={styles.cardActions}>
+                <div style={styles.cardBody}>
+                    <div>
+                        <div style={styles.cardName}>{item.name}</div>
+                    </div>
+                </div>
+            </div >
+
+            {/* View Modal - opens when image is clicked */}
+            < CModal
+                visible={showViewModal}
+                onClose={() => setShowViewModal(false)}
+                size="md"
+                className="custom-modal"
+                alignment="center"
+            >
+                <CModalHeader>
+                    <CModalTitle style={{ fontSize: 16, fontWeight: 600 }}>
+                        {item.name}
+                    </CModalTitle>
+                </CModalHeader>
+
+                <CModalBody>
+                    <div style={styles.viewImgWrap}>
+                        {item.image && !imgBroken ? (
+                            <img
+                                src={item.image}
+                                alt={item.name}
+                                style={{ width: '100%', height: 220, objectFit: 'contain', borderRadius: 8 }}
+                            />
+                        ) : (
+                            <div style={styles.cardImgPlaceholder}>🖼️</div>
+                        )}
+                    </div>
+
+                    <div style={{ marginTop: 14 }}>
+                        <span style={getBadgeStyle(item.category)}>{item.category}</span>
+                    </div>
+
+                    <div style={styles.viewDescLabel}>Description</div>
+                    <div style={styles.viewDescText}>
+                        {item.description || 'No description'}
+                    </div>
+                </CModalBody>
+
+                <CModalFooter>
+
                     <button
                         className="cm-action-btn edit"
                         title="Edit"
-                        onClick={() => onEdit(item)}
+                        onClick={() => {
+                            setShowViewModal(false);
+                            onEdit(item);
+                        }}
                     >
                         <Edit2 size={15} />
                     </button>
@@ -127,13 +193,42 @@ const EquipmentCard = ({ item, onEdit, onDelete }) => {
                     <button
                         className="cm-action-btn delete"
                         title="Delete"
-                        onClick={() => onDelete(item)}
+                        onClick={() => {
+                            setShowViewModal(false);
+                            onDelete(item);
+                        }}
                     >
                         <Trash2 size={15} />
                     </button>
-                </div>
-            </div>
-        </div>
+
+                    {/* <button
+                        className="cm-action-btn delete"
+                        title="Delete"
+                        onClick={() => {
+                            setShowViewModal(false);
+                            onDelete(item);
+                        }}
+                        style={styles.viewFooterBtnDelete}
+                    >
+                        <Trash2 size={15} style={{ marginRight: 6 }} />
+                        Delete
+                    </button>
+
+                    <button
+                        className="cm-action-btn edit"
+                        title="Edit"
+                        onClick={() => {
+                            setShowViewModal(false);
+                            onEdit(item);
+                        }}
+                        style={styles.viewFooterBtnEdit}
+                    >
+                        <Edit2 size={15} style={{ marginRight: 6 }} />
+                        Edit
+                    </button> */}
+                </CModalFooter>
+            </CModal >
+        </>
     );
 };
 
@@ -796,6 +891,57 @@ const styles = {
         minHeight: 34,
     },
     cardActions: { display: 'flex', gap: 6 },
+
+    // View modal
+    viewImgWrap: {
+        width: '100%',
+        height: 220,
+        borderRadius: 10,
+        border: '1px solid #E2E8F0',
+        background: '#F1EFE8',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    viewDescLabel: {
+        fontSize: 12,
+        fontWeight: 600,
+        color: '#888780',
+        marginTop: 16,
+        marginBottom: 4,
+        textTransform: 'uppercase',
+        letterSpacing: 0.3,
+    },
+    viewDescText: {
+        fontSize: 13,
+        color: '#2C2C2A',
+        lineHeight: 1.6,
+    },
+    viewFooterBtnDelete: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '8px 16px',
+        borderRadius: 8,
+        border: '1px solid #F09595',
+        background: '#FCEBEB',
+        color: '#A32D2D',
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: 'pointer',
+    },
+    viewFooterBtnEdit: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '8px 16px',
+        borderRadius: 8,
+        border: 'none',
+        background: '#185fa5',
+        color: '#fff',
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: 'pointer',
+    },
 
     // Delete confirm
     deleteConfirm: {

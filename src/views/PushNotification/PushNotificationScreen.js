@@ -600,6 +600,7 @@ const FCMNotification = () => {
 
             {activeTab !== 'whatsapp' && (
               <div className="fcm-field">
+                <CFormLabel className="fcm-label">&nbsp;</CFormLabel>
                 <CFormCheck
                   className="fcm-check"
                   type="checkbox"
@@ -610,7 +611,7 @@ const FCMNotification = () => {
               </div>
             )}
 
-            {activeTab === 'inapp' && (
+            {/* {activeTab === 'inapp' && (
               <div className="fcm-field">
                 <CFormLabel className="fcm-label">Image (Optional)</CFormLabel>
                 <CFormInput
@@ -620,7 +621,6 @@ const FCMNotification = () => {
                   ref={fileInputRef}
                   onChange={handleImageChange}
                 />
-                {/* ✅ Preview — shown whenever form.image has a value (from file pick OR edit load) */}
                 {form.image && (
                   <img
                     src={form.image}
@@ -630,7 +630,7 @@ const FCMNotification = () => {
                   />
                 )}
               </div>
-            )}
+            )} */}
           </div>
         </div>
 

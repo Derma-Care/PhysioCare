@@ -5,5 +5,15 @@ import { http } from '../Utils/Interceptors'
 
 export const getBookingsByPatientId = (patientId) => {
   const clinicid = localStorage.getItem('HospitalId')
-  return http.get(`${wifiUrl}/clinic-admin/bookings/byInput/${patientId}/${clinicid}`)
+  return http.get(`${BASE_URL}/bookings/byInput/${patientId}/${clinicid}`)
 }
+
+export const getBookingByPatientId = (patientId) => {
+  const clinicid = localStorage.getItem('HospitalId')
+  return http.get(`${BASE_URL}/customer/patientId/${patientId}/${clinicid}`)
+}
+
+export const sendReceiptEmail = (payload) => {
+  return http.post(`${BASE_URL}/send-patient-email`, payload)
+}
+

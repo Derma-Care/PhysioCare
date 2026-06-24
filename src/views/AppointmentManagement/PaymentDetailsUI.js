@@ -20,12 +20,17 @@ import {
     CModalBody,
     CModalFooter,
     CFormInput,
+    CSpinner,
 } from "@coreui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { COLORS, FONT_SIZES } from "../../Constant/Themes";
-import { getBookingsByPatientId } from "../../APIs/GetpatinetData";
+import { getBookingByPatientId, getBookingsByPatientId, sendReceiptEmail } from "../../APIs/GetpatinetData";
 import PrintLetterHead from "../../Utils/PrintLetterHead";
+import { showCustomToast } from "../../Utils/Toaster";
 import { ToWords } from 'to-words';
+import { uploadFile } from "../widgets/S3UploadServiceDoctor";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const StatusBadge = ({ status }) => {
     const styles = {
@@ -83,7 +88,8 @@ export default function PaymentDetailsUI() {
     const patientId = data?.patientId;
     const [patientInfo, setPatientInfo] = useState({
         name: "",
-        mobileNumber: ""
+        mobileNumber: "",
+        email: ""
     });
 
     const [dateModalVisible, setDateModalVisible] = useState(false);
@@ -91,8 +97,126 @@ export default function PaymentDetailsUI() {
     const [endDateInput, setEndDateInput] = useState("");
     const [printStartDate, setPrintStartDate] = useState("");
     const [printEndDate, setPrintEndDate] = useState("");
+    const [treatmentNameInput, setTreatmentNameInput] = useState("");
+    const [printTreatmentName, setPrintTreatmentName] = useState("");
 
+    // Email Modal State
+    const [emailModalVisible, setEmailModalVisible] = useState(false);
+    const [emailType, setEmailType] = useState("recent");
+    const [emailAddress, setEmailAddress] = useState("");
+    const [emailTitle, setEmailTitle] = useState("");
+    const [isEmailing, setIsEmailing] = useState(false);
+    const [emailLoadingStep, setEmailLoadingStep] = useState("");
 
+    const handleSendEmail = async () => {
+        if (!emailAddress) {
+            showCustomToast("Please enter an email address", "error");
+            return;
+        }
+
+        setIsEmailing(true);
+        setEmailLoadingStep("Generating PDF...");
+        try {
+            const targetId = emailType === "recent" ? "printable-receipt" : "printable-consent";
+
+            // Temporary reveal for pdf generation
+            const printContent = document.getElementById(targetId);
+            const originalDisplay = printContent.style.display;
+
+            printContent.style.display = "block";
+            printContent.style.position = "absolute";
+            printContent.style.left = "-9999px";
+            printContent.style.top = "0";
+
+            await new Promise(resolve => setTimeout(resolve, 150));
+
+            const canvas = await html2canvas(printContent, {
+                scale: 1.5,
+                useCORS: true,
+            });
+
+            printContent.style.display = originalDisplay;
+            printContent.style.position = "";
+            printContent.style.left = "";
+            printContent.style.top = "";
+
+            const imgData = canvas.toDataURL("image/jpeg", 0.7);
+            const pdf = new jsPDF("p", "mm", "a4");
+
+            const pdfWidth = 210;
+            const pdfHeight = 297;
+            const imgWidth = pdfWidth;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+
+            const blob = pdf.output("blob");
+
+            // Build file name from treatment name
+            const fallbackName = data.treatmentName
+                ? data.treatmentName.replace(/[^a-zA-Z0-9]/g, '_')
+                : "Receipt";
+            const currentTreatmentName = (emailType === "consolidated" && treatmentNameInput)
+                ? treatmentNameInput.replace(/[^a-zA-Z0-9]/g, '_')
+                : fallbackName;
+
+            const fileName = `${currentTreatmentName}.pdf`;
+            const file = new File([blob], fileName, { type: "application/pdf" });
+
+            // Upload to S3 with fieldName=patientPdf
+            setEmailLoadingStep("Uploading to cloud...");
+            const fileKey = await uploadFile("patientPdf", file);
+
+            // Send email via backend
+            setEmailLoadingStep("Sending email...");
+            const payload = {
+                title: emailTitle || "Payment Receipt",
+                patientName: patientInfo?.name || "Patient",
+                patientMail: emailAddress,
+                pdfFile: fileKey,
+            };
+
+            // if (emailType === "consolidated") {
+            //     payload.startDate = startDateInput || data.sessionStartDate || data.date;
+            //     payload.endDate = endDateInput || data.sessionEndDate || data.date;
+            //     payload.treatmentName = treatmentNameInput || data.treatmentName;
+            // } else {
+            //     payload.treatmentName = data.treatmentName;
+            // }
+
+            console.log(payload, "payload")
+            const res = await sendReceiptEmail(payload);
+            const responseData = res?.data || res;
+
+            if (responseData && (responseData.success === true || responseData.status === 200 || responseData.message?.toLowerCase().includes("success"))) {
+                showCustomToast(responseData.message || "Email sent successfully!", "success");
+                setEmailModalVisible(false);
+                setIsEmailing(false);
+            } else {
+                showCustomToast(responseData?.message || "Failed to send email.", "error");
+                setIsEmailing(false);
+            }
+        } catch (error) {
+            console.error("Email send error:", error);
+            const errMsg = error?.response?.data?.message || error?.message || "Failed to send email. Please try again.";
+            showCustomToast(errMsg, "error");
+            setIsEmailing(false);
+        } finally {
+            setIsEmailing(false);
+            setEmailLoadingStep("");
+        }
+    };
 
     const toWords = new ToWords({
         localeCode: 'en-IN',
@@ -113,19 +237,21 @@ export default function PaymentDetailsUI() {
 
         const fetchPatientDetails = async () => {
             try {
-                const res = await getBookingsByPatientId(patientId);
+                const res = await getBookingByPatientId(patientId);
 
                 const bookingList = res?.data?.data || [];
 
                 // ✅ Find correct booking OR take first
-                const booking = bookingList.find(
-                    b => b.patientId === patientId
-                ) || bookingList[0];
+                // const booking = bookingList.find(
+                //     b => b.patientId === patientId
+                // ) || bookingList[0];
 
                 setPatientInfo({
-                    name: booking?.name || "-",
-                    mobileNumber: booking?.mobileNumber || booking?.mobile || "-"
+                    name: bookingList?.fullName || "-",
+                    mobileNumber: bookingList?.mobileNumber || bookingList?.mobile || "-",
+                    email: bookingList?.email || "-"
                 });
+                setEmailAddress(bookingList?.email || "_")
 
             } catch (err) {
                 console.error("Patient fetch error:", err);
@@ -323,7 +449,29 @@ export default function PaymentDetailsUI() {
 
                         }}
                     >
-                        Print Receipt
+                        Print Recent Receipt
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            const defaultStart = data.sessionStartDate ? new Date(data.sessionStartDate).toISOString().split('T')[0] : (data.bookingDate ? new Date(data.bookingDate).toISOString().split('T')[0] : "");
+                            const defaultEnd = data.sessionEndDate ? new Date(data.sessionEndDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                            setStartDateInput(defaultStart);
+                            setEndDateInput(defaultEnd);
+                            setEmailType("recent");
+                            setEmailTitle("Payment Receipt");
+                            setEmailModalVisible(true);
+                        }}
+                        style={{
+                            background: "#eab308",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 16px",
+                            cursor: "pointer",
+                        }}
+                    >
+                        Send Email
                     </button>
                 </div>
             </div>
@@ -880,12 +1028,12 @@ export default function PaymentDetailsUI() {
                                 <span style={{ color: "#0c447c", fontSize: "12px", marginTop: "1px", flexShrink: 0 }}>✦</span>
                                 <div>
                                     <span style={{ fontSize: "10px", color: "#888", display: "block", marginBottom: "1px" }}>Treatment Name</span>
-                                    <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{data.treatmentName}</span>
-                                    {(printStartDate || printEndDate) && (
+                                    <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{printTreatmentName || data.treatmentName}</span>
+                                    {((printStartDate || data.sessionStartDate || data.date) || (printEndDate || data.sessionEndDate || data.date)) && (
                                         <div style={{ marginTop: '4px', fontSize: '11px', color: '#555' }}>
-                                            {printStartDate && <span>Start Date: {printStartDate}</span>}
-                                            {printStartDate && printEndDate && <span style={{ margin: '0 6px' }}>|</span>}
-                                            {printEndDate && <span>End Date: {printEndDate}</span>}
+                                            {(printStartDate || data.sessionStartDate || data.date) && <span>Start Date: {printStartDate || data.sessionStartDate || data.date}</span>}
+                                            {(printStartDate || data.sessionStartDate || data.date) && (printEndDate || data.sessionEndDate || data.date) && <span style={{ margin: '0 6px' }}>|</span>}
+                                            {(printEndDate || data.sessionEndDate || data.date) && <span>End Date: {printEndDate || data.sessionEndDate || data.date}</span>}
                                         </div>
                                     )}
                                 </div>
@@ -1021,6 +1169,9 @@ export default function PaymentDetailsUI() {
                             <CFormInput type="date" label="End Date" value={endDateInput} onChange={(e) => setEndDateInput(e.target.value)} />
                         </div>
                     </div>
+                    <div style={{ marginTop: '15px' }}>
+                        <CFormInput type="text" label="Treatment Name (optional)" value={treatmentNameInput} onChange={(e) => setTreatmentNameInput(e.target.value)} />
+                    </div>
                 </CModalBody>
                 <CModalFooter>
                     <CButton color="secondary" onClick={() => {
@@ -1028,6 +1179,7 @@ export default function PaymentDetailsUI() {
                         const defaultEnd = data.sessionEndDate ? new Date(data.sessionEndDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
                         setPrintStartDate(defaultStart);
                         setPrintEndDate(defaultEnd);
+                        setPrintTreatmentName(treatmentNameInput);
                         setDateModalVisible(false);
                         setTimeout(() => handlePrint("printable-consent"), 300);
                     }}>
@@ -1036,10 +1188,208 @@ export default function PaymentDetailsUI() {
                     <CButton style={{ backgroundColor: COLORS.primary, color: "white" }} onClick={() => {
                         setPrintStartDate(startDateInput);
                         setPrintEndDate(endDateInput);
+                        setPrintTreatmentName(treatmentNameInput);
                         setDateModalVisible(false);
                         setTimeout(() => handlePrint("printable-consent"), 300);
                     }}>
                         Print with Dates
+                    </CButton>
+                </CModalFooter>
+            </CModal>
+
+            {/* Email Modal */}
+            <CModal visible={emailModalVisible} onClose={() => !isEmailing && setEmailModalVisible(false)} alignment="center" backdrop="static">
+                <CModalHeader style={{ borderBottom: "1px solid #f1f5f9", padding: "20px 24px", background: "#f8fafc", borderTopLeftRadius: "8px", borderTopRightRadius: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{ background: "#e0f2fe", padding: "10px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "#0ea5e9", boxShadow: "0 2px 4px rgba(14, 165, 233, 0.1)" }}>
+                            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div>
+                            <CModalTitle style={{ fontSize: "1.15rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+                                Send Receipt
+                            </CModalTitle>
+                            <p style={{ margin: "2px 0 0", fontSize: "12.5px", color: "#64748b" }}>Dispatch payment details securely via email.</p>
+                        </div>
+                    </div>
+                </CModalHeader>
+                <CModalBody style={{ padding: "24px", position: "relative" }}>
+                    {isEmailing && (
+                        <div style={{
+                            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                            background: "rgba(255,255,255,0.95)", zIndex: 10,
+                            display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+                            borderRadius: "inherit",
+                            gap: "16px",
+                            padding: "20px",
+                        }}>
+                            <CSpinner color="primary" style={{ width: "42px", height: "42px" }} />
+                            <div style={{ textAlign: "center", width: "100%" }}>
+                                <div style={{ fontWeight: "700", color: "#0f172a", fontSize: "16px", marginBottom: "12px" }}>
+                                    {emailLoadingStep || "Processing..."}
+                                </div>
+                                <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap", maxWidth: "300px", margin: "0 auto" }}>
+                                    {["Generating PDF...", "Uploading to cloud...", "Sending email..."].map((step, idx) => (
+                                        <div key={idx} style={{
+                                            display: "flex", alignItems: "center", gap: "6px",
+                                            fontSize: "11px", fontWeight: "600",
+                                            padding: "6px 10px", borderRadius: "20px",
+                                            background: emailLoadingStep === step ? "#eff6ff" :
+                                                ["Generating PDF...", "Uploading to cloud...", "Sending email..."].indexOf(emailLoadingStep) > idx ? "#f0fdf4" : "#f8fafc",
+                                            color: emailLoadingStep === step ? "#1d4ed8" :
+                                                ["Generating PDF...", "Uploading to cloud...", "Sending email..."].indexOf(emailLoadingStep) > idx ? "#15803d" : "#94a3b8",
+                                            border: "1px solid",
+                                            borderColor: emailLoadingStep === step ? "#bfdbfe" :
+                                                ["Generating PDF...", "Uploading to cloud...", "Sending email..."].indexOf(emailLoadingStep) > idx ? "#bbf7d0" : "#e2e8f0",
+                                        }}>
+                                            {["Generating PDF...", "Uploading to cloud...", "Sending email..."].indexOf(emailLoadingStep) > idx ? (
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                                            ) : emailLoadingStep === step ? (
+                                                <CSpinner size="sm" style={{ width: "12px", height: "12px" }} />
+                                            ) : (
+                                                <span style={{ width: "12px", height: "12px", display: "inline-block", borderRadius: "50%", background: "#cbd5e1" }}></span>
+                                            )}
+                                            {step.replace("...", "")}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div style={{ marginBottom: "20px" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Receipt Type
+                        </label>
+                        <select
+                            className="form-select"
+                            style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px", color: "#0f172a", backgroundColor: "#fff", cursor: "pointer", transition: "all 0.2s" }}
+                            value={emailType}
+                            onChange={(e) => {
+                                setEmailType(e.target.value);
+                                setEmailTitle(e.target.value === "recent" ? "Payment Receipt" : "Consolidated Receipt");
+                            }}
+                        >
+                            <option value="recent">Recent Receipt</option>
+                            <option value="consolidated">Consolidated Receipt</option>
+                        </select>
+                    </div>
+
+                    <div style={{ marginBottom: "20px" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>
+                            Delivery Details
+                        </label>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                            <div>
+                                <label style={{ fontSize: "11px", color: "#64748b", fontWeight: "600", marginBottom: "4px", display: "block" }}>Email Title</label>
+                                <CFormInput
+                                    type="text"
+                                    value={emailTitle}
+                                    onChange={(e) => setEmailTitle(e.target.value)}
+                                    placeholder="Enter Title (e.g. Payment Receipt)"
+                                    style={{ padding: "10px 12px", borderRadius: "6px", fontSize: "13px", border: "1px solid #cbd5e1" }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: "11px", color: "#64748b", fontWeight: "600", marginBottom: "4px", display: "block" }}>Patient Email Address <span style={{ color: "#ef4444" }}>*</span></label>
+                                <CFormInput
+                                    type="email"
+                                    value={emailAddress}
+                                    onChange={(e) => setEmailAddress(e.target.value)}
+                                    placeholder="patient@example.com"
+                                    style={{ padding: "10px 12px", borderRadius: "6px", fontSize: "13px", border: "1px solid", borderColor: emailAddress ? "#cbd5e1" : "#fca5a5", backgroundColor: emailAddress ? "#fff" : "#fef2f2" }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {emailType === "consolidated" && (
+                        <div style={{ background: "#f0fdf4", padding: "16px", borderRadius: "10px", border: "1px solid #bbf7d0", animation: "fadeIn 0.3s ease-in-out" }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#166534", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "12px" }}>
+                                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                Consolidated Options
+                            </label>
+
+                            <div style={{ display: 'flex', gap: '12px', marginBottom: "12px" }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: "11px", color: "#166534", fontWeight: "600", marginBottom: "4px", display: "block" }}>Start Date</label>
+                                    <CFormInput
+                                        type="date"
+                                        value={startDateInput}
+                                        onChange={(e) => {
+                                            setStartDateInput(e.target.value);
+                                            setPrintStartDate(e.target.value);
+                                        }}
+                                        style={{ fontSize: "13px", padding: "8px 10px", borderRadius: "6px", border: "1px solid #86efac", background: "#fff" }}
+                                    />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: "11px", color: "#166534", fontWeight: "600", marginBottom: "4px", display: "block" }}>End Date</label>
+                                    <CFormInput
+                                        type="date"
+                                        value={endDateInput}
+                                        onChange={(e) => {
+                                            setEndDateInput(e.target.value);
+                                            setPrintEndDate(e.target.value);
+                                        }}
+                                        style={{ fontSize: "13px", padding: "8px 10px", borderRadius: "6px", border: "1px solid #86efac", background: "#fff" }}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ fontSize: "11px", color: "#166534", fontWeight: "600", marginBottom: "4px", display: "block" }}>Custom Treatment Name (Optional)</label>
+                                <CFormInput
+                                    type="text"
+                                    value={treatmentNameInput}
+                                    onChange={(e) => {
+                                        setTreatmentNameInput(e.target.value);
+                                        setPrintTreatmentName(e.target.value);
+                                    }}
+                                    placeholder={data.treatmentName || "Enter treatment name"}
+                                    style={{ fontSize: "13px", padding: "8px 10px", borderRadius: "6px", border: "1px solid #86efac", background: "#fff" }}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </CModalBody>
+                <CModalFooter style={{ borderTop: "1px solid #f1f5f9", padding: "16px 24px", background: "#f8fafc", borderBottomLeftRadius: "8px", borderBottomRightRadius: "8px" }}>
+                    <CButton
+                        color="secondary"
+                        variant="ghost"
+                        onClick={() => setEmailModalVisible(false)}
+                        disabled={isEmailing}
+                        style={{ fontWeight: "600", color: "#64748b" }}
+                    >
+                        Cancel
+                    </CButton>
+                    <CButton
+                        style={{
+                            backgroundColor: emailAddress ? "#2563eb" : "#94a3b8",
+                            color: "white",
+                            fontWeight: "600",
+                            padding: "10px 24px",
+                            borderRadius: "8px",
+                            boxShadow: emailAddress ? "0 4px 12px rgba(37, 99, 235, 0.2)" : "none",
+                            transition: "all 0.2s ease-in-out",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px"
+                        }}
+                        onClick={handleSendEmail}
+                        disabled={isEmailing || !emailAddress}
+                    >
+                        {isEmailing ? (
+                            <>
+                                <CSpinner size="sm" style={{ width: "14px", height: "14px" }} />
+                                Sending...
+                            </>
+                        ) : (
+                            <>
+                                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                Send Email
+                            </>
+                        )}
                     </CButton>
                 </CModalFooter>
             </CModal>
