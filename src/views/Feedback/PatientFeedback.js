@@ -22,6 +22,7 @@ import {
   deleteOverallFeedback
 } from './FeedbackAPI';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import Pagination from '../../Utils/Pagination';
 
 const RATING_OPTIONS = [
   { id: '1', emoji: '😡', label: '1', className: 'active-1' },
@@ -58,6 +59,14 @@ const PatientFeedback = () => {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // Data for Dropdowns
   const [patients, setPatients] = useState([]);
@@ -353,6 +362,13 @@ const PatientFeedback = () => {
     });
   }, [feedbacks, searchQuery, doctorsList, therapistsList, receptionistsList]);
 
+  const paginatedFeedbacks = useMemo(() => {
+    return filteredFeedbacks.slice(
+      (currentPage - 1) * rowsPerPage,
+      currentPage * rowsPerPage
+    );
+  }, [filteredFeedbacks, currentPage, rowsPerPage]);
+
   return (
     <div className="pf-wrapper">
       {/* <ToastContainer /> */}
@@ -394,9 +410,9 @@ const PatientFeedback = () => {
                 Cancel
               </button>
               <button
-                type="submit"
-                form="patientFeedbackForm"
+                type="button"
                 className="pf-add-btn"
+                onClick={handleSubmit}
               >
                 <FontAwesomeIcon icon={faCheckCircle} /> Save Feedback
               </button>
@@ -438,7 +454,7 @@ const PatientFeedback = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredFeedbacks.map((f, index) => {
+                      {paginatedFeedbacks.map((f, index) => {
                         const ratedEntities = [];
                         if (f.hospitalFeedback) ratedEntities.push('Hospital');
                         if (f.doctorFeedback) ratedEntities.push('Doctor');
@@ -447,7 +463,7 @@ const PatientFeedback = () => {
 
                         return (
                           <tr key={f.patientFeedbackId || f.id || index}>
-                            <td>{index + 1}</td>
+                            <td>{(currentPage - 1) * rowsPerPage + index + 1}</td>
                             <td>{new Date(f.date).toLocaleDateString()}</td>
                             <td>{f.patientName}</td>
                             <td>{f.patientPhone}</td>
@@ -472,10 +488,19 @@ const PatientFeedback = () => {
                   </table>
                 )}
               </div>
+              {filteredFeedbacks.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(filteredFeedbacks.length / rowsPerPage)}
+                  pageSize={rowsPerPage}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setRowsPerPage}
+                />
+              )}
             </>
           ) : (
             /* --- Form View --- */
-            <form id="patientFeedbackForm" onSubmit={handleSubmit}>
+            <form id="patientFeedbackForm" onSubmit={handleSubmit} noValidate>
 
               {/* Patient Details */}
               <div className="pf-target-section">
@@ -505,11 +530,7 @@ const PatientFeedback = () => {
                 </CRow>
               </div>
 
-              {errors.general && (
-                <div className="alert alert-danger" role="alert">
-                  {errors.general}
-                </div>
-              )}
+
 
               {/* HOSPITAL FEEDBACK */}
               <div className="pf-target-section">
@@ -528,6 +549,11 @@ const PatientFeedback = () => {
                       </div>
                     ))}
                   </div>
+                  {errors.general && (
+                    <p className="pf-error-text" style={{ marginTop: '6px' }}>
+                      ⚠ {errors.general}
+                    </p>
+                  )}
                 </div>
                 <div className="pf-section">
                   <label className="pf-label">Comments</label>

@@ -14,6 +14,7 @@ import {
   deleteSessionFeedback
 } from './FeedbackAPI';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import Pagination from '../../Utils/Pagination';
 import './SessionFeedback.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -67,6 +68,13 @@ const SessionFeedback = () => {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const [form, setForm] = useState({
     patientId: '',
@@ -322,6 +330,13 @@ const SessionFeedback = () => {
     );
   }, [sessions, searchQuery]);
 
+  const paginatedSessions = useMemo(() => {
+    return filteredSessions.slice(
+      (currentPage - 1) * rowsPerPage,
+      currentPage * rowsPerPage
+    );
+  }, [filteredSessions, currentPage, rowsPerPage]);
+
   return (
     <div className="sf-wrapper">
       {/* <ToastContainer /> */}
@@ -398,9 +413,9 @@ const SessionFeedback = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredSessions.map((s, idx) => (
+                      {paginatedSessions.map((s, idx) => (
                         <tr key={s.sessionFeedbackId || s.id || idx}>
-                          <td>{idx + 1}</td>
+                          <td>{(currentPage - 1) * rowsPerPage + idx + 1}</td>
                           <td><span className="sf-booking-badge">{s.bookingId || '—'}</span></td>
                           <td>{s.date || new Date().toISOString().split('T')[0]}</td>
                           <td>
@@ -472,6 +487,15 @@ const SessionFeedback = () => {
                   </table>
                 )}
               </div>
+              {filteredSessions.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(filteredSessions.length / rowsPerPage)}
+                  pageSize={rowsPerPage}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setRowsPerPage}
+                />
+              )}
             </>
           ) : (
             <form onSubmit={handleSubmit} id="sessionFeedbackForm" className="sf-form-grid">
