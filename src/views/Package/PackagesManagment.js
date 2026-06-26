@@ -106,7 +106,7 @@ export default function PackagesManagement() {
       const options = safeArray(res?.data?.data).map((item) => ({
         value: item.id,
         label: item.programName,
-        totalPrice: item.totalPrice || item.total || item.totalSessionCost || 0,
+        totalPrice: Number(item.totalProgramAmount) || 0,
       }))
       setExerciseOptions(options)
     } catch (error) {
@@ -132,7 +132,7 @@ export default function PackagesManagement() {
     if (form.programIds.length === 0) err.programIds = "Select at least one program"
     if (!form.packageAmount && form.packageAmount !== 0) err.packageAmount = "Package amount is required"
     else if (Number(form.packageAmount) <= 0) err.packageAmount = "Package amount must be greater than 0"
-    
+
     if (Number(form.discountPercentage) > 0 || Number(form.discountAmount) > 0) {
       if (!form.startOfferDate) err.startOfferDate = "Start date is required for discount"
     }
@@ -452,13 +452,16 @@ export default function PackagesManagement() {
                     value={form.programs}
                     onChange={(val) => {
                       const selected = val || [];
-                      const total = selected.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0);
-                      clearError('programIds');
-                      clearError('packageAmount');
+
+                      const total = selected.reduce(
+                        (sum, p) => sum + (Number(p.totalPrice) || 0),
+                        0
+                      );
+
                       updateDiscount({
                         programs: selected,
                         programIds: selected.map((v) => v.value),
-                        packageAmount: total || "",
+                        packageAmount: total,
                       });
                     }}
                   />
@@ -530,7 +533,7 @@ export default function PackagesManagement() {
                 <div className="pm-field">
                   <CFormLabel className="pm-label">Start Date</CFormLabel>
                   <CFormInput
-                    className={`pm-input${errors.startOfferDate ? " is-invalid" : ""}`} 
+                    className={`pm-input${errors.startOfferDate ? " is-invalid" : ""}`}
                     type="date" value={form.startOfferDate}
                     onChange={(e) => { setForm({ ...form, startOfferDate: e.target.value }); clearError('startOfferDate'); }}
                   />
