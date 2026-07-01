@@ -198,13 +198,13 @@ export const getNavigation = (permissions = {}) => {
       as: NavLink,
       icon: <CIcon icon={cilClipboard} customClassName="nav-icon" />,
     },
-    // {
-    //   component: CNavItem,
-    //   to: '/analytics',
-    //   name: 'Analytics',
-    //   as: NavLink,
-    //   icon: <CIcon icon={cilLightbulb} customClassName="nav-icon" />,
-    // },
+    {
+      component: CNavItem,
+      to: '/analytics',
+      name: 'Analytics',
+      as: NavLink,
+      icon: <CIcon icon={cilLightbulb} customClassName="nav-icon" />,
+    },
     {
       component: CNavItem,
       to: '/recoverySupport',
