@@ -36,3 +36,9 @@ export const nurseLogin = (data) => {
 export const resetNurseLogin = (data) => {
   return http.post(`${BASE_URL}/resetNurseLogin`, data)
 }
+
+// ------------------- Update Presence -------------------
+export const updateTherapistPresence = (therapistId, data) => {
+  return http.put(`${BASE_URL}/updateTherapistPresence/${therapistId}`, data)
+}
+

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CTable,
   CTableHead,
@@ -6,10 +7,11 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CFormSwitch,
 } from '@coreui/react'
-import { Edit2, Eye, Trash2, UserCog, Search, X } from 'lucide-react'
+import { Edit2, Eye, Trash2, UserCog, Search, X, ArrowRightLeft } from 'lucide-react'
 import PhysioForm from './NurseForm'
-import { getAllPhysios, addPhysio, updatePhysio, deletePhysio } from './NurseAPI'
+import { getAllPhysios, addPhysio, updatePhysio, deletePhysio, updateTherapistPresence } from './NurseAPI'
 import { useHospital } from '../../Usecontext/HospitalContext'
 import ConfirmationModal from '../../../components/ConfirmationModal'
 import Pagination from '../../../Utils/Pagination'  // ← same Pagination used in CustomerManagement
@@ -29,6 +31,28 @@ const PhysioManagement = () => {
   const [physioToDelete, setPhysioToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+
+  const handleTogglePresence = async (therapistId, currentPresence) => {
+    try {
+      const newPresence = !currentPresence;
+      const data = {
+        clinicId: hospitalId,
+        branchId: branchId,
+        isPresent: newPresence
+      };
+      const res = await updateTherapistPresence(therapistId, data);
+      if (res.status === 200 || res.data?.success) {
+        showCustomToast('Presence updated successfully', 'success');
+        fetchPhysios();
+      } else {
+        showCustomToast('Failed to update presence', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showCustomToast('Error updating presence', 'error');
+    }
+  }
 
   // ── Pagination state (mirrors CustomerManagement) ─────────────────────────
   const [currentPage, setCurrentPage] = useState(1)
@@ -199,6 +223,7 @@ const PhysioManagement = () => {
                 <CTableHeaderCell className="pm-th">Contact</CTableHeaderCell>
                 <CTableHeaderCell className="pm-th">Qualification</CTableHeaderCell>
                 <CTableHeaderCell className="pm-th">Experience</CTableHeaderCell>
+                <CTableHeaderCell className="pm-th">Availability</CTableHeaderCell>
                 <CTableHeaderCell className="pm-th" style={{ width: 120 }}>Actions</CTableHeaderCell>
               </CTableRow>
             </CTableHead>
@@ -242,7 +267,23 @@ const PhysioManagement = () => {
                     <CTableDataCell className="pm-td pm-muted">{p.yearsOfExperience} yrs</CTableDataCell>
 
                     <CTableDataCell className="pm-td">
+                      <CFormSwitch
+                        id={`presenceSwitch-${p.id}`}
+                        checked={!p.isPresent}
+                        onChange={() => handleTogglePresence(p.therapistId, p.isPresent)}
+                      />
+                    </CTableDataCell>
+                    <CTableDataCell className="pm-td">
                       <div style={{ display: 'flex', gap: 6 }}>
+                        {/* {p.isPresent && (
+                          <button
+                            className="pm-action-btn pm-edit-btn"
+                            title="Reassign Therapist"
+                            onClick={() => navigate('/reassignAppointmnet')}
+                          >
+                            <ArrowRightLeft size={14} />
+                          </button>
+                        )} */}
                         {can('Therapist', 'read') && (
                           <button
                             className="pm-action-btn pm-view-btn"
