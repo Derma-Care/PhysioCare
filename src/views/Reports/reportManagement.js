@@ -22,12 +22,14 @@ const consultationTypeMap = {
   'In-clinic': 'in-clinic consultation',
 }
 
-const STATUS_OPTIONS = ['All Status', 'Active', 'Completed']
+const STATUS_OPTIONS = ['All Status', 'In-Progress', 'Completed', "Due For Investigation", "Invesigation Done"]
 
 const statusBadge = (status) => {
   const n = normalize(status)
   if (n === 'completed') return { label: 'Completed', cls: 'rp-badge-green' }
-  if (n === 'in-progress' || n === 'active') return { label: 'Active', cls: 'rp-badge-blue' }
+  if (n === 'in-progress' || n === 'active') return { label: 'In-Progress', cls: 'rp-badge-blue' }
+  if (n === "due for investigation") return { label: "Due For Investigation", cls: "rp-badge-gray" }
+  if (n === "invesigation done") return { label: "Invesigation Done", cls: "rp-badge-gray" }
   return { label: status, cls: 'rp-badge-gray' }
 }
 
@@ -53,9 +55,7 @@ const ReportsManagement = () => {
       setLoading(true)
       const data = await AppointmentData()
       if (data?.data) {
-        const relevant = hospitalId
-          ? data.data.filter((b) => normalize(b.clinicId) === normalize(hospitalId))
-          : data.data
+        const relevant = data.data
         setBookings(relevant || [])
       }
     } catch (err) {
@@ -74,20 +74,42 @@ const ReportsManagement = () => {
 
   // ── FILTER ─────────────────────────────────
   useEffect(() => {
-    let result = bookings.filter((b) =>
-      ['completed', 'in-progress', 'active'].includes(normalize(b.status)),
-    )
+    let result = bookings.filter((b) => {
+      const status = normalize(b.status)
 
-    if (statusFilter === 'Completed')
-      result = result.filter((b) => normalize(b.status) === 'completed')
-    if (statusFilter === 'Active')
-      result = result.filter((b) => ['active', 'in-progress'].includes(normalize(b.status)))
+      return [
+        "completed",
+        "in-progress",
+        "active",
+        "due for investigation",
+        "invesigation done",
+      ].includes(status)
+    })
 
-    if (searchTerm.trim()) {
-      const q = normalize(searchTerm)
-      result = result.filter((b) => normalize(b.name).includes(q))
+    // Status Filter
+    if (statusFilter !== "All Status") {
+      result = result.filter(
+        (b) => normalize(b.status) === normalize(statusFilter)
+      )
     }
 
+    // Search Filter
+    if (searchTerm.trim()) {
+      const q = normalize(searchTerm)
+
+      result = result.filter((b) =>
+        [
+          b.name,
+          b.bookingId,
+          b.patientId,
+          b.visitType,
+        ]
+          .filter(Boolean)
+          .some((value) => normalize(value).includes(q))
+      )
+    }
+
+    // Date Filter
     if (dateFilter) {
       result = result.filter((b) => b.serviceDate === dateFilter)
     }
@@ -177,10 +199,11 @@ const ReportsManagement = () => {
             <CTableHead>
               <CTableRow>
                 <CTableHeaderCell className="rp-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
+                <CTableHeaderCell className="rp-th">Patient Id</CTableHeaderCell>
                 <CTableHeaderCell className="rp-th">Name</CTableHeaderCell>
+                <CTableHeaderCell className="rp-th">Date & Time</CTableHeaderCell>
+
                 <CTableHeaderCell className="rp-th">Visit Type</CTableHeaderCell>
-                <CTableHeaderCell className="rp-th">Date</CTableHeaderCell>
-                <CTableHeaderCell className="rp-th">Time</CTableHeaderCell>
                 <CTableHeaderCell className="rp-th">Status</CTableHeaderCell>
                 <CTableHeaderCell className="rp-th" style={{ width: 90 }}>Action</CTableHeaderCell>
               </CTableRow>
@@ -192,7 +215,11 @@ const ReportsManagement = () => {
                   <CTableDataCell colSpan={7}>
                     <div className="rp-empty">
                       <ClipboardList size={40} className="rp-empty-icon" />
-                      <p>No appointments found.</p>
+                      <p>
+                        {searchTerm || dateFilter || statusFilter !== "All Status"
+                          ? "No reports match the selected filters."
+                          : "No reports available."}
+                      </p>
                     </div>
                   </CTableDataCell>
                 </CTableRow>
@@ -204,21 +231,23 @@ const ReportsManagement = () => {
                       <CTableDataCell className="rp-td rp-td-num">
                         {(currentPage - 1) * pageSize + index + 1}
                       </CTableDataCell>
-
+                      <CTableDataCell className="rp-td rp-muted">
+                        {item.patientId || '—'}
+                      </CTableDataCell>
                       <CTableDataCell className="rp-td">
                         <span className="rp-name">{item.name}</span>
+                        <p className='rp-muted'>   {item.bookingId}</p>
+                      </CTableDataCell>
+
+
+
+                      <CTableDataCell className="rp-td rp-muted">
+                        {item.serviceDate || '—'}
+                        <p className='rp-muted'>  {item.slot || item.servicetime || '—'}</p>
                       </CTableDataCell>
 
                       <CTableDataCell className="rp-td rp-muted">
                         {item.visitType || '—'}
-                      </CTableDataCell>
-
-                      <CTableDataCell className="rp-td rp-muted">
-                        {item.serviceDate || '—'}
-                      </CTableDataCell>
-
-                      <CTableDataCell className="rp-td rp-muted">
-                        {item.slot || item.servicetime || '—'}
                       </CTableDataCell>
 
                       <CTableDataCell className="rp-td">
@@ -419,7 +448,7 @@ const ReportsManagement = () => {
         .rp-tr { transition: background 0.12s; }
         .rp-tr:hover { background: #f0f5fb !important; }
         .rp-td {
-          padding: 11px 14px !important;
+          // padding: 11px 14px !important;
           vertical-align: middle !important;
           font-size: 13px;
           color: #374151;

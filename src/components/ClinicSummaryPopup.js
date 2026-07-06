@@ -191,12 +191,6 @@ const ClinicSummaryPopup = () => {
         now.getHours() === fortyFiveMinsBeforeClose.getHours() &&
         now.getMinutes() === fortyFiveMinsBeforeClose.getMinutes()
 
-      console.log(
-        `[ClinicSummary] Now: ${now.getHours()}:${now.getMinutes()} | ` +
-        `Start: ${startHour}:${startMin} | Close: ${closeHour}:${closeMin} | ` +
-        `45-min-before: ${fortyFiveMinsBeforeClose.getHours()}:${fortyFiveMinsBeforeClose.getMinutes()}`
-      )
-
       if (isStartTime || is45MinsBeforeClose) {
         if (!window.hasTriggeredClinicSummaryThisMinute) {
           window.hasTriggeredClinicSummaryThisMinute = true
@@ -206,7 +200,7 @@ const ClinicSummaryPopup = () => {
           }, 60000)
         }
       }
-    }, 10000)
+    }, 60000)
 
     return () => clearInterval(interval)
   }, [])

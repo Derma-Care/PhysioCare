@@ -37,6 +37,9 @@ import ProgramPayment from './PaymentProgram'
 import PhysioConsentForm from './PhysioConsentForm'
 import { COLORS } from '../../Constant/Themes'
 import LoadingIndicator from '../../Utils/loader'
+import html2canvas from 'html2canvas'
+import PrintLetterHead from '../../Utils/PrintLetterHead'
+import { fetchRecommendedTests } from '../Reports/reportAPI'
 import { BASE_URL } from '../../baseUrl'
 
 /* ─────────────────────────────────────────────
@@ -184,6 +187,8 @@ const AppointmentDetails = () => {
   const [appointment, setAppointment] = useState(null)
   const [loadingAppt, setLoadingAppt] = useState(true)
   const [enableVitals, setEnableVitals] = useState(false)
+  const [recommendedTestsData, setRecommendedTestsData] = useState(null)
+  const isPrintingRef = React.useRef(false)
 
 
   useEffect(() => {
@@ -269,6 +274,22 @@ const AppointmentDetails = () => {
   useEffect(() => {
     if (['confirmed', 'active', 'completed'].includes(normalizedStatus)) fetchVitals()
   }, [appointment?.bookingId, appointment?.patientId, normalizedStatus])
+
+  useEffect(() => {
+    const fetchRecTests = async () => {
+      try {
+        if (!appointment?.bookingId) return
+        const response = await fetchRecommendedTests(appointment.bookingId, appointment.patientId)
+        const reportsArray = response.data?.data || []
+        if (reportsArray.length > 0) {
+          setRecommendedTestsData(reportsArray[0])
+        }
+      } catch (error) {
+        console.error('Error fetching recommended tests:', error)
+      }
+    }
+    fetchRecTests()
+  }, [appointment?.bookingId, appointment?.patientId])
 
   if (loadingAppt) {
     return (
@@ -471,6 +492,88 @@ const AppointmentDetails = () => {
       link.href = url; link.download = fileName || 'file.pdf'
       document.body.appendChild(link); link.click()
       document.body.removeChild(link); URL.revokeObjectURL(url)
+    }
+  }
+
+  const generatePDFBlob = async (elementId) => {
+    const printContent = document.getElementById(elementId);
+    if (!printContent) return null;
+    const originalDisplay = printContent.style.display;
+    printContent.style.display = "block";
+    printContent.style.position = "absolute";
+    printContent.style.left = "-9999px";
+    printContent.style.top = "0";
+
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    const canvas = await html2canvas(printContent, { scale: 1.5, useCORS: true });
+
+    printContent.style.display = originalDisplay;
+    printContent.style.position = "";
+    printContent.style.left = "";
+    printContent.style.top = "";
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.7);
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pdfWidth = 210;
+    const pdfHeight = 297;
+    const imgWidth = pdfWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+    }
+    return pdf;
+  }
+
+  const handlePrintRecommendedTests = async () => {
+    if (isPrintingRef.current) return;
+    isPrintingRef.current = true;
+    const printContent = document.getElementById('printable-recommended-tests');
+    if (printContent) {
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "absolute"; iframe.style.width = "0px"; iframe.style.height = "0px"; iframe.style.border = "none";
+      document.body.appendChild(iframe);
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write("<html><head><title>Print</title>");
+      const styles = document.querySelectorAll("style, link[rel='stylesheet']");
+      styles.forEach((s) => doc.write(s.outerHTML));
+      doc.write("</head><body>");
+      doc.write(printContent.innerHTML);
+      doc.write("</body></html>");
+      doc.close();
+      setTimeout(() => {
+        try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch (e) { }
+        setTimeout(() => {
+          if (document.body.contains(iframe)) document.body.removeChild(iframe);
+          isPrintingRef.current = false;
+        }, 2000);
+      }, 500);
+    } else {
+      isPrintingRef.current = false;
+    }
+  }
+
+  const handleDownloadRecommendedTests = async () => {
+    try {
+      const pdf = await generatePDFBlob('printable-recommended-tests');
+      if (pdf) {
+        pdf.save(`Recommended_Tests_${appointment?.bookingId}.pdf`);
+      }
+    } catch (error) {
+      console.error('Download error', error);
+      showCustomToast('Failed to download PDF', 'error');
     }
   }
 
@@ -808,6 +911,37 @@ const AppointmentDetails = () => {
                     </CAccordionBody>
                   </CAccordionItem>
                 ) : null}
+
+                {/* Recommended Tests */}
+                {recommendedTestsData && recommendedTestsData.tests?.length > 0 && (
+                  <CAccordionItem itemKey={5}>
+                    <CAccordionHeader>Recommended Tests</CAccordionHeader>
+                    <CAccordionBody>
+                      <div style={{ padding: '8px 0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
+                            {recommendedTestsData.tests.length} tests recommended
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <ActionBtn onClick={handlePrintRecommendedTests}><FileText size={13} /> Print</ActionBtn>
+                            <ActionBtn onClick={handleDownloadRecommendedTests}><Download size={13} /> Download</ActionBtn>
+                          </div>
+                        </div>
+                        <ul style={{ margin: '0 0 12px 16px', padding: 0, fontSize: '13px', color: '#374151', lineHeight: '1.6' }}>
+                          {recommendedTestsData.tests.map((test, i) => (
+                            <li key={i}>{test}</li>
+                          ))}
+                        </ul>
+                        {recommendedTestsData.reason && (
+                          <div style={{ backgroundColor: tokens.surface, padding: '10px 14px', borderRadius: tokens.radiusSm, border: `1px solid ${tokens.border}` }}>
+                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', textTransform: 'uppercase' }}>Reason</div>
+                            <div style={{ fontSize: '12px', color: '#1e293b' }}>{recommendedTestsData.reason}</div>
+                          </div>
+                        )}
+                      </div>
+                    </CAccordionBody>
+                  </CAccordionItem>
+                )}
               </CAccordion>
             </div>
 
@@ -946,6 +1080,89 @@ const AppointmentDetails = () => {
         onClose={() => setShowEditModal(false)}
         editData={appointment}
       />
+
+      {/* ── HIDDEN PRINTABLE RECOMMENDED TESTS ──────────────────── */}
+      {recommendedTestsData && (
+        <div id="printable-recommended-tests" style={{ display: 'none', backgroundColor: '#fff', padding: '10px', width: '100%', boxSizing: 'border-box' }}>
+          <style>{`
+            .letter-header,
+            .letter-footer {
+              padding-left: 40px !important;
+              padding-right: 40px !important;
+              padding-top: 40px !important;
+            }
+          `}</style>
+          <PrintLetterHead printDate={new Date()}>
+            <div style={{ padding: '20px 40px', fontFamily: 'Arial, sans-serif' }}>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#0c447c', margin: '0', letterSpacing: '1px' }}>
+                  RECOMMENDED TESTS
+                </h2>
+                <div style={{ borderBottom: '2px solid #0c447c', width: '100%', marginTop: '12px' }}></div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', marginBottom: '30px' }}>
+                <div style={{ flex: 1, borderRight: '1px solid #e2e8f0', paddingRight: '16px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#185fa5', marginBottom: '8px' }}>PATIENT</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '12px' }}>{appointment?.name || 'N/A'}</div>
+                  <div style={{ display: 'flex', marginBottom: '6px' }}>
+                    <div style={{ width: '80px', fontSize: '12px', color: '#64748b' }}>Patient ID:</div>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#1e293b' }}>{appointment?.patientId || 'N/A'}</div>
+                  </div>
+                  <div style={{ display: 'flex' }}>
+                    <div style={{ width: '80px', fontSize: '12px', color: '#64748b' }}>Mobile:</div>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#1e293b' }}>{appointment?.patientMobileNumber || 'N/A'}</div>
+                  </div>
+                </div>
+                <div style={{ flex: 1, paddingLeft: '16px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#185fa5', marginBottom: '8px' }}>BOOKING</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '12px' }}>#{appointment?.bookingId || 'N/A'}</div>
+                  <div style={{ display: 'flex', marginBottom: '6px' }}>
+                    <div style={{ width: '80px', fontSize: '12px', color: '#64748b' }}>Doctor:</div>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#1e293b' }}>{doctor?.doctorName || 'N/A'}</div>
+                  </div>
+                  <div style={{ display: 'flex' }}>
+                    <div style={{ width: '80px', fontSize: '12px', color: '#64748b' }}>Date:</div>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#1e293b' }}>{appointment?.serviceDate || 'N/A'}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#0c447c', marginBottom: '8px' }}>RECOMMENDED TESTS</div>
+                <div style={{ borderBottom: '1px solid #e2e8f0', width: '100%', marginBottom: '12px' }}></div>
+
+                <div style={{ display: 'flex', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '20px', gap: '20px', alignItems: 'flex-start' }}>
+                  <div style={{ backgroundColor: '#e6f1fb', padding: '12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Activity size={24} color="#185fa5" />
+                  </div>
+                  <ul style={{ margin: 0, padding: '0 0 0 16px', fontSize: '13px', color: '#374151', lineHeight: '2' }}>
+                    {recommendedTestsData.tests?.map((test, index) => (
+                      <li key={index}>{test}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {recommendedTestsData.reason && (
+                <div style={{ marginTop: '24px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#0c447c', marginBottom: '8px' }}>NOTE / REASON FOR RECOMMENDATION</div>
+                  <div style={{ borderBottom: '1px solid #e2e8f0', width: '100%', marginBottom: '12px' }}></div>
+
+                  <div style={{ display: 'flex', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', gap: '16px', alignItems: 'center' }}>
+                    <div style={{ backgroundColor: '#e6f1fb', padding: '8px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <FileText size={18} color="#185fa5" />
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#374151' }}>
+                      {recommendedTestsData.reason}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </PrintLetterHead>
+        </div>
+      )}
     </div>
   )
 }

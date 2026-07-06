@@ -9,6 +9,7 @@ import {
 } from '@coreui/react'
 import {
   Delete_ReportById, Delete_ReportByIdIndex,
+  fetchRecommendedTests,
   Get_ReportsByBookingIdData, SaveReportsData,
 } from './reportAPI'
 import { ToastContainer, toast } from 'react-toastify'
@@ -88,14 +89,11 @@ const ReportDetails = () => {
   }, [])
 
   useEffect(() => {
-    const fetchRecommendedTests = async () => {
+    const recommendedTests = async () => {
       try {
         if (!appointmentInfo?.bookingId) return
 
-        const response = await http.get(
-          `${wifiUrl}/api/physiotherapy-doctor/investigations/${appointmentInfo.bookingId}/${appointmentInfo.patientId}`
-        )
-
+        const response = await fetchRecommendedTests(appointmentInfo.bookingId, appointmentInfo.patientId)
         const reportsArray = response.data?.data || []
 
         console.log("reportsArray", reportsArray)
@@ -110,7 +108,7 @@ const ReportDetails = () => {
       }
     }
 
-    fetchRecommendedTests()
+    recommendedTests()
   }, [appointmentInfo?.bookingId])
 
   const patientId =

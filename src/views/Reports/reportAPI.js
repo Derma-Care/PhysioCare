@@ -1,6 +1,6 @@
 // reportsAPI.js
 import axios from 'axios'
-import { BASE_URL, AllReports, SavingReports, Get_ReportsByBookingId } from '../../baseUrl'
+import { BASE_URL, AllReports, SavingReports, Get_ReportsByBookingId, wifiUrl } from '../../baseUrl'
 import { http } from '../../Utils/Interceptors'
 
 export const ReportsData = async () => {
@@ -43,8 +43,8 @@ export const SaveReportsData = async (reportData) => {
     )
     throw error
   }
-  
-  
+
+
 }
 // services/ReportsService.js
 
@@ -53,8 +53,11 @@ export const Delete_ReportById = async (id) => {
   return http.delete(`/deleteReport/${id}`)
 }
 
-export const Delete_ReportByIdIndex = async (id,bookingId,index) => {
+export const Delete_ReportByIdIndex = async (id, bookingId, index) => {
   return http.delete(`/deleteReportFile/${id}/${bookingId}/${index}`)
 }
 
+export const fetchRecommendedTests = async (bookingId, patientId) => {
+  return axios.get(`${wifiUrl}/api/physiotherapy-doctor/investigations/${bookingId}/${patientId}`)
+}
 
