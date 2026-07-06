@@ -316,7 +316,7 @@ const SessionFeedback = () => {
 
   const patientOptions = patients.map(p => ({
     value: p.patientId || p.id,
-    label: `${p.patientName || 'Unknown'} (${p.mobileNumber || '—'})`,
+    label: `${p.patientName || 'Unknown'} (${p.bookingId || '—'} - ${p.mobileNumber || '—'})`,
     ...p
   }));
 
