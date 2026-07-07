@@ -182,10 +182,13 @@ export default function Billing() {
     }
   }
 
-  const bookingOptions = bookings.map(b => ({
-    value: b,
-    label: [b.bookingId, b.name, b.mobileNumber, b.mobile].filter(Boolean).join(' '),
-  }))
+  const EXCLUDED_STATUSES = ['pending', 'confirmed']
+  const bookingOptions = bookings
+    .filter(b => !EXCLUDED_STATUSES.includes((b.status || '').toLowerCase()))
+    .map(b => ({
+      value: b,
+      label: [b.bookingId, b.name, b.mobileNumber, b.mobile].filter(Boolean).join(' '),
+    }))
 
   /* dynamic counts from ALL backend data */
   const counts = allData.reduce((acc, b) => {
