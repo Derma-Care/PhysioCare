@@ -95,6 +95,7 @@ const AnalyticsMenu = React.lazy(() => import('./views/Analytics/AnalyticsMenu')
 const RevenueTable = React.lazy(() => import('./views/Analytics/Analytics'))
 const ExpenseForm = React.lazy(() => import('./views/Analytics/ExpenseForm'))
 const PatientAnalytics = React.lazy(() => import('./views/Analytics/PatientAnalytics'))
+const ReferralAnalytics = React.lazy(() => import('./views/Analytics/ReferralAnalytics'))
 const AppointmentAnalytics = React.lazy(() => import('./views/Analytics/AppointmentAnalytics'))
 const TreatmentAnalytics = React.lazy(() => import('./views/Analytics/TreatmentAnalytics'))
 const PackagesManagement = React.lazy(() => import('./views/Package/PackagesManagment'))
@@ -221,6 +222,7 @@ const routes = [
   { path: "/analytics", element: AnalyticsMenu },
   { path: "/analytics/revenue", element: RevenueTable },
   { path: "/analytics/patients", element: PatientAnalytics },
+  { path: "/analytics/referrals", element: ReferralAnalytics },
   { path: "/analytics/appointments", element: AppointmentAnalytics },
   { path: "/analytics/treatments", element: TreatmentAnalytics },
   { path: "/expenses", element: ExpenseForm },
