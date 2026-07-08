@@ -439,6 +439,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         dob: editData.dob || editData.dateOfBirth || '',
         symptomsDuration: parsedDuration,
         unit: parsedUnit,
+        doctorRefCode: editData.referredDoctorId || editData.doctorRefCode || '',
         attachments: editData.attachments?.map((att, idx) => {
           if (typeof att === 'string') {
             // Strip query params (pre-signed URL) to get clean filename
@@ -920,6 +921,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
           dob: bookingDetails.dob,
           dateOfBirth: bookingDetails.dob,
           listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
+          referredDoctorId: bookingDetails.doctorRefCode === 'OTHER' ? '' : bookingDetails.doctorRefCode,
         }
 
         const changedData = { bookingId: editData.bookingId }
@@ -948,6 +950,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
           dob: bookingDetails.dob,
           dateOfBirth: bookingDetails.dob,
           listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
+          referredDoctorId: bookingDetails.doctorRefCode === 'OTHER' ? '' : bookingDetails.doctorRefCode,
         })
       }
 
@@ -994,6 +997,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         theraphyAnswers: theraphyQuestions, parts: part,
         // listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
         consulationFee: Number(bookingDetails.consultationFee || 0),
+        referredDoctorId: bookingDetails.doctorRefCode === 'OTHER' ? '' : bookingDetails.doctorRefCode,
       })
 
       // ✅ Correct order: close → reset → toast → navigate

@@ -13,6 +13,7 @@ const RevenueCards = () => {
     today: 0,
     week: 0,
     month: 0,
+    year: 0,
     expences: 0,
   });
 
@@ -104,9 +105,9 @@ const RevenueCards = () => {
         <CCard style={{ ...cardStyle, borderLeft: "3px solid #e7a1a1" }}>
           <CCardBody style={{ padding: 0, width: "100%" }}>
             <div>
-              <div style={titleStyle}>Expenses</div>
-              <div style={{ ...valueStyle, color: "#b94a4a" }}>
-                - ₹{data.expences}
+              <div style={titleStyle}>Year</div>
+              <div style={valueStyle}>
+                ₹{data.expences}
               </div>
             </div>
             <CIcon icon={cilMoney} style={{ ...iconStyle, color: "#e7a1a1" }} />

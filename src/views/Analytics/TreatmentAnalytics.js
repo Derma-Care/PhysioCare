@@ -1,114 +1,551 @@
-import React, { useState } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import {
   CTable, CTableHead, CTableRow,
   CTableHeaderCell, CTableBody, CTableDataCell,
   CRow, CCol, CCard, CCardBody
 } from "@coreui/react"
-import { Activity, Star, ThumbsUp, DollarSign } from "lucide-react"
+import { Activity, Star, ThumbsUp, DollarSign, Info, LayoutGrid, Table2, Search, X } from "lucide-react"
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  PieChart, Pie, Cell, Legend, LabelList
+} from "recharts"
+import Pagination from "../../Utils/Pagination"
+import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
+
+/* ─── all dummy records tagged by type and date-bucket ─── */
+const ALL_DATA = [
+  /* Activities */
+  { id: 1, treatment: "Stretching Exercise", type: "activity", category: "Recovery", patients: 38, count: 110, completed: 104, avgRevenue: "₹400" },
+  { id: 2, treatment: "Breathing Technique", type: "activity", category: "Wellness", patients: 24, count: 72, completed: 65, avgRevenue: "₹350" },
+  { id: 3, treatment: "Balance Training", type: "activity", category: "Rehab", patients: 19, count: 55, completed: 50, avgRevenue: "₹450" },
+  /* Therapies */
+  { id: 4, treatment: "Laser Therapy", type: "therapy", category: "Advanced", patients: 42, count: 120, completed: 114, avgRevenue: "₹1,500" },
+  { id: 5, treatment: "Spinal Decompression", type: "therapy", category: "Orthopedic", patients: 31, count: 85, completed: 75, avgRevenue: "₹2,200" },
+  { id: 6, treatment: "Sports Massage", type: "therapy", category: "Recovery", patients: 27, count: 65, completed: 63, avgRevenue: "₹800" },
+  { id: 7, treatment: "Acupuncture", type: "therapy", category: "Alternative", patients: 18, count: 42, completed: 36, avgRevenue: "₹1,000" },
+  { id: 8, treatment: "Ultrasound Therapy", type: "therapy", category: "Advanced", patients: 22, count: 60, completed: 57, avgRevenue: "₹1,100" },
+  /* Programs */
+  { id: 9, treatment: "Back Pain Relief Program", type: "program", category: "Orthopedic", patients: 30, count: 90, completed: 84, avgRevenue: "₹3,000" },
+  { id: 10, treatment: "Post-Op Recovery Program", type: "program", category: "Rehab", patients: 15, count: 45, completed: 42, avgRevenue: "₹4,500" },
+  { id: 11, treatment: "Wellness 30-Day Program", type: "program", category: "Wellness", patients: 20, count: 60, completed: 54, avgRevenue: "₹2,800" },
+  /* Packages */
+  { id: 12, treatment: "Premium Care Package", type: "package", category: "Advanced", patients: 12, count: 36, completed: 35, avgRevenue: "₹6,000" },
+  { id: 13, treatment: "Sports Recovery Package", type: "package", category: "Recovery", patients: 17, count: 51, completed: 46, avgRevenue: "₹4,200" },
+  { id: 14, treatment: "Senior Health Package", type: "package", category: "Wellness", patients: 14, count: 42, completed: 38, avgRevenue: "₹3,800" },
+]
+
+const TYPE_OPTIONS = [
+  { value: "all", label: "All Types" },
+  { value: "activity", label: "Activity" },
+  { value: "therapy", label: "Therapy" },
+  { value: "program", label: "Program" },
+  { value: "package", label: "Package" },
+]
+
+const PERIOD_OPTIONS = [
+  { value: "today", label: "Today" },
+  { value: "week", label: "Week" },
+  { value: "month", label: "Month" },
+  { value: "year", label: "Year" },
+  { value: "custom", label: "Custom" },
+]
+
+const PERIOD_SCALE = { today: 0.03, week: 0.22, month: 1, year: 11 }
+const PAGE_SIZE_OPTIONS = [5, 10, 25]
+
+const TYPE_COLORS = {
+  activity: { solid: "#0369a1", bg: "#e0f2fe" },
+  therapy: { solid: "#6b21a8", bg: "#f3e8ff" },
+  program: { solid: "#15803d", bg: "#dcfce7" },
+  package: { solid: "#854d0e", bg: "#fef9c3" },
+}
+
+const parseRevenue = (str) => Number(String(str).replace(/[₹,]/g, "")) || 0
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null
+  return (
+    <div style={{
+      background: "#fff", border: "1px solid #d0dce9", borderRadius: 8,
+      padding: "8px 12px", boxShadow: "0 6px 18px rgba(0,0,0,.08)", fontSize: 12
+    }}>
+      <div style={{ fontWeight: 700, color: "#0c447c", marginBottom: 4 }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ color: p.color || p.fill, fontWeight: 600 }}>
+          {p.name}: {p.value}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 const TreatmentAnalytics = () => {
-  const [filter, setFilter] = useState("month")
+  useAutoHideSidebar()
+  const [typeFilter, setTypeFilter] = useState("all")
+  const [periodFilter, setPeriodFilter] = useState("month")
+  const [customFrom, setCustomFrom] = useState("")
+  const [customTo, setCustomTo] = useState("")
+  const [showInfo, setShowInfo] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [view, setView] = useState("charts") // 'charts' | 'table'
+  const [search, setSearch] = useState("")
+
+  /* ── filtered + scaled rows ── */
+  const rows = useMemo(() => {
+    let list = typeFilter === "all"
+      ? ALL_DATA
+      : ALL_DATA.filter(r => r.type === typeFilter)
+
+    const q = search.trim().toLowerCase()
+    if (q) {
+      list = list.filter(r =>
+        r.treatment.toLowerCase().includes(q) ||
+        r.category.toLowerCase().includes(q) ||
+        r.type.toLowerCase().includes(q)
+      )
+    }
+
+    const scale = periodFilter === "custom" ? 1 : (PERIOD_SCALE[periodFilter] ?? 1)
+
+    return list.map(r => ({
+      ...r,
+      scaledCount: Math.max(1, Math.round(r.count * scale)),
+      scaledPatients: Math.max(1, Math.round(r.patients * scale)),
+      scaledCompleted: Math.max(0, Math.round(r.completed * scale)),
+    }))
+  }, [typeFilter, periodFilter, search])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [typeFilter, periodFilter, search])
+
+  /* ── pagination ── */
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize))
+  const safePage = Math.min(currentPage, totalPages)
+  const pagedRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize)
+
+
+  /* ── summary stats ── */
+  const totalSessions = rows.reduce((s, r) => s + r.scaledCount, 0)
+  const totalPatients = rows.reduce((s, r) => s + r.scaledPatients, 0)
+  const totalCompleted = rows.reduce((s, r) => s + r.scaledCompleted, 0)
+  const avgSuccess = totalSessions ? Math.round((totalCompleted / totalSessions) * 100) : 0
 
   const statCards = [
-    { title: "Total Treatments", value: "312", icon: <Activity size={24} color="#6b21a8" />, bg: "#f3e8ff" },
-    { title: "Avg Success Rate", value: "92%", icon: <Star size={24} color="#b45309" />, bg: "#fef3c7" },
-    { title: "Highly Rated", value: "245", icon: <ThumbsUp size={24} color="#185fa5" />, bg: "#e6f1fb" },
-    { title: "Avg Revenue/Treatment", value: "₹1,200", icon: <DollarSign size={24} color="#3b6d11" />, bg: "#eaf3de" }
+    { title: "Total Sessions", value: totalSessions, icon: <Activity size={16} color="#6b21a8" />, bg: "#f3e8ff" },
+    { title: "Total Patients", value: totalPatients, icon: <ThumbsUp size={16} color="#185fa5" />, bg: "#e6f1fb" },
+    { title: "Avg Success Rate", value: `${avgSuccess}%`, icon: <Star size={16} color="#b45309" />, bg: "#fef3c7" },
+    { title: "Treatment Types", value: rows.length, icon: <DollarSign size={16} color="#3b6d11" />, bg: "#eaf3de" },
   ]
 
-  const data = [
-    { id: 1, treatment: "Laser Therapy", category: "Advanced", count: 120, successRate: "95%", avgRevenue: "₹1,500" },
-    { id: 2, treatment: "Spinal Decompression", category: "Orthopedic", count: 85, successRate: "88%", avgRevenue: "₹2,200" },
-    { id: 3, treatment: "Sports Massage", category: "Recovery", count: 65, successRate: "96%", avgRevenue: "₹800" },
-    { id: 4, treatment: "Acupuncture", category: "Alternative", count: 42, successRate: "85%", avgRevenue: "₹1,000" }
-  ]
+  /* ── chart data ── */
+  // top treatments by sessions (limit for readability)
+  const topBySessions = useMemo(() => {
+    return [...rows]
+      .sort((a, b) => b.scaledCount - a.scaledCount)
+      .slice(0, 7)
+      .map(r => ({
+        name: r.treatment.length > 16 ? r.treatment.slice(0, 15) + "…" : r.treatment,
+        fullName: r.treatment,
+        Sessions: r.scaledCount,
+        Completed: r.scaledCompleted,
+        type: r.type,
+      }))
+  }, [rows])
+
+  // distribution by type (session share)
+  const typeDistribution = useMemo(() => {
+    const grouped = {}
+    rows.forEach(r => {
+      grouped[r.type] = grouped[r.type] || { type: r.type, Sessions: 0, count: 0 }
+      grouped[r.type].Sessions += r.scaledCount
+      grouped[r.type].count += 1
+    })
+    return Object.values(grouped).map(g => ({
+      name: TYPE_OPTIONS.find(o => o.value === g.type)?.label ?? g.type,
+      value: g.Sessions,
+      type: g.type,
+    }))
+  }, [rows])
+
+  // success rate by type (aggregated)
+  const successByType = useMemo(() => {
+    const grouped = {}
+    rows.forEach(r => {
+      grouped[r.type] = grouped[r.type] || { count: 0, completed: 0 }
+      grouped[r.type].count += r.scaledCount
+      grouped[r.type].completed += r.scaledCompleted
+    })
+    return Object.entries(grouped).map(([type, v]) => ({
+      name: TYPE_OPTIONS.find(o => o.value === type)?.label ?? type,
+      type,
+      "Success Rate": v.count ? Math.round((v.completed / v.count) * 100) : 0,
+    }))
+  }, [rows])
+
+  // avg revenue by treatment (top by revenue)
+  const revenueByTreatment = useMemo(() => {
+    return [...rows]
+      .map(r => ({ name: r.treatment.length > 16 ? r.treatment.slice(0, 15) + "…" : r.treatment, Revenue: parseRevenue(r.avgRevenue), type: r.type }))
+      .sort((a, b) => b.Revenue - a.Revenue)
+      .slice(0, 7)
+  }, [rows])
 
   return (
     <>
+      {/* ── Header ── */}
       <div className="ta-page-header">
-        <div className="ta-title-group">
-          <div className="ta-page-icon">
-            <Activity size={20} />
+        <div className="ta-header-top">
+          <div className="ta-title-group">
+            <div className="ta-page-icon">
+              <Activity size={20} />
+            </div>
+            <div>
+              <h4 className="ta-page-title">Treatment Analytics</h4>
+              <p className="ta-page-sub">Analyze treatment performance and profitability</p>
+            </div>
           </div>
-          <div>
-            <h4 className="ta-page-title">Treatment Analytics</h4>
-            <p className="ta-page-sub">Analyze treatment performance and profitability</p>
-          </div>
-        </div>
 
-        <div className="ta-filter-group">
-          {["month", "quarter", "year"].map((f) => (
-            <button
-              key={f}
-              className={`ta-filter-pill${filter === f ? " active" : ""}`}
-              onClick={() => setFilter(f)}
-            >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <CRow className="mb-4">
-        {statCards.map((stat, idx) => (
-          <CCol xs={12} sm={6} md={3} key={idx} className="mb-3">
-            <CCard style={{ border: '1px solid #d0dce9', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
-              <CCardBody className="d-flex align-items-center p-3">
-                <div 
-                  className="d-flex align-items-center justify-content-center flex-shrink-0 mr-3"
-                  style={{ width: '48px', height: '48px', borderRadius: '10px', background: stat.bg, marginRight: '16px' }}
-                >
+          {/* ── Mini stat cards, top right ── */}
+          <div className="ta-mini-stats">
+            {statCards.map((stat, idx) => (
+              <div className="ta-mini-stat" key={idx}>
+                <div className="ta-mini-stat-icon" style={{ background: stat.bg }}>
                   {stat.icon}
                 </div>
                 <div>
-                  <p className="text-muted small mb-0 font-weight-bold">{stat.title}</p>
-                  <h4 className="mb-0 font-weight-bold" style={{ color: '#0c447c' }}>{stat.value}</h4>
+                  <p className="ta-mini-stat-title">{stat.title}</p>
+                  <h6 className="ta-mini-stat-value">{stat.value}</h6>
                 </div>
-              </CCardBody>
-            </CCard>
-          </CCol>
-        ))}
-      </CRow>
-
-      <div className="ta-table-wrapper">
-        <div style={{ padding: '16px', borderBottom: '1px solid #d0dce9', background: '#fff' }}>
-          <h6 style={{ margin: 0, color: '#0c447c', fontWeight: 600 }}>Top Performing Treatments</h6>
-        </div>
-        <CTable className="ta-table">
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell className="ta-th">Treatment Name</CTableHeaderCell>
-              <CTableHeaderCell className="ta-th">Category</CTableHeaderCell>
-              <CTableHeaderCell className="ta-th text-center">Sessions Conducted</CTableHeaderCell>
-              <CTableHeaderCell className="ta-th text-center">Success Rate</CTableHeaderCell>
-              <CTableHeaderCell className="ta-th text-right">Avg. Revenue</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {data.map((row) => (
-              <CTableRow key={row.id} className="ta-tr">
-                <CTableDataCell className="ta-td font-weight-bold" style={{ color: '#0c447c' }}>{row.treatment}</CTableDataCell>
-                <CTableDataCell className="ta-td text-muted">
-                  <span style={{ padding: '4px 8px', background: '#f8fafc', border: '1px solid #eef2f7', borderRadius: '4px', fontSize: '11px' }}>
-                    {row.category}
-                  </span>
-                </CTableDataCell>
-                <CTableDataCell className="ta-td text-center font-weight-bold">{row.count}</CTableDataCell>
-                <CTableDataCell className="ta-td text-center">
-                  <span style={{ color: '#3b6d11', fontWeight: 600 }}>{row.successRate}</span>
-                </CTableDataCell>
-                <CTableDataCell className="ta-td text-right font-weight-bold">{row.avgRevenue}</CTableDataCell>
-              </CTableRow>
+              </div>
             ))}
-          </CTableBody>
-        </CTable>
+          </div>
+        </div>
+
+        {/* ── Dual filter row ── */}
+        <div className="ta-filter-row">
+          <div className="ta-select-wrap">
+            <label className="ta-select-label">Search</label>
+            <div className="ta-search-wrap">
+              <Search size={14} className="ta-search-icon" />
+              <input
+                type="text"
+                className="ta-search-input"
+                placeholder="Search treatments, category…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              {search && (
+                <button className="ta-search-clear" onClick={() => setSearch("")} title="Clear search">
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="ta-select-wrap">
+            <label className="ta-select-label">Type</label>
+            <select
+              className="ta-select"
+              value={typeFilter}
+              onChange={e => setTypeFilter(e.target.value)}
+            >
+              {TYPE_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="ta-select-wrap">
+            <label className="ta-select-label">Period</label>
+            <select
+              className="ta-select"
+              value={periodFilter}
+              onChange={e => setPeriodFilter(e.target.value)}
+            >
+              {PERIOD_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {periodFilter === "custom" && (
+            <div className="ta-date-range">
+              <div className="ta-select-wrap">
+                <label className="ta-select-label">From</label>
+                <input
+                  type="date"
+                  className="ta-select"
+                  value={customFrom}
+                  max={customTo || undefined}
+                  onChange={e => setCustomFrom(e.target.value)}
+                />
+              </div>
+              <div className="ta-select-wrap">
+                <label className="ta-select-label">To</label>
+                <input
+                  type="date"
+                  className="ta-select"
+                  value={customTo}
+                  min={customFrom || undefined}
+                  onChange={e => setCustomTo(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* view toggle */}
+          <div className="ta-view-toggle">
+            <button
+              className={`ta-view-btn${view === "charts" ? " active" : ""}`}
+              onClick={() => setView("charts")}
+            >
+              <LayoutGrid size={14} /> Charts
+            </button>
+            <button
+              className={`ta-view-btn${view === "table" ? " active" : ""}`}
+              onClick={() => setView("table")}
+            >
+              <Table2 size={14} /> Table
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* ── Charts view ── */}
+      {view === "charts" && rows.length === 0 && (
+        <div className="ta-empty-state">
+          <Search size={28} color="#94a3b8" />
+          <p>
+            {search
+              ? <>No treatments match "<strong>{search}</strong>".</>
+              : "No records found for the selected filters."}
+          </p>
+        </div>
+      )}
+      {view === "charts" && rows.length > 0 && (
+        <CRow className="mb-4">
+          {/* Sessions vs Completed */}
+          <CCol xs={12} lg={7} className="mb-3">
+            <div className="ta-chart-card">
+              <div className="ta-chart-head">
+                <h6>Sessions vs Completed</h6>
+                <span className="ta-chart-sub">Top {topBySessions.length} treatments by volume</span>
+              </div>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={topBySessions} margin={{ top: 6, right: 12, left: -12, bottom: 4 }}>
+                  <CartesianGrid vertical={false} stroke="#eef2f7" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#6b7280" }} interval={0} angle={-18} textAnchor="end" height={50} />
+                  <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} allowDecimals={false} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f8fafc" }} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="Sessions" fill="#93c5fd" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Completed" fill="#0c447c" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CCol>
+
+          {/* Distribution by type */}
+          <CCol xs={12} lg={5} className="mb-3">
+            <div className="ta-chart-card">
+              <div className="ta-chart-head">
+                <h6>Session Share by Type</h6>
+                <span className="ta-chart-sub">Distribution of total sessions</span>
+              </div>
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={typeDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={62}
+                    outerRadius={92}
+                    paddingAngle={3}
+                  >
+                    {typeDistribution.map((entry, i) => (
+                      <Cell key={i} fill={TYPE_COLORS[entry.type]?.solid || "#94a3b8"} stroke="#fff" strokeWidth={2} />
+                    ))}
+                    <LabelList dataKey="value" position="inside" fill="#fff" fontSize={11} fontWeight={700} />
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CCol>
+
+          {/* Success rate by type */}
+          <CCol xs={12} lg={6} className="mb-3">
+            <div className="ta-chart-card">
+              <div className="ta-chart-head">
+                <h6>Success Rate by Type</h6>
+                <span className="ta-chart-sub">Completed ÷ total sessions, per treatment type</span>
+              </div>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={successByType} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
+                  <CartesianGrid horizontal={false} stroke="#eef2f7" />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: "#6b7280" }} unit="%" />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: "#374151" }} width={70} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f8fafc" }} />
+                  <Bar dataKey="Success Rate" radius={[0, 4, 4, 0]} barSize={22}>
+                    {successByType.map((entry, i) => (
+                      <Cell key={i} fill={TYPE_COLORS[entry.type]?.solid || "#94a3b8"} />
+                    ))}
+                    <LabelList dataKey="Success Rate" position="right" formatter={v => `${v}%`} fontSize={11} fill="#374151" fontWeight={700} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CCol>
+
+          {/* Revenue by treatment */}
+          <CCol xs={12} lg={6} className="mb-3">
+            <div className="ta-chart-card">
+              <div className="ta-chart-head">
+                <h6>Avg. Revenue by Treatment</h6>
+                <span className="ta-chart-sub">Top earners, ₹ per session</span>
+              </div>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={revenueByTreatment} margin={{ top: 6, right: 12, left: -8, bottom: 4 }}>
+                  <CartesianGrid vertical={false} stroke="#eef2f7" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#6b7280" }} interval={0} angle={-18} textAnchor="end" height={46} />
+                  <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} tickFormatter={v => `₹${v}`} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f8fafc" }} />
+                  <Bar dataKey="Revenue" radius={[4, 4, 0, 0]}>
+                    {revenueByTreatment.map((entry, i) => (
+                      <Cell key={i} fill={TYPE_COLORS[entry.type]?.solid || "#94a3b8"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CCol>
+        </CRow>
+      )}
+
+      {/* ── Table view ── */}
+      {view === "table" && (
+        <div className="ta-table-wrapper">
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #d0dce9', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <h6 style={{ margin: 0, color: '#0c447c', fontWeight: 600 }}>
+              {typeFilter === "all" ? "All Treatment Types" : TYPE_OPTIONS.find(o => o.value === typeFilter)?.label}
+              <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 400, marginLeft: 8 }}>
+                · {rows.length} records
+              </span>
+            </h6>
+
+            <div style={{ position: 'relative' }}>
+              <button
+                className="ta-info-btn"
+                onClick={() => setShowInfo(v => !v)}
+                title="How is Success Rate calculated?"
+              >
+                <Info size={14} style={{ marginRight: 4 }} />
+                How is Success Rate calculated?
+              </button>
+              {showInfo && (
+                <div className="ta-info-popover">
+                  <strong>Success Rate Formula</strong>
+                  <p style={{ margin: '6px 0 4px' }}>
+                    <code>Success Rate = (Completed Sessions ÷ Total Sessions) × 100</code>
+                  </p>
+                  <p style={{ margin: 0, fontSize: 11, color: '#6b7280' }}>
+                    A session is marked <em>completed</em> when the patient attends
+                    all prescribed visits and the therapist closes the session with
+                    a positive outcome. Cancelled, missed, or on-hold sessions are
+                    <strong> not</strong> counted as completed.
+                  </p>
+                  <button className="ta-info-close" onClick={() => setShowInfo(false)}>✕ Close</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <CTable className="ta-table">
+            <CTableHead>
+              <CTableRow>
+                <CTableHeaderCell className="ta-th">#</CTableHeaderCell>
+                <CTableHeaderCell className="ta-th">Treatment Name</CTableHeaderCell>
+                <CTableHeaderCell className="ta-th">Type</CTableHeaderCell>
+                <CTableHeaderCell className="ta-th text-center">Patients</CTableHeaderCell>
+                <CTableHeaderCell className="ta-th text-center">Sessions</CTableHeaderCell>
+                <CTableHeaderCell className="ta-th text-center">Completed</CTableHeaderCell>
+                <CTableHeaderCell className="ta-th text-center">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                    Success Rate
+                  </span>
+                </CTableHeaderCell>
+                <CTableHeaderCell className="ta-th text-right">Avg. Revenue</CTableHeaderCell>
+              </CTableRow>
+            </CTableHead>
+            <CTableBody>
+              {pagedRows.length === 0 ? (
+                <CTableRow>
+                  <CTableDataCell colSpan={8} className="ta-td text-center text-muted">
+                    {search
+                      ? <>No treatments match "<strong>{search}</strong>". Try a different search term.</>
+                      : "No records found for the selected filters."}
+                  </CTableDataCell>
+                </CTableRow>
+              ) : pagedRows.map((row, i) => {
+                const globalIdx = (safePage - 1) * pageSize + i + 1
+                const rate = row.scaledCount ? Math.round((row.scaledCompleted / row.scaledCount) * 100) : 0
+                const rateColor = rate >= 90 ? '#16a34a' : rate >= 75 ? '#b45309' : '#dc2626'
+                const badge = TYPE_COLORS[row.type] ? { bg: TYPE_COLORS[row.type].bg, color: TYPE_COLORS[row.type].solid } : { bg: '#f1f5f9', color: '#475569' }
+                return (
+                  <CTableRow key={row.id} className="ta-tr">
+                    <CTableDataCell className="ta-td text-muted">{globalIdx}</CTableDataCell>
+                    <CTableDataCell className="ta-td font-weight-bold" style={{ color: '#0c447c' }}>
+                      {row.treatment}
+                    </CTableDataCell>
+                    <CTableDataCell className="ta-td">
+                      <span style={{ padding: '3px 9px', background: badge.bg, color: badge.color, borderRadius: 20, fontSize: 11, fontWeight: 700, textTransform: 'capitalize' }}>
+                        {row.type}
+                      </span>
+                    </CTableDataCell>
+                    <CTableDataCell className="ta-td text-center font-weight-bold">{row.scaledPatients}</CTableDataCell>
+                    <CTableDataCell className="ta-td text-center font-weight-bold">{row.scaledCount}</CTableDataCell>
+                    <CTableDataCell className="ta-td text-center" style={{ color: '#374151' }}>{row.scaledCompleted}</CTableDataCell>
+                    <CTableDataCell className="ta-td text-center">
+                      <span className="ta-rate-bar-wrap">
+                        <span className="ta-rate-bar" style={{ width: `${rate}%`, background: rateColor }} />
+                        <span style={{ color: rateColor, fontWeight: 700, fontSize: 13 }}>{rate}%</span>
+                      </span>
+                    </CTableDataCell>
+                    <CTableDataCell className="ta-td text-right font-weight-bold">{row.avgRevenue}</CTableDataCell>
+                  </CTableRow>
+                )
+              })}
+            </CTableBody>
+          </CTable>
+        </div>
+      )}
+
+      {view === "table" && rows.length > 0 && (
+        <div style={{ marginBottom: "20px" }}>
+          <Pagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+          />
+        </div>
+      )}
 
       <style>{`
         .ta-page-header {
-          display: flex; align-items: center; justify-content: space-between;
-          flex-wrap: wrap; gap: 12px; margin-bottom: 18px;
+          display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px;
           padding-bottom: 14px; border-bottom: 1px solid #d0dce9;
+        }
+        .ta-header-top {
+          display: flex; align-items: center; justify-content: space-between;
+          flex-wrap: wrap; gap: 14px;
         }
         .ta-title-group { display: flex; align-items: center; gap: 12px; }
         .ta-page-icon {
@@ -116,22 +553,127 @@ const TreatmentAnalytics = () => {
           display: flex; align-items: center; justify-content: center; color: #6b21a8; flex-shrink: 0;
         }
         .ta-page-title { font-size: 17px; font-weight: 600; color: #0c447c; margin: 0; }
-        .ta-page-sub { font-size: 12px; color: #6b7280; margin: 0; }
-        
-        .ta-filter-group { display: flex; gap: 8px; }
-        .ta-filter-pill {
-          background: #fff; color: #374151; border: 1px solid #d0dce9; border-radius: 20px;
-          padding: 6px 14px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+        .ta-page-sub   { font-size: 12px; color: #6b7280; margin: 0; }
+
+        .ta-mini-stats {
+          display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+          margin-left: auto;
         }
-        .ta-filter-pill.active { background: #6b21a8; color: #fff; border-color: #6b21a8; }
-        
-        .ta-table-wrapper {
-          border: 1px solid #d0dce9; border-radius: 10px; overflow: hidden; background: #fff;
+        .ta-mini-stat {
+          display: flex; align-items: center; gap: 8px;
+          background: #fff; border: 1px solid #d0dce9; border-radius: 9px;
+          padding: 6px 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
+        .ta-mini-stat-icon {
+          width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .ta-mini-stat-icon svg { width: 15px; height: 15px; }
+        .ta-mini-stat-title {
+          margin: 0; font-size: 10px; font-weight: 700; color: #6b7280;
+          text-transform: uppercase; letter-spacing: .3px; white-space: nowrap;
+        }
+        .ta-mini-stat-value { margin: 0; font-size: 14px; font-weight: 700; color: #0c447c; line-height: 1.3; }
+
+        @media (max-width: 900px) {
+          .ta-mini-stats { margin-left: 0; }
+        }
+
+        .ta-filter-row  { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+        .ta-date-range  { display: flex; gap: 10px; flex-wrap: wrap; }
+        .ta-select-wrap { display: flex; flex-direction: column; gap: 3px; }
+        .ta-select-label { font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .4px; }
+        .ta-select {
+          padding: 7px 10px; border: 1px solid #d0dce9; border-radius: 7px;
+          font-size: 13px; font-weight: 500; color: #1e293b; background: #fff;
+          cursor: pointer; outline: none; min-width: 130px; transition: border-color .15s;
+        }
+        .ta-select:focus { border-color: #6b21a8; box-shadow: 0 0 0 2px #6b21a820; }
+
+        .ta-search-wrap {
+          position: relative; display: flex; align-items: center;
+        }
+        .ta-search-icon { position: absolute; left: 9px; color: #94a3b8; pointer-events: none; }
+        .ta-search-input {
+          padding: 7px 28px 7px 30px; border: 1px solid #d0dce9; border-radius: 7px;
+          font-size: 13px; font-weight: 500; color: #1e293b; background: #fff;
+          outline: none; min-width: 220px; transition: border-color .15s;
+        }
+        .ta-search-input:focus { border-color: #6b21a8; box-shadow: 0 0 0 2px #6b21a820; }
+        .ta-search-input::placeholder { color: #9ca3af; font-weight: 400; }
+        .ta-search-clear {
+          position: absolute; right: 6px; border: none; background: #f1f5f9; color: #64748b;
+          border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center;
+          justify-content: center; cursor: pointer; padding: 0;
+        }
+        .ta-search-clear:hover { background: #e2e8f0; color: #374151; }
+
+        .ta-empty-state {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 10px; padding: 60px 20px; background: #fff; border: 1px dashed #d0dce9;
+          border-radius: 10px; margin-bottom: 24px; color: #6b7280; font-size: 13px; text-align: center;
+        }
+        .ta-empty-state p { margin: 0; }
+
+        .ta-view-toggle {
+          display: flex; align-items: center; gap: 2px; background: #f1f5f9;
+          border-radius: 8px; padding: 3px; margin-left: auto;
+        }
+        .ta-view-btn {
+          display: flex; align-items: center; gap: 6px; border: none; background: transparent;
+          padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+          color: #64748b; cursor: pointer; transition: all .15s;
+        }
+        .ta-view-btn:hover { color: #0c447c; }
+        .ta-view-btn.active { background: #fff; color: #0c447c; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+        .ta-chart-card {
+          background: #fff; border: 1px solid #d0dce9; border-radius: 10px;
+          padding: 16px 16px 6px; height: 100%; box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .ta-chart-head { margin-bottom: 6px; }
+        .ta-chart-head h6 { margin: 0; font-size: 14px; font-weight: 700; color: #0c447c; }
+        .ta-chart-sub { font-size: 11px; color: #6b7280; }
+
+        .ta-table-wrapper { border: 0.5px solid #d0dce9; border-radius: 10px; overflow: hidden; overflow-x: auto; margin-bottom: 12px; }
         .ta-table { margin-bottom: 0 !important; font-size: 13px; }
-        .ta-th { background: #f8fafc !important; color: #475569 !important; font-weight: 600 !important; padding: 12px 16px !important; border-bottom: 1px solid #d0dce9 !important; }
-        .ta-td { padding: 12px 16px !important; vertical-align: middle !important; border-bottom: 1px solid #eef2f7 !important; }
-        .ta-tr:hover { background: #f8fafc !important; }
+        .ta-th {
+          background: var(--color-primary) !important; color: #fff !important; font-size: 12px !important;
+          font-weight: 600 !important; padding: 11px 14px !important; white-space: nowrap; border: none !important;
+        }
+        .ta-tr { transition: background 0.12s; }
+        .ta-tr:hover { background: #fdf3f3 !important; }
+        .ta-td {
+          padding: 11px 14px !important; vertical-align: middle !important; font-size: 13px;
+          color: #374151; border-bottom: 0.5px solid #eef2f7 !important; border-top: none !important;
+        }
+
+        .ta-rate-bar-wrap {
+          display: inline-flex; align-items: center; gap: 7px;
+          background: #f1f5f9; border-radius: 20px; padding: 3px 10px; min-width: 90px; justify-content: flex-end;
+          position: relative; overflow: hidden;
+        }
+        .ta-rate-bar {
+          position: absolute; left: 0; top: 0; bottom: 0; border-radius: 20px; opacity: .12; transition: width .4s;
+        }
+
+        .ta-info-btn {
+          display: inline-flex; align-items: center; gap: 4px;
+          background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe;
+          border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+          transition: background .15s;
+        }
+        .ta-info-btn:hover { background: #ede9fe; }
+        .ta-info-popover {
+          position: absolute; right: 0; top: calc(100% + 8px); z-index: 999;
+          width: 320px; background: #fff; border: 1px solid #d0dce9; border-radius: 10px;
+          padding: 14px 16px; box-shadow: 0 8px 24px rgba(0,0,0,.12); font-size: 13px; color: #1e293b;
+        }
+        .ta-info-close {
+          margin-top: 10px; display: block; background: #f1f5f9; border: none; border-radius: 6px;
+          padding: 5px 12px; font-size: 12px; cursor: pointer; color: #475569; font-weight: 600;
+        }
+        .ta-info-close:hover { background: #e2e8f0; }
       `}</style>
     </>
   )
