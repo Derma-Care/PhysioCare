@@ -171,11 +171,18 @@ const AppSidebar = () => {
           overflow-x: hidden;
           padding: 10px 0;
         }
-        .sb-nav-wrap::-webkit-scrollbar { width: 3px; }
-        .sb-nav-wrap::-webkit-scrollbar-track { background: transparent; }
-        .sb-nav-wrap::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.15);
+        .sb-nav-wrap::-webkit-scrollbar { width: 5px; }
+        .sb-nav-wrap::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.05);
           border-radius: 4px;
+        }
+        .sb-nav-wrap::-webkit-scrollbar-thumb {
+          background: rgba(240,180,41,0.35);
+          border-radius: 4px;
+          transition: background 0.2s;
+        }
+        .sb-nav-wrap::-webkit-scrollbar-thumb:hover {
+          background: rgba(240,180,41,0.7);
         }
 
         /* ─── Nav items ─────────────────────────────── */

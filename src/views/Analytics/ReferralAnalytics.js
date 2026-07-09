@@ -58,6 +58,7 @@ import {
 import { getAllReferDoctors, GetBookingByClinicIdData } from './ReferralAnalyticsAPI'
 import capitalizeWords from '../../Utils/capitalizeWords'
 import LoadingIndicator from '../../Utils/loader'
+import Pagination from '../../Utils/Pagination'
 import useAutoHideSidebar from '../widgets/useAutoHideSidebar'
 
 const formatReferredByPerson = (pat) => {
@@ -123,11 +124,23 @@ const ReferralAnalytics = () => {
   const [useSampleData, setUseSampleData] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [channelSearchQuery, setChannelSearchQuery] = useState('')
+  const [detailsSearchQuery, setDetailsSearchQuery] = useState('')
+
+  // Pagination State
+  const [docPage, setDocPage] = useState(1)
+  const [docPageSize, setDocPageSize] = useState(10)
+  const [chanPage, setChanPage] = useState(1)
+  const [chanPageSize, setChanPageSize] = useState(10)
+  const [detPage, setDetPage] = useState(1)
+  const [detPageSize, setDetPageSize] = useState(10)
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false)
   const [selectedEntity, setSelectedEntity] = useState(null) // Doctor or Channel object
   const [modalType, setModalType] = useState('doctor') // 'doctor' or 'channel'
+  const [modalSearchQuery, setModalSearchQuery] = useState('')
+  const [modalPage, setModalPage] = useState(1)
+  const [modalPageSize, setModalPageSize] = useState(10)
 
   const hospitalId = localStorage.getItem('HospitalId')
 
@@ -544,6 +557,11 @@ const ReferralAnalytics = () => {
     )
   }, [referralDoctorTableData, searchQuery])
 
+  const paginatedDoctorData = useMemo(() => {
+    const start = (docPage - 1) * docPageSize
+    return searchedDoctorTableData.slice(start, start + docPageSize)
+  }, [searchedDoctorTableData, docPage, docPageSize])
+
   // Process Other Channels Table Data
   const otherChannelsTableData = useMemo(() => {
     const mainChannels = [
@@ -600,6 +618,11 @@ const ReferralAnalytics = () => {
     return otherChannelsTableData.filter((chan) => chan.channel.toLowerCase().includes(q))
   }, [otherChannelsTableData, channelSearchQuery])
 
+  const paginatedChannelsData = useMemo(() => {
+    const start = (chanPage - 1) * chanPageSize
+    return searchedChannelsTableData.slice(start, start + chanPageSize)
+  }, [searchedChannelsTableData, chanPage, chanPageSize])
+
   // Chart Data: Doctor vs Other Channel referrals
   const referralSourceChartData = useMemo(() => {
     return [
@@ -632,11 +655,13 @@ const ReferralAnalytics = () => {
   const handleOpenPatientsModal = (entity, type) => {
     setModalType(type)
     setSelectedEntity(entity)
+    setModalSearchQuery('')
+    setModalPage(1)
     setModalVisible(true)
   }
 
   // Get patients list for the selected entity (doctor or other channel) inside the modal
-  const modalPatientsData = useMemo(() => {
+  const baseModalPatientsData = useMemo(() => {
     if (!selectedEntity) return []
 
     if (modalType === 'doctor') {
@@ -660,6 +685,20 @@ const ReferralAnalytics = () => {
       })
     }
   }, [selectedEntity, modalType, filteredBookings])
+
+  const modalPatientsData = useMemo(() => {
+    const q = modalSearchQuery.toLowerCase().trim()
+    if (!q) return baseModalPatientsData
+    return baseModalPatientsData.filter((pat) =>
+      (pat.name && pat.name.toLowerCase().includes(q)) ||
+      (pat.patientMobileNumber && pat.patientMobileNumber.includes(q))
+    )
+  }, [baseModalPatientsData, modalSearchQuery])
+
+  const paginatedModalData = useMemo(() => {
+    const start = (modalPage - 1) * modalPageSize
+    return modalPatientsData.slice(start, start + modalPageSize)
+  }, [modalPatientsData, modalPage, modalPageSize])
 
   // Handle open channel details sub-page (Friend/Family)
   const handleOpenChannelDetails = (chanName) => {
@@ -740,6 +779,25 @@ const ReferralAnalytics = () => {
       return type === selectedChannel
     })
   }, [selectedChannel, selectedSubRelation, selectedFamilyMember, filteredBookings])
+
+  const searchedDetailsData = useMemo(() => {
+    const q = detailsSearchQuery.toLowerCase().trim()
+    if (!q) return detailsPatientsData
+    return detailsPatientsData.filter((pat) =>
+      (pat.name && pat.name.toLowerCase().includes(q)) ||
+      (pat.patientMobileNumber && pat.patientMobileNumber.includes(q))
+    )
+  }, [detailsPatientsData, detailsSearchQuery])
+
+  const paginatedDetailsData = useMemo(() => {
+    const start = (detPage - 1) * detPageSize
+    return searchedDetailsData.slice(start, start + detPageSize)
+  }, [searchedDetailsData, detPage, detPageSize])
+
+  // Reset pagination when dependencies change
+  useEffect(() => { setDocPage(1) }, [searchQuery, filter, fromDate, toDate])
+  useEffect(() => { setChanPage(1) }, [channelSearchQuery, filter, fromDate, toDate])
+  useEffect(() => { setDetPage(1) }, [detailsSearchQuery, selectedChannel, selectedSubRelation, selectedFamilyMember, filter, fromDate, toDate])
 
   if (loading) return <LoadingIndicator message="Loading Referral Analytics..." />
 
@@ -1160,9 +1218,9 @@ const ReferralAnalytics = () => {
                             </CTableDataCell>
                           </CTableRow>
                         ) : (
-                          searchedDoctorTableData.map((doc, idx) => (
+                          paginatedDoctorData.map((doc, idx) => (
                             <CTableRow key={doc.id || idx} className="rf-tr">
-                              <CTableDataCell className="rf-td rf-td-num">{idx + 1}</CTableDataCell>
+                              <CTableDataCell className="rf-td rf-td-num">{(docPage - 1) * docPageSize + idx + 1}</CTableDataCell>
                               <CTableDataCell className="rf-td font-weight-bold color-primary">
                                 {doc.fullName?.toLowerCase().startsWith('dr')
                                   ? capitalizeWords(doc.fullName)
@@ -1213,6 +1271,17 @@ const ReferralAnalytics = () => {
                       </CTableBody>
                     </CTable>
                   </div>
+                  {searchedDoctorTableData.length > 0 && (
+                    <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff' }}>
+                      <Pagination
+                        currentPage={docPage}
+                        totalPages={Math.max(1, Math.ceil(searchedDoctorTableData.length / docPageSize))}
+                        pageSize={docPageSize}
+                        onPageChange={setDocPage}
+                        onPageSizeChange={setDocPageSize}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1260,20 +1329,16 @@ const ReferralAnalytics = () => {
                             </CTableDataCell>
                           </CTableRow>
                         ) : (
-                          searchedChannelsTableData.map((chan, idx) => (
+                          paginatedChannelsData.map((chan, idx) => (
                             <CTableRow key={chan.channel} className="rf-tr">
-                              <CTableDataCell className="rf-td rf-td-num">{idx + 1}</CTableDataCell>
+                              <CTableDataCell className="rf-td rf-td-num">{(chanPage - 1) * chanPageSize + idx + 1}</CTableDataCell>
                               <CTableDataCell
-                                className={`rf-td font-weight-bold ${(chan.channel === 'Family' || chan.channel === 'Friend') &&
-                                  chan.patientCount > 0
-                                  ? 'rf-clickable-channel'
-                                  : 'color-primary'
+                                className={`rf-td font-weight-bold ${chan.patientCount > 0
+                                    ? 'rf-clickable-channel'
+                                    : 'color-primary'
                                   }`}
                                 onClick={() => {
-                                  if (
-                                    (chan.channel === 'Family' || chan.channel === 'Friend') &&
-                                    chan.patientCount > 0
-                                  ) {
+                                  if (chan.patientCount > 0) {
                                     handleOpenChannelDetails(chan.channel)
                                   }
                                 }}
@@ -1296,13 +1361,7 @@ const ReferralAnalytics = () => {
                                   className="rf-action-btn info-btn"
                                   title="View channel patients"
                                   disabled={chan.patientCount === 0}
-                                  onClick={() => {
-                                    if (chan.channel === 'Family' || chan.channel === 'Friend') {
-                                      handleOpenChannelDetails(chan.channel)
-                                    } else {
-                                      handleOpenPatientsModal(chan, 'channel')
-                                    }
-                                  }}
+                                  onClick={() => handleOpenChannelDetails(chan.channel)}
                                 >
                                   <Eye size={14} />
                                 </button>
@@ -1313,6 +1372,17 @@ const ReferralAnalytics = () => {
                       </CTableBody>
                     </CTable>
                   </div>
+                  {searchedChannelsTableData.length > 0 && (
+                    <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff' }}>
+                      <Pagination
+                        currentPage={chanPage}
+                        totalPages={Math.max(1, Math.ceil(searchedChannelsTableData.length / chanPageSize))}
+                        pageSize={chanPageSize}
+                        onPageChange={setChanPage}
+                        onPageSizeChange={setChanPageSize}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </CTabContent>
@@ -1369,13 +1439,13 @@ const ReferralAnalytics = () => {
                       }}
                     >
                       <option value="All">All Family Relations</option>
-                      <option value="Family (Mother)">Family (Mother)</option>
-                      <option value="Family (Father)">Family (Father)</option>
-                      <option value="Family (Brother)">Family (Brother)</option>
-                      <option value="Family (Sister)">Family (Sister)</option>
-                      <option value="Family (Spouse)">Family (Spouse)</option>
-                      <option value="Family (Cousin)">Family (Cousin)</option>
-                      <option value="Family (Other)">Family (Other)</option>
+                      <option value="Family (Mother)">Mother</option>
+                      <option value="Family (Father)">Father</option>
+                      <option value="Family (Brother)">Brother</option>
+                      <option value="Family (Sister)">Sister</option>
+                      <option value="Family (Spouse)">Spouse</option>
+                      <option value="Family (Cousin)">Cousin</option>
+                      <option value="Family (Other)">Other</option>
                     </CFormSelect>
                   </div>
                   <div className="d-flex align-items-center gap-2">
@@ -1403,6 +1473,26 @@ const ReferralAnalytics = () => {
                   </div>
                 </div>
               )}
+
+              <div className="rf-search-pill" style={{ marginLeft: selectedChannel !== 'Family' ? 'auto' : '0' }}>
+                <Search size={14} className="rf-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search patient name, mobile..."
+                  value={detailsSearchQuery}
+                  onChange={(e) => setDetailsSearchQuery(e.target.value)}
+                  className="rf-search-pill-input"
+                  style={{ minWidth: '220px' }}
+                />
+                {detailsSearchQuery && (
+                  <button
+                    className="rf-search-clear"
+                    onClick={() => setDetailsSearchQuery('')}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Patients List Table */}
@@ -1482,7 +1572,7 @@ const ReferralAnalytics = () => {
                     </CTableRow>
                   </CTableHead>
                   <CTableBody>
-                    {detailsPatientsData.map((pat, idx) => {
+                    {paginatedDetailsData.map((pat, idx) => {
                       const isPackOrProg = pat.totalAmount !== undefined && pat.totalAmount > 0
                       const totalCost = isPackOrProg
                         ? pat.totalAmount
@@ -1511,7 +1601,7 @@ const ReferralAnalytics = () => {
 
                       return (
                         <CTableRow key={pat.id || idx} className="rf-tr">
-                          <CTableDataCell className="rf-td rf-td-num">{idx + 1}</CTableDataCell>
+                          <CTableDataCell className="rf-td rf-td-num">{(detPage - 1) * detPageSize + idx + 1}</CTableDataCell>
                           <CTableDataCell className="rf-td font-weight-bold color-primary">
                             {pat.name}
                           </CTableDataCell>
@@ -1565,6 +1655,17 @@ const ReferralAnalytics = () => {
                 </CTable>
               </div>
             )}
+            {searchedDetailsData.length > 0 && (
+              <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff', marginTop: '12px', borderRadius: '8px' }}>
+                <Pagination
+                  currentPage={detPage}
+                  totalPages={Math.max(1, Math.ceil(searchedDetailsData.length / detPageSize))}
+                  pageSize={detPageSize}
+                  onPageChange={setDetPage}
+                  onPageSizeChange={setDetPageSize}
+                />
+              </div>
+            )}
           </CCardBody>
         </CCard>
       )}
@@ -1579,8 +1680,8 @@ const ReferralAnalytics = () => {
       >
         <CModalHeader style={{ borderBottom: '1px solid #d0dce9', padding: '16px 20px' }}>
           <CModalTitle
-            style={{ fontSize: 16, fontWeight: 600, color: '#0c447c' }}
             className="d-flex align-items-center gap-2"
+            style={{ fontSize: 16, fontWeight: 600, color: '#0c447c', flex: 1 }}
           >
             <Users size={18} className="text-success" />
             Referred Patients:{' '}
@@ -1590,6 +1691,30 @@ const ReferralAnalytics = () => {
                 : `Dr. ${capitalizeWords(selectedEntity?.fullName || '')}`
               : selectedEntity?.channel}
           </CModalTitle>
+          <div className="rf-search-pill" style={{ margin: 0, minWidth: '220px' }}>
+            <Search size={14} className="rf-search-icon" />
+            <input
+              type="text"
+              placeholder="Search patient name, mobile..."
+              value={modalSearchQuery}
+              onChange={(e) => {
+                setModalSearchQuery(e.target.value)
+                setModalPage(1)
+              }}
+              className="rf-search-pill-input"
+            />
+            {modalSearchQuery && (
+              <button
+                className="rf-search-clear"
+                onClick={() => {
+                  setModalSearchQuery('')
+                  setModalPage(1)
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </CModalHeader>
         <CModalBody className="p-3" style={{ maxHeight: '450px', overflowY: 'auto' }}>
           {modalPatientsData.length === 0 ? (
@@ -1617,7 +1742,7 @@ const ReferralAnalytics = () => {
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
-                  {modalPatientsData.map((pat, idx) => {
+                  {paginatedModalData.map((pat, idx) => {
                     const isPackOrProg = pat.totalAmount !== undefined && pat.totalAmount > 0
                     const totalCost = isPackOrProg
                       ? pat.totalAmount
@@ -1646,7 +1771,7 @@ const ReferralAnalytics = () => {
 
                     return (
                       <CTableRow key={pat.id || idx} className="rf-tr">
-                        <CTableDataCell className="rf-td rf-td-num">{idx + 1}</CTableDataCell>
+                        <CTableDataCell className="rf-td rf-td-num">{(modalPage - 1) * modalPageSize + idx + 1}</CTableDataCell>
                         <CTableDataCell className="rf-td font-weight-bold color-primary">
                           {pat.name}
                         </CTableDataCell>
@@ -1700,6 +1825,17 @@ const ReferralAnalytics = () => {
                   })}
                 </CTableBody>
               </CTable>
+            </div>
+          )}
+          {modalPatientsData.length > 0 && (
+            <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff', marginTop: '12px', borderRadius: '8px' }}>
+              <Pagination
+                currentPage={modalPage}
+                totalPages={Math.max(1, Math.ceil(modalPatientsData.length / modalPageSize))}
+                pageSize={modalPageSize}
+                onPageChange={setModalPage}
+                onPageSizeChange={setModalPageSize}
+              />
             </div>
           )}
         </CModalBody>
@@ -2183,8 +2319,8 @@ const ReferralAnalytics = () => {
           font-size: 12.5px;
         }
         .rf-th {
-          background: #f8fafc !important;
-          color: #475569 !important;
+          background: var(--color-primary) !important;
+          color: #fff !important;
           font-size: 12px !important;
           font-weight: 600 !important;
           padding: 12px 14px !important;
@@ -2195,7 +2331,7 @@ const ReferralAnalytics = () => {
           transition: background 0.12s;
         }
         .rf-tr:hover {
-          background: #f8fafc !important;
+          background: #fdf3f3 !important;
         }
         .rf-td {
           padding: 11px 14px !important;
@@ -2269,8 +2405,8 @@ const ReferralAnalytics = () => {
           box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
         }
         .rf-m-th {
-          background: #eaf3de !important;
-          color: #3b6d11 !important;
+          background: var(--color-primary) !important;
+          color: #fff !important;
           font-size: 12px !important;
           font-weight: 600 !important;
           padding: 10px 12px !important;
