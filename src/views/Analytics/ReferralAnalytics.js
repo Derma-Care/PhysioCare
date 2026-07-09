@@ -37,10 +37,28 @@ import {
   RefreshCw,
   X,
   ShieldAlert,
+  BarChart3,
+  PieChart as PieChartIcon,
+  LayoutGrid,
+  Table2,
 } from 'lucide-react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts'
 import { getAllReferDoctors, GetBookingByClinicIdData } from './ReferralAnalyticsAPI'
 import capitalizeWords from '../../Utils/capitalizeWords'
 import LoadingIndicator from '../../Utils/loader'
+import useAutoHideSidebar from '../widgets/useAutoHideSidebar'
 
 const formatReferredByPerson = (pat) => {
   if (!pat.referredByName) return pat.referredByType || '—'
@@ -70,12 +88,30 @@ const getBookingServiceName = (pat) => {
   return 'General Consultation'
 }
 
+// Color palette for charts (keeps consistency with existing UI colors)
+const CHART_COLORS = [
+  '#3b6d11',
+  '#185fa5',
+  '#6b21a8',
+  '#b45309',
+  '#0c7b93',
+  '#be123c',
+  '#4338ca',
+  '#059669',
+  '#c2410c',
+  '#7c3aed',
+  '#0891b2',
+  '#a16207',
+]
+
 const ReferralAnalytics = () => {
+  useAutoHideSidebar()
   const [filter, setFilter] = useState('month')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [activeTab, setActiveTab] = useState('doctors')
   const [viewMode, setViewMode] = useState('list')
+  const [displayMode, setDisplayMode] = useState('charts') // 'table' or 'charts'
   const [selectedChannel, setSelectedChannel] = useState(null)
   const [selectedSubRelation, setSelectedSubRelation] = useState('')
   const [selectedFamilyMember, setSelectedFamilyMember] = useState('All')
@@ -86,6 +122,7 @@ const ReferralAnalytics = () => {
   const [loading, setLoading] = useState(true)
   const [useSampleData, setUseSampleData] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [channelSearchQuery, setChannelSearchQuery] = useState('')
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false)
@@ -141,52 +178,52 @@ const ReferralAnalytics = () => {
       referDoctors.length > 0
         ? referDoctors
         : [
-            {
-              id: 'd1',
-              referralId: 'REF-8371',
-              fullName: 'Dr. Rajesh Patel',
-              specialization: 'Orthopedics',
-              currentHospitalName: 'Patel Ortho Care',
-              mobileNumber: '9845210291',
-              status: 'Active',
-            },
-            {
-              id: 'd2',
-              referralId: 'REF-4921',
-              fullName: 'Dr. Shalini Rao',
-              specialization: 'Neurology',
-              currentHospitalName: 'Apollo Hospitals',
-              mobileNumber: '9123849182',
-              status: 'Active',
-            },
-            {
-              id: 'd3',
-              referralId: 'REF-2894',
-              fullName: 'Dr. Vivek Verma',
-              specialization: 'Cardiology',
-              currentHospitalName: 'Fortis Clinic',
-              mobileNumber: '9900881122',
-              status: 'Active',
-            },
-            {
-              id: 'd4',
-              referralId: 'REF-1038',
-              fullName: 'Dr. Neha Sharma',
-              specialization: 'Pediatrics',
-              currentHospitalName: 'City Children Hospital',
-              mobileNumber: '9786453120',
-              status: 'Active',
-            },
-            {
-              id: 'd5',
-              referralId: 'REF-7742',
-              fullName: 'Dr. Amit Mishra',
-              specialization: 'General Physician',
-              currentHospitalName: 'Mishra Healthcare',
-              mobileNumber: '9654123098',
-              status: 'Active',
-            },
-          ]
+          {
+            id: 'd1',
+            referralId: 'REF-8371',
+            fullName: 'Dr. Rajesh Patel',
+            specialization: 'Orthopedics',
+            currentHospitalName: 'Patel Ortho Care',
+            mobileNumber: '9845210291',
+            status: 'Active',
+          },
+          {
+            id: 'd2',
+            referralId: 'REF-4921',
+            fullName: 'Dr. Shalini Rao',
+            specialization: 'Neurology',
+            currentHospitalName: 'Apollo Hospitals',
+            mobileNumber: '9123849182',
+            status: 'Active',
+          },
+          {
+            id: 'd3',
+            referralId: 'REF-2894',
+            fullName: 'Dr. Vivek Verma',
+            specialization: 'Cardiology',
+            currentHospitalName: 'Fortis Clinic',
+            mobileNumber: '9900881122',
+            status: 'Active',
+          },
+          {
+            id: 'd4',
+            referralId: 'REF-1038',
+            fullName: 'Dr. Neha Sharma',
+            specialization: 'Pediatrics',
+            currentHospitalName: 'City Children Hospital',
+            mobileNumber: '9786453120',
+            status: 'Active',
+          },
+          {
+            id: 'd5',
+            referralId: 'REF-7742',
+            fullName: 'Dr. Amit Mishra',
+            specialization: 'General Physician',
+            currentHospitalName: 'Mishra Healthcare',
+            mobileNumber: '9654123098',
+            status: 'Active',
+          },
+        ]
 
     const sampleNames = [
       'Arjun Sharma',
@@ -400,6 +437,9 @@ const ReferralAnalytics = () => {
           rowDate.getMonth() === today.getMonth() && rowDate.getFullYear() === today.getFullYear()
         )
       }
+      if (filter === 'year') {
+        return rowDate.getFullYear() === today.getFullYear()
+      }
       if (filter === 'custom' && fromDate && toDate) {
         const start = new Date(fromDate)
         start.setHours(0, 0, 0, 0)
@@ -553,6 +593,41 @@ const ReferralAnalytics = () => {
       .sort((a, b) => b.patientCount - a.patientCount)
   }, [filteredBookings])
 
+  // Filtered Channels Table Data (Search capability)
+  const searchedChannelsTableData = useMemo(() => {
+    const q = channelSearchQuery.toLowerCase().trim()
+    if (!q) return otherChannelsTableData
+    return otherChannelsTableData.filter((chan) => chan.channel.toLowerCase().includes(q))
+  }, [otherChannelsTableData, channelSearchQuery])
+
+  // Chart Data: Doctor vs Other Channel referrals
+  const referralSourceChartData = useMemo(() => {
+    return [
+      { name: 'Doctor Referrals', value: stats.doctorReferrals },
+      { name: 'Other Channels', value: stats.otherReferrals },
+    ]
+  }, [stats.doctorReferrals, stats.otherReferrals])
+
+  // Chart Data: Top 6 referring doctors by patient count
+  const topDoctorsChartData = useMemo(() => {
+    return referralDoctorTableData
+      .filter((d) => d.patientCount > 0)
+      .slice(0, 6)
+      .map((d) => ({
+        name: d.fullName?.toLowerCase().startsWith('dr')
+          ? capitalizeWords(d.fullName)
+          : `Dr. ${capitalizeWords(d.fullName || '')}`,
+        patients: d.patientCount,
+      }))
+  }, [referralDoctorTableData])
+
+  // Chart Data: Channel breakdown (pie)
+  const channelPieChartData = useMemo(() => {
+    return otherChannelsTableData
+      .filter((c) => c.patientCount > 0)
+      .map((c) => ({ name: c.channel, value: c.patientCount }))
+  }, [otherChannelsTableData])
+
   // Handle open modal showing patient list
   const handleOpenPatientsModal = (entity, type) => {
     setModalType(type)
@@ -697,18 +772,6 @@ const ReferralAnalytics = () => {
             </button>
             <span className={`rf-toggle-label ${useSampleData ? 'active' : ''}`}>Sample</span>
           </div>
-
-          <div className="rf-filter-group">
-            {['today', 'week', 'month', 'custom'].map((f) => (
-              <button
-                key={f}
-                className={`rf-filter-pill${filter === f ? ' active' : ''}`}
-                onClick={() => setFilter(f)}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -735,7 +798,7 @@ const ReferralAnalytics = () => {
           </div>
         </div>
       )}
-
+      {/* 
       {useSampleData && (
         <div className="rf-sample-banner mb-4">
           <ShieldAlert size={16} className="text-warning mr-2" />
@@ -744,87 +807,281 @@ const ReferralAnalytics = () => {
             demo appointments are simulated to showcase full UI capability.
           </span>
         </div>
-      )}
+      )} */}
 
       {/* ── Summary Cards ── */}
       <CRow className="mb-4">
-        <CCol xs={12} sm={6} md={3} className="mb-3">
-          <CCard className="h-100 rf-stat-card">
-            <CCardBody className="d-flex align-items-center p-3">
-              <div className="rf-stat-icon-wrapper blue">
-                <Users size={22} />
+        <CCol xs={12} sm={6} lg={3} className="mb-3">
+          <div className="rf-stat-card-v2 accent-blue">
+            <div className="rf-stat-top">
+              <div className="rf-stat-icon-v2 blue">
+                <Users size={20} />
               </div>
-              <div>
-                <p className="text-muted small mb-0 font-weight-bold">Total Referrals</p>
-                <h4 className="mb-0 font-weight-bold rf-stat-value">{stats.total}</h4>
-                <span className="text-muted small">All patient bookings</span>
-              </div>
-            </CCardBody>
-          </CCard>
+              <span className="rf-stat-eyebrow">Total Referrals</span>
+            </div>
+            <h3 className="rf-stat-number">{stats.total}</h3>
+            <p className="rf-stat-caption">All patient bookings this period</p>
+          </div>
         </CCol>
 
-        <CCol xs={12} sm={6} md={3} className="mb-3">
-          <CCard className="h-100 rf-stat-card">
-            <CCardBody className="d-flex align-items-center p-3">
-              <div className="rf-stat-icon-wrapper green">
-                <Award size={22} />
+        <CCol xs={12} sm={6} lg={3} className="mb-3">
+          <div className="rf-stat-card-v2 accent-green">
+            <div className="rf-stat-top">
+              <div className="rf-stat-icon-v2 green">
+                <Award size={20} />
               </div>
-              <div>
-                <p className="text-muted small mb-0 font-weight-bold">Doctor Referrals</p>
-                <h4 className="mb-0 font-weight-bold rf-stat-value">{stats.doctorReferrals}</h4>
-                <span className="text-success small font-weight-bold">
-                  {stats.total > 0 ? Math.round((stats.doctorReferrals / stats.total) * 100) : 0}%
-                </span>
-                <span className="text-muted small"> of total referrals</span>
-              </div>
-            </CCardBody>
-          </CCard>
+              <span className="rf-stat-eyebrow">Doctor Referrals</span>
+            </div>
+            <h3 className="rf-stat-number">{stats.doctorReferrals}</h3>
+            <div className="rf-stat-progress-track">
+              <div
+                className="rf-stat-progress-fill green"
+                style={{
+                  width: `${stats.total > 0 ? Math.round((stats.doctorReferrals / stats.total) * 100) : 0}%`,
+                }}
+              />
+            </div>
+            <p className="rf-stat-caption">
+              <strong style={{ color: '#3b6d11' }}>
+                {stats.total > 0 ? Math.round((stats.doctorReferrals / stats.total) * 100) : 0}%
+              </strong>{' '}
+              of total referrals
+            </p>
+          </div>
         </CCol>
 
-        <CCol xs={12} sm={6} md={3} className="mb-3">
-          <CCard className="h-100 rf-stat-card">
-            <CCardBody className="d-flex align-items-center p-3">
-              <div className="rf-stat-icon-wrapper purple">
-                <Share2 size={22} />
+        <CCol xs={12} sm={6} lg={3} className="mb-3">
+          <div className="rf-stat-card-v2 accent-purple">
+            <div className="rf-stat-top">
+              <div className="rf-stat-icon-v2 purple">
+                <Share2 size={20} />
               </div>
-              <div>
-                <p className="text-muted small mb-0 font-weight-bold">Other Channels</p>
-                <h4 className="mb-0 font-weight-bold rf-stat-value">{stats.otherReferrals}</h4>
-                <span className="text-purple small font-weight-bold">
-                  {stats.total > 0 ? Math.round((stats.otherReferrals / stats.total) * 100) : 0}%
-                </span>
-                <span className="text-muted small"> of total referrals</span>
-              </div>
-            </CCardBody>
-          </CCard>
+              <span className="rf-stat-eyebrow">Other Channels</span>
+            </div>
+            <h3 className="rf-stat-number">{stats.otherReferrals}</h3>
+            <div className="rf-stat-progress-track">
+              <div
+                className="rf-stat-progress-fill purple"
+                style={{
+                  width: `${stats.total > 0 ? Math.round((stats.otherReferrals / stats.total) * 100) : 0}%`,
+                }}
+              />
+            </div>
+            <p className="rf-stat-caption">
+              <strong style={{ color: '#6b21a8' }}>
+                {stats.total > 0 ? Math.round((stats.otherReferrals / stats.total) * 100) : 0}%
+              </strong>{' '}
+              of total referrals
+            </p>
+          </div>
         </CCol>
 
-        <CCol xs={12} sm={6} md={3} className="mb-3">
-          <CCard className="h-100 rf-stat-card">
-            <CCardBody className="d-flex align-items-center p-3">
-              <div className="rf-stat-icon-wrapper orange">
-                <UserPlus size={22} />
+        <CCol xs={12} sm={6} lg={3} className="mb-3">
+          <div className="rf-stat-card-v2 accent-orange">
+            <div className="rf-stat-top">
+              <div className="rf-stat-icon-v2 orange">
+                <UserPlus size={20} />
               </div>
-              <div>
-                <p className="text-muted small mb-0 font-weight-bold">Top Referring Doctor</p>
-                <h4
-                  className="mb-0 font-weight-bold rf-stat-value text-truncate"
-                  style={{ maxWidth: '160px', fontSize: '1.15rem' }}
-                >
-                  {stats.topDocName}
-                </h4>
-                <span className="text-warning small font-weight-bold">
-                  {stats.maxDocCount} patients
-                </span>
-                <span className="text-muted small"> referred</span>
-              </div>
-            </CCardBody>
-          </CCard>
+              <span className="rf-stat-eyebrow">Top Referring Doctor</span>
+            </div>
+            <h3 className="rf-stat-number rf-stat-number-name" title={stats.topDocName}>
+              {stats.topDocName}
+            </h3>
+            <p className="rf-stat-caption">
+              <strong style={{ color: '#b45309' }}>{stats.maxDocCount}</strong> patients referred
+            </p>
+          </div>
         </CCol>
       </CRow>
 
-      {/* ── Tabs Navigation ── */}
+      {/* ── Unified Toolbar: Search + Date Filters + Charts/Table Toggle ── */}
       {viewMode === 'list' && (
+        <div className="rf-toolbar-row mb-4">
+          <div className="rf-toolbar-left">
+            <div className="rf-search-pill">
+              <Search size={14} className="rf-search-icon" />
+              <input
+                type="text"
+                placeholder="Search name, doctor, therapy..."
+                value={activeTab === 'doctors' ? searchQuery : channelSearchQuery}
+                onChange={(e) => {
+                  if (activeTab === 'doctors') setSearchQuery(e.target.value)
+                  else setChannelSearchQuery(e.target.value)
+                }}
+                className="rf-search-pill-input"
+              />
+              {(activeTab === 'doctors' ? searchQuery : channelSearchQuery) && (
+                <button
+                  className="rf-search-clear"
+                  onClick={() =>
+                    activeTab === 'doctors' ? setSearchQuery('') : setChannelSearchQuery('')
+                  }
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <div className="rf-filter-group">
+              {['today', 'week', 'month', 'year', 'custom'].map((f) => (
+                <button
+                  key={f}
+                  className={`rf-filter-pill${filter === f ? ' active' : ''}`}
+                  onClick={() => setFilter(f)}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rf-segmented-toggle">
+            <button
+              className={`rf-segment-btn${displayMode === 'charts' ? ' active' : ''}`}
+              onClick={() => setDisplayMode('charts')}
+            >
+              <LayoutGrid size={14} />
+              Charts
+            </button>
+            <button
+              className={`rf-segment-btn${displayMode === 'table' ? ' active' : ''}`}
+              onClick={() => setDisplayMode('table')}
+            >
+              <Table2 size={14} />
+              Table
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Charts Row ── */}
+      {viewMode === 'list' && displayMode === 'charts' && stats.total > 0 && (
+        <CRow className="mb-4">
+          <CCol xs={12} lg={4} className="mb-3">
+            <CCard className="h-100 rf-chart-card">
+              <CCardBody className="p-3">
+                <div className="rf-chart-header">
+                  <PieChartIcon size={16} className="text-success" />
+                  <span>Referral Source Split</span>
+                </div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={referralSourceChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={75}
+                      paddingAngle={3}
+                    >
+                      {referralSourceChartData.map((entry, index) => (
+                        <Cell
+                          key={`src-cell-${index}`}
+                          fill={index === 0 ? '#3b6d11' : '#185fa5'}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`${value} patients`, '']} />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={30}
+                      wrapperStyle={{ fontSize: '11px' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CCardBody>
+            </CCard>
+          </CCol>
+
+          <CCol xs={12} lg={4} className="mb-3">
+            <CCard className="h-100 rf-chart-card">
+              <CCardBody className="p-3">
+                <div className="rf-chart-header">
+                  <BarChart3 size={16} className="text-success" />
+                  <span>Top Referring Doctors</span>
+                </div>
+                {topDoctorsChartData.length === 0 ? (
+                  <div className="rf-chart-empty">No doctor referrals in this period</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart
+                      data={topDoctorsChartData}
+                      layout="vertical"
+                      margin={{ top: 5, right: 16, left: 0, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={110}
+                        tick={{ fontSize: 10 }}
+                      />
+                      <Tooltip formatter={(value) => [`${value} patients`, 'Referred']} />
+                      <Bar dataKey="patients" fill="#3b6d11" radius={[0, 4, 4, 0]} barSize={16} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CCardBody>
+            </CCard>
+          </CCol>
+
+          <CCol xs={12} lg={4} className="mb-3">
+            <CCard className="h-100 rf-chart-card">
+              <CCardBody className="p-3">
+                <div className="rf-chart-header">
+                  <Share2 size={16} className="text-success" />
+                  <span>Channel Breakdown</span>
+                </div>
+                {channelPieChartData.length === 0 ? (
+                  <div className="rf-chart-empty">No channel referrals in this period</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={channelPieChartData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={75}
+                        label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                        labelLine={false}
+                      >
+                        {channelPieChartData.map((entry, index) => (
+                          <Cell
+                            key={`chan-cell-${index}`}
+                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value, name) => [`${value} patients`, name]} />
+                      <Legend
+                        verticalAlign="bottom"
+                        height={40}
+                        wrapperStyle={{ fontSize: '10.5px' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </CCardBody>
+            </CCard>
+          </CCol>
+        </CRow>
+      )}
+
+      {viewMode === 'list' && displayMode === 'charts' && stats.total === 0 && (
+        <div className="rf-empty mb-4">
+          <BarChart3 size={32} className="rf-empty-icon" />
+          <p className="mb-0 mt-2 font-weight-bold">No data to chart</p>
+          <p className="text-muted small">Try a different date filter or switch to Table View.</p>
+        </div>
+      )}
+
+      {/* ── Tabs Navigation ── */}
+      {viewMode === 'list' && displayMode === 'table' && (
         <CCard className="mb-4 rf-tabs-card">
           <CCardBody className="p-0">
             <CNav variant="tabs" className="rf-nav-tabs">
@@ -844,7 +1101,7 @@ const ReferralAnalytics = () => {
                   className="rf-nav-link"
                 >
                   Other Referral Channels (
-                  {otherChannelsTableData.filter((c) => c.patientCount > 0).length})
+                  {searchedChannelsTableData.filter((c) => c.patientCount > 0).length})
                 </CNavLink>
               </CNavItem>
             </CNav>
@@ -853,23 +1110,8 @@ const ReferralAnalytics = () => {
               {/* 🩺 Tab 1: Doctors */}
               {activeTab === 'doctors' && (
                 <div>
-                  {/* Search doctors */}
-                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                    <div className="rf-search-wrapper">
-                      <Search size={14} className="rf-search-icon" />
-                      <input
-                        type="text"
-                        placeholder="Search doctors by name, clinic, specialty..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="rf-search-input"
-                      />
-                      {searchQuery && (
-                        <button className="rf-search-clear" onClick={() => setSearchQuery('')}>
-                          <X size={14} />
-                        </button>
-                      )}
-                    </div>
+                  {/* Result count */}
+                  <div className="d-flex justify-content-end align-items-center flex-wrap gap-2 mb-3">
                     <div className="text-muted small">
                       Showing {searchedDoctorTableData.length} of {activeDoctors.length} doctors
                     </div>
@@ -977,6 +1219,14 @@ const ReferralAnalytics = () => {
               {/* 📣 Tab 2: Channels */}
               {activeTab === 'channels' && (
                 <div>
+                  {/* Result count */}
+                  <div className="d-flex justify-content-end align-items-center flex-wrap gap-2 mb-3">
+                    <div className="text-muted small">
+                      Showing {searchedChannelsTableData.length} of {otherChannelsTableData.length}{' '}
+                      channels
+                    </div>
+                  </div>
+
                   <div className="rf-table-wrapper">
                     <CTable className="rf-table">
                       <CTableHead>
@@ -998,7 +1248,7 @@ const ReferralAnalytics = () => {
                       </CTableHead>
 
                       <CTableBody>
-                        {otherChannelsTableData.length === 0 ? (
+                        {searchedChannelsTableData.length === 0 ? (
                           <CTableRow>
                             <CTableDataCell colSpan={5}>
                               <div className="rf-empty">
@@ -1010,16 +1260,15 @@ const ReferralAnalytics = () => {
                             </CTableDataCell>
                           </CTableRow>
                         ) : (
-                          otherChannelsTableData.map((chan, idx) => (
+                          searchedChannelsTableData.map((chan, idx) => (
                             <CTableRow key={chan.channel} className="rf-tr">
                               <CTableDataCell className="rf-td rf-td-num">{idx + 1}</CTableDataCell>
                               <CTableDataCell
-                                className={`rf-td font-weight-bold ${
-                                  (chan.channel === 'Family' || chan.channel === 'Friend') &&
+                                className={`rf-td font-weight-bold ${(chan.channel === 'Family' || chan.channel === 'Friend') &&
                                   chan.patientCount > 0
-                                    ? 'rf-clickable-channel'
-                                    : 'color-primary'
-                                }`}
+                                  ? 'rf-clickable-channel'
+                                  : 'color-primary'
+                                  }`}
                                 onClick={() => {
                                   if (
                                     (chan.channel === 'Family' || chan.channel === 'Friend') &&
@@ -1576,11 +1825,11 @@ const ReferralAnalytics = () => {
           transition: all 0.15s;
           white-space: nowrap;
         }
-        .rf-filter-pill:hover { border-color: #3b6d11; color: #3b6d11; }
+        .rf-filter-pill:hover { border-color: #0c447c; color: #0c447c; }
         .rf-filter-pill.active {
-          background: #3b6d11;
+          background: #0c447c;
           color: #fff;
-          border-color: #3b6d11;
+          border-color: #0c447c;
         }
 
         /* Custom Date Range Row */
@@ -1629,7 +1878,95 @@ const ReferralAnalytics = () => {
           font-size: 12px;
         }
 
-        /* Stats Cards */
+        /* Stats Cards v2 */
+        .rf-stat-card-v2 {
+          position: relative;
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 18px 20px 16px;
+          height: 100%;
+          overflow: hidden;
+          transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+        .rf-stat-card-v2::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+        }
+        .rf-stat-card-v2.accent-blue::before { background: linear-gradient(90deg, #185fa5, #5fa8e8); }
+        .rf-stat-card-v2.accent-green::before { background: linear-gradient(90deg, #3b6d11, #74b32f); }
+        .rf-stat-card-v2.accent-purple::before { background: linear-gradient(90deg, #6b21a8, #a855f7); }
+        .rf-stat-card-v2.accent-orange::before { background: linear-gradient(90deg, #b45309, #f59e0b); }
+        .rf-stat-card-v2:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+          border-color: #cbd5e1;
+        }
+        .rf-stat-top {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+        .rf-stat-icon-v2 {
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .rf-stat-icon-v2.blue { background: #e6f1fb; color: #185fa5; }
+        .rf-stat-icon-v2.green { background: #eaf3de; color: #3b6d11; }
+        .rf-stat-icon-v2.purple { background: #f3e8ff; color: #6b21a8; }
+        .rf-stat-icon-v2.orange { background: #fef3c7; color: #b45309; }
+        .rf-stat-eyebrow {
+          font-size: 11.5px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .rf-stat-number {
+          font-size: 1.9rem;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0 0 8px;
+          line-height: 1.15;
+        }
+        .rf-stat-number-name {
+          font-size: 1.05rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .rf-stat-caption {
+          font-size: 12px;
+          color: #64748b;
+          margin: 0;
+        }
+        .rf-stat-progress-track {
+          height: 5px;
+          background: #f1f5f9;
+          border-radius: 3px;
+          overflow: hidden;
+          margin-bottom: 8px;
+        }
+        .rf-stat-progress-fill {
+          height: 100%;
+          border-radius: 3px;
+          transition: width 0.4s ease;
+        }
+        .rf-stat-progress-fill.green { background: linear-gradient(90deg, #3b6d11, #74b32f); }
+        .rf-stat-progress-fill.purple { background: linear-gradient(90deg, #6b21a8, #a855f7); }
+
+        /* Stats Cards (legacy, still used elsewhere) */
         .rf-stat-card {
           border: 1px solid #d0dce9 !important;
           box-shadow: 0 2px 6px rgba(0,0,0,0.02) !important;
@@ -1657,6 +1994,118 @@ const ReferralAnalytics = () => {
         .rf-stat-value {
           color: #0c447c;
           font-size: 1.4rem;
+        }
+
+        /* Unified Toolbar Row */
+        .rf-toolbar-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .rf-toolbar-left {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        /* Search Pill (toolbar) */
+        .rf-search-pill {
+          position: relative;
+          display: flex;
+          align-items: center;
+          background: #fff;
+          border: 1px solid #d0dce9;
+          border-radius: 20px;
+          padding: 0 12px 0 32px;
+          height: 36px;
+          width: 240px;
+        }
+        .rf-search-pill .rf-search-icon {
+          position: absolute;
+          left: 12px;
+          color: #94a3b8;
+        }
+        .rf-search-pill-input {
+          border: none;
+          outline: none;
+          background: transparent;
+          font-size: 13px;
+          width: 100%;
+          height: 100%;
+          color: #1e293b;
+        }
+        .rf-search-pill-input::placeholder {
+          color: #94a3b8;
+        }
+        .rf-search-pill .rf-search-clear {
+          background: none;
+          border: none;
+          color: #94a3b8;
+          cursor: pointer;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          flex-shrink: 0;
+        }
+
+        /* Segmented Toggle (Charts / Table) */
+        .rf-segmented-toggle {
+          display: flex;
+          align-items: center;
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 3px;
+          gap: 2px;
+        }
+        .rf-segment-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: transparent;
+          color: #64748b;
+          border: none;
+          border-radius: 7px;
+          padding: 7px 14px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .rf-segment-btn:hover:not(.active) {
+          color: #185fa5;
+        }
+        .rf-segment-btn.active {
+          background: #fff;
+          color: #185fa5;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        /* Chart Cards */
+        .rf-chart-card {
+          border: 1px solid #d0dce9 !important;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.02) !important;
+        }
+        .rf-chart-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #0c447c;
+          margin-bottom: 8px;
+        }
+        .rf-chart-empty {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 220px;
+          color: #94a3b8;
+          font-size: 12.5px;
+          text-align: center;
         }
 
         /* Tabs Card */
