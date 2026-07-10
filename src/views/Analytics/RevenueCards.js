@@ -8,28 +8,15 @@ import {
 import { cilWallet, cilChart, cilCalendar, cilMoney } from "@coreui/icons";
 import CIcon from "@coreui/icons-react";
 
-const RevenueCards = () => {
+const RevenueCards = ({renTotals}) => {
+  console.log("RevenueCards renTotals:", renTotals);
   const [data, setData] = useState({
-    today: 0,
-    week: 0,
-    month: 0,
-    year: 0,
-    expences: 0,
+    today: renTotals.todayRevenue || 0,
+    week: renTotals.lastWeekRevenue || 0,
+    month: renTotals.lastMonthRevenue || 0,
+    year: renTotals.lastYearRevenue || 0,
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    const response = {
-      today: 12000,
-      week: 70000,
-      month: 250000,
-      expences: 2500,
-    };
-    setData(response);
-  };
 
   const cardStyle = {
     borderRadius: "10px",
@@ -67,7 +54,7 @@ const RevenueCards = () => {
           <CCardBody style={{ padding: 0, width: "100%" }}>
             <div>
               <div style={titleStyle}>Today</div>
-              <div style={valueStyle}>₹{data.today}</div>
+              <div style={valueStyle}>₹{renTotals.todayRevenue}</div>
             </div>
             <CIcon icon={cilWallet} style={{ ...iconStyle, color: "#9ccf9c" }} />
           </CCardBody>
@@ -80,7 +67,7 @@ const RevenueCards = () => {
           <CCardBody style={{ padding: 0, width: "100%" }}>
             <div>
               <div style={titleStyle}>Week</div>
-              <div style={valueStyle}>₹{data.week}</div>
+              <div style={valueStyle}>₹{renTotals.lastWeekRevenue}</div>
             </div>
             <CIcon icon={cilChart} style={{ ...iconStyle, color: "#a8c7e6" }} />
           </CCardBody>
@@ -93,7 +80,7 @@ const RevenueCards = () => {
           <CCardBody style={{ padding: 0, width: "100%" }}>
             <div>
               <div style={titleStyle}>Month</div>
-              <div style={valueStyle}>₹{data.month}</div>
+              <div style={valueStyle}>₹{renTotals.lastMonthRevenue}</div>
             </div>
             <CIcon icon={cilCalendar} style={{ ...iconStyle, color: "#f3c89b" }} />
           </CCardBody>
@@ -107,7 +94,7 @@ const RevenueCards = () => {
             <div>
               <div style={titleStyle}>Year</div>
               <div style={valueStyle}>
-                ₹{data.expences}
+                ₹{renTotals.lastYearRevenue}
               </div>
             </div>
             <CIcon icon={cilMoney} style={{ ...iconStyle, color: "#e7a1a1" }} />

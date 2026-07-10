@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import {
   CCard, CCardBody, CRow, CCol,
   CButton, CFormInput,
@@ -14,56 +14,11 @@ import {
 } from "recharts"
 import Pagination from "../../Utils/Pagination"
 import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
+import { wifiUrl } from "../../baseUrl"
+import { http } from "../../Utils/Interceptors"
 
-/* ── helper: build a YYYY-MM-DD date offset from today, so filter
-   pills (today/week/month/year) always have something to show ── */
-const daysAgo = (n) => {
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  return d.toISOString().slice(0, 10)
-}
 
-const DOCTORS = ["Dr. Kumar", "Dr. Rishita", "Dr. Anand", "Dr. Meera"]
-const THERAPISTS = ["Anjali", "Rahul", "Divya", "Karthik"]
-const NAMES = [
-  "Ramesh", "Suresh", "Lakshmi", "Priya", "Arjun", "Kavya", "Vikram", "Sneha",
-  "Manoj", "Deepa", "Ravi", "Anita", "Sanjay", "Pooja", "Naveen", "Swathi",
-  "Harish", "Meena", "Ajay", "Nisha"
-]
 
-/* ── dummy dataset spanning today / this week / this month / this year ── */
-const RAW_DATA = [
-  { offset: 0, time: "10:30 AM", consultation: 500, therapy: 1500, due: 200 },
-  { offset: 0, time: "02:15 PM", consultation: 600, therapy: 1200, due: 0 },
-  { offset: 1, time: "09:00 AM", consultation: 700, therapy: 1000, due: 0 },
-  { offset: 2, time: "11:45 AM", consultation: 500, therapy: 1800, due: 300 },
-  { offset: 3, time: "04:30 PM", consultation: 600, therapy: 900, due: 0 },
-  { offset: 5, time: "10:00 AM", consultation: 700, therapy: 1600, due: 150 },
-  { offset: 8, time: "01:20 PM", consultation: 500, therapy: 1300, due: 0 },
-  { offset: 12, time: "03:00 PM", consultation: 600, therapy: 1100, due: 200 },
-  { offset: 18, time: "09:45 AM", consultation: 700, therapy: 1700, due: 0 },
-  { offset: 25, time: "11:00 AM", consultation: 500, therapy: 950, due: 100 },
-  { offset: 40, time: "02:30 PM", consultation: 600, therapy: 1250, due: 0 },
-  { offset: 65, time: "10:15 AM", consultation: 700, therapy: 1400, due: 250 },
-  { offset: 90, time: "12:40 PM", consultation: 500, therapy: 1050, due: 0 },
-  { offset: 130, time: "09:30 AM", consultation: 600, therapy: 1600, due: 300 },
-  { offset: 170, time: "03:45 PM", consultation: 700, therapy: 1900, due: 0 },
-  { offset: 210, time: "11:10 AM", consultation: 500, therapy: 1150, due: 150 },
-  { offset: 260, time: "01:50 PM", consultation: 600, therapy: 1350, due: 0 },
-  { offset: 300, time: "10:50 AM", consultation: 700, therapy: 1050, due: 200 },
-  { offset: 330, time: "04:00 PM", consultation: 500, therapy: 1450, due: 0 },
-  { offset: 355, time: "09:15 AM", consultation: 600, therapy: 1750, due: 100 },
-].map((r, i) => ({
-  parentName: NAMES[i % NAMES.length],
-  date: daysAgo(r.offset),
-  time: r.time,
-  doctor: DOCTORS[i % DOCTORS.length],
-  therapist: THERAPISTS[i % THERAPISTS.length],
-  consultation: r.consultation,
-  therapy: r.therapy,
-  due: r.due,
-  paid: r.consultation + r.therapy - r.due,
-}))
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload || !payload.length) return null
@@ -92,7 +47,17 @@ const RevenueTable = () => {
   const [search, setSearch] = useState("")
   const [view, setView] = useState("charts") // 'charts' | 'table'
   const navigate = useNavigate()
-  const [data] = useState(RAW_DATA)
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+const [renTotals, setRenTotals]=useState({});
+const [totals, setTotals] = useState({
+  consultationTotal: 0,
+  therapyFeeTotal: 0,
+  totalFinalAmount: 0,
+  dueAmountTotal: 0,
+  grandTotal: 0,
+});
+  
   
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -127,7 +92,145 @@ const RevenueTable = () => {
     return list
   }
 
-  const filteredData = filterData()
+  const resetTotals = () => {
+  setTotals({
+    consultationTotal: 0,
+    therapyFeeTotal: 0,
+    totalFinalAmount: 0,
+    dueAmountTotal: 0,
+    grandTotal: 0,
+  });
+};
+
+const updateRevenueState = (result) => {
+  if (result?.success) {
+    setData(result.data || []);
+  } else {
+    setData([]);
+  }
+};
+
+useEffect(() => {
+  const filterMap = {
+    today: 1,
+    week: 2,
+    month: 3,
+    year: 4,
+  };
+
+  if (filter !== "custom") {
+    getRevenueData(filterMap[filter]);
+  }
+}, [filter]);
+
+const getCustomRevenueData = async () => {
+  if (!fromDate || !toDate) {
+    alert("Please select From Date and To Date");
+    return;
+  }
+
+  try {
+    const clinicId = localStorage.getItem("HospitalId");
+    const branchId = localStorage.getItem("branchId");
+
+    const response = await http.get(
+      `${wifiUrl}/api/physiotherapy-doctor/revenue-management/date-range/${clinicId}/${branchId}/${fromDate}/${toDate}`
+    );
+
+    const result = response.data;
+
+    console.log("Custom Revenue :", result);
+
+    if (result.success) {
+      setData(result.data || []);
+
+      setTotals({
+        consultationTotal: result.consultationTotal || 0,
+        therapyFeeTotal: result.therapyFeeTotal || 0,
+        totalFinalAmount: result.totalFinalAmount || 0,
+        dueAmountTotal: result.dueAmountTotal || 0,
+        grandTotal: result.grandTotal || 0,
+      });
+    } else {
+      setData([]);
+    }
+  } catch (error) {
+    console.log(error);
+    setData([]);
+  }
+};
+const getRevenueData = async (type) => {
+  try {
+    const clinicId = localStorage.getItem("HospitalId");
+    const branchId = localStorage.getItem("branchId");
+
+    const response = await http.get(
+      `${wifiUrl}/api/physiotherapy-doctor/revenue-management/${clinicId}/${branchId}/${type}`
+    );
+
+    const result = response.data;
+
+    console.log("Revenue Response :", result);
+
+    if (result.success) {
+      setData(result.data || []);
+
+      setTotals({
+        consultationTotal: result.consultationTotal || 0,
+        therapyFeeTotal: result.therapyFeeTotal || 0,
+        totalFinalAmount: result.totalFinalAmount || 0,
+        dueAmountTotal: result.dueAmountTotal || 0,
+        grandTotal: result.grandTotal || 0,
+      });
+    } else {
+      setData([]);
+    }
+  } catch (error) {
+    console.log(error);
+    setData([]);
+  }
+};
+const getRevenueSummary = async () => {
+  try {
+    const clinicId = localStorage.getItem("HospitalId");
+    const branchId = localStorage.getItem("branchId");
+
+    const response = await http.get(
+      `${wifiUrl}/api/physiotherapy-doctor/revenue-summary/${clinicId}/${branchId}`
+    );
+
+    const result = response.data;
+
+    console.log("Revenue Summary :", result);
+
+    if (result.success) {
+      setRenTotals(result.data || {});
+    }
+  } catch (error) {
+    console.log("Revenue Summary Error :", error);
+  }
+};
+console.log("Revenue Summary renTotals:", renTotals);
+useEffect(()=>{
+  getRevenueSummary();
+},[])
+
+  const filteredData = useMemo(() => {
+  let list = [...data];
+
+  const q = search.trim().toLowerCase();
+
+  if (q) {
+    list = list.filter(
+      (r) =>
+        (r.patientName || "").toLowerCase().includes(q) ||
+        (r.doctorName || "").toLowerCase().includes(q) ||
+        (r.therapistName || "").toLowerCase().includes(q)
+    );
+  }
+
+  return list;
+}, [data, search]);
 
   React.useEffect(() => {
     setCurrentPage(1)
@@ -136,43 +239,62 @@ const RevenueTable = () => {
   const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize))
   const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
-  const totalConsultation = filteredData.reduce((s, r) => s + r.consultation, 0)
-  const totalTherapy = filteredData.reduce((s, r) => s + r.therapy, 0)
-  const totalPaid = filteredData.reduce((s, r) => s + r.paid, 0)
-  const totalDue = filteredData.reduce((s, r) => s + r.due, 0)
-  const grandTotal = totalConsultation + totalTherapy
+const totalConsultation = totals.consultationTotal;
+const totalTherapy = totals.therapyFeeTotal;
+const totalPaid = totals.totalFinalAmount;
+const totalDue = totals.dueAmountTotal;
+const grandTotal = totals.grandTotal;
 
   /* ── chart data ── */
-  const trendData = useMemo(() => {
-    const byDate = {}
-    filteredData.forEach(r => {
-      byDate[r.date] = byDate[r.date] || { date: r.date, Consultation: 0, Therapy: 0 }
-      byDate[r.date].Consultation += r.consultation
-      byDate[r.date].Therapy += r.therapy
-    })
-    return Object.values(byDate)
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
-      .map(d => ({ ...d, label: d.date.slice(5) })) // MM-DD
-  }, [filteredData])
+ const trendData = useMemo(() => {
+  const byDate = {};
 
+  filteredData.forEach((r) => {
+    if (!byDate[r.serviceDate]) {
+      byDate[r.serviceDate] = {
+        date: r.serviceDate,
+        Consultation: 0,
+        Therapy: 0,
+      };
+    }
+
+    byDate[r.serviceDate].Consultation += Number(r.consultationFee || 0);
+    byDate[r.serviceDate].Therapy += Number(r.therapyFee || 0);
+  });
+
+  return Object.values(byDate)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .map((d) => ({
+      ...d,
+      label: d.date.slice(5),
+    }));
+}, [filteredData]);
   const paymentStatus = useMemo(() => ([
     { name: "Paid", value: totalPaid },
     { name: "Due", value: totalDue },
   ]), [totalPaid, totalDue])
 
-  const revenueByDoctor = useMemo(() => {
-    const grouped = {}
-    filteredData.forEach(r => {
-      grouped[r.doctor] = (grouped[r.doctor] || 0) + r.consultation + r.therapy
-    })
-    return Object.entries(grouped)
-      .map(([doctor, Revenue]) => ({ doctor, Revenue }))
-      .sort((a, b) => b.Revenue - a.Revenue)
-  }, [filteredData])
+const revenueByDoctor = useMemo(() => {
+  const grouped = {};
 
+  filteredData.forEach((r) => {
+    if (!grouped[r.doctorName]) {
+      grouped[r.doctorName] = 0;
+    }
+
+    grouped[r.doctorName] +=
+      Number(r.consultationFee || 0) +
+      Number(r.therapyFee || 0);
+  });
+
+  return Object.entries(grouped).map(([doctor, Revenue]) => ({
+    doctor,
+    Revenue,
+  }));
+}, [filteredData]);
   return (
     <>
-      <RevenueCards />
+      <RevenueCards renTotals={renTotals} />
 
       {/* ── Page Header + Filters ── */}
       <div className="rv-page-header">
@@ -237,7 +359,12 @@ const RevenueTable = () => {
           <CFormInput type="date" onChange={(e) => setFromDate(e.target.value)} className="rv-date-input" />
           <span className="rv-date-sep">to</span>
           <CFormInput type="date" onChange={(e) => setToDate(e.target.value)} className="rv-date-input" />
-          <button className="rv-add-btn">Apply</button>
+          <button
+  className="rv-add-btn"
+  onClick={getCustomRevenueData}
+>
+  Apply
+</button>
         </div>
       )}
 
@@ -335,13 +462,14 @@ const RevenueTable = () => {
             <CTableHead>
               <CTableRow>
                 <CTableHeaderCell className="rv-th" style={{ width: 56 }}>S.No</CTableHeaderCell>
-                <CTableHeaderCell className="rv-th">Parent Name</CTableHeaderCell>
-                <CTableHeaderCell className="rv-th">Date</CTableHeaderCell>
+                <CTableHeaderCell className="rv-th">Patient Name</CTableHeaderCell>
+                <CTableHeaderCell className="rv-th">Consultation Date</CTableHeaderCell>
                 <CTableHeaderCell className="rv-th">Time</CTableHeaderCell>
                 <CTableHeaderCell className="rv-th">Doctor</CTableHeaderCell>
                 <CTableHeaderCell className="rv-th">Therapist</CTableHeaderCell>
-                <CTableHeaderCell className="rv-th">Consultation Fee</CTableHeaderCell>
-                <CTableHeaderCell className="rv-th">Therapy Fee</CTableHeaderCell>
+                <CTableHeaderCell className="rv-th text-center">Consultation Fee </CTableHeaderCell>
+                <CTableHeaderCell className="rv-th">Treatment Fee <br />
+                <span style={{ fontSize: "8px", color: "white" }}>(Includes Discount(%))</span></CTableHeaderCell>
                 <CTableHeaderCell className="rv-th">Final Amt</CTableHeaderCell>
                 <CTableHeaderCell className="rv-th">Due Amt</CTableHeaderCell>
               </CTableRow>
@@ -367,15 +495,15 @@ const RevenueTable = () => {
                   return (
                     <CTableRow key={i} className="rv-tr">
                       <CTableDataCell className="rv-td rv-td-num">{i + 1}</CTableDataCell>
-                      <CTableDataCell className="rv-td"><span className="rv-name">{row.parentName}</span></CTableDataCell>
-                      <CTableDataCell className="rv-td rv-muted">{row.date}</CTableDataCell>
-                      <CTableDataCell className="rv-td rv-muted">{row.time}</CTableDataCell>
-                      <CTableDataCell className="rv-td rv-muted">{row.doctor}</CTableDataCell>
-                      <CTableDataCell className="rv-td rv-muted">{row.therapist}</CTableDataCell>
-                      <CTableDataCell className="rv-td">₹{row.consultation}</CTableDataCell>
-                      <CTableDataCell className="rv-td">₹{row.therapy}</CTableDataCell>
-                      <CTableDataCell className="rv-td">₹{row.paid}</CTableDataCell>
-                      <CTableDataCell className="rv-td">₹{row.due}</CTableDataCell>
+                      <CTableDataCell className="rv-td"><span className="rv-name">{row.patientName || "-"}</span></CTableDataCell>
+                      <CTableDataCell className="rv-td rv-muted">{row.serviceDate}</CTableDataCell>
+                      <CTableDataCell className="rv-td rv-muted">{row.serviceTime}</CTableDataCell>
+                      <CTableDataCell className="rv-td rv-muted">{row.doctorName}</CTableDataCell>
+                      <CTableDataCell className="rv-td rv-muted">{row.therapistName}</CTableDataCell>
+                      <CTableDataCell className="rv-td">₹{row.consultationFee}</CTableDataCell>
+                      <CTableDataCell className="rv-td">₹{row.therapyFee}</CTableDataCell>
+                      <CTableDataCell className="rv-td">₹{row.finalAmount}</CTableDataCell>
+                      <CTableDataCell className="rv-td">₹{row.dueAmount}</CTableDataCell>
                     </CTableRow>
                   )
                 })
