@@ -114,11 +114,41 @@ const AppointmentAnalytics = () => {
   const totalBooked = totalAppointments - totalCancelled
 
   const statCards = [
-    { title: "Total Appointments", value: fmtInt(totalAppointments), icon: <Calendar size={17} color="#185fa5" />, bg: "#e6f1fb" },
-    { title: "Booked", value: fmtInt(totalBooked), icon: <CheckCircle size={17} color="#3b6d11" />, bg: "#eaf3de" },
-    { title: "Cancelled", value: fmtInt(totalCancelled), icon: <XCircle size={17} color="#a32d2d" />, bg: "#fcebeb" },
-    { title: "Completed", value: fmtInt(totalCompleted), icon: <Clock size={17} color="#b45309" />, bg: "#fef3c7" },
-    { title: "Missed", value: fmtInt(totalMissed), icon: <Clock size={17} color="#b45309" />, bg: "#fef3c7" },
+    {
+      title: "Total Appointments",
+      value: fmtInt(totalAppointments),
+      gradient: "linear-gradient(135deg, #1e6fba 0%, #185fa5 100%)",
+      glow: "rgba(24,95,165,0.22)",
+      icon: <Calendar size={18} color="#fff" />,
+    },
+    {
+      title: "Booked",
+      value: fmtInt(totalBooked),
+      gradient: "linear-gradient(135deg, #22c55e 0%, #15803d 100%)",
+      glow: "rgba(21,128,61,0.22)",
+      icon: <CheckCircle size={18} color="#fff" />,
+    },
+    {
+      title: "Cancelled",
+      value: fmtInt(totalCancelled),
+      gradient: "linear-gradient(135deg, #f43f5e 0%, #a32d2d 100%)",
+      glow: "rgba(163,45,45,0.22)",
+      icon: <XCircle size={18} color="#fff" />,
+    },
+    {
+      title: "Completed",
+      value: fmtInt(totalCompleted),
+      gradient: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+      glow: "rgba(180,83,9,0.22)",
+      icon: <Clock size={18} color="#fff" />,
+    },
+    {
+      title: "Missed",
+      value: fmtInt(totalMissed),
+      gradient: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
+      glow: "rgba(71,85,105,0.22)",
+      icon: <Clock size={18} color="#fff" />,
+    },
   ]
 
   const trendChartData = config.series.map((label, i) => ({
@@ -225,19 +255,31 @@ const AppointmentAnalytics = () => {
             onChange={(e) => setCustomRange((r) => ({ ...r, end: e.target.value }))}
           />
           <span className="aa-custom-summary">{rangeSummary}</span>
+          {(customRange.start || customRange.end) && (
+            <button
+              className="aa-custom-clear"
+              onClick={() => setCustomRange({ start: "", end: "" })}
+              title="Clear dates"
+            >
+              <X size={12} /> Clear
+            </button>
+          )}
         </div>
       )}
 
       <div className="aa-stat-grid">
         {statCards.map((stat, idx) => (
-          <div className="aa-stat-card" key={idx}>
-            <div className="aa-stat-icon" style={{ background: stat.bg }}>
-              {stat.icon}
+          <div
+            key={idx}
+            className="aa-stat-card"
+            style={{ "--as-gradient": stat.gradient, "--as-glow": stat.glow }}
+          >
+            <div className="aa-sc-blob" />
+            <div className="aa-sc-top">
+              <div className="aa-sc-icon">{stat.icon}</div>
             </div>
-            <div>
-              <p className="aa-stat-title">{stat.title}</p>
-              <h4 className="aa-stat-value">{stat.value}</h4>
-            </div>
+            <div className="aa-sc-value">{stat.value}</div>
+            <div className="aa-sc-title">{stat.title}</div>
           </div>
         ))}
       </div>
@@ -426,19 +468,47 @@ const AppointmentAnalytics = () => {
         .aa-stat-grid {
           display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px;
         }
-
         .aa-stat-card {
-          display: flex; align-items: center; gap: 9px;
-          background: #fff; border: 1px solid #d0dce9; border-radius: 9px;
-          padding: 10px 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-          flex: 1 1 150px;
+          background: var(--as-gradient);
+          border-radius: 14px;
+          padding: 14px 16px 12px;
+          min-width: 130px;
+          flex: 1 1 130px;
+          display: flex; flex-direction: column; gap: 5px;
+          position: relative; overflow: hidden;
+          box-shadow: 0 4px 16px var(--as-glow), 0 1px 3px rgba(0,0,0,0.07);
+          transition: transform .2s, box-shadow .2s;
+          cursor: default;
         }
-        .aa-stat-icon {
-          width: 32px; height: 32px; border-radius: 8px;
-          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        .aa-stat-card:hover {
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 10px 28px var(--as-glow), 0 2px 6px rgba(0,0,0,0.09);
         }
-        .aa-stat-title { font-size: 10.5px; color: #6b7280; font-weight: 600; margin: 0 0 2px; white-space: nowrap; }
-        .aa-stat-value { font-size: 16px; font-weight: 700; color: #0c447c; margin: 0; white-space: nowrap; }
+        .aa-sc-blob {
+          position: absolute; top: -22px; right: -22px;
+          width: 72px; height: 72px;
+          background: rgba(255,255,255,0.13); border-radius: 50%;
+          pointer-events: none;
+        }
+        .aa-sc-top { margin-bottom: 2px; }
+        .aa-sc-icon {
+          width: 34px; height: 34px; border-radius: 8px;
+          background: rgba(255,255,255,0.18);
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; flex-shrink: 0;
+          border: 1px solid rgba(255,255,255,0.25);
+        }
+        .aa-sc-value { font-size: 20px; font-weight: 800; color: #fff; line-height: 1.1; letter-spacing: -0.3px; text-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+        .aa-sc-title { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.78); text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap; }
+
+        .aa-custom-clear {
+          display: inline-flex; align-items: center; gap: 4px;
+          border: none; background: #fef2f2; color: #a32d2d;
+          border-radius: 20px; padding: 4px 10px; font-size: 11px;
+          font-weight: 600; cursor: pointer; margin-left: 4px;
+          transition: background .15s;
+        }
+        .aa-custom-clear:hover { background: #fee2e2; }
 
         .aa-chart-grid {
           display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;

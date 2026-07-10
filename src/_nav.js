@@ -26,6 +26,7 @@ import {
   cilStar,
   cilChatBubble,
   cilBriefcase,
+  cilChart,
 } from '@coreui/icons'
 import { CNavItem } from '@coreui/react'
 import { NavLink } from 'react-router-dom'
@@ -203,7 +204,7 @@ export const getNavigation = (permissions = {}) => {
       to: '/analytics',
       name: 'Analytics',
       as: NavLink,
-      icon: <CIcon icon={cilLightbulb} customClassName="nav-icon" />,
+      icon: <CIcon icon={cilChart} customClassName="nav-icon" />,
     },
     {
       component: CNavItem,

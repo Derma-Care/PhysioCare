@@ -16,16 +16,8 @@ import {
 } from "recharts"
 import Pagination from "../../Utils/Pagination"
 import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
-
-const STORAGE_KEY = "physiocare_expenses_v1"
-
-/* ── helper: build a YYYY-MM-DD date offset from today, so filter
-   pills (today/week/month/year) always have something to show ── */
-const daysAgo = (n) => {
-    const d = new Date()
-    d.setDate(d.getDate() - n)
-    return d.toISOString().slice(0, 10)
-}
+import { getExpenses, createExpense, updateExpense, deleteExpense } from "./ExpenseAPI"
+import LoadingIndicator from "../../Utils/loader"
 
 const CATEGORY_META = {
     rent: { label: "Rent", color: "#185fa5", bg: "#e6f1fb" },
@@ -36,51 +28,6 @@ const CATEGORY_META = {
 }
 
 const MODE_LABEL = { cash: "Cash", upi: "UPI", card: "Card" }
-
-/* ── dummy dataset spanning today / this week / this month / this year ── */
-const DUMMY_EXPENSES = [
-    { title: "Clinic Rent - April", category: "rent", amount: 25000, offset: 0, paymentMode: "upi", notes: "" },
-    { title: "Staff Salary - Reception", category: "salary", amount: 18000, offset: 1, paymentMode: "card", notes: "" },
-    { title: "Electricity Bill", category: "electricity", amount: 3200, offset: 2, paymentMode: "upi", notes: "" },
-    { title: "Physio Consumables", category: "medicine", amount: 4500, offset: 3, paymentMode: "cash", notes: "" },
-    { title: "Water Purifier Service", category: "other", amount: 800, offset: 5, paymentMode: "cash", notes: "" },
-    { title: "Staff Salary - Therapist", category: "salary", amount: 22000, offset: 6, paymentMode: "card", notes: "" },
-    { title: "TENS Machine Gel", category: "medicine", amount: 1200, offset: 9, paymentMode: "upi", notes: "" },
-    { title: "Internet & Phone Bill", category: "other", amount: 1800, offset: 12, paymentMode: "upi", notes: "" },
-    { title: "Electricity Bill", category: "electricity", amount: 2950, offset: 18, paymentMode: "upi", notes: "" },
-    { title: "Housekeeping Supplies", category: "other", amount: 1400, offset: 22, paymentMode: "cash", notes: "" },
-    { title: "Staff Salary - Front Desk", category: "salary", amount: 16000, offset: 28, paymentMode: "card", notes: "" },
-    { title: "Clinic Rent - March", category: "rent", amount: 25000, offset: 32, paymentMode: "upi", notes: "" },
-    { title: "Ultrasound Gel Restock", category: "medicine", amount: 2100, offset: 40, paymentMode: "cash", notes: "" },
-    { title: "Equipment AMC", category: "other", amount: 6000, offset: 55, paymentMode: "card", notes: "" },
-    { title: "Electricity Bill", category: "electricity", amount: 3100, offset: 70, paymentMode: "upi", notes: "" },
-    { title: "Clinic Rent - Feb", category: "rent", amount: 25000, offset: 90, paymentMode: "upi", notes: "" },
-    { title: "Staff Salary - Therapist", category: "salary", amount: 22000, offset: 130, paymentMode: "card", notes: "" },
-    { title: "Furniture Repair", category: "other", amount: 2400, offset: 170, paymentMode: "cash", notes: "" },
-    { title: "Clinic Rent - Jan", category: "rent", amount: 24000, offset: 210, paymentMode: "upi", notes: "" },
-    { title: "Medicine Stock Purchase", category: "medicine", amount: 8600, offset: 260, paymentMode: "card", notes: "" },
-].map((r, i) => ({
-    id: `dummy-${i}`,
-    title: r.title,
-    category: r.category,
-    amount: r.amount,
-    date: daysAgo(r.offset),
-    paymentMode: r.paymentMode,
-    notes: r.notes,
-}))
-
-const loadInitialExpenses = () => {
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY)
-        if (saved) {
-            const parsed = JSON.parse(saved)
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed
-        }
-    } catch (e) {
-        console.warn("Could not read saved expenses, falling back to dummy data.", e)
-    }
-    return DUMMY_EXPENSES
-}
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null
@@ -99,12 +46,16 @@ const CustomTooltip = ({ active, payload, label }) => {
     )
 }
 
-const EMPTY_FORM = { title: "", category: "", amount: "", date: "", paymentMode: "", notes: "" }
+const EMPTY_FORM = { title: "", category: "", amount: "", date: "", mode: "", notes: "" }
 
 const ExpenseScreen = () => {
     useAutoHideSidebar()
+    const clinicId = localStorage.getItem('HospitalId')
+    const branchId = localStorage.getItem('branchId') || 'all'
+
     const [form, setForm] = useState(EMPTY_FORM)
-    const [expenses, setExpenses] = useState(loadInitialExpenses)
+    const [expenses, setExpenses] = useState([])
+    const [loading, setLoading] = useState(false)
     const [filter, setFilter] = useState("month")
     const [fromDate, setFromDate] = useState("")
     const [toDate, setToDate] = useState("")
@@ -114,18 +65,35 @@ const ExpenseScreen = () => {
     const [showModal, setShowModal] = useState(false)
     const [formError, setFormError] = useState("")
     const [editId, setEditId] = useState(null)
+    const [submitting, setSubmitting] = useState(false)
 
     const [currentPage, setCurrentPage] = useState(1)
     const [pageSize, setPageSize] = useState(10)
 
-    /* ── persist to localStorage whenever expenses change ── */
-    useEffect(() => {
+    const fetchExpenses = async () => {
+        setLoading(true)
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses))
-        } catch (e) {
-            console.warn("Could not save expenses to localStorage.", e)
+            const res = await getExpenses(clinicId, branchId)
+            if (res.data?.success) {
+                setExpenses(res.data.data || [])
+            } else if (Array.isArray(res.data)) {
+                setExpenses(res.data)
+            } else {
+                setExpenses([])
+            }
+        } catch (err) {
+            console.error(err)
+            setExpenses([])
+        } finally {
+            setLoading(false)
         }
-    }, [expenses])
+    }
+
+    useEffect(() => {
+        if (clinicId) {
+            fetchExpenses()
+        }
+    }, [clinicId, branchId])
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value })
@@ -151,21 +119,27 @@ const ExpenseScreen = () => {
             category: item.category,
             amount: item.amount,
             date: item.date,
-            paymentMode: item.paymentMode,
+            mode: item.mode,
             notes: item.notes || ""
         })
-        setEditId(item.id)
+        setEditId(item._id || item.id)
         setFormError("")
         setShowModal(true)
     }
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this expense?")) {
-            setExpenses(prev => prev.filter(item => item.id !== id))
+            try {
+                await deleteExpense(id)
+                fetchExpenses()
+            } catch (err) {
+                console.error(err)
+                alert("Failed to delete expense.")
+            }
         }
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
 
         if (!form.title || !form.amount || !form.date) {
@@ -173,17 +147,35 @@ const ExpenseScreen = () => {
             return
         }
 
-        if (editId) {
-            setExpenses(prev => prev.map(item => item.id === editId ? { ...item, ...form, amount: Number(form.amount) } : item))
-        } else {
-            setExpenses(prev => [{ id: `local-${Date.now()}`, ...form, amount: Number(form.amount) }, ...prev])
+        const payload = {
+            ...form,
+            amount: Number(form.amount),
+            clinicId,
+            branchId
         }
-        setForm(EMPTY_FORM)
-        setEditId(null)
-        setShowModal(false)
 
-        setSavedFlash(true)
-        setTimeout(() => setSavedFlash(false), 2200)
+        setSubmitting(true)
+        try {
+            if (editId) {
+                await updateExpense(editId, payload)
+            } else {
+                await createExpense(payload)
+            }
+
+            fetchExpenses()
+
+            setForm(EMPTY_FORM)
+            setEditId(null)
+            setShowModal(false)
+
+            setSavedFlash(true)
+            setTimeout(() => setSavedFlash(false), 2200)
+        } catch (err) {
+            setFormError("An error occurred while saving the expense.")
+            console.error(err)
+        } finally {
+            setSubmitting(false)
+        }
     }
 
     /* ── filter + search logic ── */
@@ -210,7 +202,7 @@ const ExpenseScreen = () => {
             list = list.filter(item =>
                 item.title.toLowerCase().includes(q) ||
                 (CATEGORY_META[item.category]?.label || item.category || "").toLowerCase().includes(q) ||
-                (MODE_LABEL[item.paymentMode] || item.paymentMode || "").toLowerCase().includes(q)
+                (MODE_LABEL[item.mode] || item.mode || "").toLowerCase().includes(q)
             )
         }
 
@@ -225,6 +217,35 @@ const ExpenseScreen = () => {
     const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
     const totalAmount = filteredData.reduce((sum, item) => sum + Number(item.amount), 0)
+
+    /* ── period summary cards (computed from ALL expenses, not filtered) ── */
+    const periodTotals = useMemo(() => {
+        const today = new Date()
+        const startOfWeek = new Date(today)
+        startOfWeek.setDate(today.getDate() - today.getDay())
+        startOfWeek.setHours(0, 0, 0, 0)
+        const endOfWeek = new Date(startOfWeek)
+        endOfWeek.setDate(startOfWeek.getDate() + 6)
+        endOfWeek.setHours(23, 59, 59, 999)
+
+        let todayTotal = 0, weekTotal = 0, monthTotal = 0, yearTotal = 0, allTotal = 0
+        expenses.forEach(item => {
+            const d = new Date(item.date)
+            const amt = Number(item.amount)
+            allTotal += amt
+            if (d.getFullYear() === today.getFullYear()) {
+                yearTotal += amt
+                if (d.getMonth() === today.getMonth()) {
+                    monthTotal += amt
+                    if (d >= startOfWeek && d <= endOfWeek) {
+                        weekTotal += amt
+                        if (d.toDateString() === today.toDateString()) todayTotal += amt
+                    }
+                }
+            }
+        })
+        return { todayTotal, weekTotal, monthTotal, yearTotal, allTotal }
+    }, [expenses])
 
     /* ── chart data ── */
     const byCategory = useMemo(() => {
@@ -252,7 +273,7 @@ const ExpenseScreen = () => {
     const byMode = useMemo(() => {
         const grouped = {}
         filteredData.forEach(item => {
-            const key = MODE_LABEL[item.paymentMode] || item.paymentMode || "Other"
+            const key = MODE_LABEL[item.mode] || item.mode || "Other"
             grouped[key] = (grouped[key] || 0) + Number(item.amount)
         })
         return Object.entries(grouped).map(([name, value]) => ({ name, value }))
@@ -282,6 +303,81 @@ const ExpenseScreen = () => {
                     </CButton>
                 </div>
             </div>
+
+            {/* ── PERIOD SUMMARY CARDS ── */}
+            {loading ? (
+                <LoadingIndicator message="Loading expenses..." />
+            ) : (
+                <div className="ex-period-cards">
+                    {[
+                        {
+                            label: "Today",
+                            amount: periodTotals.todayTotal,
+                            count: expenses.filter(i => new Date(i.date).toDateString() === new Date().toDateString()).length,
+                            gradient: "linear-gradient(135deg, #1e6fba 0%, #185fa5 100%)",
+                            glow: "rgba(24,95,165,0.22)",
+                            icon: (
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                            ),
+                        },
+                        {
+                            label: "This Week",
+                            amount: periodTotals.weekTotal,
+                            count: (() => { const t=new Date(),s=new Date(t);s.setDate(t.getDate()-t.getDay());s.setHours(0,0,0,0);const e=new Date(s);e.setDate(s.getDate()+6);e.setHours(23,59,59,999);return expenses.filter(i=>{const d=new Date(i.date);return d>=s&&d<=e}).length })(),
+                            gradient: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
+                            glow: "rgba(21,128,61,0.22)",
+                            icon: (
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+                            ),
+                        },
+                        {
+                            label: "This Month",
+                            amount: periodTotals.monthTotal,
+                            count: (() => { const t=new Date();return expenses.filter(i=>{const d=new Date(i.date);return d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear()}).length })(),
+                            gradient: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+                            glow: "rgba(180,83,9,0.22)",
+                            icon: (
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+                            ),
+                        },
+                        {
+                            label: "This Year",
+                            amount: periodTotals.yearTotal,
+                            count: expenses.filter(i => new Date(i.date).getFullYear() === new Date().getFullYear()).length,
+                            gradient: "linear-gradient(135deg, #7c3aed 0%, #6b21a8 100%)",
+                            glow: "rgba(107,33,168,0.22)",
+                            icon: (
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>
+                            ),
+                        },
+                        {
+                            label: "All Time",
+                            amount: periodTotals.allTotal,
+                            count: expenses.length,
+                            gradient: "linear-gradient(135deg, #c0392b 0%, #0c447c 100%)",
+                            glow: "rgba(12,68,124,0.22)",
+                            icon: (
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
+                            ),
+                        },
+                    ].map((card) => (
+                        <div key={card.label} className="ex-pc" style={{ "--pc-gradient": card.gradient, "--pc-glow": card.glow }}>
+                            <div className="ex-pc-glow-blob" />
+                            <div className="ex-pc-top">
+                                <div className="ex-pc-icon">{card.icon}</div>
+                                <div className="ex-pc-count">{card.count} record{card.count !== 1 ? "s" : ""}</div>
+                            </div>
+                            <div className="ex-pc-amount">₹{card.amount.toLocaleString("en-IN")}</div>
+                            <div className="ex-pc-label">{card.label}</div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* ── ADD EXPENSE MODAL ── */}
             <CModal
@@ -349,7 +445,7 @@ const ExpenseScreen = () => {
                                 />
                             </CCol>
                             <CCol md={4}>
-                                <CFormSelect label="Payment Mode" name="paymentMode" value={form.paymentMode} onChange={handleChange}>
+                                <CFormSelect label="Payment Mode" name="mode" value={form.mode} onChange={handleChange}>
                                     <option value="">Select</option>
                                     <option value="cash">Cash</option>
                                     <option value="upi">UPI</option>
@@ -368,12 +464,21 @@ const ExpenseScreen = () => {
                     </CModalBody>
 
                     <CModalFooter className="ex-modal-footer">
-                        <CButton className="ex-cancel-btn" onClick={closeModal} type="button">
+                        <CButton className="ex-cancel-btn" onClick={closeModal} type="button" disabled={submitting}>
                             Cancel
                         </CButton>
-                        <CButton type="submit" className="ex-save-btn">
-                            <Plus size={15} style={{ marginRight: 6, marginTop: -2 }} />
-                            Save Expense
+                        <CButton type="submit" className="ex-save-btn" disabled={submitting}>
+                            {submitting ? (
+                                <>
+                                    <span className="ex-btn-spinner" />
+                                    Saving…
+                                </>
+                            ) : (
+                                <>
+                                    <Plus size={15} style={{ marginRight: 6, marginTop: -2 }} />
+                                    {editId ? "Update Expense" : "Save Expense"}
+                                </>
+                            )}
                         </CButton>
                     </CModalFooter>
                 </CForm>
@@ -436,14 +541,23 @@ const ExpenseScreen = () => {
 
             {filter === "custom" && (
                 <div className="ex-custom-row">
-                    <CFormInput type="date" onChange={e => setFromDate(e.target.value)} className="ex-date-input" />
+                    <CFormInput type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="ex-date-input" />
                     <span className="ex-date-sep">to</span>
-                    <CFormInput type="date" onChange={e => setToDate(e.target.value)} className="ex-date-input" />
+                    <CFormInput type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="ex-date-input" />
+                    {(fromDate || toDate) && (
+                        <button
+                            className="ex-custom-clear"
+                            onClick={() => { setFromDate(""); setToDate("") }}
+                            title="Clear dates"
+                        >
+                            <X size={12} /> Clear
+                        </button>
+                    )}
                 </div>
             )}
 
             {/* ── Charts view ── */}
-            {view === "charts" && filteredData.length === 0 && (
+            {!loading && view === "charts" && filteredData.length === 0 && (
                 <div className="ex-empty-state">
                     <Receipt size={28} color="#94a3b8" />
                     <p>
@@ -458,7 +572,7 @@ const ExpenseScreen = () => {
                 </div>
             )}
 
-            {view === "charts" && filteredData.length > 0 && (
+            {!loading && view === "charts" && filteredData.length > 0 && (
                 <CRow className="mb-4">
                     <CCol xs={12} lg={7} className="mb-3">
                         <div className="ex-chart-card">
@@ -506,7 +620,7 @@ const ExpenseScreen = () => {
                                 <span className="ex-chart-sub">Cash vs UPI vs Card</span>
                             </div>
                             <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={byMode} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
+                                <BarChart data={byMode} layout="vertical" margin={{ top: 4, right: 80, left: 8, bottom: 4 }}>
                                     <CartesianGrid horizontal={false} stroke="#eef2f7" />
                                     <XAxis type="number" tick={{ fontSize: 11, fill: "#6b7280" }} tickFormatter={v => `₹${v}`} />
                                     <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: "#374151" }} width={60} />
@@ -525,7 +639,7 @@ const ExpenseScreen = () => {
             )}
 
             {/* ── Table view ── */}
-            {view === "table" && (
+            {!loading && view === "table" && (
                 <div className="ex-table-wrapper">
                     <CTable className="ex-table">
                         <CTableHead>
@@ -559,7 +673,7 @@ const ExpenseScreen = () => {
                                     const i = (currentPage - 1) * pageSize + index
                                     const meta = CATEGORY_META[item.category] || CATEGORY_META.other
                                     return (
-                                        <CTableRow key={item.id || i} className="ex-tr">
+                                        <CTableRow key={item._id || item.id || i} className="ex-tr">
                                             <CTableDataCell className="ex-td ex-td-num">{i + 1}</CTableDataCell>
                                             <CTableDataCell className="ex-td"><span className="ex-name">{item.title}</span></CTableDataCell>
                                             <CTableDataCell className="ex-td">
@@ -569,13 +683,13 @@ const ExpenseScreen = () => {
                                             </CTableDataCell>
                                             <CTableDataCell className="ex-td ex-muted">{item.date}</CTableDataCell>
                                             <CTableDataCell className="ex-td">₹{Number(item.amount).toLocaleString("en-IN")}</CTableDataCell>
-                                            <CTableDataCell className="ex-td ex-muted">{MODE_LABEL[item.paymentMode] || item.paymentMode || "—"}</CTableDataCell>
+                                            <CTableDataCell className="ex-td ex-muted">{MODE_LABEL[item.mode] || item.mode || "—"}</CTableDataCell>
                                             <CTableDataCell className="ex-td text-center">
                                                 <div className="d-flex align-items-center justify-content-center gap-2">
                                                     <button className="ex-action-btn edit" onClick={() => handleEdit(item)} title="Edit">
                                                         <Edit2 size={14} />
                                                     </button>
-                                                    <button className="ex-action-btn delete" onClick={() => handleDelete(item.id)} title="Delete">
+                                                    <button className="ex-action-btn delete" onClick={() => handleDelete(item._id || item.id)} title="Delete">
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>
@@ -619,6 +733,84 @@ const ExpenseScreen = () => {
           border-bottom: 0.5px solid #d0dce9;
         }
         .ex-header-right { display: flex; align-items: center; gap: 14px; }
+
+        /* ─── Period summary cards – premium redesign ─── */
+        .ex-period-cards {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 14px;
+          margin-bottom: 24px;
+        }
+        @media (max-width: 1100px) { .ex-period-cards { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 700px)  { .ex-period-cards { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 420px)  { .ex-period-cards { grid-template-columns: 1fr; } }
+
+        .ex-pc {
+          background: var(--pc-gradient);
+          border-radius: 16px;
+          padding: 18px 18px 16px;
+          display: flex; flex-direction: column; gap: 6px;
+          position: relative; overflow: hidden;
+          box-shadow: 0 4px 20px var(--pc-glow), 0 1px 4px rgba(0,0,0,0.08);
+          transition: transform .2s, box-shadow .2s;
+          cursor: default;
+        }
+        .ex-pc:hover {
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 12px 32px var(--pc-glow), 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* glowing decorative blob */
+        .ex-pc-glow-blob {
+          position: absolute; top: -28px; right: -28px;
+          width: 90px; height: 90px;
+          background: rgba(255,255,255,0.12);
+          border-radius: 50%;
+          pointer-events: none;
+        }
+        .ex-pc-glow-blob::after {
+          content: ''; position: absolute; top: 22px; left: 22px;
+          width: 46px; height: 46px;
+          background: rgba(255,255,255,0.10);
+          border-radius: 50%;
+        }
+
+        .ex-pc-top {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 4px;
+        }
+        .ex-pc-icon {
+          width: 40px; height: 40px; border-radius: 10px;
+          background: rgba(255,255,255,0.18);
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; flex-shrink: 0;
+          backdrop-filter: blur(4px);
+          border: 1px solid rgba(255,255,255,0.25);
+        }
+        .ex-pc-count {
+          font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.75);
+          background: rgba(255,255,255,0.15);
+          border-radius: 20px; padding: 3px 9px;
+          letter-spacing: 0.3px; white-space: nowrap;
+        }
+        .ex-pc-amount {
+          font-size: 22px; font-weight: 800; color: #fff;
+          line-height: 1.15; letter-spacing: -0.5px;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.12);
+        }
+        .ex-pc-label {
+          font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.78);
+          text-transform: uppercase; letter-spacing: 0.7px;
+        }
+
+        /* Spinner for submit button */
+        .ex-btn-spinner {
+          width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4);
+          border-top-color: #fff; border-radius: 50%;
+          display: inline-block; animation: ex-spin .6s linear infinite;
+          margin-right: 7px; flex-shrink: 0;
+        }
+        @keyframes ex-spin { to { transform: rotate(360deg); } }
 
         .ex-add-btn {
           background: var(--color-primary) !important; color: #fff !important; border: none !important;
@@ -736,6 +928,14 @@ const ExpenseScreen = () => {
         .ex-date-input { flex: 1; font-size: 12px !important; border: 0.5px solid #d0dce9 !important; border-radius: 8px !important; }
         .ex-date-input:focus { border-color:var(--color-primary) !important; box-shadow: none !important; }
         .ex-date-sep { font-size: 12px; color: #6b7280; white-space: nowrap; }
+        .ex-custom-clear {
+          display: inline-flex; align-items: center; gap: 4px;
+          border: none; background: #fef2f2; color: #a32d2d;
+          border-radius: 20px; padding: 5px 12px; font-size: 11px;
+          font-weight: 600; cursor: pointer; flex-shrink: 0;
+          transition: background .15s;
+        }
+        .ex-custom-clear:hover { background: #fee2e2; }
 
         /* Chart cards */
         .ex-chart-card {

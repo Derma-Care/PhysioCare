@@ -102,10 +102,35 @@ const PatientAnalytics = () => {
   ).toFixed(1)
 
   const statCards = [
-    { title: "Total Patients", value: fmtInt(totalPatients), icon: <Users size={22} color="#185fa5" />, bg: "#e6f1fb" },
-    { title: `New This ${config.label === "Custom" ? "Range" : config.label}`, value: fmtInt(newThisPeriod), icon: <UserPlus size={22} color="#3b6d11" />, bg: "#eaf3de" },
-    { title: "Active Patients", value: fmtInt(activePatients), icon: <UserCheck size={22} color="#0c7b93" />, bg: "#e0f3f8" },
-    { title: "Avg. Growth Rate", value: `${avgTrend > 0 ? "+" : ""}${avgTrend}%`, icon: <TrendingUp size={22} color="#a32d2d" />, bg: "#fcebeb", tip: GROWTH_TIP_STAT },
+    {
+      title: "Total Patients",
+      value: fmtInt(totalPatients),
+      gradient: "linear-gradient(135deg, #1e6fba 0%, #185fa5 100%)",
+      glow: "rgba(24,95,165,0.22)",
+      icon: <Users size={22} color="#fff" />,
+    },
+    {
+      title: `New This ${config.label === "Custom" ? "Range" : config.label}`,
+      value: fmtInt(newThisPeriod),
+      gradient: "linear-gradient(135deg, #22c55e 0%, #15803d 100%)",
+      glow: "rgba(21,128,61,0.22)",
+      icon: <UserPlus size={22} color="#fff" />,
+    },
+    {
+      title: "Active Patients",
+      value: fmtInt(activePatients),
+      gradient: "linear-gradient(135deg, #06b6d4 0%, #0c7b93 100%)",
+      glow: "rgba(12,123,147,0.22)",
+      icon: <UserCheck size={22} color="#fff" />,
+    },
+    {
+      title: "Avg. Growth Rate",
+      value: `${avgTrend > 0 ? "+" : ""}${avgTrend}%`,
+      gradient: "linear-gradient(135deg, #f43f5e 0%, #a32d2d 100%)",
+      glow: "rgba(163,45,45,0.22)",
+      icon: <TrendingUp size={22} color="#fff" />,
+      tip: GROWTH_TIP_STAT,
+    },
   ]
 
   const trendChartData = config.series.map((label, i) => ({
@@ -194,22 +219,32 @@ const PatientAnalytics = () => {
             onChange={(e) => setCustomRange((r) => ({ ...r, end: e.target.value }))}
           />
           <span className="pa-custom-summary">{rangeSummary}</span>
+          {(customRange.start || customRange.end) && (
+            <button
+              className="pa-custom-clear"
+              onClick={() => setCustomRange({ start: "", end: "" })}
+              title="Clear dates"
+            >
+              <X size={12} /> Clear
+            </button>
+          )}
         </div>
       )}
 
       <div className="pa-stat-grid">
         {statCards.map((stat, idx) => (
-          <div className="pa-stat-card" key={idx}>
-            <div className="pa-stat-icon" style={{ background: stat.bg }}>
-              {stat.icon}
+          <div
+            key={idx}
+            className="pa-stat-card"
+            style={{ "--ps-gradient": stat.gradient, "--ps-glow": stat.glow }}
+          >
+            <div className="pa-sc-blob" />
+            <div className="pa-sc-top">
+              <div className="pa-sc-icon">{stat.icon}</div>
+              {stat.tip && <InfoTip text={stat.tip} />}
             </div>
-            <div>
-              <p className="pa-stat-title">
-                {stat.title}
-                {stat.tip && <InfoTip text={stat.tip} />}
-              </p>
-              <h4 className="pa-stat-value">{stat.value}</h4>
-            </div>
+            <div className="pa-sc-value">{stat.value}</div>
+            <div className="pa-stat-title">{stat.title}</div>
           </div>
         ))}
       </div>
@@ -359,6 +394,15 @@ const PatientAnalytics = () => {
         }
         .pa-custom-arrow { font-size: 12px; color: #6b7280; }
         .pa-custom-summary { font-size: 12px; color: #6b7280; margin-left: auto; }
+        .pa-custom-clear {
+          display: inline-flex; align-items: center; gap: 4px;
+          border: none; background: #fef2f2; color: #a32d2d;
+          border-radius: 20px; padding: 4px 10px; font-size: 11px;
+          font-weight: 600; cursor: pointer; margin-left: 4px;
+          transition: background .15s;
+        }
+        .pa-custom-clear:hover { background: #fee2e2; }
+        .pa-custom-summary { font-size: 12px; color: #6b7280; margin-left: auto; }
 
         .pa-stat-grid {
           display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px;
@@ -367,16 +411,44 @@ const PatientAnalytics = () => {
         @media (max-width: 520px) { .pa-stat-grid { grid-template-columns: 1fr; } }
 
         .pa-stat-card {
-          display: flex; align-items: center; gap: 14px;
-          background: #fff; border: 1px solid #d0dce9; border-radius: 10px;
-          padding: 14px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+          background: var(--ps-gradient);
+          border-radius: 16px;
+          padding: 18px 18px 16px;
+          display: flex; flex-direction: column; gap: 6px;
+          position: relative; overflow: hidden;
+          box-shadow: 0 4px 20px var(--ps-glow), 0 1px 4px rgba(0,0,0,0.08);
+          transition: transform .2s, box-shadow .2s;
+          cursor: default;
         }
-        .pa-stat-icon {
-          width: 46px; height: 46px; border-radius: 10px;
-          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        .pa-stat-card:hover {
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 12px 32px var(--ps-glow), 0 2px 8px rgba(0,0,0,0.1);
         }
-        .pa-stat-title { font-size: 12px; color: #6b7280; font-weight: 600; margin: 0 0 2px; }
-        .pa-stat-value { font-size: 19px; font-weight: 700; color: #0c447c; margin: 0; }
+        .pa-sc-blob {
+          position: absolute; top: -28px; right: -28px;
+          width: 90px; height: 90px;
+          background: rgba(255,255,255,0.12); border-radius: 50%;
+          pointer-events: none;
+        }
+        .pa-sc-blob::after {
+          content: ''; position: absolute; top: 22px; left: 22px;
+          width: 46px; height: 46px;
+          background: rgba(255,255,255,0.10); border-radius: 50%;
+        }
+        .pa-sc-top {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 4px;
+        }
+        .pa-sc-icon {
+          width: 40px; height: 40px; border-radius: 10px;
+          background: rgba(255,255,255,0.18);
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; flex-shrink: 0;
+          backdrop-filter: blur(4px);
+          border: 1px solid rgba(255,255,255,0.25);
+        }
+        .pa-sc-value { font-size: 22px; font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -0.5px; text-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+        .pa-stat-title { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.78); text-transform: uppercase; letter-spacing: 0.7px; margin: 0; }
 
         .pa-chart-grid {
           display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;
