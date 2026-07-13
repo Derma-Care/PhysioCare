@@ -55,7 +55,16 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts'
-import { getAllReferDoctors, GetBookingByClinicIdData } from './ReferralAnalyticsAPI'
+import {
+  getAllReferDoctors,
+  GetBookingByClinicIdData,
+  getDoctorReferralPatientDetails,
+  getDoctorReferralAnalytics,
+  getDoctorReferralAnalyticsCustom,
+  getReferralChannelsAnalytics,
+  getReferralChannelsCustom,
+  getReferralChannelPatientDetails,
+} from './ReferralAnalyticsAPI'
 import capitalizeWords from '../../Utils/capitalizeWords'
 import LoadingIndicator from '../../Utils/loader'
 import Pagination from '../../Utils/Pagination'
@@ -86,7 +95,7 @@ const getBookingServiceName = (pat) => {
   if (pat.programName) return pat.programName
   if (pat.therapyName) return pat.therapyName
   if (pat.exerciseName) return pat.exerciseName
-  return 'General Consultation'
+  return pat.serviceName || 'General Consultation'
 }
 
 // Color palette for charts (keeps consistency with existing UI colors)
@@ -120,6 +129,12 @@ const ReferralAnalytics = () => {
   // Data State
   const [referDoctors, setReferDoctors] = useState([])
   const [bookings, setBookings] = useState([])
+  const [doctorAnalytics, setDoctorAnalytics] = useState([])
+  const [channelsAnalytics, setChannelsAnalytics] = useState([])
+  const [backendModalPatients, setBackendModalPatients] = useState([])
+  const [backendChannelPatients, setBackendChannelPatients] = useState([])
+  const [channelPatientsLoading, setChannelPatientsLoading] = useState(false)
+  const [modalLoading, setModalLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [useSampleData, setUseSampleData] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -159,13 +174,75 @@ const ReferralAnalytics = () => {
       // 2. Fetch Bookings
       let bookingsList = []
       if (hospitalId) {
-        const res = await GetBookingByClinicIdData(hospitalId)
-        bookingsList = res.data || []
+        const res = await GetBookingByClinicIdData()
+        bookingsList = Array.isArray(res) ? res : res?.data || []
         setBookings(bookingsList)
       }
 
+      // 3. Fetch Doctor Referral Analytics from backend
+      const branchId = localStorage.getItem('branchId')
+      let analyticsData = []
+      if (hospitalId && branchId) {
+        try {
+          if (filter === 'custom') {
+            if (fromDate && toDate) {
+              const res = await getDoctorReferralAnalyticsCustom(hospitalId, branchId, fromDate, toDate)
+              analyticsData = res?.data || res || []
+            }
+          } else {
+            // Map timeframe string filter to backend filter ID:
+            // 1 = today, 2 = week, 3 = month, 4 = year/all
+            const filterMap = {
+              today: 1,
+              week: 2,
+              month: 3,
+              year: 4,
+            }
+            const filterId = filterMap[filter] || 3 // default to month (3)
+            const res = await getDoctorReferralAnalytics(hospitalId, branchId, filterId)
+            analyticsData = res?.data || res || []
+          }
+          setDoctorAnalytics(Array.isArray(analyticsData) ? analyticsData : [])
+        } catch (analyticsErr) {
+          console.error('Error fetching doctor referral analytics:', analyticsErr)
+          setDoctorAnalytics([])
+        }
+      }
+
+      // 4. Fetch Referral Channels Analytics from backend
+      let chanAnalyticsData = []
+      if (hospitalId && branchId) {
+        try {
+          if (filter === 'custom') {
+            if (fromDate && toDate) {
+              const res = await getReferralChannelsCustom(hospitalId, branchId, fromDate, toDate)
+              chanAnalyticsData = res?.data || res || []
+            }
+          } else {
+            // Map timeframe string filter to backend filter ID:
+            // 1 = today, 2 = week, 3 = month, 4 = year/all
+            const filterMap = {
+              today: 1,
+              week: 2,
+              month: 3,
+              year: 4,
+            }
+            const filterId = filterMap[filter] || 3 // default to month (3)
+            const res = await getReferralChannelsAnalytics(hospitalId, branchId, filterId)
+            chanAnalyticsData = res?.data || res || []
+          }
+          setChannelsAnalytics(Array.isArray(chanAnalyticsData) ? chanAnalyticsData : [])
+        } catch (chanAnalyticsErr) {
+          console.error('Error fetching referral channels analytics:', chanAnalyticsErr)
+          setChannelsAnalytics([])
+        }
+      }
+
       // Check if real referral data exists in the database
-      const hasRealReferrals = bookingsList.some((b) => b.doctorRefCode && b.doctorRefCode !== '')
+      const hasRealReferrals =
+        bookingsList.some((b) => b.doctorRefCode && b.doctorRefCode !== '') ||
+        analyticsData.length > 0 ||
+        chanAnalyticsData.length > 0
 
       // If there are zero refer doctors or zero real referrals, automatically switch to sample data
       if (docsList.length === 0 || !hasRealReferrals) {
@@ -182,8 +259,61 @@ const ReferralAnalytics = () => {
   }
 
   useEffect(() => {
+    if (filter === 'custom' && (!fromDate || !toDate)) return
     fetchData()
-  }, [])
+  }, [filter, fromDate, toDate])
+
+  // Fetch detailed referred patients for modal (Doctor referrals)
+  useEffect(() => {
+    const fetchModalDetails = async () => {
+      if (!modalVisible || modalType !== 'doctor' || !selectedEntity || useSampleData) {
+        return
+      }
+      setModalLoading(true)
+      try {
+        const branchId = localStorage.getItem('branchId')
+        const res = await getDoctorReferralPatientDetails(
+          hospitalId,
+          branchId,
+          selectedEntity.referralId || selectedEntity.id
+        )
+        const patientData = res?.data || res || []
+        setBackendModalPatients(Array.isArray(patientData) ? patientData : [])
+      } catch (err) {
+        console.error('Error fetching doctor referral patient details:', err)
+        setBackendModalPatients([])
+      } finally {
+        setModalLoading(false)
+      }
+    }
+    fetchModalDetails()
+  }, [modalVisible, modalType, selectedEntity, useSampleData, hospitalId])
+
+  // Fetch detailed referred patients for sub-page (Channel referrals)
+  useEffect(() => {
+    const fetchChannelDetails = async () => {
+      if (!selectedChannel || useSampleData) {
+        return
+      }
+      setChannelPatientsLoading(true)
+      try {
+        const branchId = localStorage.getItem('branchId')
+        const res = await getReferralChannelPatientDetails(
+          hospitalId,
+          branchId,
+          selectedChannel
+        )
+        const patientData = res?.data || res || []
+        setBackendChannelPatients(Array.isArray(patientData) ? patientData : [])
+      } catch (err) {
+        console.error('Error fetching referral channel patient details:', err)
+        setBackendChannelPatients([])
+      } finally {
+        setChannelPatientsLoading(false)
+      }
+    }
+    fetchChannelDetails()
+  }, [selectedChannel, useSampleData, hospitalId])
 
   // Sample data generator (fallback for a stunning UI demo)
   const sampleData = useMemo(() => {
@@ -472,21 +602,43 @@ const ReferralAnalytics = () => {
     const doctorCounts = {}
     const channelCounts = {}
 
-    filteredBookings.forEach((b) => {
-      // Find if matched with a registered doctor
-      const isDocReferral = b.doctorRefCode && b.doctorRefCode !== 'OTHER' && b.doctorRefCode !== ''
+    if (!useSampleData && doctorAnalytics.length > 0) {
+      // Calculate doctor stats directly from backend analytics
+      doctorAnalytics.forEach((item) => {
+        const count = item.patientsReferred || 0
+        doctorReferrals += count
+        const key = item.referralId || item.doctorId
+        doctorCounts[key] = (doctorCounts[key] || 0) + count
+      })
+    } else {
+      // Fallback for sample data
+      filteredBookings.forEach((b) => {
+        const isDocReferral = b.doctorRefCode && b.doctorRefCode !== 'OTHER' && b.doctorRefCode !== ''
+        if (isDocReferral) {
+          doctorReferrals++
+          doctorCounts[b.doctorRefCode] = (doctorCounts[b.doctorRefCode] || 0) + 1
+        }
+      })
+    }
 
-      if (isDocReferral) {
-        doctorReferrals++
-        doctorCounts[b.doctorRefCode] = (doctorCounts[b.doctorRefCode] || 0) + 1
-        total++
-      } else if (b.doctorRefCode === 'OTHER') {
-        otherReferrals++
-        const chanName = b.referredByType || 'Other'
-        channelCounts[chanName] = (channelCounts[chanName] || 0) + 1
-        total++
-      }
-    })
+    // Other channels calculations (always from filteredBookings in sample mode, from channelsAnalytics in live mode)
+    if (!useSampleData && channelsAnalytics.length > 0) {
+      channelsAnalytics.forEach((item) => {
+        const count = item.patientsReferred !== undefined ? item.patientsReferred : (item.patientCount || 0)
+        otherReferrals += count
+        channelCounts[item.channel || 'Other'] = count
+      })
+    } else {
+      filteredBookings.forEach((b) => {
+        if (b.doctorRefCode === 'OTHER') {
+          otherReferrals++
+          const chanName = b.referredByType || 'Other'
+          channelCounts[chanName] = (channelCounts[chanName] || 0) + 1
+        }
+      })
+    }
+
+    total = doctorReferrals + otherReferrals
 
     // Find top doctor
     let topDocRefCode = null
@@ -501,7 +653,7 @@ const ReferralAnalytics = () => {
     const topDoc = activeDoctors.find(
       (d) => d.referralId === topDocRefCode || String(d.id) === String(topDocRefCode),
     )
-    const topDocName = topDoc ? capitalizeWords(topDoc.fullName) : 'None'
+    const topDocName = topDoc && topDoc.fullName ? capitalizeWords(topDoc.fullName) : 'None'
 
     return {
       total,
@@ -512,10 +664,26 @@ const ReferralAnalytics = () => {
       doctorCounts,
       channelCounts,
     }
-  }, [filteredBookings, activeDoctors])
+  }, [filteredBookings, activeDoctors, useSampleData, doctorAnalytics, channelsAnalytics])
 
   // Process Referral Doctor Table Data
   const referralDoctorTableData = useMemo(() => {
+    if (!useSampleData && doctorAnalytics.length > 0) {
+      // Map backend fields to the keys expected by the frontend JSX:
+      return doctorAnalytics
+        .map((item) => ({
+          id: item.doctorId,
+          referralId: item.referralId || item.doctorId,
+          fullName: item.doctorName,
+          currentHospitalName: item.clinicHospitalName,
+          specialization: item.specialization,
+          mobileNumber: item.contactInfo,
+          patientCount: item.patientsReferred || 0,
+          revenue: item.revenueGenerated || 0,
+        }))
+        .sort((a, b) => b.patientCount - a.patientCount)
+    }
+
     return activeDoctors
       .map((doc) => {
         const count = stats.doctorCounts[doc.referralId] || stats.doctorCounts[doc.id] || 0
@@ -543,7 +711,7 @@ const ReferralAnalytics = () => {
         }
       })
       .sort((a, b) => b.patientCount - a.patientCount) // sort by referral volume
-  }, [activeDoctors, stats.doctorCounts, filteredBookings])
+  }, [activeDoctors, stats.doctorCounts, filteredBookings, useSampleData, doctorAnalytics])
 
   // Filtered Referral Doctor Table Data (Search capability)
   const searchedDoctorTableData = useMemo(() => {
@@ -564,6 +732,17 @@ const ReferralAnalytics = () => {
 
   // Process Other Channels Table Data
   const otherChannelsTableData = useMemo(() => {
+    if (!useSampleData && channelsAnalytics.length > 0) {
+      // Map backend fields to the keys expected by the frontend JSX:
+      return channelsAnalytics
+        .map((item) => ({
+          channel: item.channel || item.name || 'Other',
+          patientCount: item.patientsReferred !== undefined ? item.patientsReferred : (item.patientCount || 0),
+          revenue: item.revenueGenerated !== undefined ? item.revenueGenerated : (item.revenue || 0),
+        }))
+        .sort((a, b) => b.patientCount - a.patientCount)
+    }
+
     const mainChannels = [
       'Friend',
       'Family',
@@ -609,7 +788,7 @@ const ReferralAnalytics = () => {
         }
       })
       .sort((a, b) => b.patientCount - a.patientCount)
-  }, [filteredBookings])
+  }, [filteredBookings, useSampleData, channelsAnalytics])
 
   // Filtered Channels Table Data (Search capability)
   const searchedChannelsTableData = useMemo(() => {
@@ -665,6 +844,26 @@ const ReferralAnalytics = () => {
     if (!selectedEntity) return []
 
     if (modalType === 'doctor') {
+      if (!useSampleData) {
+        return backendModalPatients.map((pat) => {
+          const typeUpper = pat.serviceType?.toUpperCase() || ''
+          return {
+            ...pat,
+            name: pat.patientName || pat.name,
+            serviceDate: pat.dateOfVisit || pat.serviceDate,
+            patientMobileNumber: pat.contactNumber || pat.patientMobileNumber || pat.mobileNumber || '—',
+            status: pat.status || 'Scheduled',
+            totalAmount: pat.totalCost || 0,
+            totalPaid: pat.paidAmount !== undefined ? pat.paidAmount : (pat.paid || 0),
+            balanceAmount: pat.pendingAmount !== undefined ? pat.pendingAmount : (pat.pending || 0),
+            packageName: typeUpper === 'PACKAGE' ? (pat.serviceName || pat.packageName) : undefined,
+            programName: typeUpper === 'PROGRAM' ? (pat.serviceName || pat.programName) : undefined,
+            therapyName: typeUpper === 'THERAPY' ? (pat.serviceName || pat.therapyName) : undefined,
+            exerciseName: typeUpper === 'EXERCISE' ? (pat.serviceName || pat.exerciseName) : undefined,
+            serviceName: pat.serviceName,
+          }
+        })
+      }
       return filteredBookings.filter(
         (b) =>
           b.doctorRefCode === selectedEntity.referralId ||
@@ -684,7 +883,7 @@ const ReferralAnalytics = () => {
         return type === selectedEntity.channel
       })
     }
-  }, [selectedEntity, modalType, filteredBookings])
+  }, [selectedEntity, modalType, filteredBookings, useSampleData, backendModalPatients])
 
   const modalPatientsData = useMemo(() => {
     const q = modalSearchQuery.toLowerCase().trim()
@@ -754,6 +953,48 @@ const ReferralAnalytics = () => {
   const detailsPatientsData = useMemo(() => {
     if (!selectedChannel) return []
 
+    if (!useSampleData) {
+      // Map backend fields to the keys expected by the frontend JSX:
+      const mappedData = backendChannelPatients.map((pat) => {
+        const typeUpper = pat.serviceType?.toUpperCase() || ''
+        return {
+          ...pat,
+          name: pat.patientName || pat.name,
+          serviceDate: pat.dateOfVisit || pat.serviceDate,
+          patientMobileNumber: pat.contactNumber || pat.patientMobileNumber || pat.mobileNumber || '—',
+          status: pat.status || 'Scheduled',
+          totalAmount: pat.totalCost || 0,
+          totalPaid: pat.paidAmount !== undefined ? pat.paidAmount : (pat.paid || 0),
+          balanceAmount: pat.pendingAmount !== undefined ? pat.pendingAmount : (pat.pending || 0),
+          packageName: typeUpper === 'PACKAGE' ? (pat.serviceName || pat.packageName) : undefined,
+          programName: typeUpper === 'PROGRAM' ? (pat.serviceName || pat.programName) : undefined,
+          therapyName: typeUpper === 'THERAPY' ? (pat.serviceName || pat.therapyName) : undefined,
+          exerciseName: typeUpper === 'EXERCISE' ? (pat.serviceName || pat.exerciseName) : undefined,
+          serviceName: pat.serviceName,
+        }
+      })
+
+      // Apply sub-filters on the mapped backend data:
+      return mappedData.filter((b) => {
+        const type = b.referredByType || ''
+        if (selectedChannel === 'Family') {
+          if (selectedSubRelation && selectedSubRelation !== 'All') {
+            if (type !== selectedSubRelation) return false
+          }
+          if (selectedFamilyMember && selectedFamilyMember !== 'All') {
+            const [name, relType] = selectedFamilyMember.split('|')
+            return (
+              b.referredByName &&
+              b.referredByName.toLowerCase() === name.toLowerCase() &&
+              b.referredByType &&
+              b.referredByType.toLowerCase() === relType.toLowerCase()
+            )
+          }
+        }
+        return true
+      })
+    }
+
     return filteredBookings.filter((b) => {
       if (b.doctorRefCode !== 'OTHER') return false
       const type = b.referredByType || ''
@@ -778,7 +1019,7 @@ const ReferralAnalytics = () => {
       }
       return type === selectedChannel
     })
-  }, [selectedChannel, selectedSubRelation, selectedFamilyMember, filteredBookings])
+  }, [selectedChannel, selectedSubRelation, selectedFamilyMember, filteredBookings, useSampleData, backendChannelPatients])
 
   const searchedDetailsData = useMemo(() => {
     const q = detailsSearchQuery.toLowerCase().trim()
@@ -799,7 +1040,7 @@ const ReferralAnalytics = () => {
   useEffect(() => { setChanPage(1) }, [channelSearchQuery, filter, fromDate, toDate])
   useEffect(() => { setDetPage(1) }, [detailsSearchQuery, selectedChannel, selectedSubRelation, selectedFamilyMember, filter, fromDate, toDate])
 
-  if (loading) return <LoadingIndicator message="Loading Referral Analytics..." />
+
 
   return (
     <>
@@ -817,45 +1058,11 @@ const ReferralAnalytics = () => {
           </div>
         </div>
 
-        <div className="rf-actions-group">
-          {/* Real vs Sample Data Toggle */}
-          <div className="rf-toggle-wrapper mr-2">
-            <span className={`rf-toggle-label ${!useSampleData ? 'active' : ''}`}>Live</span>
-            <button
-              className={`rf-toggle-switch ${useSampleData ? 'checked' : ''}`}
-              onClick={() => setUseSampleData(!useSampleData)}
-              title="Toggle Live / Sample Data"
-            >
-              <span className="rf-toggle-slider" />
-            </button>
-            <span className={`rf-toggle-label ${useSampleData ? 'active' : ''}`}>Sample</span>
-          </div>
-        </div>
-      </div>
 
-      {filter === 'custom' && (
-        <div className="rf-custom-row mb-4">
-          <div className="d-flex align-items-center gap-2 flex-wrap">
-            <span className="rf-date-sep text-muted">From:</span>
-            <CFormInput
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="rf-date-input"
-            />
-            <span className="rf-date-sep text-muted">To:</span>
-            <CFormInput
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="rf-date-input"
-            />
-            <button className="rf-apply-btn" onClick={fetchData}>
-              <RefreshCw size={12} className="mr-1" /> Reload
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
+      
+
+
       {/* 
       {useSampleData && (
         <div className="rf-sample-banner mb-4">
@@ -868,89 +1075,59 @@ const ReferralAnalytics = () => {
       )} */}
 
       {/* ── Summary Cards ── */}
-      <CRow className="mb-4">
-        <CCol xs={12} sm={6} lg={3} className="mb-3">
-          <div className="rf-stat-card-v2 accent-blue">
-            <div className="rf-stat-top">
-              <div className="rf-stat-icon-v2 blue">
-                <Users size={20} />
-              </div>
-              <span className="rf-stat-eyebrow">Total Referrals</span>
+      <div className="rf-stat-grid mb-4">
+        {[
+          {
+            label: "Total Referrals",
+            value: stats.total,
+            caption: "All patient bookings this period",
+            gradient: "linear-gradient(135deg, #1e6fba 0%, #185fa5 100%)",
+            glow: "rgba(24,95,165,0.22)",
+            icon: <Users size={20} color="#fff" />,
+          },
+          {
+            label: "Doctor Referrals",
+            value: stats.doctorReferrals,
+            caption: `${stats.total > 0 ? Math.round((stats.doctorReferrals / stats.total) * 100) : 0}% of total`,
+            gradient: "linear-gradient(135deg, #22c55e 0%, #15803d 100%)",
+            glow: "rgba(21,128,61,0.22)",
+            icon: <Award size={20} color="#fff" />,
+          },
+          {
+            label: "Other Channels",
+            value: stats.otherReferrals,
+            caption: `${stats.total > 0 ? Math.round((stats.otherReferrals / stats.total) * 100) : 0}% of total`,
+            gradient: "linear-gradient(135deg, #7c3aed 0%, #6b21a8 100%)",
+            glow: "rgba(107,33,168,0.22)",
+            icon: <Share2 size={20} color="#fff" />,
+          },
+          {
+            label: "Top Referring Doctor",
+            value: stats.topDocName,
+            caption: `${stats.maxDocCount} patient${stats.maxDocCount !== 1 ? 's' : ''} referred`,
+            gradient: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+            glow: "rgba(180,83,9,0.22)",
+            icon: <UserPlus size={20} color="#fff" />,
+            isName: true,
+          },
+        ].map((card) => (
+          <div
+            key={card.label}
+            className="rf-stat-pc"
+            style={{ "--rp-gradient": card.gradient, "--rp-glow": card.glow }}
+          >
+            <div className="rf-pc-blob" />
+            <div className="rf-pc-top">
+              <div className="rf-pc-icon">{card.icon}</div>
             </div>
-            <h3 className="rf-stat-number">{stats.total}</h3>
-            <p className="rf-stat-caption">All patient bookings this period</p>
+            <div className={`rf-pc-value${card.isName ? ' rf-pc-value-name' : ''}`} title={card.isName ? card.value : undefined}>
+              {card.value}
+            </div>
+            <div className="rf-pc-label">{card.label}</div>
+            <div className="rf-pc-caption">{card.caption}</div>
           </div>
-        </CCol>
-
-        <CCol xs={12} sm={6} lg={3} className="mb-3">
-          <div className="rf-stat-card-v2 accent-green">
-            <div className="rf-stat-top">
-              <div className="rf-stat-icon-v2 green">
-                <Award size={20} />
-              </div>
-              <span className="rf-stat-eyebrow">Doctor Referrals</span>
-            </div>
-            <h3 className="rf-stat-number">{stats.doctorReferrals}</h3>
-            <div className="rf-stat-progress-track">
-              <div
-                className="rf-stat-progress-fill green"
-                style={{
-                  width: `${stats.total > 0 ? Math.round((stats.doctorReferrals / stats.total) * 100) : 0}%`,
-                }}
-              />
-            </div>
-            <p className="rf-stat-caption">
-              <strong style={{ color: '#3b6d11' }}>
-                {stats.total > 0 ? Math.round((stats.doctorReferrals / stats.total) * 100) : 0}%
-              </strong>{' '}
-              of total referrals
-            </p>
-          </div>
-        </CCol>
-
-        <CCol xs={12} sm={6} lg={3} className="mb-3">
-          <div className="rf-stat-card-v2 accent-purple">
-            <div className="rf-stat-top">
-              <div className="rf-stat-icon-v2 purple">
-                <Share2 size={20} />
-              </div>
-              <span className="rf-stat-eyebrow">Other Channels</span>
-            </div>
-            <h3 className="rf-stat-number">{stats.otherReferrals}</h3>
-            <div className="rf-stat-progress-track">
-              <div
-                className="rf-stat-progress-fill purple"
-                style={{
-                  width: `${stats.total > 0 ? Math.round((stats.otherReferrals / stats.total) * 100) : 0}%`,
-                }}
-              />
-            </div>
-            <p className="rf-stat-caption">
-              <strong style={{ color: '#6b21a8' }}>
-                {stats.total > 0 ? Math.round((stats.otherReferrals / stats.total) * 100) : 0}%
-              </strong>{' '}
-              of total referrals
-            </p>
-          </div>
-        </CCol>
-
-        <CCol xs={12} sm={6} lg={3} className="mb-3">
-          <div className="rf-stat-card-v2 accent-orange">
-            <div className="rf-stat-top">
-              <div className="rf-stat-icon-v2 orange">
-                <UserPlus size={20} />
-              </div>
-              <span className="rf-stat-eyebrow">Top Referring Doctor</span>
-            </div>
-            <h3 className="rf-stat-number rf-stat-number-name" title={stats.topDocName}>
-              {stats.topDocName}
-            </h3>
-            <p className="rf-stat-caption">
-              <strong style={{ color: '#b45309' }}>{stats.maxDocCount}</strong> patients referred
-            </p>
-          </div>
-        </CCol>
-      </CRow>
+        ))}
+      </div>
 
       {/* ── Unified Toolbar: Search + Date Filters + Charts/Table Toggle ── */}
       {viewMode === 'list' && (
@@ -980,7 +1157,7 @@ const ReferralAnalytics = () => {
               )}
             </div>
 
-            <div className="rf-filter-group">
+            <div className="rf-filter-group d-flex align-items-center gap-2">
               {['today', 'week', 'month', 'year', 'custom'].map((f) => (
                 <button
                   key={f}
@@ -990,6 +1167,44 @@ const ReferralAnalytics = () => {
                   {f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
               ))}
+
+              {filter === 'custom' && (
+                <div className="d-flex align-items-center gap-2 ms-2" style={{ animation: 'fadeIn 0.2s ease' }}>
+                  <span className="rf-date-sep text-muted small" style={{ fontSize: '11px', fontWeight: 600 }}>From:</span>
+                  <CFormInput
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="rf-date-input"
+                    style={{ width: '130px', padding: '4px 8px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <span className="rf-date-sep text-muted small" style={{ fontSize: '11px', fontWeight: 600 }}>To:</span>
+                  <CFormInput
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="rf-date-input"
+                    style={{ width: '130px', padding: '4px 8px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <button 
+                    className="rf-apply-btn" 
+                    onClick={fetchData}
+                    style={{ padding: '4px 8px', fontSize: '12px', borderRadius: '6px', background: '#3b6d11', color: '#fff', border: 'none' }}
+                  >
+                    <RefreshCw size={10} className="mr-1" /> Reload
+                  </button>
+                  {(fromDate || toDate) && (
+                    <button
+                      className="rf-custom-clear"
+                      onClick={() => { setFromDate(''); setToDate('') }}
+                      title="Clear dates"
+                      style={{ padding: '4px 8px', fontSize: '12px', borderRadius: '6px' }}
+                    >
+                      <X size={10} /> Clear
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1139,253 +1354,262 @@ const ReferralAnalytics = () => {
       )}
 
       {/* ── Tabs Navigation ── */}
+      {/* ── Tabs Navigation ── */}
       {viewMode === 'list' && displayMode === 'table' && (
         <CCard className="mb-4 rf-tabs-card">
           <CCardBody className="p-0">
-            <CNav variant="tabs" className="rf-nav-tabs">
-              <CNavItem>
-                <CNavLink
-                  active={activeTab === 'doctors'}
-                  onClick={() => setActiveTab('doctors')}
-                  className="rf-nav-link"
-                >
-                  Referred by Doctors ({searchedDoctorTableData.length})
-                </CNavLink>
-              </CNavItem>
-              <CNavItem>
-                <CNavLink
-                  active={activeTab === 'channels'}
-                  onClick={() => setActiveTab('channels')}
-                  className="rf-nav-link"
-                >
-                  Other Referral Channels (
-                  {searchedChannelsTableData.filter((c) => c.patientCount > 0).length})
-                </CNavLink>
-              </CNavItem>
-            </CNav>
+            {loading ? (
+              <div className="text-center py-5">
+                <LoadingIndicator message="Loading table data..." />
+              </div>
+            ) : (
+              <>
+                <CNav variant="tabs" className="rf-nav-tabs">
+                  <CNavItem>
+                    <CNavLink
+                      active={activeTab === 'doctors'}
+                      onClick={() => setActiveTab('doctors')}
+                      className="rf-nav-link"
+                    >
+                      Referred by Doctors ({searchedDoctorTableData.length})
+                    </CNavLink>
+                  </CNavItem>
+                  <CNavItem>
+                    <CNavLink
+                      active={activeTab === 'channels'}
+                      onClick={() => setActiveTab('channels')}
+                      className="rf-nav-link"
+                    >
+                      Other Referral Channels (
+                      {searchedChannelsTableData.filter((c) => c.patientCount > 0).length})
+                    </CNavLink>
+                  </CNavItem>
+                </CNav>
 
-            <CTabContent className="p-3">
-              {/* 🩺 Tab 1: Doctors */}
-              {activeTab === 'doctors' && (
-                <div>
-                  {/* Result count */}
-                  <div className="d-flex justify-content-end align-items-center flex-wrap gap-2 mb-3">
-                    <div className="text-muted small">
-                      Showing {searchedDoctorTableData.length} of {activeDoctors.length} doctors
-                    </div>
-                  </div>
+                <CTabContent className="p-3">
+                  {/* 🩺 Tab 1: Doctors */}
+                  {activeTab === 'doctors' && (
+                    <div>
+                      {/* Result count */}
+                      <div className="d-flex justify-content-end align-items-center flex-wrap gap-2 mb-3">
+                        <div className="text-muted small">
+                          Showing {searchedDoctorTableData.length} of {activeDoctors.length} doctors
+                        </div>
+                      </div>
 
-                  {/* Table */}
-                  <div className="rf-table-wrapper">
-                    <CTable className="rf-table">
-                      <CTableHead>
-                        <CTableRow>
-                          <CTableHeaderCell className="rf-th" style={{ width: 60 }}>
-                            S.No
-                          </CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th">Doctor Name</CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th">
-                            Clinic/Hospital Name
-                          </CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th">Specialization</CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th">Contact Info</CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th text-center">
-                            Patients Referred
-                          </CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th text-right">
-                            Revenue Generated
-                          </CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th text-center" style={{ width: 100 }}>
-                            Actions
-                          </CTableHeaderCell>
-                        </CTableRow>
-                      </CTableHead>
+                      {/* Table */}
+                      <div className="rf-table-wrapper">
+                        <CTable className="rf-table">
+                          <CTableHead>
+                            <CTableRow>
+                              <CTableHeaderCell className="rf-th" style={{ width: 60 }}>
+                                S.No
+                              </CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th">Doctor Name</CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th">
+                                Clinic/Hospital Name
+                              </CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th">Specialization</CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th">Contact Info</CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th text-center">
+                                Patients Referred
+                              </CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th text-right">
+                                Revenue Generated
+                              </CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th text-center" style={{ width: 100 }}>
+                                Actions
+                              </CTableHeaderCell>
+                            </CTableRow>
+                          </CTableHead>
 
-                      <CTableBody>
-                        {searchedDoctorTableData.length === 0 ? (
-                          <CTableRow>
-                            <CTableDataCell colSpan={8}>
-                              <div className="rf-empty">
-                                <Users size={32} className="rf-empty-icon" />
-                                <p className="mb-0 mt-2 font-weight-bold">
-                                  No referring doctors found
-                                </p>
-                                <p className="text-muted small">
-                                  Try adjusting your search or add refer doctors in Doctor
-                                  Management.
-                                </p>
-                              </div>
-                            </CTableDataCell>
-                          </CTableRow>
-                        ) : (
-                          paginatedDoctorData.map((doc, idx) => (
-                            <CTableRow key={doc.id || idx} className="rf-tr">
-                              <CTableDataCell className="rf-td rf-td-num">{(docPage - 1) * docPageSize + idx + 1}</CTableDataCell>
-                              <CTableDataCell className="rf-td font-weight-bold color-primary">
-                                {doc.fullName?.toLowerCase().startsWith('dr')
-                                  ? capitalizeWords(doc.fullName)
-                                  : `Dr. ${capitalizeWords(doc.fullName || '')}`}
-                              </CTableDataCell>
-                              <CTableDataCell className="rf-td text-muted">
-                                {doc.currentHospitalName ? (
-                                  <span>
-                                    {capitalizeWords(doc.currentHospitalName)}
-                                    {doc.branchname && (
-                                      <span className="rf-clinic-tag ms-2">{doc.branchname}</span>
+                          <CTableBody>
+                            {searchedDoctorTableData.length === 0 ? (
+                              <CTableRow>
+                                <CTableDataCell colSpan={8}>
+                                  <div className="rf-empty">
+                                    <Users size={32} className="rf-empty-icon" />
+                                    <p className="mb-0 mt-2 font-weight-bold">
+                                      No referring doctors found
+                                    </p>
+                                    <p className="text-muted small">
+                                      Try adjusting your search or add refer doctors in Doctor
+                                      Management.
+                                    </p>
+                                  </div>
+                                </CTableDataCell>
+                              </CTableRow>
+                            ) : (
+                              paginatedDoctorData.map((doc, idx) => (
+                                <CTableRow key={doc.id || idx} className="rf-tr">
+                                  <CTableDataCell className="rf-td rf-td-num">{(docPage - 1) * docPageSize + idx + 1}</CTableDataCell>
+                                  <CTableDataCell className="rf-td font-weight-bold color-primary">
+                                    {doc.fullName?.toLowerCase().startsWith('dr')
+                                      ? capitalizeWords(doc.fullName)
+                                      : `Dr. ${capitalizeWords(doc.fullName || '')}`}
+                                  </CTableDataCell>
+                                  <CTableDataCell className="rf-td text-muted">
+                                    {doc.currentHospitalName ? (
+                                      <span>
+                                        {capitalizeWords(doc.currentHospitalName)}
+                                        {doc.branchname && (
+                                          <span className="rf-clinic-tag ms-2">{doc.branchname}</span>
+                                        )}
+                                      </span>
+                                    ) : (
+                                      '—'
                                     )}
-                                  </span>
-                                ) : (
-                                  '—'
-                                )}
-                              </CTableDataCell>
-                              <CTableDataCell className="rf-td text-muted">
-                                {doc.specialization || '—'}
-                              </CTableDataCell>
-                              <CTableDataCell className="rf-td text-muted">
-                                {doc.mobileNumber || '—'}
-                              </CTableDataCell>
-                              <CTableDataCell className="rf-td text-center font-weight-bold text-dark">
-                                <CBadge
-                                  color={doc.patientCount > 0 ? 'success' : 'secondary'}
-                                  className="rf-badge-count"
-                                >
-                                  {doc.patientCount}
-                                </CBadge>
-                              </CTableDataCell>
-                              <CTableDataCell className="rf-td text-right font-weight-bold text-success">
-                                ₹{doc.revenue?.toLocaleString('en-IN') || 0}
-                              </CTableDataCell>
-                              <CTableDataCell className="rf-td text-center">
-                                <button
-                                  className="rf-action-btn"
-                                  title="View patients referred"
-                                  disabled={doc.patientCount === 0}
-                                  onClick={() => handleOpenPatientsModal(doc, 'doctor')}
-                                >
-                                  <Eye size={14} />
-                                </button>
-                              </CTableDataCell>
-                            </CTableRow>
-                          ))
-                        )}
-                      </CTableBody>
-                    </CTable>
-                  </div>
-                  {searchedDoctorTableData.length > 0 && (
-                    <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff' }}>
-                      <Pagination
-                        currentPage={docPage}
-                        totalPages={Math.max(1, Math.ceil(searchedDoctorTableData.length / docPageSize))}
-                        pageSize={docPageSize}
-                        onPageChange={setDocPage}
-                        onPageSizeChange={setDocPageSize}
-                      />
+                                  </CTableDataCell>
+                                  <CTableDataCell className="rf-td text-muted">
+                                    {doc.specialization || '—'}
+                                  </CTableDataCell>
+                                  <CTableDataCell className="rf-td text-muted">
+                                    {doc.mobileNumber || '—'}
+                                  </CTableDataCell>
+                                  <CTableDataCell className="rf-td text-center font-weight-bold text-dark">
+                                    <CBadge
+                                      color={doc.patientCount > 0 ? 'success' : 'secondary'}
+                                      className="rf-badge-count"
+                                    >
+                                      {doc.patientCount}
+                                    </CBadge>
+                                  </CTableDataCell>
+                                  <CTableDataCell className="rf-td text-right font-weight-bold text-success">
+                                    ₹{doc.revenue?.toLocaleString('en-IN') || 0}
+                                  </CTableDataCell>
+                                  <CTableDataCell className="rf-td text-center">
+                                    <button
+                                      className="rf-action-btn"
+                                      title="View patients referred"
+                                      disabled={doc.patientCount === 0}
+                                      onClick={() => handleOpenPatientsModal(doc, 'doctor')}
+                                    >
+                                      <Eye size={14} />
+                                    </button>
+                                  </CTableDataCell>
+                                </CTableRow>
+                              ))
+                            )}
+                          </CTableBody>
+                        </CTable>
+                      </div>
+                      {searchedDoctorTableData.length > 0 && (
+                        <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff' }}>
+                          <Pagination
+                            currentPage={docPage}
+                            totalPages={Math.max(1, Math.ceil(searchedDoctorTableData.length / docPageSize))}
+                            pageSize={docPageSize}
+                            onPageChange={setDocPage}
+                            onPageSizeChange={setDocPageSize}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* 📣 Tab 2: Channels */}
-              {activeTab === 'channels' && (
-                <div>
-                  {/* Result count */}
-                  <div className="d-flex justify-content-end align-items-center flex-wrap gap-2 mb-3">
-                    <div className="text-muted small">
-                      Showing {searchedChannelsTableData.length} of {otherChannelsTableData.length}{' '}
-                      channels
-                    </div>
-                  </div>
+                  {/* 📣 Tab 2: Channels */}
+                  {activeTab === 'channels' && (
+                    <div>
+                      {/* Result count */}
+                      <div className="d-flex justify-content-end align-items-center flex-wrap gap-2 mb-3">
+                        <div className="text-muted small">
+                          Showing {searchedChannelsTableData.length} of {otherChannelsTableData.length}{' '}
+                          channels
+                        </div>
+                      </div>
 
-                  <div className="rf-table-wrapper">
-                    <CTable className="rf-table">
-                      <CTableHead>
-                        <CTableRow>
-                          <CTableHeaderCell className="rf-th" style={{ width: 60 }}>
-                            S.No
-                          </CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th">Referral Channel</CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th text-center">
-                            Patients Referred
-                          </CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th text-right">
-                            Revenue Generated
-                          </CTableHeaderCell>
-                          <CTableHeaderCell className="rf-th text-center" style={{ width: 100 }}>
-                            Actions
-                          </CTableHeaderCell>
-                        </CTableRow>
-                      </CTableHead>
-
-                      <CTableBody>
-                        {searchedChannelsTableData.length === 0 ? (
-                          <CTableRow>
-                            <CTableDataCell colSpan={5}>
-                              <div className="rf-empty">
-                                <Share2 size={32} className="rf-empty-icon" />
-                                <p className="mb-0 mt-2 font-weight-bold">
-                                  No channel referrals found
-                                </p>
-                              </div>
-                            </CTableDataCell>
-                          </CTableRow>
-                        ) : (
-                          paginatedChannelsData.map((chan, idx) => (
-                            <CTableRow key={chan.channel} className="rf-tr">
-                              <CTableDataCell className="rf-td rf-td-num">{(chanPage - 1) * chanPageSize + idx + 1}</CTableDataCell>
-                              <CTableDataCell
-                                className={`rf-td font-weight-bold ${chan.patientCount > 0
-                                    ? 'rf-clickable-channel'
-                                    : 'color-primary'
-                                  }`}
-                                onClick={() => {
-                                  if (chan.patientCount > 0) {
-                                    handleOpenChannelDetails(chan.channel)
-                                  }
-                                }}
-                              >
-                                {chan.channel}
-                              </CTableDataCell>
-                              <CTableDataCell className="rf-td text-center font-weight-bold text-dark">
-                                <CBadge
-                                  color={chan.patientCount > 0 ? 'info' : 'secondary'}
-                                  className="rf-badge-count"
-                                >
-                                  {chan.patientCount}
-                                </CBadge>
-                              </CTableDataCell>
-                              <CTableDataCell className="rf-td text-right font-weight-bold text-success">
-                                ₹{chan.revenue?.toLocaleString('en-IN') || 0}
-                              </CTableDataCell>
-                              <CTableDataCell className="rf-td text-center">
-                                <button
-                                  className="rf-action-btn info-btn"
-                                  title="View channel patients"
-                                  disabled={chan.patientCount === 0}
-                                  onClick={() => handleOpenChannelDetails(chan.channel)}
-                                >
-                                  <Eye size={14} />
-                                </button>
-                              </CTableDataCell>
+                      <div className="rf-table-wrapper">
+                        <CTable className="rf-table">
+                          <CTableHead>
+                            <CTableRow>
+                              <CTableHeaderCell className="rf-th" style={{ width: 60 }}>
+                                S.No
+                              </CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th">Referral Channel</CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th text-center">
+                                Patients Referred
+                              </CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th text-right">
+                                Revenue Generated
+                              </CTableHeaderCell>
+                              <CTableHeaderCell className="rf-th text-center" style={{ width: 100 }}>
+                                Actions
+                              </CTableHeaderCell>
                             </CTableRow>
-                          ))
-                        )}
-                      </CTableBody>
-                    </CTable>
-                  </div>
-                  {searchedChannelsTableData.length > 0 && (
-                    <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff' }}>
-                      <Pagination
-                        currentPage={chanPage}
-                        totalPages={Math.max(1, Math.ceil(searchedChannelsTableData.length / chanPageSize))}
-                        pageSize={chanPageSize}
-                        onPageChange={setChanPage}
-                        onPageSizeChange={setChanPageSize}
-                      />
+                          </CTableHead>
+
+                          <CTableBody>
+                            {searchedChannelsTableData.length === 0 ? (
+                              <CTableRow>
+                                <CTableDataCell colSpan={5}>
+                                  <div className="rf-empty">
+                                    <Share2 size={32} className="rf-empty-icon" />
+                                    <p className="mb-0 mt-2 font-weight-bold">
+                                      No channel referrals found
+                                    </p>
+                                  </div>
+                                </CTableDataCell>
+                              </CTableRow>
+                            ) : (
+                              paginatedChannelsData.map((chan, idx) => (
+                                <CTableRow key={chan.channel} className="rf-tr">
+                                  <CTableDataCell className="rf-td rf-td-num">{(chanPage - 1) * chanPageSize + idx + 1}</CTableDataCell>
+                                  <CTableDataCell
+                                    className={`rf-td font-weight-bold ${chan.patientCount > 0
+                                        ? 'rf-clickable-channel'
+                                        : 'color-primary'
+                                      }`}
+                                    onClick={() => {
+                                      if (chan.patientCount > 0) {
+                                        handleOpenChannelDetails(chan.channel)
+                                      }
+                                    }}
+                                  >
+                                    {chan.channel}
+                                  </CTableDataCell>
+                                  <CTableDataCell className="rf-td text-center font-weight-bold text-dark">
+                                    <CBadge
+                                      color={chan.patientCount > 0 ? 'info' : 'secondary'}
+                                      className="rf-badge-count"
+                                    >
+                                      {chan.patientCount}
+                                    </CBadge>
+                                  </CTableDataCell>
+                                  <CTableDataCell className="rf-td text-right font-weight-bold text-success">
+                                    ₹{chan.revenue?.toLocaleString('en-IN') || 0}
+                                  </CTableDataCell>
+                                  <CTableDataCell className="rf-td text-center">
+                                    <button
+                                      className="rf-action-btn info-btn"
+                                      title="View channel patients"
+                                      disabled={chan.patientCount === 0}
+                                      onClick={() => handleOpenChannelDetails(chan.channel)}
+                                    >
+                                      <Eye size={14} />
+                                    </button>
+                                  </CTableDataCell>
+                                </CTableRow>
+                              ))
+                            )}
+                          </CTableBody>
+                        </CTable>
+                      </div>
+                      {searchedChannelsTableData.length > 0 && (
+                        <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff' }}>
+                          <Pagination
+                            currentPage={chanPage}
+                            totalPages={Math.max(1, Math.ceil(searchedChannelsTableData.length / chanPageSize))}
+                            pageSize={chanPageSize}
+                            onPageChange={setChanPage}
+                            onPageSizeChange={setChanPageSize}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
-            </CTabContent>
+                </CTabContent>
+              </>
+            )}
           </CCardBody>
         </CCard>
       )}
@@ -1496,7 +1720,11 @@ const ReferralAnalytics = () => {
             </div>
 
             {/* Patients List Table */}
-            {detailsPatientsData.length === 0 ? (
+            {channelPatientsLoading ? (
+              <div className="text-center py-5">
+                <LoadingIndicator message="Loading referred patients..." />
+              </div>
+            ) : detailsPatientsData.length === 0 ? (
               <div className="text-center py-5">
                 <Users size={48} className="text-muted mb-3" />
                 <h5 className="font-weight-bold text-muted">No referrals recorded</h5>
@@ -1717,7 +1945,11 @@ const ReferralAnalytics = () => {
           </div>
         </CModalHeader>
         <CModalBody className="p-3" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-          {modalPatientsData.length === 0 ? (
+          {modalLoading ? (
+            <div className="text-center py-5">
+              <LoadingIndicator message="Loading referred patients..." />
+            </div>
+          ) : modalPatientsData.length === 0 ? (
             <div className="text-center py-4">
               <Users size={32} className="text-muted mb-2" />
               <p className="mb-0">No patients recorded in this time range.</p>
@@ -2014,93 +2246,73 @@ const ReferralAnalytics = () => {
           font-size: 12px;
         }
 
-        /* Stats Cards v2 */
-        .rf-stat-card-v2 {
-          position: relative;
-          background: #fff;
-          border: 1px solid #e2e8f0;
-          border-radius: 14px;
-          padding: 18px 20px 16px;
-          height: 100%;
-          overflow: hidden;
-          transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        /* ─── Stats Cards – premium gradient redesign ─── */
+        .rf-stat-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 14px;
         }
-        .rf-stat-card-v2::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 3px;
+        @media (max-width: 1100px) { .rf-stat-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 560px)  { .rf-stat-grid { grid-template-columns: 1fr; } }
+
+        .rf-stat-pc {
+          background: var(--rp-gradient);
+          border-radius: 16px;
+          padding: 18px 18px 14px;
+          display: flex; flex-direction: column; gap: 5px;
+          position: relative; overflow: hidden;
+          box-shadow: 0 4px 20px var(--rp-glow), 0 1px 4px rgba(0,0,0,0.08);
+          transition: transform .2s, box-shadow .2s;
+          cursor: default;
         }
-        .rf-stat-card-v2.accent-blue::before { background: linear-gradient(90deg, #185fa5, #5fa8e8); }
-        .rf-stat-card-v2.accent-green::before { background: linear-gradient(90deg, #3b6d11, #74b32f); }
-        .rf-stat-card-v2.accent-purple::before { background: linear-gradient(90deg, #6b21a8, #a855f7); }
-        .rf-stat-card-v2.accent-orange::before { background: linear-gradient(90deg, #b45309, #f59e0b); }
-        .rf-stat-card-v2:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-          border-color: #cbd5e1;
+        .rf-stat-pc:hover {
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 12px 32px var(--rp-glow), 0 2px 8px rgba(0,0,0,0.10);
         }
-        .rf-stat-top {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 16px;
+        .rf-pc-blob {
+          position: absolute; top: -28px; right: -28px;
+          width: 90px; height: 90px;
+          background: rgba(255,255,255,0.12); border-radius: 50%;
+          pointer-events: none;
         }
-        .rf-stat-icon-v2 {
-          width: 38px;
-          height: 38px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
+        .rf-pc-blob::after {
+          content: ''; position: absolute; top: 22px; left: 22px;
+          width: 46px; height: 46px;
+          background: rgba(255,255,255,0.10); border-radius: 50%;
         }
-        .rf-stat-icon-v2.blue { background: #e6f1fb; color: #185fa5; }
-        .rf-stat-icon-v2.green { background: #eaf3de; color: #3b6d11; }
-        .rf-stat-icon-v2.purple { background: #f3e8ff; color: #6b21a8; }
-        .rf-stat-icon-v2.orange { background: #fef3c7; color: #b45309; }
-        .rf-stat-eyebrow {
-          font-size: 11.5px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          color: #64748b;
+        .rf-pc-top { margin-bottom: 4px; }
+        .rf-pc-icon {
+          width: 40px; height: 40px; border-radius: 10px;
+          background: rgba(255,255,255,0.18);
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; flex-shrink: 0;
+          border: 1px solid rgba(255,255,255,0.25);
         }
-        .rf-stat-number {
-          font-size: 1.9rem;
-          font-weight: 700;
-          color: #0f172a;
-          margin: 0 0 8px;
-          line-height: 1.15;
+        .rf-pc-value {
+          font-size: 26px; font-weight: 800; color: #fff;
+          line-height: 1.1; letter-spacing: -0.5px;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.12);
         }
-        .rf-stat-number-name {
-          font-size: 1.05rem;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+        .rf-pc-value-name {
+          font-size: 14px; font-weight: 700;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .rf-stat-caption {
-          font-size: 12px;
-          color: #64748b;
-          margin: 0;
+        .rf-pc-label {
+          font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.78);
+          text-transform: uppercase; letter-spacing: 0.7px;
         }
-        .rf-stat-progress-track {
-          height: 5px;
-          background: #f1f5f9;
-          border-radius: 3px;
-          overflow: hidden;
-          margin-bottom: 8px;
+        .rf-pc-caption {
+          font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 2px;
         }
-        .rf-stat-progress-fill {
-          height: 100%;
-          border-radius: 3px;
-          transition: width 0.4s ease;
+
+        .rf-custom-clear {
+          display: inline-flex; align-items: center; gap: 4px;
+          border: none; background: #fef2f2; color: #a32d2d;
+          border-radius: 20px; padding: 4px 10px; font-size: 11px;
+          font-weight: 600; cursor: pointer;
+          transition: background .15s;
         }
-        .rf-stat-progress-fill.green { background: linear-gradient(90deg, #3b6d11, #74b32f); }
-        .rf-stat-progress-fill.purple { background: linear-gradient(90deg, #6b21a8, #a855f7); }
+        .rf-custom-clear:hover { background: #fee2e2; }
 
         /* Stats Cards (legacy, still used elsewhere) */
         .rf-stat-card {
