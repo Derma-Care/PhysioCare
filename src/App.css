@@ -171,10 +171,15 @@ div {
 
 /* modal heigth */
 
+.custom-modal .modal-dialog {
+  display: flex;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0 auto;
+}
+
 .custom-modal .modal-content {
-  /* height: 90vh;          */
   max-height: 90vh;
-  /* restrict max height */
   display: flex;
   flex-direction: column;
 }

@@ -11,6 +11,7 @@ import { AppointmentData } from '../AppointmentManagement/appointmentAPI'
 import Select from 'react-select'
 import ProgramPayment from '../AppointmentManagement/PaymentProgram'
 import { COLORS } from '../../Constant/Themes'
+import LoadingIndicator from '../../Utils/loader'
 
 /* ── status badge config ── */
 const STATUS_CONFIG = {
@@ -281,13 +282,14 @@ export default function Billing() {
 
       {/* <CCardBody style={{ padding: '20px' }}> */}
       <CRow>
-        <CCol md={8} lg={6}>
-          {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#666', fontSize: 13 }}>
-              <CSpinner size="sm" style={{ color: COLORS.primary }} />
-              Loading bookings...
-            </div>
-          ) : (
+        {loading ? (
+          <div>
+
+            <LoadingIndicator message="Loading bookings..." />
+          </div>
+        ) :
+          <CCol md={8} lg={6}>
+
             <>
               <Select
                 options={bookingOptions}
@@ -315,8 +317,9 @@ export default function Billing() {
                 {bookings.length} bookings available · search by name, ID, or phone
               </p>
             </>
-          )}
-        </CCol>
+
+          </CCol>
+        }
       </CRow>
 
       {/* Selected booking summary strip */}

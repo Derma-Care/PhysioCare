@@ -16,6 +16,7 @@ import Pagination from "../../Utils/Pagination"
 import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
 import { wifiUrl } from "../../baseUrl"
 import { http } from "../../Utils/Interceptors"
+import LoadingIndicator from "../../Utils/loader"
 
 
 
@@ -128,6 +129,7 @@ const getCustomRevenueData = async () => {
     alert("Please select From Date and To Date");
     return;
   }
+  setLoading(true);
 
   try {
     const clinicId = localStorage.getItem("HospitalId");
@@ -157,9 +159,12 @@ const getCustomRevenueData = async () => {
   } catch (error) {
     console.log(error);
     setData([]);
+  } finally {
+    setLoading(false);
   }
 };
 const getRevenueData = async (type) => {
+  setLoading(true);
   try {
     const clinicId = localStorage.getItem("HospitalId");
     const branchId = localStorage.getItem("branchId");
@@ -188,6 +193,8 @@ const getRevenueData = async (type) => {
   } catch (error) {
     console.log(error);
     setData([]);
+  } finally {
+    setLoading(false);
   }
 };
 const getRevenueSummary = async () => {
@@ -292,6 +299,8 @@ const revenueByDoctor = useMemo(() => {
     Revenue,
   }));
 }, [filteredData]);
+
+
   return (
     <>
       <RevenueCards renTotals={renTotals} />
@@ -369,7 +378,9 @@ const revenueByDoctor = useMemo(() => {
       )}
 
       {/* ── Charts view ── */}
-      {view === "charts" && filteredData.length === 0 && (
+      {loading ? (
+        <LoadingIndicator message="Loading revenue data..." />
+      ) : view === "charts" && filteredData.length === 0 ? (
         <div className="rv-empty-state">
           <Search size={28} color="#94a3b8" />
           <p>
@@ -378,9 +389,9 @@ const revenueByDoctor = useMemo(() => {
               : "No records found for the selected filters."}
           </p>
         </div>
-      )}
+      ) : null}
 
-      {view === "charts" && filteredData.length > 0 && (
+      {!loading && view === "charts" && filteredData.length > 0 && (
         <CRow className="mb-4">
           {/* Revenue trend */}
           <CCol xs={12} lg={7} className="mb-3">
@@ -456,7 +467,7 @@ const revenueByDoctor = useMemo(() => {
       )}
 
       {/* ── Table ── */}
-      {view === "table" && (
+      {!loading && view === "table" && (
         <div className="rv-table-wrapper">
           <CTable className="rv-table">
             <CTableHead>

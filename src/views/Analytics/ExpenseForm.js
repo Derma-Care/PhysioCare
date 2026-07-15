@@ -46,7 +46,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     )
 }
 
-const EMPTY_FORM = { title: "", category: "", amount: "", date: "", mode: "", notes: "" }
+const EMPTY_FORM = { title: "", category: "", amount: "", date: "", mode: "", transactionId: "", notes: "" }
 
 const ExpenseScreen = () => {
     useAutoHideSidebar()
@@ -120,6 +120,7 @@ const ExpenseScreen = () => {
             amount: item.amount,
             date: item.date,
             mode: item.mode,
+            transactionId: item.transactionId || "",
             notes: item.notes || ""
         })
         setEditId(item._id || item.id)
@@ -324,7 +325,7 @@ const ExpenseScreen = () => {
                         {
                             label: "This Week",
                             amount: periodTotals.weekTotal,
-                            count: (() => { const t=new Date(),s=new Date(t);s.setDate(t.getDate()-t.getDay());s.setHours(0,0,0,0);const e=new Date(s);e.setDate(s.getDate()+6);e.setHours(23,59,59,999);return expenses.filter(i=>{const d=new Date(i.date);return d>=s&&d<=e}).length })(),
+                            count: (() => { const t = new Date(), s = new Date(t); s.setDate(t.getDate() - t.getDay()); s.setHours(0, 0, 0, 0); const e = new Date(s); e.setDate(s.getDate() + 6); e.setHours(23, 59, 59, 999); return expenses.filter(i => { const d = new Date(i.date); return d >= s && d <= e }).length })(),
                             gradient: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
                             glow: "rgba(21,128,61,0.22)",
                             icon: (
@@ -335,7 +336,7 @@ const ExpenseScreen = () => {
                         {
                             label: "This Month",
                             amount: periodTotals.monthTotal,
-                            count: (() => { const t=new Date();return expenses.filter(i=>{const d=new Date(i.date);return d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear()}).length })(),
+                            count: (() => { const t = new Date(); return expenses.filter(i => { const d = new Date(i.date); return d.getMonth() === t.getMonth() && d.getFullYear() === t.getFullYear() }).length })(),
                             gradient: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
                             glow: "rgba(180,83,9,0.22)",
                             icon: (
@@ -456,6 +457,17 @@ const ExpenseScreen = () => {
 
                         <CRow>
                             <CCol md={12}>
+                                {(form.mode === "upi" || form.mode === "card") && (
+                                    <div className="mb-3">
+                                        <CFormInput
+                                            label="Transaction ID (Optional)"
+                                            name="transactionId"
+                                            value={form.transactionId}
+                                            onChange={handleChange}
+                                            placeholder="Enter transaction reference number"
+                                        />
+                                    </div>
+                                )}
                                 <CFormTextarea label="Notes" name="notes" value={form.notes} onChange={handleChange} rows={3} placeholder="Optional details…" />
                             </CCol>
                         </CRow>
@@ -675,7 +687,7 @@ const ExpenseScreen = () => {
                                     return (
                                         <CTableRow key={item._id || item.id || i} className="ex-tr">
                                             <CTableDataCell className="ex-td ex-td-num">{i + 1}</CTableDataCell>
-                                            <CTableDataCell className="ex-td"><span className="ex-name">{item.title}</span></CTableDataCell>
+                                            <CTableDataCell className="ex-td"><span className="ex-name">{item.title}</span><span className="ex-name">{item.notes}</span></CTableDataCell>
                                             <CTableDataCell className="ex-td">
                                                 <span className="ex-badge" style={{ background: meta.bg, color: meta.color }}>
                                                     {meta.label}
@@ -826,45 +838,75 @@ const ExpenseScreen = () => {
         }
         @keyframes ex-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Modal */
+        /* Modal - Premium Redesign */
         .ex-modal .modal-content {
-          border-radius: 14px !important; border: none !important; overflow: hidden;
-          box-shadow: 0 20px 50px rgba(12,68,124,0.18);
+          border-radius: 18px !important; border: none !important; overflow: hidden;
+          box-shadow: 0 24px 60px rgba(12,68,124,0.18), 0 8px 24px rgba(0,0,0,0.08);
         }
         .ex-modal-head {
-          border-bottom: 0.5px solid #eef2f7 !important; padding: 18px 22px !important;
+          background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
+          border-bottom: 1px solid #d0dce9 !important; padding: 20px 24px !important;
         }
-        .ex-modal-head-inner { display: flex; align-items: center; gap: 12px; }
+        .ex-modal-head-inner { display: flex; align-items: center; gap: 14px; }
         .ex-form-icon {
-          width: 38px; height: 38px; border-radius: 9px; background: #fcebeb; color:var(--color-primary);
+          width: 46px; height: 46px; border-radius: 12px; background: #fff; color: var(--color-primary);
           display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+          box-shadow: 0 4px 12px rgba(12,68,124,0.08); border: 1px solid #eef2f7;
         }
-        .ex-modal-title { font-size: 16px; font-weight: 700; color: #0c447c; margin: 0; }
-        .ex-modal-sub { margin: 0; font-size: 12px; color: #6b7280; }
-        .ex-modal-body { padding: 22px !important; }
+        .ex-modal-title { font-size: 18px; font-weight: 800; color: #0c447c; margin: 0; letter-spacing: -0.3px; }
+        .ex-modal-sub { margin: 2px 0 0; font-size: 12px; color: #6b7280; font-weight: 500; }
+        .ex-modal-body { padding: 24px !important; background: #fff; }
+        
+        /* Modal Form Inputs Customization */
+        .ex-modal-body .form-control, .ex-modal-body .form-select {
+          border-radius: 10px;
+          border: 1px solid #d0dce9;
+          padding: 10px 14px;
+          font-size: 13px;
+          color: #1e293b;
+          background-color: #f8fafc;
+          box-shadow: none;
+          transition: all 0.2s ease-in-out;
+        }
+        .ex-modal-body .form-control:focus, .ex-modal-body .form-select:focus {
+          border-color: var(--color-primary);
+          background-color: #fff;
+          box-shadow: 0 0 0 4px rgba(12, 68, 124, 0.1);
+        }
+        .ex-modal-body .form-control::placeholder { color: #9ca3af; }
+        .ex-modal-body .form-label {
+          font-size: 12.5px;
+          font-weight: 700;
+          color: #475569;
+          margin-bottom: 6px;
+        }
+        
         .ex-modal-footer {
-          border-top: 0.5px solid #eef2f7 !important; padding: 14px 22px !important;
-          display: flex; justify-content: flex-end; gap: 10px;
+          background: #f8fafc;
+          border-top: 1px solid #eef2f7 !important; padding: 16px 24px !important;
+          display: flex; justify-content: flex-end; gap: 12px;
         }
 
         .ex-form-error {
-          background: #fef2f2; color:var(--color-primary); border: 0.5px solid #fecaca;
-          border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; margin-top: 4px;
+          background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
+          border-radius: 10px; padding: 10px 14px; font-size: 12.5px; font-weight: 600; margin-top: 8px;
+          display: flex; align-items: center; gap: 8px;
         }
 
         .ex-cancel-btn {
-          background: #fff !important; color: #374151 !important; border: 0.5px solid #d0dce9 !important;
-          border-radius: 8px !important; padding: 8px 16px !important; font-size: 13px !important;
-          font-weight: 600 !important;
+          background: #fff !important; color: #475569 !important; border: 1px solid #cbd5e1 !important;
+          border-radius: 10px !important; padding: 9px 18px !important; font-size: 13.5px !important;
+          font-weight: 700 !important; transition: all 0.2s !important;
         }
-        .ex-cancel-btn:hover { background: #f8fafc !important; }
+        .ex-cancel-btn:hover { background: #f1f5f9 !important; color: #1e293b !important; border-color: #94a3b8 !important; }
 
         .ex-save-btn {
-          background:var(--color-primary) !important; color: #fff !important; border: none !important;
-          border-radius: 8px !important; padding: 8px 18px !important; font-size: 13px !important;
-          font-weight: 600 !important; display: flex; align-items: center; transition: filter .15s;
+          background: linear-gradient(135deg, var(--color-primary) 0%, #0a3560 100%) !important; 
+          color: #fff !important; border: none !important; box-shadow: 0 4px 12px rgba(12,68,124,0.2) !important;
+          border-radius: 10px !important; padding: 9px 20px !important; font-size: 13.5px !important;
+          font-weight: 700 !important; display: flex; align-items: center; transition: all .2s !important;
         }
-        .ex-save-btn:hover { filter: brightness(0.92); }
+        .ex-save-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(12,68,124,0.3) !important; }
 
         /* Page Header (list section) */
         .ex-page-header {

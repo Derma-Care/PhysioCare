@@ -264,7 +264,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     consultationType: 'Services & Treatments',
     consultationFee: 0,
     consultationExpiration: selectedHospital?.data?.consultationExpiration || '',
-    paymentType: '', partAmount: '', visitType: 'first', servicecost: '',
+    paymentType: '', transactionId: '', partAmount: '', visitType: 'first', servicecost: '',
     bookingFor: 'Self', name: '', patientAddress: '',
     patientMobileNumber: '', mobileNumber: '',
     age: '', gender: '', dob: '',
@@ -992,7 +992,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         serviceDate: selectedDate, servicetime: bookingDetails.servicetime,
         patientId: selectedBooking.patientId, bookingFor: selectedBooking.bookingFor,
         attachments: uploadedAttachments,
-        paymentType: bookingDetails.paymentType, foc: bookingDetails.foc, focReason: bookingDetails.focReason,
+        paymentType: bookingDetails.paymentType, transactionId: bookingDetails.transactionId, foc: bookingDetails.foc, focReason: bookingDetails.focReason,
         partImage: uploadedPartImage,
         theraphyAnswers: theraphyQuestions, parts: part,
         // listOfConsultationFee: [{ consulationFee: Number(bookingDetails.consultationFee || 0) }],
@@ -1473,6 +1473,19 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
             )}
             <ErrMsg msg={errors.paymentType} />
           </CCol>
+
+          {(bookingDetails.paymentType === 'UPI' || bookingDetails.paymentType === 'Card') && (
+            <CCol md={6}>
+              <CFormLabel style={labelStyle}>Transaction ID (Optional)</CFormLabel>
+              <CFormInput
+                value={bookingDetails.transactionId || ''}
+                onChange={(e) => setBookingDetails((p) => ({ ...p, transactionId: e.target.value }))}
+                placeholder="Enter reference no."
+                style={inputStyle(false)}
+              />
+            </CCol>
+          )}
+
           {
             visitType === 'first' && (<CCol md={6}>
               <CFormLabel style={labelStyle}>Referred By</CFormLabel>

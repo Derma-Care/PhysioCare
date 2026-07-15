@@ -717,7 +717,7 @@ export default function PaymentDetailsUI() {
                 <CTable hover responsive className="mb-0" style={{ fontSize: "12px" }}>
                     <CTableHead>
                         <CTableRow>
-                            {["#", "Receipt No.", "Date", "Amount", "Mode", "Type", "Level"].map(h => (
+                            {["#", "Receipt No.", "Date", "Amount", "Mode", "Txn ID", "Type", "Level"].map(h => (
                                 <CTableHeaderCell key={h} style={{
                                     background: "#f0f5fb", color: "#6b7280",
                                     fontSize: "11px", fontWeight: 600,
@@ -745,6 +745,7 @@ export default function PaymentDetailsUI() {
                                         {item.paymentMode}
                                     </span>
                                 </CTableDataCell>
+                                <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7", color: "#6b7280" }}>{item.transactionId || "-"}</CTableDataCell>
                                 <CTableDataCell style={{ padding: "9px 12px", borderColor: "#eef2f7" }}>
                                     <StatusBadge status={item.paymentType} />
                                 </CTableDataCell>

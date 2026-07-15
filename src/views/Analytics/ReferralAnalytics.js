@@ -1042,6 +1042,7 @@ const ReferralAnalytics = () => {
 
 
 
+
   return (
     <>
       {/* ── Page Header & Filters ── */}
@@ -1129,6 +1130,11 @@ const ReferralAnalytics = () => {
         ))}
       </div>
 
+      {/* ── Loading State ── */}
+      {loading ? (
+        <LoadingIndicator message="Loading referral analytics..." />
+      ) : (
+        <>
       {/* ── Unified Toolbar: Search + Date Filters + Charts/Table Toggle ── */}
       {viewMode === 'list' && (
         <div className="rf-toolbar-row mb-4">
@@ -2077,8 +2083,10 @@ const ReferralAnalytics = () => {
           </CButton>
         </CModalFooter>
       </CModal>
+        </>
+      )}
 
-      {/* ── CUSTOM VANILLA STYLING ── */}
+      {/* ── CUSTOM VANILLA STYLING (always rendered) ── */}
       <style>{`
         /* Page Header */
         .rf-page-header {

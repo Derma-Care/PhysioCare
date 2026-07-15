@@ -12,6 +12,7 @@ import { showCustomToast } from "../../Utils/Toaster";
 import { COLORS } from "../../Constant/Themes";
 import PrintLetterHead from "../../Utils/PrintLetterHead";
 import { CalendarOff, Info } from "lucide-react";
+import LoadingIndicator from "../../Utils/loader";
 
 export default function ProgramPayment({ paymentProps, isBillingTab, onPaymentSuccess }) {
   const location = useLocation();
@@ -57,6 +58,7 @@ export default function ProgramPayment({ paymentProps, isBillingTab, onPaymentSu
   const [finalAmount, setFinalAmount] = useState(0);
   const [discountIssuedBy, setDiscountIssuedBy] = useState("");
   const [paymentMode, setPaymentMode] = useState("cash");
+  const [transactionId, setTransactionId] = useState("");
   const [backendServiceType, setBackendServiceType] = useState("");
   const [allPaid, setAllPaid] = useState(false);
   const [isFollowUpPayment, setIsFollowUpPayment] = useState(false);
@@ -72,6 +74,26 @@ export default function ProgramPayment({ paymentProps, isBillingTab, onPaymentSu
 
   useEffect(() => {
     if (bookingId && patientId && clinicId && branchId) {
+      setNoSessionMsg("");
+      setShowTable(false);
+      setAllPaid(false);
+      setSessionTableAlreadyCreated(false);
+      setTotalForSelection(0);
+      setPaymentAmount(0);
+      setFinalAmount(0);
+      setDiscount(0);
+      setDiscountAmount(0);
+      setTotalPaid(0);
+      setBalanceAmount(0);
+      setApiData([]);
+      setSessionRows([]);
+      setTableData([]);
+      setformattedData([]);
+      setPaymentHistory([]);
+      setIsFollowUpPayment(false);
+      setTreatmentName("");
+      setTransactionId("");
+
       initializePayment();
     }
   }, [bookingId, patientId, clinicId, branchId]);
@@ -723,7 +745,7 @@ export default function ProgramPayment({ paymentProps, isBillingTab, onPaymentSu
     clinicId, branchId, bookingId, patientId, sessionStartDate: startDate, doctorId, doctorName, therapistId, therapistName, therapistRecordId,
     serviceType: backendServiceType === "activity" ? "EXERCISE" : backendServiceType.toUpperCase(),
     paymentLevel: selectedType === "activity" ? "EXERCISE" : selectedType.toUpperCase(),
-    amount: Number(finalAmount || 0), paymentMode: paymentMode.toUpperCase(), paymentType: paymentType.toUpperCase(),
+    amount: Number(finalAmount || 0), paymentMode: paymentMode.toUpperCase(), transactionId: transactionId, paymentType: paymentType.toUpperCase(),
     totalSessionCount: 2, discountAmount: Number(discountAmount || 0), discountIssuedBy,
     payAfterService: true,
     treatmentName: treatmentName,
@@ -1131,21 +1153,10 @@ export default function ProgramPayment({ paymentProps, isBillingTab, onPaymentSu
 
       {/* ── STEP 1: Generate Table ── */}
       {isInitializing ? (
-        <div style={{ textAlign: "center", padding: "40px" }}>
-          <span
-            style={{
-              display: "inline-block",
-              width: "24px", height: "24px",
-              border: "3px solid #ccc",
-              borderTopColor: COLORS.primary,
-              borderRadius: "50%",
-              animation: "spin 0.7s linear infinite",
-              marginBottom: "10px"
-            }}
-          />
-          <p style={{ color: "#6b7280", fontWeight: "600", fontSize: "14px" }}>Loading Payment Details...</p>
+        <div >
+          <LoadingIndicator message="Loading Payment Details..." />
         </div>
-      ) : noSessionMsg ? (
+      ) : noSessionMsg && !sessionTableAlreadyCreated ? (
         <div
           style={{
             display: "flex",
@@ -1747,6 +1758,18 @@ export default function ProgramPayment({ paymentProps, isBillingTab, onPaymentSu
                   <option value="card">Card</option>
                 </CFormSelect>
               </CCol>
+
+              {(paymentMode === "upi" || paymentMode === "card") && (
+                <CCol md={3}>
+                  <CFormLabel style={labelStyle}>Transaction ID (Optional)</CFormLabel>
+                  <CFormInput
+                    value={transactionId}
+                    onChange={(e) => setTransactionId(e.target.value)}
+                    placeholder="Enter reference no."
+                    style={inputStyle}
+                  />
+                </CCol>
+              )}
             </CRow>
 
             <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "0.5px solid #d0dce9", display: "flex", justifyContent: "flex-end" }}>

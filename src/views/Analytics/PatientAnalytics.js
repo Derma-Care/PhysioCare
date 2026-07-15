@@ -1,63 +1,19 @@
-import React, { useState, useMemo } from "react"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend
 } from "recharts"
 import {
-  TrendingUp, Users, UserPlus, UserCheck, Search, Calendar, X, Info
+  TrendingUp, Users, UserPlus, UserCheck, Search, Calendar, X, Info,
+  AlertCircle, RefreshCw
 } from "lucide-react"
 import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
+import { getPatientAnalytics, getPatientAnalyticsCustomDate } from "./PatientAnalyticsAPI"
+import LoadingIndicator from "../../Utils/loader"
 
-// ---- Static base data -------------------------------------------------
+// ---- Helpers ---------------------------------------------------------------
 
-const BASE_DEMOGRAPHICS = [
-  { id: 1, ageGroup: "0-18 Years", male: 120, female: 95, trend: 5 },
-  { id: 2, ageGroup: "19-35 Years", male: 310, female: 280, trend: 15 },
-  { id: 3, ageGroup: "36-50 Years", male: 180, female: 210, trend: 8 },
-  { id: 4, ageGroup: "51+ Years", male: 145, female: 160, trend: -2 },
-]
-
-// Scale factor + trend series per filter window, so switching tabs visibly
-// changes both the stat cards and the chart shapes rather than just labels.
-const FILTER_CONFIG = {
-  day: {
-    label: "Today",
-    scale: 0.12,
-    trendLabel: "New Patients by Hour",
-    series: ["8am", "10am", "12pm", "2pm", "4pm", "6pm", "8pm"],
-    trendData: [3, 6, 9, 7, 11, 8, 4],
-  },
-  week: {
-    label: "Week",
-    scale: 0.35,
-    trendLabel: "New Patients by Day",
-    series: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    trendData: [14, 18, 12, 20, 22, 9, 6],
-  },
-  month: {
-    label: "Month",
-    scale: 1,
-    trendLabel: "New Patients by Week",
-    series: ["Week 1", "Week 2", "Week 3", "Week 4"],
-    trendData: [28, 35, 31, 34],
-  },
-  year: {
-    label: "Year",
-    scale: 11.5,
-    trendLabel: "New Patients by Month",
-    series: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    trendData: [88, 95, 102, 110, 118, 124, 131, 128, 135, 142, 139, 128],
-  },
-  custom: {
-    label: "Custom",
-    scale: 0.6,
-    trendLabel: "New Patients (Selected Range)",
-    series: ["D1", "D2", "D3", "D4", "D5", "D6", "D7"],
-    trendData: [10, 15, 13, 19, 16, 12, 20],
-  },
-}
-
-const fmtInt = (n) => Math.max(0, Math.round(n)).toLocaleString()
+const fmtInt = (n) => (n == null ? "—" : Math.max(0, Math.round(n)).toLocaleString())
 
 const InfoTip = ({ text }) => (
   <span className="pa-tip">
@@ -67,65 +23,133 @@ const InfoTip = ({ text }) => (
 )
 
 const GROWTH_TIP_STAT =
-  "Compares this period's total patients to the equivalent previous period (e.g. this month vs. last month). Calculated as ((current − previous) / previous) × 100."
+  "Compares this period's total patients to the equivalent previous period. Calculated as ((current − previous) / previous) × 100."
 const GROWTH_TIP_ROW =
   "This age group's change vs. the same group in the previous period, using ((current − previous) / previous) × 100."
 
+const FILTER_PERIOD_MAP = {
+  day: 1,
+  week: 2,
+  month: 3,
+  year: 4,
+}
+
+const FILTER_LABELS = {
+  day: "Today",
+  week: "Week",
+  month: "Month",
+  year: "Year",
+  custom: "Custom",
+}
+
+const TREND_LABELS = {
+  day: "New Patients by Hour",
+  week: "New Patients by Day",
+  month: "New Patients by Week",
+  year: "New Patients by Month",
+  custom: "New Patients (Selected Range)",
+}
+
+// ---- Component -------------------------------------------------------------
+
 const PatientAnalytics = () => {
-  useAutoHideSidebar();
+  useAutoHideSidebar()
+
+  const clinicId = localStorage.getItem("HospitalId")
+  const branchId = localStorage.getItem("branchId")
+
   const [filter, setFilter] = useState("month")
   const [showCustom, setShowCustom] = useState(false)
   const [customRange, setCustomRange] = useState({ start: "", end: "" })
   const [query, setQuery] = useState("")
 
-  const config = FILTER_CONFIG[filter]
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [apiData, setApiData] = useState(null)
 
-  const scaledDemographics = useMemo(() => {
-    return BASE_DEMOGRAPHICS.map((row) => {
-      const male = Math.round(row.male * config.scale)
-      const female = Math.round(row.female * config.scale)
-      return { ...row, male, female, total: male + female }
-    })
-  }, [config])
+  // ---- Fetch -----------------------------------------------------------------
+
+  const fetchData = useCallback(
+    async (currentFilter, range) => {
+      setLoading(true)
+      setError(null)
+      try {
+        let res
+        if (currentFilter === "custom") {
+          if (!range.start || !range.end) {
+            setLoading(false)
+            return
+          }
+          res = await getPatientAnalyticsCustomDate(clinicId, branchId, range.start, range.end)
+        } else {
+          res = await getPatientAnalytics(clinicId, branchId, currentFilter)
+        }
+        setApiData(res.data?.data || null)
+      } catch (err) {
+        setError("Failed to load analytics. Please try again.")
+        setApiData(null)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [clinicId, branchId]
+  )
+
+  // Fetch on mount + whenever filter changes
+  useEffect(() => {
+    fetchData(filter, customRange)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter])
+
+  // Fetch for custom only once both dates are chosen
+  useEffect(() => {
+    if (filter === "custom" && customRange.start && customRange.end) {
+      fetchData("custom", customRange)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customRange.start, customRange.end])
+
+  // ---- Derived data ----------------------------------------------------------
+
+  const summary = apiData?.summary || {}
+  const trendChartData = apiData?.newPatientsTrend || []
+  const ageGroupAnalytics = apiData?.ageGroupAnalytics || []
 
   const filteredDemographics = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return scaledDemographics
-    return scaledDemographics.filter((row) => row.ageGroup.toLowerCase().includes(q))
-  }, [scaledDemographics, query])
+    if (!q) return ageGroupAnalytics
+    return ageGroupAnalytics.filter((row) =>
+      row.ageGroup.toLowerCase().includes(q)
+    )
+  }, [ageGroupAnalytics, query])
 
-  const totalPatients = scaledDemographics.reduce((sum, r) => sum + r.total, 0)
-  const newThisPeriod = Math.round(totalPatients * 0.12)
-  const activePatients = Math.round(totalPatients * 0.72)
-  const avgTrend = (
-    scaledDemographics.reduce((sum, r) => sum + r.trend, 0) / scaledDemographics.length
-  ).toFixed(1)
+  const growthRate = summary.growthRate ?? 0
 
   const statCards = [
     {
       title: "Total Patients",
-      value: fmtInt(totalPatients),
+      value: fmtInt(summary.totalPatients),
       gradient: "linear-gradient(135deg, #1e6fba 0%, #185fa5 100%)",
       glow: "rgba(24,95,165,0.22)",
       icon: <Users size={22} color="#fff" />,
     },
     {
-      title: `New This ${config.label === "Custom" ? "Range" : config.label}`,
-      value: fmtInt(newThisPeriod),
+      title: `New This ${FILTER_LABELS[filter] === "Custom" ? "Range" : FILTER_LABELS[filter]}`,
+      value: fmtInt(summary.newPatients),
       gradient: "linear-gradient(135deg, #22c55e 0%, #15803d 100%)",
       glow: "rgba(21,128,61,0.22)",
       icon: <UserPlus size={22} color="#fff" />,
     },
     {
-      title: "Active Patients",
-      value: fmtInt(activePatients),
+      title: "Active Patients (Mobile Users)",
+      value: fmtInt(summary.activePatients),
       gradient: "linear-gradient(135deg, #06b6d4 0%, #0c7b93 100%)",
       glow: "rgba(12,123,147,0.22)",
       icon: <UserCheck size={22} color="#fff" />,
     },
     {
-      title: "Avg. Growth Rate",
-      value: `${avgTrend > 0 ? "+" : ""}${avgTrend}%`,
+      title: "Growth Rate",
+      value: `${growthRate > 0 ? "+" : ""}${growthRate}%`,
       gradient: "linear-gradient(135deg, #f43f5e 0%, #a32d2d 100%)",
       glow: "rgba(163,45,45,0.22)",
       icon: <TrendingUp size={22} color="#fff" />,
@@ -133,10 +157,7 @@ const PatientAnalytics = () => {
     },
   ]
 
-  const trendChartData = config.series.map((label, i) => ({
-    label,
-    patients: config.trendData[i],
-  }))
+  // ---- Handlers --------------------------------------------------------------
 
   const handleFilterClick = (f) => {
     if (f === "custom") {
@@ -153,8 +174,161 @@ const PatientAnalytics = () => {
       ? `${customRange.start} → ${customRange.end}`
       : "Select a date range"
 
+  // ---- Render ----------------------------------------------------------------
+
+  const renderContent = () => {
+    if (loading) {
+      return <div  ><LoadingIndicator message="Loading analytics..." /></div>
+    }
+    if (error) {
+      return (
+        <div className="pa-state-box pa-state-error">
+          <AlertCircle size={32} color="#a32d2d" />
+          <p>{error}</p>
+          <button
+            className="pa-retry-btn"
+            onClick={() => fetchData(filter, customRange)}
+          >
+            <RefreshCw size={14} /> Retry
+          </button>
+        </div>
+      )
+    }
+    if (!apiData) {
+      return (
+        <div className="pa-state-box">
+          <p style={{ color: "#6b7280" }}>No data available for this period.</p>
+        </div>
+      )
+    }
+    return (
+      <>
+        {/* Stat cards */}
+        <div className="pa-stat-grid">
+          {statCards.map((stat, idx) => (
+            <div
+              key={idx}
+              className="pa-stat-card"
+              style={{ "--ps-gradient": stat.gradient, "--ps-glow": stat.glow }}
+            >
+              <div className="pa-sc-blob" />
+              <div className="pa-sc-top">
+                <div className="pa-sc-icon">{stat.icon}</div>
+                {stat.tip && <InfoTip text={stat.tip} />}
+              </div>
+              <div className="pa-sc-value">{stat.value}</div>
+              <div className="pa-stat-title">{stat.title}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts */}
+        <div className="pa-chart-grid">
+          <div className="pa-chart-card">
+            <h6 className="pa-chart-title">{TREND_LABELS[filter]}</h6>
+            {trendChartData.length === 0 ? (
+              <div className="pa-chart-empty">No trend data available.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={trendChartData} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={{ stroke: "#d0dce9" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={{ stroke: "#d0dce9" }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, border: "1px solid #d0dce9", fontSize: 12 }}
+                    labelStyle={{ color: "#0c447c", fontWeight: 600 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="patients"
+                    name="New Patients"
+                    stroke="#0c7b93"
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: "#0c7b93" }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          <div className="pa-chart-card">
+            <h6 className="pa-chart-title">Patients by Age Group &amp; Gender</h6>
+            {ageGroupAnalytics.length === 0 ? (
+              <div className="pa-chart-empty">No demographic data available.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={ageGroupAnalytics} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+                  <XAxis dataKey="ageGroup" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={{ stroke: "#d0dce9" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={{ stroke: "#d0dce9" }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, border: "1px solid #d0dce9", fontSize: 12 }}
+                    labelStyle={{ color: "#0c447c", fontWeight: 600 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="male" name="Male" fill="#185fa5" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="female" name="Female" fill="#0c7b93" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Demographics table */}
+        <div className="pa-table-wrapper">
+          <div className="pa-table-header">
+            <h6 className="pa-table-title">Patient Demographics by Age Group</h6>
+            <span className="pa-table-count">
+              {filteredDemographics.length} of {ageGroupAnalytics.length} groups
+            </span>
+          </div>
+
+          {filteredDemographics.length === 0 ? (
+            <div className="pa-empty">No age group matches "{query}".</div>
+          ) : (
+            <table className="pa-table">
+              <thead>
+                <tr>
+                  <th className="pa-th">Age Group</th>
+                  <th className="pa-th text-center">Male</th>
+                  <th className="pa-th text-center">Female</th>
+                  <th className="pa-th text-center">Total</th>
+                  <th className="pa-th text-center pa-th-tip-cell">
+                    Growth Trend
+                    <span className="pa-tip pa-tip-down">
+                      <Info size={13} />
+                      <span className="pa-tip-bubble">{GROWTH_TIP_ROW}</span>
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDemographics.map((row) => (
+                  <tr key={row.id} className="pa-tr">
+                    <td className="pa-td pa-td-strong">{row.ageGroup}</td>
+                    <td className="pa-td text-center">{row.male}</td>
+                    <td className="pa-td text-center">{row.female}</td>
+                    <td className="pa-td text-center pa-td-strong">{row.total}</td>
+                    <td className="pa-td text-center">
+                      <span className={`pa-trend-badge ${row.growthTrend >= 0 ? "up" : "down"}`}>
+                        {row.growthTrend >= 0 ? "+" : ""}
+                        {row.growthTrend}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </>
+    )
+  }
+
   return (
     <div className="pa-root">
+      {/* Page header */}
       <div className="pa-page-header">
         <div className="pa-title-group">
           <div className="pa-page-icon">
@@ -174,7 +348,7 @@ const PatientAnalytics = () => {
                 className={`pa-filter-pill${filter === f ? " active" : ""}`}
                 onClick={() => handleFilterClick(f)}
               >
-                {FILTER_CONFIG[f].label}
+                {FILTER_LABELS[f]}
               </button>
             ))}
             <button
@@ -203,6 +377,7 @@ const PatientAnalytics = () => {
         </div>
       </div>
 
+      {/* Custom date bar */}
       {showCustom && (
         <div className="pa-custom-bar">
           <Calendar size={15} color="#0c7b93" />
@@ -231,117 +406,9 @@ const PatientAnalytics = () => {
         </div>
       )}
 
-      <div className="pa-stat-grid">
-        {statCards.map((stat, idx) => (
-          <div
-            key={idx}
-            className="pa-stat-card"
-            style={{ "--ps-gradient": stat.gradient, "--ps-glow": stat.glow }}
-          >
-            <div className="pa-sc-blob" />
-            <div className="pa-sc-top">
-              <div className="pa-sc-icon">{stat.icon}</div>
-              {stat.tip && <InfoTip text={stat.tip} />}
-            </div>
-            <div className="pa-sc-value">{stat.value}</div>
-            <div className="pa-stat-title">{stat.title}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="pa-chart-grid">
-        <div className="pa-chart-card">
-          <h6 className="pa-chart-title">{config.trendLabel}</h6>
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={trendChartData} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={{ stroke: "#d0dce9" }} />
-              <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={{ stroke: "#d0dce9" }} />
-              <Tooltip
-                contentStyle={{ borderRadius: 8, border: "1px solid #d0dce9", fontSize: 12 }}
-                labelStyle={{ color: "#0c447c", fontWeight: 600 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="patients"
-                name="New patients"
-                stroke="#0c7b93"
-                strokeWidth={2.5}
-                dot={{ r: 3, fill: "#0c7b93" }}
-                activeDot={{ r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="pa-chart-card">
-          <h6 className="pa-chart-title">Patients by Age Group &amp; Gender</h6>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={scaledDemographics} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-              <XAxis dataKey="ageGroup" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={{ stroke: "#d0dce9" }} />
-              <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={{ stroke: "#d0dce9" }} />
-              <Tooltip
-                contentStyle={{ borderRadius: 8, border: "1px solid #d0dce9", fontSize: 12 }}
-                labelStyle={{ color: "#0c447c", fontWeight: 600 }}
-              />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="male" name="Male" fill="#185fa5" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="female" name="Female" fill="#0c7b93" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="pa-table-wrapper">
-        <div className="pa-table-header">
-          <h6 className="pa-table-title">Patient Demographics by Age Group</h6>
-          <span className="pa-table-count">
-            {filteredDemographics.length} of {scaledDemographics.length} groups
-          </span>
-        </div>
-
-        {filteredDemographics.length === 0 ? (
-          <div className="pa-empty">No age group matches "{query}".</div>
-        ) : (
-          <table className="pa-table">
-            <thead>
-              <tr>
-                <th className="pa-th">Age Group</th>
-                <th className="pa-th text-center">Male</th>
-                <th className="pa-th text-center">Female</th>
-                <th className="pa-th text-center">Total</th>
-                <th className="pa-th text-center pa-th-tip-cell">
-                  Growth Trend
-                  <span className="pa-tip pa-tip-down">
-                    <Info size={13} />
-                    <span className="pa-tip-bubble">{GROWTH_TIP_ROW}</span>
-                  </span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDemographics.map((row) => (
-                <tr key={row.id} className="pa-tr">
-                  <td className="pa-td pa-td-strong">{row.ageGroup}</td>
-                  <td className="pa-td text-center">{row.male}</td>
-                  <td className="pa-td text-center">{row.female}</td>
-                  <td className="pa-td text-center pa-td-strong">{row.total}</td>
-                  <td className="pa-td text-center">
-                    <span className={`pa-trend-badge ${row.trend >= 0 ? "up" : "down"}`}>
-                      {row.trend >= 0 ? "+" : ""}
-                      {row.trend}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {renderContent()}
 
       <style>{`
-     
         .pa-page-header {
           display: flex; align-items: flex-start; justify-content: space-between;
           flex-wrap: wrap; gap: 14px; margin-bottom: 18px;
@@ -402,7 +469,26 @@ const PatientAnalytics = () => {
           transition: background .15s;
         }
         .pa-custom-clear:hover { background: #fee2e2; }
-        .pa-custom-summary { font-size: 12px; color: #6b7280; margin-left: auto; }
+
+        /* State boxes */
+        .pa-state-box {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 12px; padding: 60px 20px; text-align: center; color: #6b7280; font-size: 13px;
+        }
+        .pa-state-error { color: #a32d2d; }
+        .pa-retry-btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          background: #fef2f2; color: #a32d2d; border: 1px solid #fca5a5;
+          border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer;
+          transition: background .15s;
+        }
+        .pa-retry-btn:hover { background: #fee2e2; }
+        .pa-spinner {
+          width: 36px; height: 36px; border: 3px solid #d0dce9;
+          border-top-color: #0c7b93; border-radius: 50%;
+          animation: pa-spin 0.8s linear infinite;
+        }
+        @keyframes pa-spin { to { transform: rotate(360deg); } }
 
         .pa-stat-grid {
           display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px;
@@ -460,6 +546,7 @@ const PatientAnalytics = () => {
           box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
         .pa-chart-title { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #0c447c; }
+        .pa-chart-empty { padding: 60px 0; text-align: center; color: #6b7280; font-size: 12px; }
 
         .pa-table-wrapper {
           border: 1px solid #d0dce9; border-radius: 10px; overflow: hidden; background: #fff;
@@ -473,13 +560,13 @@ const PatientAnalytics = () => {
 
         .pa-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .pa-th {
-          background: #f8fafc; color: #475569; font-weight: 700; text-align: left;
-          padding: 12px 16px; border-bottom: 1px solid #d0dce9;
+          background: var(--color-primary, #0c447c); color: #fff; font-weight: 700; font-size: 12px;
+          text-align: left; padding: 12px 16px; border: none;
         }
         .pa-td { padding: 12px 16px; vertical-align: middle; border-bottom: 1px solid #eef2f7; color: #374151; }
         .pa-td-strong { font-weight: 700; color: #0c447c; }
         .text-center { text-align: center; }
-        .pa-tr:hover { background: #f8fafc; }
+        .pa-tr:hover { background: #fdf3f3; }
 
         .pa-trend-badge {
           padding: 4px 9px; border-radius: 5px; font-size: 12px; font-weight: 700;
