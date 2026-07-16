@@ -1,54 +1,90 @@
-import React, { useEffect } from 'react'
-import { CRow, CCol, CCard, CCardBody } from '@coreui/react'
+import React, { useEffect, useState } from 'react'
+import { CRow, CCol, CCard, CCardBody, CFormSelect } from '@coreui/react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   IndianRupee, Users, TrendingUp, Calendar, CreditCard, Activity,
   ArrowUpRight, ArrowRight, Wallet, CalendarCheck
 } from 'lucide-react'
-
-/* ── Illustrative KPI strip data ──
-   Wire these to real aggregates when available; kept as static
-   placeholders so the dashboard shell can be reviewed visually. */
-const KPI_STRIP = [
-  {
-    label: 'Revenue (This Month)',
-    value: '₹4,82,600',
-    trend: '+12.4%',
-    trendUp: true,
-    icon: <Wallet size={18} color="#fff" />,
-    accent: '#1B4F8A',
-  },
-  {
-    label: 'Active Patients',
-    value: '1,248',
-    trend: '+38 new',
-    trendUp: true,
-    icon: <Users size={18} color="#fff" />,
-    accent: '#0c7b93',
-  },
-  {
-    label: "Today's Appointments",
-    value: '32',
-    trend: '6 pending',
-    trendUp: null,
-    icon: <CalendarCheck size={18} color="#fff" />,
-    accent: '#b45309',
-  },
-  {
-    label: 'Treatment Success Rate',
-    value: '91%',
-    trend: '+3.1%',
-    trendUp: true,
-    icon: <Activity size={18} color="#fff" />,
-    accent: '#6b21a8',
-  },
-]
+import { getDashboardAnalytics } from './DashboardAnalyticsAPI'
+import LoadingIndicator from '../../Utils/loader'
+import { GetClinicBranches } from '../Doctors/DoctorAPI'
 
 const AnalyticsMenu = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.sidebarShow)
+  const [dashboardData, setDashboardData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [clinics, setClinics] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchName, setSelectedBranchName] = useState("");
+  const role = localStorage.getItem('role')
+
+  const [selectedClinic, setSelectedClinic] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState("");
+
+  useEffect(() => {
+    handleClinicChange();
+  }, []);
+  const handleClinicChange = async () => {
+    const clinicId = localStorage.getItem('HospitalId');
+    const defaultBranchId = localStorage.getItem('branchId');
+    const defaultBranchName = localStorage.getItem('branchName');
+    setClinics(clinicId);
+
+    const res = await GetClinicBranches(clinicId);
+
+    setBranches(res.data || []);
+    console.log(res.data, "branches");
+
+    if (res.data.length) {
+      setSelectedBranch(defaultBranchId);
+      setSelectedBranchName(defaultBranchName);
+      getAnalytics(defaultBranchId);
+    }
+  };
+  const handleBranchChange = (branchId) => {
+    const branch = branches.find((b) => b.branchId === branchId);
+
+    setSelectedBranch(branchId);
+    setSelectedBranchName(branch?.branchName || "");
+
+    getAnalytics(branchId);
+  };
+  /* ── Fetch dashboard analytics data ── */
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       setLoading(true)
+  //       const clinicId = localStorage.getItem('HospitalId')  
+  //       const branchId = localStorage.getItem('branchId') || '000101'
+  //       const res = await getDashboardAnalytics(clinicId, branchId)
+  //       if (res.data) {
+  //         setDashboardData(res.data?.data || res.data)
+  //       }
+  //     } catch (err) {
+  //       console.error('Failed to fetch dashboard analytics', err)
+  //     } finally {
+  //       setLoading(false)
+  //     }
+  //   }
+  //   fetchData()
+  // }, [])
+  const getAnalytics = async (branchId) => {
+    const clinicId = localStorage.getItem('HospitalId');
+    setLoading(true);
+
+    try {
+      const res = await getDashboardAnalytics(clinicId, branchId);
+
+      if (res.data) {
+        setDashboardData(res.data.data || res.data);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* ── Hide the sidebar while this dashboard is open, restore on leave ── */
   useEffect(() => {
@@ -60,11 +96,55 @@ const AnalyticsMenu = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  /* ── Dynamic KPI strip data ── */
+  const kpi = dashboardData?.kpiSummary || {}
+
+  const KPI_STRIP = [
+    {
+      label: 'Revenue (This Month)',
+      value: kpi.monthlyRevenue ? `₹${kpi.monthlyRevenue.value.toLocaleString()}` : '₹0',
+      trend: kpi.monthlyRevenue?.trend ? `${kpi.monthlyRevenue.trendType === 'DOWN' ? '-' : '+'}${kpi.monthlyRevenue.trend}` : '+0',
+      trendUp: kpi.monthlyRevenue?.trendType !== 'DOWN',
+      icon: <Wallet size={18} color="#fff" />,
+      accent: '#1B4F8A',
+    },
+    {
+      label: 'Active Patients',
+      value: kpi.activePatients ? kpi.activePatients.value.toLocaleString() : '0',
+      trend: kpi.activePatients?.newPatients ? `+${kpi.activePatients.newPatients} new` : '0 new',
+      trendUp: true,
+      icon: <Users size={18} color="#fff" />,
+      accent: '#0c7b93',
+    },
+    {
+      label: "Today's Appointments",
+      value: kpi.todayAppointments ? kpi.todayAppointments.value.toString() : '0',
+      trend: kpi.todayAppointments?.pending ? `${kpi.todayAppointments.pending} pending` : '0 pending',
+      trendUp: null,
+      icon: <CalendarCheck size={18} color="#fff" />,
+      accent: '#b45309',
+    },
+    {
+      label: 'Treatment Success Rate',
+      value: kpi.treatmentSuccessRate ? `${kpi.treatmentSuccessRate.value}%` : '0%',
+      trend: kpi.treatmentSuccessRate?.trend ? `${kpi.treatmentSuccessRate.trendType === 'DOWN' ? '-' : '+'}${kpi.treatmentSuccessRate.trend}%` : '+0%',
+      trendUp: kpi.treatmentSuccessRate?.trendType !== 'DOWN',
+      icon: <Activity size={18} color="#fff" />,
+      accent: '#6b21a8',
+    },
+  ]
+
+  const getModuleMetric = (title) => {
+    if (!dashboardData?.modules) return 'View Details'
+    const mod = dashboardData.modules.find(m => m.title === title)
+    return mod ? mod.metric : 'View Details'
+  }
+
   const analyticsOptions = [
     {
       title: 'Revenue Analytics',
       description: 'View daily, weekly, and monthly revenue data.',
-      metric: '₹4.82L this month',
+      metric: getModuleMetric('Revenue Analytics'),
       icon: <IndianRupee size={24} color="#185fa5" />,
       path: '/analytics/revenue',
       color: '#e6f1fb',
@@ -73,7 +153,7 @@ const AnalyticsMenu = () => {
     {
       title: 'Expense Analytics',
       description: 'Track clinic expenses and payouts.',
-      metric: '₹1.16L this month',
+      metric: getModuleMetric('Expense Analytics'),
       icon: <CreditCard size={24} color="#a32d2d" />,
       path: '/expenses',
       color: '#fcebeb',
@@ -82,7 +162,7 @@ const AnalyticsMenu = () => {
     {
       title: 'Referral Analytics',
       description: 'Monitor patient referrals and sources.',
-      metric: '86 referrals · 30d',
+      metric: getModuleMetric('Referral Analytics'),
       icon: <Users size={24} color="#3b6d11" />,
       path: '/analytics/referrals',
       color: '#eaf3de',
@@ -91,7 +171,7 @@ const AnalyticsMenu = () => {
     {
       title: 'Patient Analytics',
       description: 'Analyze patient demographics and trends.',
-      metric: '1,248 active patients',
+      metric: getModuleMetric('Patient Analytics'),
       icon: <TrendingUp size={24} color="#0c7b93" />,
       path: '/analytics/patients',
       color: '#e0f3f8',
@@ -100,7 +180,7 @@ const AnalyticsMenu = () => {
     {
       title: 'Appointment Analytics',
       description: 'Review appointment volumes and status.',
-      metric: '32 scheduled today',
+      metric: getModuleMetric('Appointment Analytics'),
       icon: <Calendar size={24} color="#b45309" />,
       path: '/analytics/appointments',
       color: '#fef3c7',
@@ -109,7 +189,7 @@ const AnalyticsMenu = () => {
     {
       title: 'Treatment Analytics',
       description: 'Track popular treatments and success rates.',
-      metric: '91% success rate',
+      metric: getModuleMetric('Treatment Analytics'),
       icon: <Activity size={24} color="#6b21a8" />,
       path: '/analytics/treatments',
       color: '#f3e8ff',
@@ -117,14 +197,41 @@ const AnalyticsMenu = () => {
     },
   ]
 
+  if (loading) {
+    return <LoadingIndicator message="Loading analytics dashboard..." />
+  }
+
   return (
     <>
       {/* ── Dashboard header ── */}
-      <div className="am-page-header mb-4">
+      <div className="am-page-header mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h4 className="am-page-title">Analytics Dashboard</h4>
           <p className="am-page-sub">Your clinic's performance, at a glance.</p>
         </div>
+        
+        {branches?.length > 0 && (
+          <div style={{ width: "200px" }}>
+            <CFormSelect
+              value={selectedBranch}
+              onChange={(e) => handleBranchChange(e.target.value)}
+              style={{
+                fontSize: '13px',
+                borderRadius: '8px',
+                border: '0.5px solid #d0dce9',
+                color: '#374151',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                padding: '6px 12px'
+              }}
+            >
+              {branches.map((branch) => (
+                <option key={branch.branchId} value={branch.branchId}>
+                  {branch.branchName}
+                </option>
+              ))}
+            </CFormSelect>
+          </div>
+        )}
       </div>
 
       {/* ── KPI strip ── */}
@@ -166,7 +273,15 @@ const AnalyticsMenu = () => {
           <CCol xs={12} sm={6} lg={4} key={idx} className="mb-4">
             <CCard
               className="h-100 am-card"
-              onClick={() => navigate(option.path)}
+              onClick={() =>
+                navigate(option.path, {
+                  state: {
+                    branchId: selectedBranch,
+                    clinicId: localStorage.getItem("HospitalId"),
+                    branchName: selectedBranchName,
+                  },
+                })
+              }
               style={{ '--am-accent': option.accent }}
             >
               <CCardBody className="p-3">

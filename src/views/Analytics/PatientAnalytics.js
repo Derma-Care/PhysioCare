@@ -10,6 +10,7 @@ import {
 import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
 import { getPatientAnalytics, getPatientAnalyticsCustomDate } from "./PatientAnalyticsAPI"
 import LoadingIndicator from "../../Utils/loader"
+import { useLocation } from "react-router-dom"
 
 // ---- Helpers ---------------------------------------------------------------
 
@@ -54,9 +55,11 @@ const TREND_LABELS = {
 
 const PatientAnalytics = () => {
   useAutoHideSidebar()
-
-  const clinicId = localStorage.getItem("HospitalId")
-  const branchId = localStorage.getItem("branchId")
+  const location = useLocation();
+  const { branchId, clinicId, branchName } =
+    location.state || {};
+  // const clinicId = localStorage.getItem("HospitalId")
+  // const branchId = localStorage.getItem("branchId")
 
   const [filter, setFilter] = useState("month")
   const [showCustom, setShowCustom] = useState(false)
@@ -335,7 +338,7 @@ const PatientAnalytics = () => {
             <TrendingUp size={20} />
           </div>
           <div>
-            <h4 className="pa-page-title">Patient Analytics</h4>
+            <h4 className="pa-page-title">Patient Analytics ({branchName})</h4>
             <p className="pa-page-sub">Demographics and growth trends</p>
           </div>
         </div>

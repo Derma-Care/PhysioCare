@@ -14,7 +14,7 @@ const PatientRegistration = ({ booking, vitals }) => {
     phone: booking?.mobileNumber || "NA",
     email: "NA",
   };
-
+  const clinicName = localStorage.getItem("HospitalName")
   const signRef = useRef();
   const [signature, setSignature] = useState("");
   const [emergencyData, setEmergencyData] = useState({
@@ -162,7 +162,7 @@ const PatientRegistration = ({ booking, vitals }) => {
       <div className="consent">
         <h3 className="consent-title">Consent &amp; Acknowledgment</h3>
         <div className="consent-text">
-          I consent to receive physiotherapy and rehabilitation services at Kinetix Wellness Care.
+          I consent to receive physiotherapy and rehabilitation services at {clinicName}.
           I understand that treatment results may vary and that I am responsible for providing
           accurate medical history.
         </div>

@@ -17,8 +17,8 @@ import {
   CButton,
   CCard,
   CCardBody,
-  CBadge,
   CFormCheck,
+  CFormSelect
 } from '@coreui/react'
 import { useNavigate } from 'react-router-dom'
 import Slider from 'react-slick'
@@ -31,7 +31,7 @@ import 'slick-carousel/slick/slick-theme.css'
 import axios from 'axios'
 import { MainAdmin_URL, AllCustomerAdvertisements } from '../../baseUrl'
 import { AppointmentData, bookingUpdate, GetBookingByClinicIdData, GetTodayBooking } from '../AppointmentManagement/appointmentAPI'
-import { DoctorData, getDoctorByClinicIdData } from '../Doctors/DoctorAPI'
+import { DoctorData, getDoctorByClinicIdData, GetClinicBranches } from '../Doctors/DoctorAPI'
 import { COLORS, FONT_SIZES } from '../../Constant/Themes'
 import './Widget.css'
 import LoadingIndicator from '../../Utils/loader'
@@ -83,6 +83,10 @@ const WidgetsDropdown = (props) => {
   const [confirmData, setConfirmData] = useState({ bookingId: null, paymentType: '' })
   const [openPayDropdown, setOpenPayDropdown] = useState(null)
   const payDropdownRef = useRef(null)
+
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedBranchName, setSelectedBranchName] = useState("");
 
   // ── Close payment dropdown when clicking outside ────────────────────────
   useEffect(() => {
@@ -219,11 +223,11 @@ const WidgetsDropdown = (props) => {
     }
   }
 
-  const fetchAppointments = useCallback(async (clinicId) => {
+  const fetchAppointments = useCallback(async (clinicId, branchIdOverride) => {
     setLoadingAppointments(true)
     setAppointmentError(null)
     try {
-      const response = await GetTodayBooking()
+      const response = await GetTodayBooking(clinicId, branchIdOverride)
       if (response && Array.isArray(response.data)) {
         const allAppointments = response.data
         setTotalAppointmentsCount(allAppointments.length)
@@ -242,11 +246,11 @@ const WidgetsDropdown = (props) => {
     }
   }, [todayISO, convertToISODate])
 
-  const fetchPatients = useCallback(async (clinicId) => {
+  const fetchPatients = useCallback(async (clinicId, branchIdOverride) => {
     setLoadingPatients(true)
     setPatientError(null)
     try {
-      const branchId = localStorage.getItem('branchId')
+      const branchId = branchIdOverride || localStorage.getItem('branchId')
       const response = await CustomerByClinicNdBranchId(clinicId, branchId)
       const patientArray = response || []
       if (Array.isArray(patientArray)) {
@@ -262,11 +266,11 @@ const WidgetsDropdown = (props) => {
     }
   }, [])
 
-  const fetchDoctors = useCallback(async (clinicId) => {
+  const fetchDoctors = useCallback(async (clinicId, branchIdOverride) => {
     setLoadingDoctors(true)
     setDoctorError(null)
     try {
-      const branchId = localStorage.getItem('branchId')
+      const branchId = branchIdOverride || localStorage.getItem('branchId')
       const response = await getDoctorByClinicIdData(clinicId, branchId)
       const doctorArray = response?.data || []
       if (Array.isArray(doctorArray)) {
@@ -287,27 +291,53 @@ const WidgetsDropdown = (props) => {
   }, [])
 
   useEffect(() => {
-    const hospitalId = localStorage.getItem('HospitalId')
-    if (hospitalId) {
-      fetchAppointments(hospitalId)
-      fetchDoctors(hospitalId)
-      fetchPatients(hospitalId)
+    const handleClinicChange = async () => {
+      const hospitalId = localStorage.getItem('HospitalId')
+      const defaultBranchId = localStorage.getItem('branchId');
+      const defaultBranchName = localStorage.getItem('branchName');
+
+      if (!hospitalId) {
+        setAppointmentError('No appointments found for this Hospital Id')
+        setLoadingAppointments(false)
+        return
+      }
+
+      const res = await GetClinicBranches(hospitalId);
+      setBranches(res.data || []);
+      
+      if (res.data?.length) {
+        setSelectedBranch(defaultBranchId);
+        setSelectedBranchName(defaultBranchName);
+      }
+
+      fetchAppointments(hospitalId, defaultBranchId)
+      fetchDoctors(hospitalId, defaultBranchId)
+      fetchPatients(hospitalId, defaultBranchId)
+
       const now = new Date()
       const tomorrow = new Date(now)
       tomorrow.setDate(now.getDate() + 1)
       tomorrow.setHours(0, 0, 0, 0)
       const timeUntilMidnight = tomorrow.getTime() - now.getTime()
       const midnightTimeout = setTimeout(() => {
-        fetchAppointments(hospitalId)
-        const dailyInterval = setInterval(() => fetchAppointments(hospitalId), 24 * 60 * 60 * 1000)
+        fetchAppointments(hospitalId, defaultBranchId)
+        const dailyInterval = setInterval(() => fetchAppointments(hospitalId, defaultBranchId), 24 * 60 * 60 * 1000)
         return () => clearInterval(dailyInterval)
       }, timeUntilMidnight)
       return () => clearTimeout(midnightTimeout)
-    } else {
-      setAppointmentError('No appointments found for this Hospital Id')
-      setLoadingAppointments(false)
     }
-  }, [fetchAppointments, fetchDoctors])
+    handleClinicChange()
+  }, [fetchAppointments, fetchDoctors, fetchPatients])
+
+  const handleBranchChange = (branchId) => {
+    const branch = branches.find((b) => b.branchId === branchId);
+    setSelectedBranch(branchId);
+    setSelectedBranchName(branch?.branchName || "");
+    const hospitalId = localStorage.getItem('HospitalId')
+    fetchAppointments(hospitalId, branchId)
+    fetchDoctors(hospitalId, branchId)
+    fetchPatients(hospitalId, branchId)
+  }
 
   useEffect(() => {
     clearInterval(intervalRef.current)
@@ -430,21 +460,46 @@ const WidgetsDropdown = (props) => {
               <p className="wd-page-sub">{todayBookings.length} appointment{todayBookings.length !== 1 ? 's' : ''} found</p>
             </div>
           </div>
-
-          <div className="cm-search-wrapper">
-            <Search size={14} className="cm-search-icon-left" />
-            <input
-              type="text"
-              placeholder="Search bookings, patients..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="cm-search-input"
-            />
-            {searchQuery && (
-              <button className="cm-search-clear" onClick={() => setSearchQuery('')}>
-                <X size={14} />
-              </button>
+          
+          <div className="d-flex align-items-center gap-3">
+            {branches?.length > 1 && role?.toLowerCase() === "admin" && (
+              <div style={{ width: "200px" }}>
+                <CFormSelect
+                  value={selectedBranch}
+                  onChange={(e) => handleBranchChange(e.target.value)}
+                  style={{
+                    fontSize: '13px',
+                    borderRadius: '8px',
+                    border: '0.5px solid #d0dce9',
+                    color: '#374151',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                    padding: '6px 12px'
+                  }}
+                >
+                  {branches.map((branch) => (
+                    <option key={branch.branchId} value={branch.branchId}>
+                      {branch.branchName}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </div>
             )}
+
+            <div className="cm-search-wrapper" style={{ margin: 0 }}>
+              <Search size={14} className="cm-search-icon-left" />
+              <input
+                type="text"
+                placeholder="Search bookings, patients..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="cm-search-input"
+              />
+              {searchQuery && (
+                <button className="cm-search-clear" onClick={() => setSearchQuery('')}>
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* ── Right side: filter buttons + nav buttons ───────────────── */}

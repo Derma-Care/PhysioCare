@@ -22,9 +22,9 @@ import { http } from '../../Utils/Interceptors'
 //   }
 // }
 
-export const AppointmentData = async () => {
+export const AppointmentData = async (branchIdOverride) => {
   const hospitalId = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
+  const branchId = branchIdOverride || localStorage.getItem('branchId')
   try {
     const response = await http.get(`/filter/status/${hospitalId}/${branchId}`) //TODO:chnage when apigetway call axios to http
     return response.data
@@ -58,9 +58,9 @@ export const GetdoctorsByClinicIdData = async (doctorId) => {
   }
 }
 
-export const GetBookingByClinicIdData = async (id) => {
+export const GetBookingByClinicIdData = async (id, branchIdOverride) => {
   const hID = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
+  const branchId = branchIdOverride || localStorage.getItem('branchId')
   console.log(id)
   try {
     const response = await axios.get(
@@ -72,9 +72,9 @@ export const GetBookingByClinicIdData = async (id) => {
     throw error
   }
 }
-export const GetTodayBooking = async (id) => {
+export const GetTodayBooking = async (id, branchIdOverride) => {
   const hID = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
+  const branchId = branchIdOverride || localStorage.getItem('branchId')
   console.log(id)
   try {
     const response = await axios.get(

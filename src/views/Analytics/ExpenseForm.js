@@ -18,6 +18,7 @@ import Pagination from "../../Utils/Pagination"
 import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
 import { getExpenses, createExpense, updateExpense, deleteExpense } from "./ExpenseAPI"
 import LoadingIndicator from "../../Utils/loader"
+import { useLocation } from "react-router-dom"
 
 const CATEGORY_META = {
     rent: { label: "Rent", color: "#185fa5", bg: "#e6f1fb" },
@@ -50,8 +51,11 @@ const EMPTY_FORM = { title: "", category: "", amount: "", date: "", mode: "", tr
 
 const ExpenseScreen = () => {
     useAutoHideSidebar()
-    const clinicId = localStorage.getItem('HospitalId')
-    const branchId = localStorage.getItem('branchId') || 'all'
+    const location = useLocation();
+    const { branchId, clinicId, branchName } =
+        location.state || {};
+    // const clinicId = localStorage.getItem('HospitalId')
+    // const branchId = localStorage.getItem('branchId') || 'all'
 
     const [form, setForm] = useState(EMPTY_FORM)
     const [expenses, setExpenses] = useState([])
@@ -291,7 +295,7 @@ const ExpenseScreen = () => {
                         <CreditCard size={20} />
                     </div>
                     <div>
-                        <h4 className="ex-page-title">Expenses</h4>
+                        <h4 className="ex-page-title">Expenses ({branchName})</h4>
                         <p className="ex-page-sub">Track and review clinic spending</p>
                     </div>
                 </div>

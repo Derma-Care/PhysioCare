@@ -24,6 +24,7 @@ import { Edit2, Eye, Search, Trash2, UserPlus, Users, X } from 'lucide-react'
 import LoadingIndicator from '../../Utils/loader'
 import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import ConfirmationModal from '../../components/ConfirmationModal'
+import { GetClinicBranches } from '../Doctors/DoctorAPI'
 import { useHospital } from '../Usecontext/HospitalContext'
 import { emailPattern } from '../../Constant/Constants'
 import { showCustomToast } from '../../Utils/Toaster'
@@ -75,8 +76,13 @@ const CustomerManagement = () => {
   const [selectedPO, setSelectedPO] = useState(null)
   const pincodeTimer = useRef(null)
 
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedBranchName, setSelectedBranchName] = useState("");
+
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
+  const role = localStorage.getItem('role');
 
   const emptyForm = {
     hospitalId: localStorage.getItem('HospitalId') || '',
@@ -122,16 +128,41 @@ const CustomerManagement = () => {
 
   useEffect(() => () => { if (pincodeTimer.current) clearTimeout(pincodeTimer.current) }, [])
 
-  const fetchCustomers = useCallback(async () => {
+  const fetchCustomers = useCallback(async (branchIdOverride = selectedBranch) => {
     setLoading(true); setError(null)
     try {
-      const data = await CustomerData()
+      const data = await CustomerData(branchIdOverride)
       setCustomerData(Array.isArray(data) ? data.filter(Boolean) : [])
     } catch { setError('Failed to fetch customer data.'); setCustomerData([]) }
     finally { setLoading(false) }
   }, [])
+  const handleClinicChange = async () => {
+    const clinicId = localStorage.getItem('HospitalId');
+    const defaultBranchId = localStorage.getItem('branchId');
+    const defaultBranchName = localStorage.getItem('branchName');
 
-  useEffect(() => { fetchCustomers() }, [fetchCustomers])
+    if (!clinicId) return;
+    const res = await GetClinicBranches(clinicId);
+
+    setBranches(res.data || []);
+
+    if (res.data?.length) {
+      setSelectedBranch(defaultBranchId);
+      setSelectedBranchName(defaultBranchName);
+      fetchCustomers(defaultBranchId);
+    }
+  };
+
+  useEffect(() => {
+    handleClinicChange();
+  }, [])
+
+  const handleBranchChange = (branchId) => {
+    const branch = branches.find((b) => b.branchId === branchId);
+    setSelectedBranch(branchId);
+    setSelectedBranchName(branch?.branchName || "");
+    fetchCustomers(branchId);
+  };
 
   const TITLES = ['Mr.', 'Mrs.', 'Miss.', 'Ms.', 'Mx.', 'Dr.', 'Prof.', 'Rev.', 'Capt.', 'Col.']
 
@@ -272,7 +303,7 @@ const CustomerManagement = () => {
         fullName: [formData.title, formData.firstName, formData.lastName].filter(Boolean).join(' '),
         hospitalId: localStorage.getItem('HospitalId') || formData.hospitalId,
         hospitalName: localStorage.getItem('HospitalName') || formData.hospitalName,
-        branchId: localStorage.getItem('branchId') || formData.branchId,
+        branchId: selectedBranch || localStorage.getItem('branchId') || formData.branchId,
       }
       if (updated.dateOfBirth) {
         const d = new Date(updated.dateOfBirth)
@@ -287,7 +318,7 @@ const CustomerManagement = () => {
         await addCustomer(updated)
         showCustomToast('Customer added successfully', 'success')
       }
-      fetchCustomers(); handleCancel()
+      fetchCustomers(); handleCancel(); handleClinicChange()
     } catch (error) {
       if (error?.response?.status === 409) showCustomToast('Customer already exists with this mobile or email', 'error')
       else showCustomToast('Something went wrong', 'error')
@@ -343,20 +374,46 @@ const CustomerManagement = () => {
                 <p className="cm-page-sub">{filteredData.length} Patient{filteredData.length !== 1 ? 's' : ''} found</p>
               </div>
             </div>
-            <div className="cm-search-wrapper">
-              <Search size={14} className="cm-search-icon-left" />
-              <input
-                type="text"
-                placeholder="Search patients..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="cm-search-input"
-              />
-              {searchQuery && (
-                <button className="cm-search-clear" onClick={() => setSearchQuery('')}>
-                  <X size={14} />
-                </button>
+
+            <div className="d-flex align-items-center gap-3">
+              {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
+                <div style={{ width: "200px" }}>
+                  <CFormSelect
+                    value={selectedBranch}
+                    onChange={(e) => handleBranchChange(e.target.value)}
+                    style={{
+                      fontSize: '13px',
+                      borderRadius: '8px',
+                      border: '0.5px solid #d0dce9',
+                      color: '#374151',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                      padding: '6px 12px'
+                    }}
+                  >
+                    {branches.map((branch) => (
+                      <option key={branch.branchId} value={branch.branchId}>
+                        {branch.branchName}
+                      </option>
+                    ))}
+                  </CFormSelect>
+                </div>
               )}
+
+              <div className="cm-search-wrapper" style={{ margin: 0 }}>
+                <Search size={14} className="cm-search-icon-left" />
+                <input
+                  type="text"
+                  placeholder="Search patients..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="cm-search-input"
+                />
+                {searchQuery && (
+                  <button className="cm-search-clear" onClick={() => setSearchQuery('')}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
             </div>
             {can('Patient Management', 'create') && (
               <button className="cm-add-btn" onClick={() => { setIsAdding(true); resetForm() }}>

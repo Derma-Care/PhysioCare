@@ -15,6 +15,8 @@ import {
 } from './FeedbackAPI';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Pagination from '../../Utils/Pagination';
+import { GetClinicBranches } from '../Doctors/DoctorAPI';
+import { CFormSelect } from '@coreui/react';
 import './SessionFeedback.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -59,7 +61,11 @@ const SessionFeedback = () => {
   const [patients, setPatients] = useState([]);
 
   const hospitalId = localStorage.getItem('HospitalId');
-  const branchId = localStorage.getItem('branchId');
+  const role = localStorage.getItem('role');
+
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState('');
+  const [selectedBranchName, setSelectedBranchName] = useState('');
 
   // View Modal
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -95,7 +101,7 @@ const SessionFeedback = () => {
     whatWentWell: '',
     improvements: '',
     clinicId: localStorage.getItem('HospitalId') || '',
-    branchId: localStorage.getItem('branchId') || ''
+    branchId: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -129,14 +135,13 @@ const SessionFeedback = () => {
     }
   }, [patients]);
 
-  const fetchFeedbackData = async () => {
+  const fetchFeedbackData = async (branchIdOverride = selectedBranch) => {
     const hId = localStorage.getItem('HospitalId');
-    const bId = localStorage.getItem('branchId');
+    const bId = branchIdOverride || localStorage.getItem('branchId');
     if (!hId || !bId) return;
 
     setLoading(true);
     try {
-      // 1. Fetch Patients needing feedback (for dropdown)
       const detailsRes = await getFeedbackDetails(hId, bId);
       const detailsRaw = detailsRes?.data;
       let patientsList = [];
@@ -145,7 +150,6 @@ const SessionFeedback = () => {
       else if (Array.isArray(detailsRaw)) patientsList = detailsRaw;
       setPatients(patientsList);
 
-      // 2. Fetch All Submitted Feedbacks (for table)
       const feedbackRes = await getAllSessionFeedback(hId, bId);
       const feedbackRaw = feedbackRes?.data;
       let feedbackList = [];
@@ -153,18 +157,38 @@ const SessionFeedback = () => {
       else if (feedbackRaw?.data && typeof feedbackRaw.data === 'object') feedbackList = [feedbackRaw.data];
       else if (Array.isArray(feedbackRaw)) feedbackList = feedbackRaw;
       setSessions(feedbackList);
-
     } catch (error) {
       console.error('SessionFeedback: Failed to fetch data', error);
-      // showCustomToast('Failed to load feedback records.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchFeedbackData();
+    const initBranches = async () => {
+      const hId = localStorage.getItem('HospitalId');
+      const defaultBranchId = localStorage.getItem('branchId');
+      const defaultBranchName = localStorage.getItem('branchName');
+      if (!hId) return;
+
+      const res = await GetClinicBranches(hId);
+      setBranches(res.data || []);
+
+      if (res.data?.length) {
+        setSelectedBranch(defaultBranchId);
+        setSelectedBranchName(defaultBranchName);
+        fetchFeedbackData(defaultBranchId);
+      }
+    };
+    initBranches();
   }, []);
+
+  const handleBranchChange = (bId) => {
+    const branch = branches.find((b) => b.branchId === bId);
+    setSelectedBranch(bId);
+    setSelectedBranchName(branch?.branchName || '');
+    fetchFeedbackData(bId);
+  };
 
   const doctorsList = doctorData?.data || [];
 
@@ -232,7 +256,7 @@ const SessionFeedback = () => {
     console.log(form)
     const payload = {
       ...form,
-      branchId: localStorage.getItem('branchId') || '',
+      branchId: selectedBranch || localStorage.getItem('branchId') || '',
       totalNoOfSessions: total,
       noOfSessionsCompleted: completed,
       halfSessionsCompleted: isHalf,
@@ -374,13 +398,37 @@ const SessionFeedback = () => {
         <div className="sf-body">
           {!isFormVisible ? (
             <>
-              <div className="sf-filters">
+              <div className="sf-filters d-flex align-items-center gap-3">
+                {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
+                  <div style={{ width: '200px' }}>
+                    <CFormSelect
+                      value={selectedBranch}
+                      onChange={(e) => handleBranchChange(e.target.value)}
+                      style={{
+                        fontSize: '13px',
+                        borderRadius: '8px',
+                        border: '0.5px solid #d0dce9',
+                        color: '#374151',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                        padding: '6px 12px'
+                      }}
+                    >
+                      {branches.map((branch) => (
+                        <option key={branch.branchId} value={branch.branchId}>
+                          {branch.branchName}
+                        </option>
+                      ))}
+                    </CFormSelect>
+                  </div>
+                )}
+
                 <input
                   type="text"
                   className="sf-search-input"
                   placeholder="Search by Patient, Doctor or Therapist..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ minWidth: '250px' }}
                 />
               </div>
 

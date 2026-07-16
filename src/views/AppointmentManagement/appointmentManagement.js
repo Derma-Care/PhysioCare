@@ -25,7 +25,7 @@ import {
   CDropdownToggle,
   CDropdownMenu,
   CDropdownItem,
-
+  CFormSelect
 }
 
   from '@coreui/react'
@@ -44,7 +44,7 @@ import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
 import LoadingIndicator from '../../Utils/loader'
 import Pagination from '../../Utils/Pagination'
 import PrintLetterHead from '../../Utils/PrintLetterHead'
-
+import { GetClinicBranches } from '../Doctors/DoctorAPI'
 import { Edit2, Eye, Loader, Printer, Trash2, Search, X } from "lucide-react"
 const appointmentManagement = () => {
   const [viewService, setViewService] = useState(null)
@@ -87,7 +87,11 @@ const appointmentManagement = () => {
     { label: 'Dropped', value: 'Dropped' },
   ]
 
-  const fetchAppointments = async () => {
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedBranchName, setSelectedBranchName] = useState("");
+
+  const fetchAppointments = async (branchIdOverride) => {
     try {
       const hospitalId = localStorage.getItem('HospitalId')
       console.log('Hospital ID from localStorage:', hospitalId)
@@ -99,7 +103,7 @@ const appointmentManagement = () => {
       }
       console.log('Appointments for this Hospital:', hospitalId)
 
-      const filteredDataResponse = await GetBookingByClinicIdData(hospitalId)
+      const filteredDataResponse = await GetBookingByClinicIdData(hospitalId, branchIdOverride)
       console.log('Appointments for this Hospital:', filteredDataResponse)
 
       setBookings(filteredDataResponse.data || [])
@@ -137,11 +141,31 @@ const appointmentManagement = () => {
   // }
   const [printData, setPrintData] = useState(null)
   useEffect(() => {
-    const hospitalId = localStorage.getItem('HospitalId')
-    if (hospitalId) {
-      fetchAppointments()
-    }
-  }, [localStorage.getItem('HospitalId')])
+    const handleClinicChange = async () => {
+      const clinicId = localStorage.getItem('HospitalId');
+      const defaultBranchId = localStorage.getItem('branchId');
+      const defaultBranchName = localStorage.getItem('branchName');
+
+      if (!clinicId) return;
+      const res = await GetClinicBranches(clinicId);
+      
+      setBranches(res.data || []);
+      
+      if (res.data?.length) {
+        setSelectedBranch(defaultBranchId);
+        setSelectedBranchName(defaultBranchName);
+        fetchAppointments(defaultBranchId);
+      }
+    };
+    handleClinicChange();
+  }, [])
+
+  const handleBranchChange = (branchId) => {
+    const branch = branches.find((b) => b.branchId === branchId);
+    setSelectedBranch(branchId);
+    setSelectedBranchName(branch?.branchName || "");
+    fetchAppointments(branchId);
+  };
 
   //filtering
   useEffect(() => {
@@ -385,7 +409,31 @@ const appointmentManagement = () => {
   return (
     <div style={{ overflow: 'hidden' }}>
       <div className="container ">
-        <h2 className='mb-4'>Appointments</h2>
+        <div className="d-flex align-items-center justify-content-between mb-4">
+          <h2>Appointments</h2>
+          {branches?.length > 0 && (
+            <div style={{ width: "200px" }}>
+              <CFormSelect
+                value={selectedBranch}
+                onChange={(e) => handleBranchChange(e.target.value)}
+                style={{
+                  fontSize: '13px',
+                  borderRadius: '8px',
+                  border: '0.5px solid #d0dce9',
+                  color: '#374151',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                  padding: '6px 12px'
+                }}
+              >
+                {branches.map((branch) => (
+                  <option key={branch.branchId} value={branch.branchId}>
+                    {branch.branchName}
+                  </option>
+                ))}
+              </CFormSelect>
+            </div>
+          )}
+        </div>
         <div className="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
 
 

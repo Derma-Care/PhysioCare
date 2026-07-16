@@ -6,7 +6,7 @@ import {
   CTableHeaderCell, CTableBody, CTableDataCell
 } from "@coreui/react"
 import RevenueCards from "./RevenueCards"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { IndianRupee, Search, X, LayoutGrid, Table2 } from "lucide-react"
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -42,6 +42,9 @@ const DONUT_COLORS = { Paid: "#16a34a", Due: "#dc2626" }
 
 const RevenueTable = () => {
   useAutoHideSidebar()
+  const location = useLocation();
+  const { branchId, clinicId, branchName } =
+    location.state || {};
   const [filter, setFilter] = useState("month")
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
@@ -50,16 +53,16 @@ const RevenueTable = () => {
   const navigate = useNavigate()
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-const [renTotals, setRenTotals]=useState({});
-const [totals, setTotals] = useState({
-  consultationTotal: 0,
-  therapyFeeTotal: 0,
-  totalFinalAmount: 0,
-  dueAmountTotal: 0,
-  grandTotal: 0,
-});
-  
-  
+  const [renTotals, setRenTotals] = useState({});
+  const [totals, setTotals] = useState({
+    consultationTotal: 0,
+    therapyFeeTotal: 0,
+    totalFinalAmount: 0,
+    dueAmountTotal: 0,
+    grandTotal: 0,
+  });
+
+
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -94,150 +97,150 @@ const [totals, setTotals] = useState({
   }
 
   const resetTotals = () => {
-  setTotals({
-    consultationTotal: 0,
-    therapyFeeTotal: 0,
-    totalFinalAmount: 0,
-    dueAmountTotal: 0,
-    grandTotal: 0,
-  });
-};
-
-const updateRevenueState = (result) => {
-  if (result?.success) {
-    setData(result.data || []);
-  } else {
-    setData([]);
-  }
-};
-
-useEffect(() => {
-  const filterMap = {
-    today: 1,
-    week: 2,
-    month: 3,
-    year: 4,
+    setTotals({
+      consultationTotal: 0,
+      therapyFeeTotal: 0,
+      totalFinalAmount: 0,
+      dueAmountTotal: 0,
+      grandTotal: 0,
+    });
   };
 
-  if (filter !== "custom") {
-    getRevenueData(filterMap[filter]);
-  }
-}, [filter]);
-
-const getCustomRevenueData = async () => {
-  if (!fromDate || !toDate) {
-    alert("Please select From Date and To Date");
-    return;
-  }
-  setLoading(true);
-
-  try {
-    const clinicId = localStorage.getItem("HospitalId");
-    const branchId = localStorage.getItem("branchId");
-
-    const response = await http.get(
-      `${wifiUrl}/api/physiotherapy-doctor/revenue-management/date-range/${clinicId}/${branchId}/${fromDate}/${toDate}`
-    );
-
-    const result = response.data;
-
-    console.log("Custom Revenue :", result);
-
-    if (result.success) {
+  const updateRevenueState = (result) => {
+    if (result?.success) {
       setData(result.data || []);
-
-      setTotals({
-        consultationTotal: result.consultationTotal || 0,
-        therapyFeeTotal: result.therapyFeeTotal || 0,
-        totalFinalAmount: result.totalFinalAmount || 0,
-        dueAmountTotal: result.dueAmountTotal || 0,
-        grandTotal: result.grandTotal || 0,
-      });
     } else {
       setData([]);
     }
-  } catch (error) {
-    console.log(error);
-    setData([]);
-  } finally {
-    setLoading(false);
-  }
-};
-const getRevenueData = async (type) => {
-  setLoading(true);
-  try {
-    const clinicId = localStorage.getItem("HospitalId");
-    const branchId = localStorage.getItem("branchId");
+  };
 
-    const response = await http.get(
-      `${wifiUrl}/api/physiotherapy-doctor/revenue-management/${clinicId}/${branchId}/${type}`
-    );
+  useEffect(() => {
+    const filterMap = {
+      today: 1,
+      week: 2,
+      month: 3,
+      year: 4,
+    };
 
-    const result = response.data;
+    if (filter !== "custom") {
+      getRevenueData(filterMap[filter]);
+    }
+  }, [filter]);
 
-    console.log("Revenue Response :", result);
+  const getCustomRevenueData = async () => {
+    if (!fromDate || !toDate) {
+      alert("Please select From Date and To Date");
+      return;
+    }
+    setLoading(true);
 
-    if (result.success) {
-      setData(result.data || []);
+    try {
+      const clinicId = localStorage.getItem("HospitalId");
+      // const branchId = localStorage.getItem("branchId");
 
-      setTotals({
-        consultationTotal: result.consultationTotal || 0,
-        therapyFeeTotal: result.therapyFeeTotal || 0,
-        totalFinalAmount: result.totalFinalAmount || 0,
-        dueAmountTotal: result.dueAmountTotal || 0,
-        grandTotal: result.grandTotal || 0,
-      });
-    } else {
+      const response = await http.get(
+        `${wifiUrl}/api/physiotherapy-doctor/revenue-management/date-range/${clinicId}/${branchId}/${fromDate}/${toDate}`
+      );
+
+      const result = response.data;
+
+      console.log("Custom Revenue :", result);
+
+      if (result.success) {
+        setData(result.data || []);
+
+        setTotals({
+          consultationTotal: result.consultationTotal || 0,
+          therapyFeeTotal: result.therapyFeeTotal || 0,
+          totalFinalAmount: result.totalFinalAmount || 0,
+          dueAmountTotal: result.dueAmountTotal || 0,
+          grandTotal: result.grandTotal || 0,
+        });
+      } else {
+        setData([]);
+      }
+    } catch (error) {
+      console.log(error);
       setData([]);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.log(error);
-    setData([]);
-  } finally {
-    setLoading(false);
-  }
-};
-const getRevenueSummary = async () => {
-  try {
-    const clinicId = localStorage.getItem("HospitalId");
-    const branchId = localStorage.getItem("branchId");
+  };
+  const getRevenueData = async (type) => {
+    setLoading(true);
+    try {
+      const clinicId = localStorage.getItem("HospitalId");
+      // const branchId = localStorage.getItem("branchId");
 
-    const response = await http.get(
-      `${wifiUrl}/api/physiotherapy-doctor/revenue-summary/${clinicId}/${branchId}`
-    );
+      const response = await http.get(
+        `${wifiUrl}/api/physiotherapy-doctor/revenue-management/${clinicId}/${branchId}/${type}`
+      );
 
-    const result = response.data;
+      const result = response.data;
 
-    console.log("Revenue Summary :", result);
+      console.log("Revenue Response :", result);
 
-    if (result.success) {
-      setRenTotals(result.data || {});
+      if (result.success) {
+        setData(result.data || []);
+
+        setTotals({
+          consultationTotal: result.consultationTotal || 0,
+          therapyFeeTotal: result.therapyFeeTotal || 0,
+          totalFinalAmount: result.totalFinalAmount || 0,
+          dueAmountTotal: result.dueAmountTotal || 0,
+          grandTotal: result.grandTotal || 0,
+        });
+      } else {
+        setData([]);
+      }
+    } catch (error) {
+      console.log(error);
+      setData([]);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.log("Revenue Summary Error :", error);
-  }
-};
-console.log("Revenue Summary renTotals:", renTotals);
-useEffect(()=>{
-  getRevenueSummary();
-},[])
+  };
+  const getRevenueSummary = async () => {
+    try {
+      const clinicId = localStorage.getItem("HospitalId");
+      // const branchId = localStorage.getItem("branchId");
+
+      const response = await http.get(
+        `${wifiUrl}/api/physiotherapy-doctor/revenue-summary/${clinicId}/${branchId}`
+      );
+
+      const result = response.data;
+
+      console.log("Revenue Summary :", result);
+
+      if (result.success) {
+        setRenTotals(result.data || {});
+      }
+    } catch (error) {
+      console.log("Revenue Summary Error :", error);
+    }
+  };
+  console.log("Revenue Summary renTotals:", renTotals);
+  useEffect(() => {
+    getRevenueSummary();
+  }, [])
 
   const filteredData = useMemo(() => {
-  let list = [...data];
+    let list = [...data];
 
-  const q = search.trim().toLowerCase();
+    const q = search.trim().toLowerCase();
 
-  if (q) {
-    list = list.filter(
-      (r) =>
-        (r.patientName || "").toLowerCase().includes(q) ||
-        (r.doctorName || "").toLowerCase().includes(q) ||
-        (r.therapistName || "").toLowerCase().includes(q)
-    );
-  }
+    if (q) {
+      list = list.filter(
+        (r) =>
+          (r.patientName || "").toLowerCase().includes(q) ||
+          (r.doctorName || "").toLowerCase().includes(q) ||
+          (r.therapistName || "").toLowerCase().includes(q)
+      );
+    }
 
-  return list;
-}, [data, search]);
+    return list;
+  }, [data, search]);
 
   React.useEffect(() => {
     setCurrentPage(1)
@@ -246,59 +249,59 @@ useEffect(()=>{
   const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize))
   const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
-const totalConsultation = totals.consultationTotal;
-const totalTherapy = totals.therapyFeeTotal;
-const totalPaid = totals.totalFinalAmount;
-const totalDue = totals.dueAmountTotal;
-const grandTotal = totals.grandTotal;
+  const totalConsultation = totals.consultationTotal;
+  const totalTherapy = totals.therapyFeeTotal;
+  const totalPaid = totals.totalFinalAmount;
+  const totalDue = totals.dueAmountTotal;
+  const grandTotal = totals.grandTotal;
 
   /* ── chart data ── */
- const trendData = useMemo(() => {
-  const byDate = {};
+  const trendData = useMemo(() => {
+    const byDate = {};
 
-  filteredData.forEach((r) => {
-    if (!byDate[r.serviceDate]) {
-      byDate[r.serviceDate] = {
-        date: r.serviceDate,
-        Consultation: 0,
-        Therapy: 0,
-      };
-    }
+    filteredData.forEach((r) => {
+      if (!byDate[r.serviceDate]) {
+        byDate[r.serviceDate] = {
+          date: r.serviceDate,
+          Consultation: 0,
+          Therapy: 0,
+        };
+      }
 
-    byDate[r.serviceDate].Consultation += Number(r.consultationFee || 0);
-    byDate[r.serviceDate].Therapy += Number(r.therapyFee || 0);
-  });
+      byDate[r.serviceDate].Consultation += Number(r.consultationFee || 0);
+      byDate[r.serviceDate].Therapy += Number(r.therapyFee || 0);
+    });
 
-  return Object.values(byDate)
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .map((d) => ({
-      ...d,
-      label: d.date.slice(5),
-    }));
-}, [filteredData]);
+    return Object.values(byDate)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((d) => ({
+        ...d,
+        label: d.date.slice(5),
+      }));
+  }, [filteredData]);
   const paymentStatus = useMemo(() => ([
     { name: "Paid", value: totalPaid },
     { name: "Due", value: totalDue },
   ]), [totalPaid, totalDue])
 
-const revenueByDoctor = useMemo(() => {
-  const grouped = {};
+  const revenueByDoctor = useMemo(() => {
+    const grouped = {};
 
-  filteredData.forEach((r) => {
-    if (!grouped[r.doctorName]) {
-      grouped[r.doctorName] = 0;
-    }
+    filteredData.forEach((r) => {
+      if (!grouped[r.doctorName]) {
+        grouped[r.doctorName] = 0;
+      }
 
-    grouped[r.doctorName] +=
-      Number(r.consultationFee || 0) +
-      Number(r.therapyFee || 0);
-  });
+      grouped[r.doctorName] +=
+        Number(r.consultationFee || 0) +
+        Number(r.therapyFee || 0);
+    });
 
-  return Object.entries(grouped).map(([doctor, Revenue]) => ({
-    doctor,
-    Revenue,
-  }));
-}, [filteredData]);
+    return Object.entries(grouped).map(([doctor, Revenue]) => ({
+      doctor,
+      Revenue,
+    }));
+  }, [filteredData]);
 
 
   return (
@@ -312,7 +315,7 @@ const revenueByDoctor = useMemo(() => {
             <IndianRupee size={20} />
           </div>
           <div>
-            <h4 className="rv-page-title">Revenue Management</h4>
+            <h4 className="rv-page-title">Revenue Management ({branchName})</h4>
             <p className="rv-page-sub">
               {filteredData.length} record{filteredData.length !== 1 ? "s" : ""} found
             </p>
@@ -369,11 +372,11 @@ const revenueByDoctor = useMemo(() => {
           <span className="rv-date-sep">to</span>
           <CFormInput type="date" onChange={(e) => setToDate(e.target.value)} className="rv-date-input" />
           <button
-  className="rv-add-btn"
-  onClick={getCustomRevenueData}
->
-  Apply
-</button>
+            className="rv-add-btn"
+            onClick={getCustomRevenueData}
+          >
+            Apply
+          </button>
         </div>
       )}
 
@@ -480,7 +483,7 @@ const revenueByDoctor = useMemo(() => {
                 <CTableHeaderCell className="rv-th">Therapist</CTableHeaderCell>
                 <CTableHeaderCell className="rv-th text-center">Consultation Fee </CTableHeaderCell>
                 <CTableHeaderCell className="rv-th">Treatment Fee <br />
-                <span style={{ fontSize: "8px", color: "white" }}>(Includes Discount(%))</span></CTableHeaderCell>
+                  <span style={{ fontSize: "8px", color: "white" }}>(Includes Discount(%))</span></CTableHeaderCell>
                 <CTableHeaderCell className="rv-th">Final Amt</CTableHeaderCell>
                 <CTableHeaderCell className="rv-th">Due Amt</CTableHeaderCell>
               </CTableRow>
@@ -538,7 +541,7 @@ const revenueByDoctor = useMemo(() => {
           </CTable>
         </div>
       )}
-      
+
       {view === "table" && filteredData.length > 0 && (
         <div style={{ marginBottom: "20px" }}>
           <Pagination

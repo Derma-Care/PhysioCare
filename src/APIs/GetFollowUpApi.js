@@ -34,25 +34,25 @@ export const getBookingsForFollowUps = (bookingId) => {
   return http.get(`${BASE_URL}/getBookedServiceById/${bookingId}`)
 }
 
-export const getBookingsTodayFollowUps = () => {
+export const getBookingsTodayFollowUps = (branchIdOverride) => {
   const clinicid = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
+  const branchId = branchIdOverride || localStorage.getItem('branchId')
 
   return http.get(`${BASE_URL}/today/${clinicid}/${branchId}`)
 }
 
-export const getUpcomingFollowUps = () => {
+export const getUpcomingFollowUps = (branchIdOverride) => {
   const clinicid = localStorage.getItem("HospitalId")
-  const branchId = localStorage.getItem("branchId")
+  const branchId = branchIdOverride || localStorage.getItem("branchId")
 
   return http.get(`${BASE_URL}/upcoming/${clinicid}/${branchId}/2`)
 }
 
 
 
-export const getDateRangeFollowUps = (fromDate, toDate) => {
+export const getDateRangeFollowUps = (fromDate, toDate, branchIdOverride) => {
   const clinicid = localStorage.getItem("HospitalId")
-  const branchId = localStorage.getItem("branchId")
+  const branchId = branchIdOverride || localStorage.getItem("branchId")
   return http.get(
     `${BASE_URL}/dateRange/${clinicid}/${branchId}/${fromDate}/${toDate}`
   );

@@ -30,16 +30,28 @@ import { useHospital } from '../../Usecontext/HospitalContext'
 import ResetPassword from '../../../views/Resetpassword'
 import ForgotPassword from '../../../views/ForgotPassword'
 import { http, httpPublic } from '../../../Utils/Interceptors'
-import DermaLogo from 'src/assets/images/DermaCare.png' // adjust path if needed
-import medicalBg from 'src/assets/images/medical_bg.jpg'
+// import DermaLogo from '../../../assets/images/DermaCare.png' // adjust path if needed
+// import medicalBg from 'src/assets/images/medical_bg.jpg'
 import { COLORS } from '../../../Constant/Themes'
 import { toast, ToastContainer } from 'react-toastify'
 import { showCustomToast } from '../../../Utils/Toaster'
 import { getFCMToken } from '../../../firebase'
 
-// Local accent used only for design details (focus rings, badges, hero line).
-// Does not replace COLORS.primary anywhere logic-relevant.
-const ACCENT = '#0FA98A'
+// ---- Design tokens (visual only — no logic lives here) ----
+const INK = '#0E2A32'
+const TEAL = COLORS.sideColor
+const TEAL_DEEP = COLORS.primary
+const AMBER = '#E2A73B'
+const MIST = '#F3F7F6'
+const CORAL = '#C1473A'
+
+// Role tabs, styled like colour-coded folder dividers on a patient chart.
+// Order here also drives the sliding tab indicator's position.
+const WORKSPACE_TABS = [
+  { key: 'clinic', label: 'Super Admin', role: 'admin', tint: TEAL },
+  { key: 'administrator', label: 'Clinic Admin', role: 'administrator', tint: AMBER },
+  { key: 'receptionist', label: 'Receptionist', role: 'receptionist', tint: '#5B7FA6' },
+]
 
 const Login = () => {
   const [activeTab, setActiveTab] = useState('clinic') // clinic | doctor
@@ -221,30 +233,53 @@ const Login = () => {
     }
   }
 
+  // Same mapping the old <CFormSelect onChange> used — now driven by the folder tabs.
+  const handleWorkspaceSelect = (value) => {
+    setActiveTab(value)
+    let newRole = value
+    if (value === 'clinic') {
+      newRole = 'admin'
+    } else if (value === 'receptionist') {
+      newRole = 'receptionist'
+    } else if (value === 'administrator') {
+      newRole = 'administrator'
+    }
+    setRole(newRole)
+    console.log('Role to send:', newRole)
+  }
+
+  const activeIndex = WORKSPACE_TABS.findIndex((t) => t.key === activeTab)
+  const activeTint = WORKSPACE_TABS[activeIndex]?.tint || TEAL
+
   return (
-    // Outer container uses flex column and full viewport height to allow sticky footer without overflow
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
-       
+        html, body, #root { height: 100%; }
 
-        @keyframes floatBubble {
-          0% { transform: translateY(0) translateX(0) scale(1); }
-          33% { transform: translateY(-20px) translateX(15px) scale(1.05); }
-          66% { transform: translateY(15px) translateX(-15px) scale(0.95); }
-          100% { transform: translateY(0) translateX(0) scale(1); }
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
         }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+        @keyframes ambientDrift {
+          0% { transform: translate(0, 0); }
+          50% { transform: translate(-2%, 1.5%); }
+          100% { transform: translate(0, 0); }
         }
-        @keyframes drawLine {
-          from { stroke-dashoffset: 340; }
+        @keyframes floatSlow {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(10px, -14px) scale(1.06); }
+          66% { transform: translate(-8px, 10px) scale(0.95); }
+        }
+        @keyframes waveSweep {
+          from { stroke-dashoffset: 620; }
           to { stroke-dashoffset: 0; }
         }
-        @keyframes glowDot {
-          0%, 100% { opacity: 0.4; r: 3.2; }
-          50% { opacity: 1; r: 4.4; }
+        @keyframes wavePulseDot {
+          0%, 100% { opacity: 0.35; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.3); }
         }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(14px); }
@@ -254,17 +289,13 @@ const Login = () => {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        @keyframes gentlePop {
-          0% { opacity: 0; transform: scale(0.94) translateY(10px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
+        @keyframes cardRise {
+          from { opacity: 0; transform: translateY(26px) scale(0.97); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes shimmerSweep {
-          0% { transform: translateX(-120%) skewX(-15deg); }
-          100% { transform: translateX(220%) skewX(-15deg); }
-        }
-        @keyframes badgePulseRing {
-          0% { box-shadow: 0 0 0 0 rgba(15,169,138,0.28); }
-          100% { box-shadow: 0 0 0 8px rgba(15,169,138,0); }
+        @keyframes tabGlideIn {
+          from { opacity: 0; transform: translateY(-6px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         @keyframes shakeErr {
           0%, 100% { transform: translateX(0); }
@@ -273,487 +304,768 @@ const Login = () => {
           60% { transform: translateX(-4px); }
           80% { transform: translateX(3px); }
         }
+        @keyframes stampPress {
+          0% { transform: scale(1); }
+          40% { transform: scale(0.96); }
+          100% { transform: scale(1); }
+        }
+        @keyframes clipShine {
+          0%, 100% { filter: drop-shadow(0 2px 4px rgba(14,42,50,0.25)); }
+          50% { filter: drop-shadow(0 4px 8px rgba(20,107,94,0.28)); }
+        }
         @keyframes logoBreathe {
-          0%, 100% { filter: drop-shadow(0 6px 18px rgba(27,79,138,0.18)); }
-          50% { filter: drop-shadow(0 10px 26px rgba(15,169,138,0.28)); }
+          0%, 100% { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.18)); transform: scale(1); }
+          50% { filter: drop-shadow(0 8px 18px rgba(226,167,59,0.35)); transform: scale(1.03); }
+        }
+        @keyframes shimmerSweep {
+          0% { transform: translateX(-130%) skewX(-15deg); }
+          100% { transform: translateX(230%) skewX(-15deg); }
+        }
+        @keyframes spinGlow {
+          0% { box-shadow: 0 0 0 0 rgba(226,167,59,0.35); }
+          100% { box-shadow: 0 0 0 10px rgba(226,167,59,0); }
+        }
+        @keyframes badgeGlow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(226,167,59,0.25), inset 0 0 0 1px rgba(226,167,59,0.45); }
+          50% { box-shadow: 0 0 14px 2px rgba(226,167,59,0.22), inset 0 0 0 1px rgba(226,167,59,0.6); }
         }
 
-        .derma-bg {
-          background-size: cover;
-          background-position: center;
-          background-repeat: no-repeat;
-          position: relative;
-          overflow: hidden;
-          background-color: #F4F9F8;
-        }
-        .derma-grid-texture {
+        * { box-sizing: border-box; }
+
+   .cc-app {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+     .cc-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+        .cc-tex {
           position: absolute;
           inset: 0;
-          background-image:
-            linear-gradient(rgba(27,79,138,0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(27,79,138,0.05) 1px, transparent 1px);
-          background-size: 42px 42px;
-          -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 40%, #000 40%, transparent 100%);
-          mask-image: radial-gradient(ellipse 80% 80% at 50% 40%, #000 40%, transparent 100%);
+          background-image: radial-gradient(rgba(14,42,50,0.055) 1px, transparent 1px);
+          background-size: 24px 24px;
+          opacity: 0.6;
+          animation: ambientDrift 22s ease-in-out infinite;
           pointer-events: none;
         }
-        .bg-shape-1 {
-          position: absolute;
-          width: 600px;
-          height: 600px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(27,79,138,0.07) 0%, transparent 70%);
-          top: -200px;
-          left: -150px;
-          animation: floatBubble 12s ease-in-out infinite;
-          pointer-events: none;
-        }
-        .bg-shape-2 {
-          position: absolute;
-          width: 500px;
-          height: 500px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(15,169,138,0.08) 0%, transparent 70%);
-          bottom: -150px;
-          right: -100px;
-          animation: floatBubble 15s ease-in-out infinite reverse;
-          pointer-events: none;
-        }
-        .glass-card {
-          background: rgba(255, 255, 255, 0.9) !important;
-          backdrop-filter: blur(14px) !important;
-          -webkit-backdrop-filter: blur(14px) !important;
-          border: 1px solid rgba(255, 255, 255, 0.7) !important;
-          box-shadow: 0 20px 48px rgba(27, 79, 138, 0.10) !important;
-          border-radius: 20px !important;
+
+        /* ---- Brand panel (left on desktop, top strip on mobile) ---- */
+        .cc-brand {
+          background: linear-gradient(135deg, ${TEAL_DEEP} 0%, ${INK} 55%, ${TEAL_DEEP} 100%);
+          background-size: 220% 220%;
+          animation: gradientShift 14s ease-in-out infinite;
+          position: relative;
           overflow: hidden;
-          animation: gentlePop 0.55s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .derma-link {
+        .cc-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(2px);
+          pointer-events: none;
+        }
+        .cc-orb.o1 { width: 480px; height: 480px; top: -180px; right: -140px; background: radial-gradient(circle, rgba(226,167,59,0.12) 0%, transparent 70%); animation: floatSlow 16s ease-in-out infinite; }
+        .cc-orb.o2 { width: 360px; height: 360px; bottom: -140px; left: -100px; background: radial-gradient(circle, rgba(20,107,94,0.35) 0%, transparent 70%); animation: floatSlow 20s ease-in-out infinite reverse; }
+        .cc-orb.o3 { width: 10px; height: 10px; top: 22%; left: 18%; background: ${AMBER}; opacity: 0.5; animation: floatSlow 9s ease-in-out infinite, wavePulseDot 3s ease-in-out infinite; }
+        .cc-orb.o4 { width: 7px; height: 7px; top: 62%; left: 72%; background: #F3F7F6; opacity: 0.4; animation: floatSlow 11s ease-in-out infinite reverse, wavePulseDot 4s ease-in-out infinite; }
+        .cc-orb.o5 { width: 5px; height: 5px; top: 78%; left: 30%; background: ${AMBER}; opacity: 0.6; animation: floatSlow 7s ease-in-out infinite, wavePulseDot 2.4s ease-in-out infinite; }
+
+        /* ---- Brand highlight badge: the one thing every viewer should read first ---- */
+        .cc-brand-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          padding: 8px 16px 8px 10px;
+          border-radius: 999px;
+          background: rgba(226,167,59,0.08);
+          animation: badgeGlow 3.2s ease-in-out infinite;
+        }
+        .cc-brand-badge-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: ${AMBER};
+          flex-shrink: 0;
+          animation: wavePulseDot 1.8s ease-in-out infinite;
+        }
+        .cc-brand-badge-text {
+         
+          font-size: 11.5px;
           font-weight: 600;
-          font-size: 13px;
-          transition: color 0.2s, text-shadow 0.2s;
+          letter-spacing: 0.8px;
+          color: ${AMBER};
+          white-space: nowrap;
         }
-        .derma-link:hover {
-          color: ${ACCENT} !important;
-          text-shadow: 0 0 8px rgba(15,169,138,0.2);
+
+        .cc-heading {
+         
+          font-weight: 700;
+          color: #F3F7F6;
+          letter-spacing: -0.5px;
+          font-size: clamp(1.2rem, 1rem + 1.6vw, 2.4rem);
+          line-height: 1.12;
         }
-        .login-feature-badge {
+        .cc-sub {
+          color: rgba(243,247,246,0.68);
+          font-size: clamp(12.5px, 12px + 0.2vw, 14.5px);
+          line-height: 1.55;
+        }
+        .cc-fade { opacity: 0; animation: fadeUp 0.6s ease-out forwards; }
+        .cc-fade.d1 { animation-delay: 0.05s; }
+        .cc-fade.d2 { animation-delay: 0.18s; }
+        .cc-fade.d3 { animation-delay: 0.32s; }
+        .cc-fade.d4 { animation-delay: 0.46s; }
+
+        .cc-wave-path {
+          stroke: ${AMBER};
+          stroke-width: 2;
+          fill: none;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+          stroke-dasharray: 620;
+          animation: waveSweep 2.1s ease-out 0.4s both;
+        }
+
+        .cc-annotation {
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 11px 16px;
-          border-radius: 12px;
-          background: rgba(255,255,255,0.55);
-          border: 1px solid rgba(27,79,138,0.12);
-          color: ${COLORS.primary};
-          font-size: 13px;
-          font-weight: 600;
-          letter-spacing: 0.1px;
-          transition: background 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+          gap: 12px;
+          padding: 10px 14px;
+          border-radius: 8px;
+          border: 1px solid rgba(243,247,246,0.14);
+          background: rgba(243,247,246,0.04);
+          transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
           opacity: 0;
           animation: fadeUp 0.5s ease-out forwards;
         }
-        .login-feature-badge:nth-of-type(1) { animation-delay: 0.55s; }
-        .login-feature-badge:nth-of-type(2) { animation-delay: 0.68s; }
-        .login-feature-badge:nth-of-type(3) { animation-delay: 0.81s; }
-        .login-feature-badge:hover {
-          background: rgba(255,255,255,0.9);
-          border-color: rgba(15,169,138,0.35);
-          transform: translateX(4px);
-          animation: badgePulseRing 1.1s ease-out;
+        .cc-annotation:nth-of-type(1) { animation-delay: 0.6s; }
+        .cc-annotation:nth-of-type(2) { animation-delay: 0.72s; }
+        .cc-annotation:nth-of-type(3) { animation-delay: 0.84s; }
+        .cc-annotation:hover {
+          background: rgba(243,247,246,0.08);
+          border-color: rgba(226,167,59,0.35);
+          transform: translateX(3px);
         }
-        .login-feature-badge .badge-emoji {
-          display: inline-flex;
-          transition: transform 0.35s ease;
+        .cc-annotation-tag {
+         
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: ${AMBER};
+          border: 1px solid rgba(226,167,59,0.4);
+          border-radius: 4px;
+          padding: 2px 6px;
+          flex-shrink: 0;
         }
-        .login-feature-badge:hover .badge-emoji {
-          transform: scale(1.18) rotate(-6deg);
+        .cc-annotation-text {
+          font-size: 11px;
+          color: rgba(243,247,246,0.88);
+          font-weight: 500;
+          text-align: center;
+        
         }
-        .derma-hero-fade { opacity: 0; animation: fadeUp 0.6s ease-out forwards; }
-        .derma-hero-fade.d1 { animation-delay: 0.05s; }
-        .derma-hero-fade.d2 { animation-delay: 0.18s; }
-        .derma-hero-fade.d3 { animation-delay: 0.3s; }
-        .derma-hero-fade.d4 { animation-delay: 0.42s; }
 
-        .derma-input-group .input-group-text {
-          background: #F6FAF9;
-          border-right: none;
-          border-color: rgba(27,79,138,0.18);
-          transition: border-color 0.2s ease, background 0.2s ease;
-        }
-        .derma-input-group .form-control {
-          border-left: none;
-          border-color: rgba(27,79,138,0.18);
-          padding-top: 11px;
-          padding-bottom: 11px;
-          transition: box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-        .derma-input-group .form-control:focus {
-          box-shadow: 0 0 0 3px rgba(15,169,138,0.15);
-          border-color: ${ACCENT};
-        }
-        .derma-input-group:focus-within .input-group-text {
-          border-color: ${ACCENT};
-          background: #EBFAF6;
-        }
-        .derma-form-row {
-          opacity: 0;
-          animation: fadeUp 0.45s ease-out forwards;
-        }
-        .derma-select-wrap { animation-delay: 0.15s; }
-        .derma-user-row { animation-delay: 0.25s; }
-        .derma-pass-row { animation-delay: 0.35s; }
-        .derma-links-row { animation-delay: 0.45s; }
-        .derma-submit-row { animation-delay: 0.55s; }
+        .cc-logo { animation: logoBreathe 4.5s ease-in-out infinite; }
 
-        .derma-select {
-          border-color: rgba(27,79,138,0.18) !important;
-          padding-top: 11px;
-          padding-bottom: 11px;
-          transition: box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-        .derma-select:focus {
-          box-shadow: 0 0 0 3px rgba(15,169,138,0.15) !important;
-          border-color: ${ACCENT} !important;
-        }
-        .derma-submit-btn {
+        .cc-brand-mobile { display: none; }
+
+        /* ---- Chart card ---- */
+        .cc-chart-card {
+          background: #FFFFFF;
+          border-radius: 16px;
+          border: 1px solid rgba(14,42,50,0.08);
+          box-shadow: 0 24px 56px rgba(14,42,50,0.16);
           position: relative;
-          overflow: hidden;
-          transition: transform 0.2s ease, box-shadow 0.25s ease;
+          animation: cardRise 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .derma-submit-btn:not(:disabled):hover {
-          box-shadow: 0 8px 22px rgba(27,79,138,0.28) !important;
+        .cc-clip {
+          position: absolute;
+          top: -18px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 64px;
+          height: 26px;
+          border-radius: 6px;
+          background: linear-gradient(160deg, #C7CFCE 0%, #8E9C9A 100%);
+          animation: clipShine 3.6s ease-in-out infinite;
         }
-        .derma-submit-btn::after {
+        .cc-clip::after {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 40%;
-          height: 100%;
-          background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
-          transform: translateX(-120%) skewX(-15deg);
+          inset: 6px 14px;
+          border-radius: 3px;
+          background: #FFFFFF;
         }
-        .derma-submit-btn:not(:disabled):hover::after {
-          animation: shimmerSweep 0.9s ease;
-        }
-        .derma-eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 11px;
+
+        .cc-title {
+       
           font-weight: 700;
-          letter-spacing: 1.5px;
+          color: ${INK};
+          font-size: clamp(1.35rem, 1.2rem + 0.5vw, 1.6rem);
+        }
+        .cc-field-label {
+     
+          font-size: 10.5px;
+          font-weight: 600;
+          letter-spacing: 0.6px;
           text-transform: uppercase;
-          color: ${ACCENT};
+          color: ${INK};
+          opacity: 0.55;
         }
-        .derma-error-banner {
+        .cc-field-hint {
+          font-size: 11px;
+          color: ${INK};
+          opacity: 0.4;
+          font-weight: 500;
+        }
+
+        /* folder-tab workspace selector w/ sliding pill indicator + role colour dot */
+        .cc-tabs {
+          position: relative;
+          display: flex;
+          gap: 4px;
+          border-bottom: 1px solid rgba(14,42,50,0.1);
+          margin-bottom: 20px;
+        }
+        .cc-tab-btn {
+          flex: 1 1 0;
+          appearance: none;
+          border: none;
+          background: transparent;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 9px 6px 11px;
+        
+          font-size: clamp(11px, 10.5px + 0.3vw, 13px);
+          font-weight: 600;
+          color: rgba(14,42,50,0.5);
+          border-radius: 8px 8px 0 0;
+          position: relative;
+          cursor: pointer;
+          transition: color 0.2s ease, background 0.2s ease;
+          opacity: 0;
+          animation: tabGlideIn 0.4s ease-out forwards;
+          white-space: nowrap;
+        }
+        .cc-tab-btn:nth-of-type(1) { animation-delay: 0.1s; }
+        .cc-tab-btn:nth-of-type(2) { animation-delay: 0.18s; }
+        .cc-tab-btn:nth-of-type(3) { animation-delay: 0.26s; }
+        .cc-tab-btn:hover { color: ${INK}; background: rgba(14,42,50,0.03); }
+        .cc-tab-btn.active { color: ${INK}; }
+        .cc-tab-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          opacity: 0.45;
+          transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .cc-tab-btn.active .cc-tab-dot { opacity: 1; transform: scale(1.15); }
+        .cc-tab-indicator {
+          position: absolute;
+          bottom: -1px;
+          height: 2.5px;
+          border-radius: 2px;
+          width: calc(33.333% - 8px);
+          transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1), background 0.3s ease;
+        }
+
+        .cc-input-group .input-group-text {
+          background: ${MIST};
+          border-right: none;
+          border-color: rgba(14,42,50,0.16);
+          transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .cc-input-group .form-control {
+          border-left: none;
+          border-color: rgba(14,42,50,0.16);
+          padding-top: 11px;
+          padding-bottom: 11px;
+          font-size: 14.5px;
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .cc-input-group .form-control:focus {
+          box-shadow: 0 0 0 3px rgba(20,107,94,0.16);
+          border-color: ${TEAL};
+        }
+        .cc-input-group:focus-within .input-group-text {
+          border-color: ${TEAL};
+          background: #EAF3F1;
+        }
+        .cc-field-error {
+          font-size: 11.5px;
+          color: ${CORAL};
+          font-weight: 500;
+          margin-top: 4px;
+          opacity: 0;
+          animation: fadeUp 0.25s ease-out forwards;
+        }
+
+        .cc-row { opacity: 0; animation: fadeUp 0.45s ease-out forwards; }
+        .cc-row.r1 { animation-delay: 0.2s; }
+        .cc-row.r2 { animation-delay: 0.3s; }
+        .cc-row.r3 { animation-delay: 0.4s; }
+        .cc-row.r4 { animation-delay: 0.5s; }
+
+        .cc-link {
+     
+          font-weight: 600;
+          font-size: 12.5px;
+          color: ${INK};
+          opacity: 0.7;
+          transition: color 0.2s, opacity 0.2s;
+        }
+        .cc-link:hover { color: ${TEAL}; opacity: 1; }
+
+        .cc-submit {
+          position: relative;
+          overflow: hidden;
+          border: none;
+          border-radius: 10px;
+          padding: 12px;
+          font-weight: 600;
+          font-size: 15px;
+          transition: transform 0.15s ease, box-shadow 0.25s ease, background 0.3s ease;
+          box-shadow: 0 6px 16px rgba(14,42,50,0.22);
+        }
+        .cc-submit::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0;
+          width: 40%; height: 100%;
+          background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+          transform: translateX(-130%) skewX(-15deg);
+        }
+        .cc-submit:not(:disabled):hover::after { animation: shimmerSweep 0.9s ease; }
+        .cc-submit:not(:disabled):active { animation: stampPress 0.28s ease; }
+        .cc-submit:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(14,42,50,0.3); }
+        .cc-submit:disabled { animation: spinGlow 1.4s ease-out infinite; }
+
+        .cc-error-banner {
           animation: shakeErr 0.45s ease;
+        
         }
-        .derma-logo-img {
-          animation: logoBreathe 4.5s ease-in-out infinite;
+
+        /* ---- Responsive: tablets & phones ---- */
+        @media (max-width: 767.98px) {
+          .cc-brand-mobile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            background: linear-gradient(120deg, ${TEAL_DEEP} 0%, ${INK} 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 14s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+          }
+          .cc-brand-mobile .cc-brand-badge { padding: 6px 12px 6px 8px; }
+          .cc-brand-mobile .cc-brand-badge-text { font-size: 10px; letter-spacing: 0.5px; }
+        }
+        @media (max-width: 380px) {
+          .cc-chart-card { border-radius: 14px; }
+          .cc-tab-btn { font-size: 10.5px; }
+        }
+@media (min-width:992px){
+
+    .cc-brand,
+    .cc-chart-card{
+        height:auto;
+    }
+
+    .cc-scroll{
+        justify-content:center;
+    }
+
+}
+        @supports (padding: max(0px)) {
+          .cc-safe-bottom { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+          .cc-safe-top { padding-top: max(0px, env(safe-area-inset-top)); }
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .bg-shape-1, .bg-shape-2, .login-feature-badge, .derma-hero-fade,
-          .derma-form-row, .glass-card, .derma-logo-img, .derma-submit-btn::after,
-          .login-feature-badge:hover { animation: none !important; }
-          .login-feature-badge, .derma-hero-fade, .derma-form-row { opacity: 1 !important; }
+          .cc-tex, .cc-fade, .cc-annotation, .cc-chart-card, .cc-clip, .cc-orb,
+          .cc-tab-btn, .cc-row, .cc-submit:hover, .cc-wave-path, .cc-brand,
+          .cc-brand-mobile, .cc-logo, .cc-submit:disabled, .cc-brand-badge,
+          .cc-brand-badge-dot { animation: none !important; }
+          .cc-fade, .cc-annotation, .cc-tab-btn, .cc-row { opacity: 1 !important; }
         }
       `}</style>
 
-      {/* <ToastContainer /> */}
-      <div
-        className="d-flex flex-column min-vh-100 derma-bg"
-        style={{ position: 'relative', overflow: 'hidden' }}
-      >
-        {/* Signature texture layer: faint clinical grid, masked to a soft vignette */}
-        <div className="derma-grid-texture" style={{ zIndex: 0 }} />
-        <div className="bg-shape-1" />
-        <div className="bg-shape-2" />
+      <div className="cc-app cc-safe-top">
+        {/* Mobile-only compact brand strip — the Chiselon name stays visible on phones too */}
+        {/* <div className="cc-brand-mobile">
+          <img src={DermaLogo} alt="Derma Care" style={{ width: 30, height: 'auto' }} className="cc-logo" />
+          <span className="cc-brand-badge">
+            <span className="cc-brand-badge-dot" />
+            <span className="cc-brand-badge-text">CHISELON CLINIC MANAGEMENT SYSTEM</span>
+          </span>
+        </div> */}
 
-        {/* All content sits above the background */}
-        <div className="flex-grow-1 d-flex justify-content-center align-content-center align-items-center " style={{ position: 'relative', zIndex: 2 }}>
-          <CContainer fluid className="p-0 h-100   align-content-center align-items-center">
-            {/* Use h-100 on the row so it occupies the available height (minus footer) */}
-            <CRow className="g-0 h-100">
-              {/* LEFT: Brand / Hero */}
-              <CCol
-                md={6}
-                className="d-none d-md-flex flex-column justify-content-center derma-hero px-5 py-4"
-              >
-                <div />
-                <div className="text-center px-3" style={{ color: COLORS.primary }}>
-                  <img
-                    src={DermaLogo}
-                    alt="Derma Care"
-                    className="mb-4 derma-hero-fade d1 derma-logo-img"
-                    style={{ width: 112, height: 'auto' }}
-                  />
-                  <span className="derma-eyebrow derma-hero-fade d1">Clinic Management System</span>
-                  <h2 className="derma-display fw-600 mt-2 mb-3 derma-hero-fade d2" style={{ color: COLORS.primary, fontSize: '2.4rem' }}>
-                    Welcome to CCMS
-                  </h2>
+        <div className="cc-scroll">
+          <div className="cc-tex" style={{ zIndex: 0 }} />
 
-                  {/* Signature element: a heartbeat monitor line that draws in, then a
-                      glowing pulse travels along it — the vital sign of the system */}
-                  <svg
-                    width="280"
-                    height="46"
-                    viewBox="0 0 280 46"
-                    className="derma-hero-fade d3"
-                    style={{ margin: '0 auto 22px', display: 'block' }}
-                    aria-hidden="true"
-                  >
-                    <polyline
-                      points="0,23 70,23 88,23 100,6 114,40 128,14 140,30 154,23 172,23 280,23"
-                      fill="none"
-                      stroke={ACCENT}
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeDasharray="340"
-                      style={{ animation: 'drawLine 1.4s ease-out 0.5s both' }}
-                    />
-                    <circle r="3.6" fill={ACCENT} style={{ animation: 'glowDot 1.6s ease-in-out 2s infinite' }}>
-                      <animateMotion
-                        dur="3.4s"
-                        begin="2s"
-                        repeatCount="indefinite"
-                        path="M0,23 70,23 88,23 100,6 114,40 128,14 140,30 154,23 172,23 280,23"
-                      />
-                    </circle>
-                  </svg>
+          <div
+            className="d-flex justify-content-center align-items-center flex-grow-1"
+            style={{ position: 'relative', zIndex: 2 }}
+          >
+            <CContainer fluid className="p-0  ">
+              <CRow className="g-0 ">
+                {/* LEFT: brand / chart-room panel — desktop/tablet only */}
+                <CCol md={6} className="d-none d-md-flex flex-column justify-content-center cc-brand px-5 py-4" style={{ minHeight: '100vh' }}>
+                  <div className="cc-orb o1" />
+                  <div className="cc-orb o2" />
+                  <div className="cc-orb o3" />
+                  <div className="cc-orb o4" />
+                  <div className="cc-orb o5" />
+                  <div />
+                  <div className="px-3" style={{ position: 'relative', zIndex: 1 }}>
+                    {/* <img
+                      src={DermaLogo}
+                      alt="Derma Care"
+                      className="mb-4 cc-fade d1 cc-logo"
+                      style={{ width: 96, height: 'auto' }}
+                    /> */}
 
-                  <p className="mb-4 derma-hero-fade d4" style={{ opacity: 0.85, color: COLORS.primary, fontSize: '15px' }}>
-                    Chiselon Clinic Management System
-                  </p>
+                    {/* Highlight: the Chiselon CMS name gets its own glowing badge,
+                        so it's the first thing read — not just small eyebrow text */}
+                    {/* <span className="cc-brand-badge cc-fade d1">
+                      <span className="cc-brand-badge-dot" />
+                      <span className="cc-brand-badge-text">CHISELON CLINIC MANAGEMENT SYSTEM</span>
+                    </span> */}
 
-                  <div className="d-flex flex-column gap-2 mt-2" style={{ maxWidth: 320, margin: '0 auto' }}>
-                    <div className="login-feature-badge">
-                      <span className="badge-emoji" style={{ fontSize: 18 }}>🏥</span> Clinic &amp; Branch Management
-                    </div>
-                    <div className="login-feature-badge">
-                      <span className="badge-emoji" style={{ fontSize: 18 }}>📊</span> Advanced Analytics Dashboard
-                    </div>
-                    <div className="login-feature-badge">
-                      <span className="badge-emoji" style={{ fontSize: 18 }}>🔒</span> Role-Based Secure Access
-                    </div>
-                    {/* <div className="login-feature-badge">
-                      <span style={{ fontSize: 18 }}>🤖</span> AI-Powered Insights
-                    </div> */}
-                  </div>
-                </div>
-              </CCol>
+                    {/* <h2 className="cc-heading mt-3 mb-3 cc-fade d2">
+                      Every chart,<br />one console.
+                    </h2> */}
 
-              {/* RIGHT: Card + Tabs + Form */}
-              <CCol md={6} className="d-flex align-items-center justify-content-center  md-5">
-                <CCard className="shadow-lg border-0 glass-card w-100" style={{ maxWidth: 440 }}>
-                  <CCardBody className="p-4 p-md-5">
-                    <h3 className="derma-display text-center fw-600 mb-2" style={{ color: COLORS.primary, fontSize: '1.7rem' }}>
-                      CCMS Portal
+
+
+                    <h3 className="cc-heading mt-3 mb-3 cc-fade d2">
+                      Complete Clinic Management,
+                      <br />
+                      All in One Place.
                     </h3>
-                    <p className="text-center mb-4" style={{ color: COLORS.primary, opacity: 0.75, fontSize: '14px' }}>
-                      Please choose your workspace to continue
+                    <svg
+                      width="100%"
+                      height="48"
+                      viewBox="0 0 420 48"
+                      className="cc-fade d3"
+                      style={{ display: 'block', marginBottom: 26, maxWidth: 360 }}
+                      aria-hidden="true"
+                    >
+                      <polyline
+                        className="cc-wave-path"
+                        points="0,24 60,24 78,24 92,7 108,41 124,14 140,32 158,24 190,24 230,24 246,10 260,36 276,24 420,24"
+                      />
+                    </svg>
+                    <p
+                      className="cc-sub cc-fade d4 mb-4"
+                      style={{
+                        maxWidth: "520px",
+                        lineHeight: "1.8",
+                        fontSize: "15px",
+                        color: "rgba(243,247,246,0.82)",
+                      }}
+                    >
+                      Streamline your entire healthcare workflow with a unified platform for
+                      patient records, appointment scheduling, billing, doctor management,
+                      and insightful analytics—designed to
+                      improve efficiency, security, and patient care.
                     </p>
 
+                    {/* <div className="d-flex flex-wrap gap-2 mb-4">
+                      <span className="badge rounded-pill bg-light text-dark px-3 py-2">
+                        👨‍⚕️ Patient Management
+                      </span>
 
-                    {/* Error message */}
-                    {errorMessage && (
-                      <div
-                        className="text-center py-2 mb-3 derma-error-banner"
-                        style={{
-                          background: 'rgba(220,53,69,0.08)',
-                          border: '1px solid rgba(220,53,69,0.25)',
-                          color: '#b02a37',
-                          borderRadius: 10,
-                          fontSize: 13.5,
-                          fontWeight: 500,
-                        }}
+                      <span className="badge rounded-pill bg-light text-dark px-3 py-2">
+                        📅 Smart Appointments
+                      </span>
+
+                      <span className="badge rounded-pill bg-light text-dark px-3 py-2">
+                        💳 Billing & Payments
+                      </span>
+
+                      <span className="badge rounded-pill bg-light text-dark px-3 py-2">
+                        📊 Analytics
+                      </span>
+
+                      <span className="badge rounded-pill bg-light text-dark px-3 py-2">
+                        🔒 Secure Access
+                      </span>
+                    </div> */}
+
+                    <CRow className="g-2 mt-1" style={{ maxWidth: 480 }}>
+                      <CCol xs={12} sm={6} lg={4}>
+                        <div className="cc-annotation h-100">
+
+                          <span className="cc-annotation-text">Clinic Management</span>
+                        </div>
+                      </CCol>
+
+                      <CCol xs={12} sm={6} lg={4}>
+                        <div className="cc-annotation h-100">
+
+                          <span className="cc-annotation-text">Analytics Dashboard</span>
+                        </div>
+                      </CCol>
+
+                      <CCol xs={12} sm={6} lg={4}>
+                        <div className="cc-annotation h-100">
+
+                          <span className="cc-annotation-text">Secure Access</span>
+                        </div>
+                      </CCol>
+
+                      <CCol xs={12} sm={6} lg={4}>
+                        <div className="cc-annotation h-100">
+
+                          <span className="cc-annotation-text">Patient Management</span>
+                        </div>
+                      </CCol>
+
+                      <CCol xs={12} sm={6} lg={4}>
+                        <div className="cc-annotation h-100">
+
+                          <span className="cc-annotation-text">Appointments</span>
+                        </div>
+                      </CCol>
+
+                      <CCol xs={12} sm={6} lg={4}>
+                        <div className="cc-annotation h-100">
+
+                          <span className="cc-annotation-text">Billing & Payments</span>
+                        </div>
+                      </CCol>
+                    </CRow>
+                  </div>
+                  <div
+                    className="mt-auto pt-4"
+                    style={{
+                      position: "relative",
+                      zIndex: 1,
+                      borderTop: "1px solid rgba(255,255,255,0.15)",
+                    }}
+                  >
+                    <div className="d-flex flex-row gap-3 text-center justify-content-between" style={{ fontSize: "10px" }}>
+                      <span className="d-inline-flex justify-content-center align-items-center gap-2 text-white">
+                        <CIcon icon={cilShieldAlt} />
+                        Secure by Design
+                      </span>
+
+                      <span className="text-white">
+                        © {new Date().getFullYear()} Chiselon Technologies
+                      </span>
+
+                      <a
+                        href="https://chiselontechnologies.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-white text-decoration-none"
                       >
-                        {errorMessage}
-                      </div>
-                    )}
-                    {/* <h6 className='text-center'>{role === "admin" ? "Admin Login" : "Receptionist Login"}</h6> */}
-                    {/* CLINIC TAB */}
-                    {['clinic', 'administrator', 'receptionist'].includes(activeTab) && (
-                      <CForm onSubmit={handleClinicLogin} noValidate>
-                        <div className="derma-form-row derma-select-wrap">
-                          <label className="mb-1" style={{ fontSize: 12, fontWeight: 600, color: COLORS.primary, opacity: 0.7 }}>
-                            Workspace
-                          </label>
-                          <CFormSelect
-                            value={activeTab}
-                            onChange={(e) => {
-                              const value = e.target.value
-                              setActiveTab(value)
+                        About Chiselon Technologies
+                      </a>
+                    </div>
+                  </div>
+                </CCol>
 
-                              let newRole = value
-                              if (value === 'clinic') {
-                                newRole = 'admin'
-                              } else if (value === 'receptionist') {
-                                newRole = 'receptionist'
-                              } else if (value === 'administrator') {
-                                newRole = 'administrator'
-                              }
+                {/* RIGHT: chart card + form */}
+                <CCol md={6} className="d-flex align-items-center justify-content-center px-3 py-3 py-md-4">
+                  <CCard className="cc-chart-card border-0 w-100" style={{
+                    maxWidth: 430,
+                    borderRadius: 18
+                  }}>
+                    <div className="cc-clip d-none d-md-block" />
+                    <CCardBody className="p-4 p-md-5 pt-4 pt-md-5">
+                      <h3 className="cc-title text-center mb-1">CCMS Portal</h3>
+                      <p className="text-center mb-4" style={{ color: INK, opacity: 0.6, fontSize: '13.5px' }}>
+                        Select your workspace to sign in
+                      </p>
 
-                              setRole(newRole)
-                              console.log('Role to send:', newRole)
-                            }}
-                            className="derma-select mb-3" style={{ color: COLORS.primary }}
-                          >
-                            <option value="clinic">Super Admin</option>
-                            <option value="administrator">Clinic Admin</option>
-                            <option value="receptionist">Receptionist</option>
-                          </CFormSelect>
-                        </div>
-
-                        <div className="derma-form-row derma-user-row">
-                          <CInputGroup className="derma-input-group mb-2">
-                            <CInputGroupText>
-                              <CIcon icon={cilUser} style={{ color: COLORS.primary }} />
-                            </CInputGroupText>
-
-                            <CFormInput
-                              placeholder="Username"
-                              value={userName}
-                              onChange={(e) => setUserName(e.target.value.trim())}
-                            />
-                          </CInputGroup>
-                        </div>
-
-                        <div className="derma-form-row derma-pass-row">
-                          <CInputGroup className="derma-input-group mt-3 mb-2">
-                            <CInputGroupText
-                              onClick={() => setShowPassword((s) => !s)}
-                              style={{ cursor: "pointer" }}
-                            >
-                              <CIcon icon={showPassword ? cilLockUnlocked : cilLockLocked} style={{ color: COLORS.primary }} />
-                            </CInputGroupText>
-
-                            <CFormInput
-                              type={showPassword ? "text" : "password"}
-                              placeholder="Password"
-                              value={password}
-                              onChange={(e) => setPassword(e.target.value.trim())}
-                            />
-                          </CInputGroup>
-                        </div>
-
+                      {errorMessage && (
                         <div
-                          className="d-flex justify-content-between mt-2 derma-form-row derma-links-row"
-                          style={{ color: COLORS.primary }}
+                          className="text-center py-2 mb-3 cc-error-banner"
+                          style={{
+                            background: 'rgba(193,71,58,0.08)',
+                            border: '1px solid rgba(193,71,58,0.25)',
+                            color: CORAL,
+                            borderRadius: 10,
+                            fontSize: 13.5,
+                            fontWeight: 500,
+                          }}
                         >
-                          <a
-                            style={{ color: COLORS.primary, opacity: 0.85 }}
-                            href="#"
-                            className="text-decoration-none derma-link"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              setShowForgotModal(true)
-                            }}
-                          >
-                            Forgot password?
-                          </a>
-                          <a
-                            style={{ color: COLORS.primary, opacity: 0.85 }}
-                            href="#"
-                            className="text-decoration-none derma-link"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              setShowResetModal(true)
-                            }}
-                          >
-                            Reset password?
-                          </a>
+                          {errorMessage}
                         </div>
+                      )}
 
-                        <div className="derma-form-row derma-submit-row">
-                          <CButton
-                            type="submit"
-                            disabled={isLoading}
-                            className="derma-submit-btn w-100 mt-4 border-0"
-                            style={{
-                              background: `linear-gradient(135deg, ${COLORS.primary} 0%, #2468b8 100%)`,
-                              color: "white",
-                              padding: '12px',
-                              fontWeight: 600,
-                              fontSize: 15,
-                              borderRadius: '12px',
-                              boxShadow: '0 4px 14px rgba(27,79,138,0.25)',
-                              transition: 'all 0.3s ease'
-                            }}
-                            onMouseEnter={e => { if (!isLoading) e.currentTarget.style.transform = 'translateY(-2px)' }}
-                            onMouseLeave={e => { if (!isLoading) e.currentTarget.style.transform = 'translateY(0)' }}
-                          >
-                            {isLoading ? <CSpinner size="sm" style={{ color: "white" }} /> : "Login"}
-                          </CButton>
-                        </div>
-                      </CForm>
-                    )}
-                  </CCardBody>
-                </CCard>
-              </CCol>
-            </CRow>
-          </CContainer>
+                      {['clinic', 'administrator', 'receptionist'].includes(activeTab) && (
+                        <CForm onSubmit={handleClinicLogin} noValidate>
+                          {/* folder-tab workspace selector — replaces the old dropdown,
+                              same onChange logic, now visualised with a sliding pill
+                              plus a colour dot per role for faster recognition */}
+                          <div className="cc-tabs">
+                            {WORKSPACE_TABS.map((tab) => (
+                              <button
+                                key={tab.key}
+                                type="button"
+                                className={`cc-tab-btn${activeTab === tab.key ? ' active' : ''}`}
+                                onClick={() => handleWorkspaceSelect(tab.key)}
+                              >
+                                <span className="cc-tab-dot" style={{ background: tab.tint }} />
+                                {tab.label}
+                              </button>
+                            ))}
+                            <span
+                              className="cc-tab-indicator"
+                              style={{
+                                background: activeTint,
+                                transform: `translateX(calc(${activeIndex} * (100% + 12px)))`,
+                                left: 4,
+                              }}
+                            />
+                          </div>
+
+                          <div className="cc-row r1">
+                            <div className="d-flex justify-content-between align-items-center mb-1">
+                              <label className="cc-field-label mb-0">Username</label>
+                              <span className="cc-field-hint">Required</span>
+                            </div>
+                            <CInputGroup className="cc-input-group mb-1">
+                              <CInputGroupText>
+                                <CIcon icon={cilUser} style={{ color: INK, opacity: 0.6 }} />
+                              </CInputGroupText>
+                              <CFormInput
+                                placeholder="Enter Your Id"
+                                value={userName}
+                                onChange={(e) => setUserName(e.target.value.trim())}
+                              />
+                            </CInputGroup>
+                            {fieldErrors.userName && (
+                              <div className="cc-field-error">{fieldErrors.userName}</div>
+                            )}
+                          </div>
+
+                          <div className="cc-row r2 mt-3">
+                            <div className="d-flex justify-content-between align-items-center mb-1">
+                              <label className="cc-field-label mb-0">Password</label>
+                              <span className="cc-field-hint">{showPassword ? 'Hide' : 'Show'}</span>
+                            </div>
+                            <CInputGroup className="cc-input-group mb-1">
+                              <CInputGroupText
+                                onClick={() => setShowPassword((s) => !s)}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <CIcon
+                                  icon={showPassword ? cilLockUnlocked : cilLockLocked}
+                                  style={{ color: INK, opacity: 0.6 }}
+                                />
+                              </CInputGroupText>
+                              <CFormInput
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value.trim())}
+                              />
+                            </CInputGroup>
+                            {fieldErrors.password && (
+                              <div className="cc-field-error">{fieldErrors.password}</div>
+                            )}
+                          </div>
+
+                          <div className="d-flex justify-content-between mt-3 cc-row r3">
+                            <a
+                              href="#"
+                              className="cc-link text-decoration-none"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                setShowForgotModal(true)
+                              }}
+                            >
+                              Forgot password?
+                            </a>
+                            <a
+                              href="#"
+                              className="cc-link text-decoration-none"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                setShowResetModal(true)
+                              }}
+                            >
+                              Reset password?
+                            </a>
+                          </div>
+
+                          <div className="cc-row r4">
+                            <CButton
+                              type="submit"
+                              disabled={isLoading}
+                              className="cc-submit w-100 mt-4"
+                              style={{ color: 'white', background: `linear-gradient(135deg, ${activeTint} 0%, ${INK} 130%)` }}
+                            >
+                              {isLoading ? <CSpinner size="sm" style={{ color: 'white' }} /> : 'Sign in'}
+                            </CButton>
+                          </div>
+                        </CForm>
+                      )}
+                    </CCardBody>
+                  </CCard>
+                </CCol>
+              </CRow>
+            </CContainer>
+          </div>
+
+          {/* <footer
+            className="d-flex flex-wrap justify-content-around small py-2 cc-safe-bottom"
+            style={{
+              color: INK,
+              opacity: 0.7,
+              backgroundColor: 'rgba(243,247,246,0.9)',
+              position: 'relative',
+              zIndex: 2,
+              fontSize: 12.5,
+              animation: 'fadeIn 0.8s ease-out 0.6s both',
+              gap: 6,
+              flexShrink: 0,
+            }}
+          >
+            <span className="d-inline-flex align-items-center gap-2">
+              <CIcon icon={cilShieldAlt} /> Secure by design
+            </span>
+            <span>© {new Date().getFullYear()} Chiselon Technologies</span>
+            <a href="https://chiselontechnologies.com" target="_blank" style={{ color: INK }} rel="noreferrer">
+              About Chiselon Technologies
+            </a>
+          </footer> */}
         </div>
 
-
-        {/* Sticky Footer */}
-        <footer
-          className="d-flex justify-content-around small py-2 opacity-75 mt-auto"
-          style={{ color: COLORS.primary, backgroundColor: 'rgba(248,249,250,0.9)', position: 'relative', zIndex: 2, fontSize: 12.5, animation: 'fadeIn 0.8s ease-out 0.6s both' }}
-        >
-          <span
-            className="d-inline-flex align-items-center gap-2"
-            style={{ color: COLORS.primary }}
-          >
-            <CIcon icon={cilShieldAlt} /> Secure by design
-          </span>
-          <span style={{ color: COLORS.primary }}>
-            © {new Date().getFullYear()} Chiselon Technologies
-          </span>
-          <a
-            href="https://chiselontechnologies.com"
-            target="_blank"
-            style={{ color: COLORS.primary }}
-            rel="noreferrer"
-          >
-            About Chiselon Technologies
-          </a>
-        </footer>
-
         {/* Reset Modal */}
-        <CModal visible={showResetModal} onClose={() => setShowResetModal(false)} className='custom-modal' backdrop="static">
+        <CModal visible={showResetModal} onClose={() => setShowResetModal(false)} className="custom-modal" backdrop="static">
           <CModalHeader>
             <CModalTitle>Reset Password</CModalTitle>
           </CModalHeader>
           <CModalBody>
             <ResetPassword onClose={() => setShowResetModal(false)} />
           </CModalBody>
-          {/* <CModalFooter>
-            <CButton color="secondary" onClick={() => setShowResetModal(false)}>
-              Close
-            </CButton>
-          </CModalFooter> */}
         </CModal>
 
         {/* Forgot Password Modal */}
-        <CModal visible={showForgotModal} onClose={() => setShowForgotModal(false)} className='custom-modal' backdrop="static">
+        <CModal visible={showForgotModal} onClose={() => setShowForgotModal(false)} className="custom-modal" backdrop="static">
           <CModalHeader>
             <CModalTitle>Forgot Password</CModalTitle>
           </CModalHeader>
           <CModalBody>
             <ForgotPassword onClose={() => setShowForgotModal(false)} />
           </CModalBody>
-          {/* <CModalFooter>
-            <CButton color="secondary" onClick={() => setShowForgotModal(false)}>
-              Close
-            </CButton>
-          </CModalFooter> */}
         </CModal>
-      </div >
+      </div>
     </>
   )
 }

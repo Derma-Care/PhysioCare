@@ -6,12 +6,14 @@ import {
   CCol,
   CRow,
   CSpinner,
+  CFormSelect,
 } from '@coreui/react'
 import { AppointmentData } from '../AppointmentManagement/appointmentAPI'
 import Select from 'react-select'
 import ProgramPayment from '../AppointmentManagement/PaymentProgram'
 import { COLORS } from '../../Constant/Themes'
 import LoadingIndicator from '../../Utils/loader'
+import { GetClinicBranches } from '../Doctors/DoctorAPI'
 
 /* ── status badge config ── */
 const STATUS_CONFIG = {
@@ -167,12 +169,41 @@ export default function Billing() {
   const [loading, setLoading] = useState(true)
   const [selectedBooking, setSelectedBooking] = useState(null)
 
-  useEffect(() => { fetchBookings() }, [])
+  const role = localStorage.getItem('role');
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState('');
+  const [selectedBranchName, setSelectedBranchName] = useState('');
 
-  const fetchBookings = async () => {
+  useEffect(() => {
+    const initBranches = async () => {
+      const clinicId = localStorage.getItem('HospitalId');
+      const defaultBranchId = localStorage.getItem('branchId');
+      const defaultBranchName = localStorage.getItem('branchName');
+      if (!clinicId) return;
+
+      const res = await GetClinicBranches(clinicId);
+      setBranches(res.data || []);
+
+      if (res.data?.length) {
+        setSelectedBranch(defaultBranchId);
+        setSelectedBranchName(defaultBranchName);
+        fetchBookings(defaultBranchId);
+      }
+    };
+    initBranches();
+  }, []);
+
+  const handleBranchChange = (branchId) => {
+    const branch = branches.find((b) => b.branchId === branchId);
+    setSelectedBranch(branchId);
+    setSelectedBranchName(branch?.branchName || '');
+    fetchBookings(branchId);
+  };
+
+  const fetchBookings = async (branchIdOverride) => {
     try {
       setLoading(true)
-      const res = await AppointmentData()
+      const res = await AppointmentData(branchIdOverride)
       const data = res?.data || []
       setAllData(data)                          // keep full list for counts
       setBookings(data)                         // show all in dropdown
@@ -241,32 +272,56 @@ export default function Billing() {
           </p>
         </div>
 
-        {!loading && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              gap: 12,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {[
-              { key: 'in-progress', label: 'In Progress' },
-              { key: 'due for investigation', label: 'Due for Investigation' },
-            ].map(({ key, label }) => {
-              const s = statusStyle(key);
+        <div className="d-flex align-items-center gap-3">
+          {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
+            <CFormSelect
+              value={selectedBranch}
+              onChange={(e) => handleBranchChange(e.target.value)}
+              style={{
+                width: '200px',
+                fontSize: '13px',
+                borderRadius: '8px',
+                border: '0.5px solid #d0dce9',
+                color: '#374151',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                padding: '6px 12px'
+              }}
+            >
+              {branches.map((branch) => (
+                <option key={branch.branchId} value={branch.branchId}>
+                  {branch.branchName}
+                </option>
+              ))}
+            </CFormSelect>
+          )}
 
-              return (
-                <StatCard
-                  key={key}
-                  label={label}
-                  value={counts[key] || 0}
-                  accent={s.color}
-                />
-              );
-            })}
-          </div>
-        )}
+          {!loading && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                gap: 12,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {[
+                { key: 'in-progress', label: 'In Progress' },
+                { key: 'due for investigation', label: 'Due for Investigation' },
+              ].map(({ key, label }) => {
+                const s = statusStyle(key);
+
+                return (
+                  <StatCard
+                    key={key}
+                    label={label}
+                    value={counts[key] || 0}
+                    accent={s.color}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
       <div
         style={{

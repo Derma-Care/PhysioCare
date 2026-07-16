@@ -139,7 +139,11 @@ const DoctorManagement = () => {
   const [enabledTypes, setEnabledTypes] = useState({
     inClinic: false, online: false, serviceTreatment: false,
   })
+  const role = localStorage.getItem('role');
 
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedBranchName, setSelectedBranchName] = useState("");
   const [form, setForm] = useState(initialForm)
 
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -216,7 +220,7 @@ const DoctorManagement = () => {
 
     const loadDoctors = async () => {
       if (mounted) {
-        await fetchDoctors()
+        await fetchDoctors(selectedBranch)
       }
     }
 
@@ -262,18 +266,36 @@ const DoctorManagement = () => {
   useEffect(() => {
     const fetchAll = async () => {
       const clinicId = localStorage.getItem('HospitalId')
+      const defaultBranchId = localStorage.getItem('branchId');
+      const defaultBranchName = localStorage.getItem('branchName');
       try {
         setLoading(true)
         // await fetchData()
         setBranchLoading(true)
         const res = await GetClinicBranches(clinicId)
         const branches = res.data || []
+        setBranches(branches || []);
+
+
         setBranchOptions(branches.map((b) => ({ value: b.branchId || b.id || b.name, label: b.branchName || b.name })))
+        if (res.data?.length) {
+          setSelectedBranch(defaultBranchId);
+          setSelectedBranchName(defaultBranchName);
+
+        }
       } catch { setShowErrorMessage('Failed to fetch data') }
       finally { setLoading(false); setBranchLoading(false) }
     }
     fetchAll()
   }, [])
+
+  const handleBranchChange = (bId) => {
+    const branch = branches.find((b) => b.branchId === bId);
+    setSelectedBranch(bId);
+    setSelectedBranchName(branch?.branchName || "");
+    fetchDoctors(bId);
+
+  };
 
   const categoryOptions = category.map((c) => ({ value: c.categoryId, label: c.categoryName }))
 
@@ -420,7 +442,7 @@ const DoctorManagement = () => {
       }
 
       const payload = {
-        branchId: localStorage.getItem('branchId'),
+        branchId: selectedBranch || localStorage.getItem('branchId'),
         createdBy: localStorage.getItem('staffId') || 'admin',
         hospitalId,
         doctorPicture: uploadedDoctorPicture,
@@ -471,7 +493,7 @@ const DoctorManagement = () => {
         showCustomToast(response.data.message || 'Doctor added successfully', 'success')
         resetForm()
         setModalVisible(false)
-        fetchDoctors()
+        fetchDoctors(selectedBranch)
       } else throw new Error(response.data?.message || 'Failed to add doctor')
     } catch (error) {
       showCustomToast(error?.response?.data?.message || error.message || 'Something went wrong', 'error')
@@ -563,7 +585,28 @@ const DoctorManagement = () => {
       {/* <ToastContainer /> */}
 
       {/* Add Doctor button & Search bar */}
-      <div className="dm-top-bar">
+      <div className="dm-top-bar">{branches?.length > 1 && role?.toLowerCase() === 'admin' && (
+        <div style={{ width: "200px", marginBottom: "1rem" }}>
+          <CFormSelect
+            value={selectedBranch}
+            onChange={(e) => handleBranchChange(e.target.value)}
+            style={{
+              fontSize: '13px',
+              borderRadius: '8px',
+              border: '0.5px solid #d0dce9',
+              color: '#374151',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+              padding: '6px 12px'
+            }}
+          >
+            {branches.map((branch) => (
+              <option key={branch.branchId} value={branch.branchId}>
+                {branch.branchName}
+              </option>
+            ))}
+          </CFormSelect>
+        </div>
+      )}
         <div className="dm-search-wrapper">
           <Search size={14} className="dm-search-icon-left" />
           <input

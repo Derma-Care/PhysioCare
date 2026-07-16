@@ -173,11 +173,11 @@ export const HospitalProvider = ({ children }) => {
   //     setLoading(false)
   //   }
   // }, [])
-  const fetchDoctors = useCallback(async () => {
+  const fetchDoctors = useCallback(async (selectedBranch) => {
     try {
       setDoctorLoading(true)
 
-      const branchId = localStorage.getItem('branchId')
+      const branchId = selectedBranch || localStorage.getItem('branchId')
       const hospitalId = localStorage.getItem('HospitalId')
 
       const res = await http.get(
@@ -211,10 +211,11 @@ export const HospitalProvider = ({ children }) => {
 
   const fetchAllData = useCallback(
     async (id = hospitalId) => {
+      const branchId = localStorage.getItem('branchId')
       if (!id) return
       setHydrated(false)
       await fetchHospital(id)
-      await fetchDoctors()
+      await fetchDoctors(branchId)
       // await fetchSubServices()
       setHydrated(true)
     },

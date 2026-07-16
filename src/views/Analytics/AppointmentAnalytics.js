@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react"
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import ReactDOM from "react-dom"
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend
@@ -11,8 +12,78 @@ import Pagination from "../../Utils/Pagination"
 import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
 import { getAppointmentAnalytics, getAppointmentAnalyticsCustom } from "./AppointmentAnalyticsAPI"
 import LoadingIndicator from "../../Utils/loader"
+import { useLocation } from "react-router-dom"
 
 const fmtInt = (n) => (n == null ? "—" : Math.max(0, Math.round(n)).toLocaleString())
+
+const InfoTip = ({ text }) => {
+  const [pos, setPos] = useState(null)
+  const [visible, setVisible] = useState(false)
+  const iconRef = useRef(null)
+
+  const handleMouseEnter = () => {
+    if (iconRef.current) {
+      const rect = iconRef.current.getBoundingClientRect()
+      setPos({
+        x: rect.left + rect.width / 2,
+        y: rect.top
+      })
+      setVisible(true)
+    }
+  }
+  const handleMouseLeave = () => setVisible(false)
+
+  const tooltip = visible && pos ? ReactDOM.createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        left: pos.x,
+        top: pos.y - 12,
+        transform: 'translate(-50%, -100%)',
+        width: 230,
+        background: '#1e293b',
+        color: '#f1f5f9',
+        fontSize: 11.5,
+        fontWeight: 500,
+        lineHeight: 1.6,
+        padding: '10px 13px',
+        borderRadius: 9,
+        zIndex: 999999,
+        pointerEvents: 'none',
+        textAlign: 'left',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+        border: '1px solid rgba(255,255,255,0.08)',
+      }}
+    >
+      {text}
+      <span style={{
+        position: 'absolute',
+        bottom: -6,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 0, height: 0,
+        borderLeft: '6px solid transparent',
+        borderRight: '6px solid transparent',
+        borderTop: '6px solid #1e293b',
+      }} />
+    </div>,
+    document.body
+  ) : null
+
+  return (
+    <>
+      <span
+        ref={iconRef}
+        className="aa-tip-icon"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <Info size={14} />
+      </span>
+      {tooltip}
+    </>
+  )
+}
 
 const COMPLETION_RATE_TIP =
   "Share of this practitioner's scheduled appointments that were completed. Calculated as (completed / total scheduled) × 100."
@@ -29,9 +100,11 @@ const TREND_LABELS = {
 
 const AppointmentAnalytics = () => {
   useAutoHideSidebar()
-
-  const clinicId = localStorage.getItem("HospitalId")
-  const branchId = localStorage.getItem("branchId")
+  const location = useLocation();
+  const { branchId, clinicId, branchName } =
+    location.state || {};
+  // const clinicId = localStorage.getItem("HospitalId")
+  // const branchId = localStorage.getItem("branchId")
 
   const [filter, setFilter] = useState("today")
   const [showCustom, setShowCustom] = useState(false)
@@ -106,7 +179,14 @@ const AppointmentAnalytics = () => {
     { title: "Booked", value: fmtInt(summary.booked), gradient: "linear-gradient(135deg, #22c55e 0%, #15803d 100%)", glow: "rgba(21,128,61,0.22)", icon: <CheckCircle size={18} color="#fff" /> },
     { title: "Cancelled", value: fmtInt(summary.cancelled), gradient: "linear-gradient(135deg, #f43f5e 0%, #a32d2d 100%)", glow: "rgba(163,45,45,0.22)", icon: <XCircle size={18} color="#fff" /> },
     { title: "Completed", value: fmtInt(summary.completed), gradient: "linear-gradient(135deg, #d97706 0%, #b45309 100%)", glow: "rgba(180,83,9,0.22)", icon: <Clock size={18} color="#fff" /> },
-    { title: "Missed", value: fmtInt(summary.missed), gradient: "linear-gradient(135deg, #64748b 0%, #475569 100%)", glow: "rgba(71,85,105,0.22)", icon: <Clock size={18} color="#fff" /> },
+    {
+      title: "Incomplete Treatments",
+      value: fmtInt(summary.missed),
+      gradient: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
+      glow: "rgba(71,85,105,0.22)",
+      icon: <Clock size={18} color="#fff" />,
+      tip: "Patients who started their therapy sessions but stopped treatment before completing the prescribed sessions. The appointment is marked as completed, but some scheduled sessions remain unfinished."
+    }
   ]
 
   // ---- Handlers -------------------------------------------------------------
@@ -144,7 +224,7 @@ const AppointmentAnalytics = () => {
         <div className="aa-title-group">
           <div className="aa-page-icon"><Calendar size={20} /></div>
           <div>
-            <h4 className="aa-page-title">Appointment Analytics</h4>
+            <h4 className="aa-page-title">Appointment Analytics ({branchName})</h4>
             <p className="aa-page-sub">Monitor appointment statuses and volumes</p>
           </div>
         </div>
@@ -196,7 +276,10 @@ const AppointmentAnalytics = () => {
         {statCards.map((stat, idx) => (
           <div key={idx} className="aa-stat-card" style={{ "--as-gradient": stat.gradient, "--as-glow": stat.glow }}>
             <div className="aa-sc-blob" />
-            <div className="aa-sc-top"><div className="aa-sc-icon">{stat.icon}</div></div>
+            <div className="aa-sc-top">
+              <div className="aa-sc-icon">{stat.icon}</div>
+              {stat.tip && <InfoTip text={stat.tip} />}
+            </div>
             <div className="aa-sc-value">{stat.value}</div>
             <div className="aa-sc-title">{stat.title}</div>
           </div>
@@ -267,10 +350,10 @@ const AppointmentAnalytics = () => {
                     <th className="aa-th text-center">Cancelled</th>
                     <th className="aa-th text-center">
                       Completion Rate
-                      <span className="aa-tip aa-tip-down aa-tip-align-end">
+                      {/* <span className="aa-tip aa-tip-down aa-tip-align-end">
                         <Info size={13} />
                         <span className="aa-tip-bubble">{COMPLETION_RATE_TIP}</span>
-                      </span>
+                      </span> */}
                     </th>
                   </tr>
                 </thead>
@@ -339,7 +422,7 @@ const styles = (
     .aa-stat-card { background:var(--as-gradient); border-radius:14px; padding:14px 16px 12px; min-width:130px; flex:1 1 130px; display:flex; flex-direction:column; gap:5px; position:relative; overflow:hidden; box-shadow:0 4px 16px var(--as-glow),0 1px 3px rgba(0,0,0,0.07); transition:transform .2s,box-shadow .2s; cursor:default; }
     .aa-stat-card:hover { transform:translateY(-3px) scale(1.02); box-shadow:0 10px 28px var(--as-glow),0 2px 6px rgba(0,0,0,0.09); }
     .aa-sc-blob { position:absolute; top:-22px; right:-22px; width:72px; height:72px; background:rgba(255,255,255,0.13); border-radius:50%; pointer-events:none; }
-    .aa-sc-top { margin-bottom:2px; }
+    .aa-sc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
     .aa-sc-icon { width:34px; height:34px; border-radius:8px; background:rgba(255,255,255,0.18); display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; border:1px solid rgba(255,255,255,0.25); }
     .aa-sc-value { font-size:20px; font-weight:800; color:#fff; line-height:1.1; letter-spacing:-0.3px; text-shadow:0 1px 3px rgba(0,0,0,0.12); }
     .aa-sc-title { font-size:10px; font-weight:700; color:rgba(255,255,255,0.78); text-transform:uppercase; letter-spacing:0.6px; white-space:nowrap; }
@@ -371,11 +454,36 @@ const styles = (
     .aa-retry-btn:hover { background:#fee2e2; }
     .aa-spinner { width:36px; height:36px; border:3px solid #d0dce9; border-top-color:var(--color-primary); border-radius:50%; animation:aa-spin 0.8s linear infinite; }
     @keyframes aa-spin { to{ transform:rotate(360deg); } }
-    .aa-tip { position:relative; display:inline-flex; align-items:center; margin-left:5px; color:#cbd5e1; cursor:help; vertical-align:middle; }
-    .aa-tip:hover { color:#fff; }
-    .aa-tip-bubble { position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); width:220px; background:#0c447c; color:#fff; font-size:11px; font-weight:500; line-height:1.5; padding:9px 11px; border-radius:8px; opacity:0; visibility:hidden; transition:opacity 0.15s ease,visibility 0.15s ease; z-index:20; pointer-events:none; text-align:left; box-shadow:0 4px 12px rgba(12,68,124,0.25); }
-    .aa-tip-bubble::after { content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:#0c447c; }
-    .aa-tip:hover .aa-tip-bubble { opacity:1; visibility:visible; }
+    .aa-tip-icon { display:inline-flex; align-items:center; color:rgba(255,255,255,0.65); cursor:help; transition:color 0.15s; }
+    .aa-tip-icon:hover { color:#fff; }
+    .aa-tip-fixed {
+      position: fixed;
+      transform: translate(-50%, -100%);
+      margin-top: -8px;
+      width: 230px;
+      background: #1e293b;
+      color: #f1f5f9;
+      font-size: 11.5px;
+      font-weight: 500;
+      line-height: 1.6;
+      padding: 10px 13px;
+      border-radius: 9px;
+      z-index: 99999;
+      pointer-events: none;
+      text-align: left;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .aa-tip-fixed-arrow {
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 6px solid #1e293b;
+    }
     .aa-tip-down .aa-tip-bubble { bottom:auto; top:calc(100% + 8px); }
     .aa-tip-down .aa-tip-bubble::after { top:auto; bottom:100%; border-top-color:transparent; border-bottom-color:#0c447c; }
     .aa-tip-align-end .aa-tip-bubble { left:auto; right:-6px; transform:none; }

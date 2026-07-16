@@ -14,6 +14,7 @@ import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
 
 import { getTreatmentAnalytics, getTreatmentAnalyticsCustomDate } from './TreatmentAnalyticsAPI'
 import LoadingIndicator from "../../Utils/loader"
+import { useLocation } from "react-router-dom"
 
 const TYPE_OPTIONS = [
   { value: "all", label: "All Types" },
@@ -60,6 +61,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const TreatmentAnalytics = () => {
   useAutoHideSidebar()
+  const location = useLocation();
+  const { branchId, clinicId, branchName } =
+    location.state || {};
   const [typeFilter, setTypeFilter] = useState("all")
   const [periodFilter, setPeriodFilter] = useState("month")
   const [customFrom, setCustomFrom] = useState("")
@@ -73,7 +77,7 @@ const TreatmentAnalytics = () => {
   const [apiSummary, setApiSummary] = useState(null)
   const [loading, setLoading] = useState(false)
   const hospitalId = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId') || 'all'
+  // const branchId = localStorage.getItem('branchId') || 'all'
 
   useEffect(() => {
     const fetchData = async () => {
@@ -241,7 +245,7 @@ const TreatmentAnalytics = () => {
               <Activity size={20} />
             </div>
             <div>
-              <h4 className="ta-page-title">Treatment Analytics</h4>
+              <h4 className="ta-page-title">Treatment Analytics ({branchName})</h4>
               <p className="ta-page-sub">Analyze treatment performance and profitability</p>
             </div>
           </div>

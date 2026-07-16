@@ -70,7 +70,10 @@ const statusConfig = {
   active: { bg: '#dcfce7', color: '#15803d', label: 'Active' },
   completed: { bg: '#f3f4f6', color: '#374151', label: 'Completed' },
   pending: { bg: '#fef3c7', color: '#92400e', label: 'Pending' },
-  rejected: { bg: '#fee2e2', color: '#991b1b', label: 'Rejected' },
+  cancelled: { bg: '#fee2e2', color: '#991b1b', label: 'Cancelled' },
+  rescheduled: { bg: '#fff59d', color: '#a88f07', label: 'Rescheduled' },
+  'due for investigation': { bg: '#fee2e2', color: '#991b1b', label: 'Due for Investigation' },
+  'investigation done': { bg: '#fef3c7', color: '#92400e', label: 'Investigation Done' },
 }
 
 const StatusBadge = ({ status }) => {
@@ -247,19 +250,33 @@ const AppointmentDetails = () => {
 
   const [validationErrors, setValidationErrors] = useState({})
 
+  // useEffect(() => {
+  //   const fetchDoctorDetails = async () => {
+  //     if (['confirmed', 'completed', 'active'].includes(normalizedStatus) && appointment?.doctorId) {
+  //       try {
+  //         const res = await GetdoctorsByClinicIdData(appointment.doctorId)
+  //         setDoctor(res.data || {})
+  //       } catch (error) {
+  //         console.error('Failed to fetch doctor details:', error)
+  //       }
+  //     }
+  //   }
+  //   fetchDoctorDetails()
+  // }, [normalizedStatus, appointment?.doctorId])
   useEffect(() => {
     const fetchDoctorDetails = async () => {
-      if (['confirmed', 'completed', 'active'].includes(normalizedStatus) && appointment?.doctorId) {
-        try {
-          const res = await GetdoctorsByClinicIdData(appointment.doctorId)
-          setDoctor(res.data || {})
-        } catch (error) {
-          console.error('Failed to fetch doctor details:', error)
-        }
+      if (!appointment?.doctorId) return
+
+      try {
+        const res = await GetdoctorsByClinicIdData(appointment.doctorId)
+        setDoctor(res.data || {})
+      } catch (error) {
+        console.error('Failed to fetch doctor details:', error)
       }
     }
+
     fetchDoctorDetails()
-  }, [normalizedStatus, appointment?.doctorId])
+  }, [appointment?.doctorId])
 
   const fetchVitals = async () => {
     if (!appointment) return
@@ -272,8 +289,8 @@ const AppointmentDetails = () => {
   }
 
   useEffect(() => {
-    if (['confirmed', 'active', 'completed'].includes(normalizedStatus)) fetchVitals()
-  }, [appointment?.bookingId, appointment?.patientId, normalizedStatus])
+    fetchVitals()
+  }, [appointment?.bookingId, appointment?.patientId])
 
   useEffect(() => {
     const fetchRecTests = async () => {
@@ -329,13 +346,13 @@ const AppointmentDetails = () => {
     )
   }
 
-  const showConfirmed = ['active', 'confirmed', 'in-progress', 'follow-up'].includes(normalizedStatus)
-  const showCompletedOrActive = ['completed', 'active'].includes(normalizedStatus)
-  const showVitalsCard = ['completed', 'active', 'confirmed'].includes(normalizedStatus) && vitals
-  const showPayment = ['active', 'follow-up', 'completed'].includes(normalizedStatus)
-  const showConfirmedOrCompleted = ['confirmed', 'completed', 'active'].includes(normalizedStatus)
+  const showConfirmed = ['active', 'confirmed', 'in-progress', 'follow-up', 'due for investigation', 'investigation done'].includes(normalizedStatus)
+  // const showCompletedOrActive = ['completed', 'active'].includes(normalizedStatus)
+  const showVitalsCard = vitals
+  const showPayment = ['active', 'follow-up', 'completed',].includes(normalizedStatus)
+  const showConfirmedOrCompleted = ['confirmed', 'completed', 'active', 'cancelled', 'rescheduled', 'due for investigation', 'investigation done'].includes(normalizedStatus)
   const showPrescription = ['active', 'completed'].includes(normalizedStatus) && appointment?.prescriptionPdf
-  const showAccordion = ['confirmed', 'active', 'completed'].includes(normalizedStatus)
+  // const showAccordion = ['confirmed', 'active', 'completed'].includes(normalizedStatus)
 
   const getDoctorImage = (picture) => {
     if (!picture) return '/default-doctor.png'
@@ -804,8 +821,43 @@ const AppointmentDetails = () => {
           )}
         </div>
 
-        <Divider />
 
+        {['cancelled', 'rescheduled'].includes(normalizedStatus) && appointment?.reasonForCancel && (
+          <div
+            style={{
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              margin: '0px 20px 16px 20px',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '11px',
+                color: '#64748b',
+                fontWeight: '600',
+                marginBottom: '4px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+              {normalizedStatus === 'cancelled'
+                ? 'Cancellation Reason'
+                : 'Reschedule Reason'}
+            </div>
+
+            <div
+              style={{
+                fontSize: '13px',
+                color: '#1e293b',
+              }}
+            >
+              {appointment.reasonForCancel}
+            </div>
+
+          </div>
+        )}
         {/* ── SLOT & PAYMENT ── */}
         <div style={{ padding: '0 24px 20px' }}>
           <SectionHeading icon={CreditCard} title="Slot & Payment Details" />

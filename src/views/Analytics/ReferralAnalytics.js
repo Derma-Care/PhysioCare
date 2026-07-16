@@ -69,6 +69,7 @@ import capitalizeWords from '../../Utils/capitalizeWords'
 import LoadingIndicator from '../../Utils/loader'
 import Pagination from '../../Utils/Pagination'
 import useAutoHideSidebar from '../widgets/useAutoHideSidebar'
+import { useLocation } from 'react-router-dom'
 
 const formatReferredByPerson = (pat) => {
   if (!pat.referredByName) return pat.referredByType || '—'
@@ -116,6 +117,9 @@ const CHART_COLORS = [
 
 const ReferralAnalytics = () => {
   useAutoHideSidebar()
+  const location = useLocation();
+  const { branchId, clinicId, branchName } =
+    location.state || {};
   const [filter, setFilter] = useState('month')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
@@ -180,7 +184,7 @@ const ReferralAnalytics = () => {
       }
 
       // 3. Fetch Doctor Referral Analytics from backend
-      const branchId = localStorage.getItem('branchId')
+      // const branchId = localStorage.getItem('branchId')
       let analyticsData = []
       if (hospitalId && branchId) {
         try {
@@ -271,7 +275,7 @@ const ReferralAnalytics = () => {
       }
       setModalLoading(true)
       try {
-        const branchId = localStorage.getItem('branchId')
+        // const branchId = localStorage.getItem('branchId')
         const res = await getDoctorReferralPatientDetails(
           hospitalId,
           branchId,
@@ -297,7 +301,7 @@ const ReferralAnalytics = () => {
       }
       setChannelPatientsLoading(true)
       try {
-        const branchId = localStorage.getItem('branchId')
+        // const branchId = localStorage.getItem('branchId')
         const res = await getReferralChannelPatientDetails(
           hospitalId,
           branchId,
@@ -1052,7 +1056,7 @@ const ReferralAnalytics = () => {
             <Users size={20} />
           </div>
           <div>
-            <h4 className="rf-page-title">Referral Analytics</h4>
+            <h4 className="rf-page-title">Referral Analytics ({branchName})</h4>
             <p className="rf-page-sub">
               Track patient acquisitions by referral doctors and channels
             </p>
@@ -1061,7 +1065,7 @@ const ReferralAnalytics = () => {
 
 
       </div>
-      
+
 
 
       {/* 
@@ -1135,954 +1139,954 @@ const ReferralAnalytics = () => {
         <LoadingIndicator message="Loading referral analytics..." />
       ) : (
         <>
-      {/* ── Unified Toolbar: Search + Date Filters + Charts/Table Toggle ── */}
-      {viewMode === 'list' && (
-        <div className="rf-toolbar-row mb-4">
-          <div className="rf-toolbar-left">
-            <div className="rf-search-pill">
-              <Search size={14} className="rf-search-icon" />
-              <input
-                type="text"
-                placeholder="Search name, doctor, therapy..."
-                value={activeTab === 'doctors' ? searchQuery : channelSearchQuery}
-                onChange={(e) => {
-                  if (activeTab === 'doctors') setSearchQuery(e.target.value)
-                  else setChannelSearchQuery(e.target.value)
-                }}
-                className="rf-search-pill-input"
-              />
-              {(activeTab === 'doctors' ? searchQuery : channelSearchQuery) && (
-                <button
-                  className="rf-search-clear"
-                  onClick={() =>
-                    activeTab === 'doctors' ? setSearchQuery('') : setChannelSearchQuery('')
-                  }
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            <div className="rf-filter-group d-flex align-items-center gap-2">
-              {['today', 'week', 'month', 'year', 'custom'].map((f) => (
-                <button
-                  key={f}
-                  className={`rf-filter-pill${filter === f ? ' active' : ''}`}
-                  onClick={() => setFilter(f)}
-                >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                </button>
-              ))}
-
-              {filter === 'custom' && (
-                <div className="d-flex align-items-center gap-2 ms-2" style={{ animation: 'fadeIn 0.2s ease' }}>
-                  <span className="rf-date-sep text-muted small" style={{ fontSize: '11px', fontWeight: 600 }}>From:</span>
-                  <CFormInput
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    className="rf-date-input"
-                    style={{ width: '130px', padding: '4px 8px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+          {/* ── Unified Toolbar: Search + Date Filters + Charts/Table Toggle ── */}
+          {viewMode === 'list' && (
+            <div className="rf-toolbar-row mb-4">
+              <div className="rf-toolbar-left">
+                <div className="rf-search-pill">
+                  <Search size={14} className="rf-search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search name, doctor, therapy..."
+                    value={activeTab === 'doctors' ? searchQuery : channelSearchQuery}
+                    onChange={(e) => {
+                      if (activeTab === 'doctors') setSearchQuery(e.target.value)
+                      else setChannelSearchQuery(e.target.value)
+                    }}
+                    className="rf-search-pill-input"
                   />
-                  <span className="rf-date-sep text-muted small" style={{ fontSize: '11px', fontWeight: 600 }}>To:</span>
-                  <CFormInput
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    className="rf-date-input"
-                    style={{ width: '130px', padding: '4px 8px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                  />
-                  <button 
-                    className="rf-apply-btn" 
-                    onClick={fetchData}
-                    style={{ padding: '4px 8px', fontSize: '12px', borderRadius: '6px', background: '#3b6d11', color: '#fff', border: 'none' }}
-                  >
-                    <RefreshCw size={10} className="mr-1" /> Reload
-                  </button>
-                  {(fromDate || toDate) && (
+                  {(activeTab === 'doctors' ? searchQuery : channelSearchQuery) && (
                     <button
-                      className="rf-custom-clear"
-                      onClick={() => { setFromDate(''); setToDate('') }}
-                      title="Clear dates"
-                      style={{ padding: '4px 8px', fontSize: '12px', borderRadius: '6px' }}
+                      className="rf-search-clear"
+                      onClick={() =>
+                        activeTab === 'doctors' ? setSearchQuery('') : setChannelSearchQuery('')
+                      }
                     >
-                      <X size={10} /> Clear
+                      <X size={14} />
                     </button>
                   )}
                 </div>
-              )}
-            </div>
-          </div>
 
-          <div className="rf-segmented-toggle">
-            <button
-              className={`rf-segment-btn${displayMode === 'charts' ? ' active' : ''}`}
-              onClick={() => setDisplayMode('charts')}
-            >
-              <LayoutGrid size={14} />
-              Charts
-            </button>
-            <button
-              className={`rf-segment-btn${displayMode === 'table' ? ' active' : ''}`}
-              onClick={() => setDisplayMode('table')}
-            >
-              <Table2 size={14} />
-              Table
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Charts Row ── */}
-      {viewMode === 'list' && displayMode === 'charts' && stats.total > 0 && (
-        <CRow className="mb-4">
-          <CCol xs={12} lg={4} className="mb-3">
-            <CCard className="h-100 rf-chart-card">
-              <CCardBody className="p-3">
-                <div className="rf-chart-header">
-                  <PieChartIcon size={16} className="text-success" />
-                  <span>Referral Source Split</span>
-                </div>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={referralSourceChartData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={45}
-                      outerRadius={75}
-                      paddingAngle={3}
+                <div className="rf-filter-group d-flex align-items-center gap-2">
+                  {['today', 'week', 'month', 'year', 'custom'].map((f) => (
+                    <button
+                      key={f}
+                      className={`rf-filter-pill${filter === f ? ' active' : ''}`}
+                      onClick={() => setFilter(f)}
                     >
-                      {referralSourceChartData.map((entry, index) => (
-                        <Cell
-                          key={`src-cell-${index}`}
-                          fill={index === 0 ? '#3b6d11' : '#185fa5'}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => [`${value} patients`, '']} />
-                    <Legend
-                      verticalAlign="bottom"
-                      height={30}
-                      wrapperStyle={{ fontSize: '11px' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CCardBody>
-            </CCard>
-          </CCol>
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                    </button>
+                  ))}
 
-          <CCol xs={12} lg={4} className="mb-3">
-            <CCard className="h-100 rf-chart-card">
-              <CCardBody className="p-3">
-                <div className="rf-chart-header">
-                  <BarChart3 size={16} className="text-success" />
-                  <span>Top Referring Doctors</span>
-                </div>
-                {topDoctorsChartData.length === 0 ? (
-                  <div className="rf-chart-empty">No doctor referrals in this period</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart
-                      data={topDoctorsChartData}
-                      layout="vertical"
-                      margin={{ top: 5, right: 16, left: 0, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                      <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={110}
-                        tick={{ fontSize: 10 }}
+                  {filter === 'custom' && (
+                    <div className="d-flex align-items-center gap-2 ms-2" style={{ animation: 'fadeIn 0.2s ease' }}>
+                      <span className="rf-date-sep text-muted small" style={{ fontSize: '11px', fontWeight: 600 }}>From:</span>
+                      <CFormInput
+                        type="date"
+                        value={fromDate}
+                        onChange={(e) => setFromDate(e.target.value)}
+                        className="rf-date-input"
+                        style={{ width: '130px', padding: '4px 8px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                       />
-                      <Tooltip formatter={(value) => [`${value} patients`, 'Referred']} />
-                      <Bar dataKey="patients" fill="#3b6d11" radius={[0, 4, 4, 0]} barSize={16} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </CCardBody>
-            </CCard>
-          </CCol>
-
-          <CCol xs={12} lg={4} className="mb-3">
-            <CCard className="h-100 rf-chart-card">
-              <CCardBody className="p-3">
-                <div className="rf-chart-header">
-                  <Share2 size={16} className="text-success" />
-                  <span>Channel Breakdown</span>
-                </div>
-                {channelPieChartData.length === 0 ? (
-                  <div className="rf-chart-empty">No channel referrals in this period</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie
-                        data={channelPieChartData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={75}
-                        label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
-                        labelLine={false}
+                      <span className="rf-date-sep text-muted small" style={{ fontSize: '11px', fontWeight: 600 }}>To:</span>
+                      <CFormInput
+                        type="date"
+                        value={toDate}
+                        onChange={(e) => setToDate(e.target.value)}
+                        className="rf-date-input"
+                        style={{ width: '130px', padding: '4px 8px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                      />
+                      <button
+                        className="rf-apply-btn"
+                        onClick={fetchData}
+                        style={{ padding: '4px 8px', fontSize: '12px', borderRadius: '6px', background: '#3b6d11', color: '#fff', border: 'none' }}
                       >
-                        {channelPieChartData.map((entry, index) => (
-                          <Cell
-                            key={`chan-cell-${index}`}
-                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                        <RefreshCw size={10} className="mr-1" /> Reload
+                      </button>
+                      {(fromDate || toDate) && (
+                        <button
+                          className="rf-custom-clear"
+                          onClick={() => { setFromDate(''); setToDate('') }}
+                          title="Clear dates"
+                          style={{ padding: '4px 8px', fontSize: '12px', borderRadius: '6px' }}
+                        >
+                          <X size={10} /> Clear
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rf-segmented-toggle">
+                <button
+                  className={`rf-segment-btn${displayMode === 'charts' ? ' active' : ''}`}
+                  onClick={() => setDisplayMode('charts')}
+                >
+                  <LayoutGrid size={14} />
+                  Charts
+                </button>
+                <button
+                  className={`rf-segment-btn${displayMode === 'table' ? ' active' : ''}`}
+                  onClick={() => setDisplayMode('table')}
+                >
+                  <Table2 size={14} />
+                  Table
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Charts Row ── */}
+          {viewMode === 'list' && displayMode === 'charts' && stats.total > 0 && (
+            <CRow className="mb-4">
+              <CCol xs={12} lg={4} className="mb-3">
+                <CCard className="h-100 rf-chart-card">
+                  <CCardBody className="p-3">
+                    <div className="rf-chart-header">
+                      <PieChartIcon size={16} className="text-success" />
+                      <span>Referral Source Split</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <PieChart>
+                        <Pie
+                          data={referralSourceChartData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={75}
+                          paddingAngle={3}
+                        >
+                          {referralSourceChartData.map((entry, index) => (
+                            <Cell
+                              key={`src-cell-${index}`}
+                              fill={index === 0 ? '#3b6d11' : '#185fa5'}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [`${value} patients`, '']} />
+                        <Legend
+                          verticalAlign="bottom"
+                          height={30}
+                          wrapperStyle={{ fontSize: '11px' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CCardBody>
+                </CCard>
+              </CCol>
+
+              <CCol xs={12} lg={4} className="mb-3">
+                <CCard className="h-100 rf-chart-card">
+                  <CCardBody className="p-3">
+                    <div className="rf-chart-header">
+                      <BarChart3 size={16} className="text-success" />
+                      <span>Top Referring Doctors</span>
+                    </div>
+                    {topDoctorsChartData.length === 0 ? (
+                      <div className="rf-chart-empty">No doctor referrals in this period</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <BarChart
+                          data={topDoctorsChartData}
+                          layout="vertical"
+                          margin={{ top: 5, right: 16, left: 0, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                          <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            width={110}
+                            tick={{ fontSize: 10 }}
                           />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value, name) => [`${value} patients`, name]} />
-                      <Legend
-                        verticalAlign="bottom"
-                        height={40}
-                        wrapperStyle={{ fontSize: '10.5px' }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                          <Tooltip formatter={(value) => [`${value} patients`, 'Referred']} />
+                          <Bar dataKey="patients" fill="#3b6d11" radius={[0, 4, 4, 0]} barSize={16} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CCardBody>
+                </CCard>
+              </CCol>
+
+              <CCol xs={12} lg={4} className="mb-3">
+                <CCard className="h-100 rf-chart-card">
+                  <CCardBody className="p-3">
+                    <div className="rf-chart-header">
+                      <Share2 size={16} className="text-success" />
+                      <span>Channel Breakdown</span>
+                    </div>
+                    {channelPieChartData.length === 0 ? (
+                      <div className="rf-chart-empty">No channel referrals in this period</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <PieChart>
+                          <Pie
+                            data={channelPieChartData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={75}
+                            label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                            labelLine={false}
+                          >
+                            {channelPieChartData.map((entry, index) => (
+                              <Cell
+                                key={`chan-cell-${index}`}
+                                fill={CHART_COLORS[index % CHART_COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value, name) => [`${value} patients`, name]} />
+                          <Legend
+                            verticalAlign="bottom"
+                            height={40}
+                            wrapperStyle={{ fontSize: '10.5px' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CCardBody>
+                </CCard>
+              </CCol>
+            </CRow>
+          )}
+
+          {viewMode === 'list' && displayMode === 'charts' && stats.total === 0 && (
+            <div className="rf-empty mb-4">
+              <BarChart3 size={32} className="rf-empty-icon" />
+              <p className="mb-0 mt-2 font-weight-bold">No data to chart</p>
+              <p className="text-muted small">Try a different date filter or switch to Table View.</p>
+            </div>
+          )}
+
+          {/* ── Tabs Navigation ── */}
+          {/* ── Tabs Navigation ── */}
+          {viewMode === 'list' && displayMode === 'table' && (
+            <CCard className="mb-4 rf-tabs-card">
+              <CCardBody className="p-0">
+                {loading ? (
+                  <div className="text-center py-5">
+                    <LoadingIndicator message="Loading table data..." />
+                  </div>
+                ) : (
+                  <>
+                    <CNav variant="tabs" className="rf-nav-tabs">
+                      <CNavItem>
+                        <CNavLink
+                          active={activeTab === 'doctors'}
+                          onClick={() => setActiveTab('doctors')}
+                          className="rf-nav-link"
+                        >
+                          Referred by Doctors ({searchedDoctorTableData.length})
+                        </CNavLink>
+                      </CNavItem>
+                      <CNavItem>
+                        <CNavLink
+                          active={activeTab === 'channels'}
+                          onClick={() => setActiveTab('channels')}
+                          className="rf-nav-link"
+                        >
+                          Other Referral Channels (
+                          {searchedChannelsTableData.filter((c) => c.patientCount > 0).length})
+                        </CNavLink>
+                      </CNavItem>
+                    </CNav>
+
+                    <CTabContent className="p-3">
+                      {/* 🩺 Tab 1: Doctors */}
+                      {activeTab === 'doctors' && (
+                        <div>
+                          {/* Result count */}
+                          <div className="d-flex justify-content-end align-items-center flex-wrap gap-2 mb-3">
+                            <div className="text-muted small">
+                              Showing {searchedDoctorTableData.length} of {activeDoctors.length} doctors
+                            </div>
+                          </div>
+
+                          {/* Table */}
+                          <div className="rf-table-wrapper">
+                            <CTable className="rf-table">
+                              <CTableHead>
+                                <CTableRow>
+                                  <CTableHeaderCell className="rf-th" style={{ width: 60 }}>
+                                    S.No
+                                  </CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th">Doctor Name</CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th">
+                                    Clinic/Hospital Name
+                                  </CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th">Specialization</CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th">Contact Info</CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th text-center">
+                                    Patients Referred
+                                  </CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th text-right">
+                                    Revenue Generated
+                                  </CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th text-center" style={{ width: 100 }}>
+                                    Actions
+                                  </CTableHeaderCell>
+                                </CTableRow>
+                              </CTableHead>
+
+                              <CTableBody>
+                                {searchedDoctorTableData.length === 0 ? (
+                                  <CTableRow>
+                                    <CTableDataCell colSpan={8}>
+                                      <div className="rf-empty">
+                                        <Users size={32} className="rf-empty-icon" />
+                                        <p className="mb-0 mt-2 font-weight-bold">
+                                          No referring doctors found
+                                        </p>
+                                        <p className="text-muted small">
+                                          Try adjusting your search or add refer doctors in Doctor
+                                          Management.
+                                        </p>
+                                      </div>
+                                    </CTableDataCell>
+                                  </CTableRow>
+                                ) : (
+                                  paginatedDoctorData.map((doc, idx) => (
+                                    <CTableRow key={doc.id || idx} className="rf-tr">
+                                      <CTableDataCell className="rf-td rf-td-num">{(docPage - 1) * docPageSize + idx + 1}</CTableDataCell>
+                                      <CTableDataCell className="rf-td font-weight-bold color-primary">
+                                        {doc.fullName?.toLowerCase().startsWith('dr')
+                                          ? capitalizeWords(doc.fullName)
+                                          : `Dr. ${capitalizeWords(doc.fullName || '')}`}
+                                      </CTableDataCell>
+                                      <CTableDataCell className="rf-td text-muted">
+                                        {doc.currentHospitalName ? (
+                                          <span>
+                                            {capitalizeWords(doc.currentHospitalName)}
+                                            {doc.branchname && (
+                                              <span className="rf-clinic-tag ms-2">{doc.branchname}</span>
+                                            )}
+                                          </span>
+                                        ) : (
+                                          '—'
+                                        )}
+                                      </CTableDataCell>
+                                      <CTableDataCell className="rf-td text-muted">
+                                        {doc.specialization || '—'}
+                                      </CTableDataCell>
+                                      <CTableDataCell className="rf-td text-muted">
+                                        {doc.mobileNumber || '—'}
+                                      </CTableDataCell>
+                                      <CTableDataCell className="rf-td text-center font-weight-bold text-dark">
+                                        <CBadge
+                                          color={doc.patientCount > 0 ? 'success' : 'secondary'}
+                                          className="rf-badge-count"
+                                        >
+                                          {doc.patientCount}
+                                        </CBadge>
+                                      </CTableDataCell>
+                                      <CTableDataCell className="rf-td text-right font-weight-bold text-success">
+                                        ₹{doc.revenue?.toLocaleString('en-IN') || 0}
+                                      </CTableDataCell>
+                                      <CTableDataCell className="rf-td text-center">
+                                        <button
+                                          className="rf-action-btn"
+                                          title="View patients referred"
+                                          disabled={doc.patientCount === 0}
+                                          onClick={() => handleOpenPatientsModal(doc, 'doctor')}
+                                        >
+                                          <Eye size={14} />
+                                        </button>
+                                      </CTableDataCell>
+                                    </CTableRow>
+                                  ))
+                                )}
+                              </CTableBody>
+                            </CTable>
+                          </div>
+                          {searchedDoctorTableData.length > 0 && (
+                            <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff' }}>
+                              <Pagination
+                                currentPage={docPage}
+                                totalPages={Math.max(1, Math.ceil(searchedDoctorTableData.length / docPageSize))}
+                                pageSize={docPageSize}
+                                onPageChange={setDocPage}
+                                onPageSizeChange={setDocPageSize}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 📣 Tab 2: Channels */}
+                      {activeTab === 'channels' && (
+                        <div>
+                          {/* Result count */}
+                          <div className="d-flex justify-content-end align-items-center flex-wrap gap-2 mb-3">
+                            <div className="text-muted small">
+                              Showing {searchedChannelsTableData.length} of {otherChannelsTableData.length}{' '}
+                              channels
+                            </div>
+                          </div>
+
+                          <div className="rf-table-wrapper">
+                            <CTable className="rf-table">
+                              <CTableHead>
+                                <CTableRow>
+                                  <CTableHeaderCell className="rf-th" style={{ width: 60 }}>
+                                    S.No
+                                  </CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th">Referral Channel</CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th text-center">
+                                    Patients Referred
+                                  </CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th text-right">
+                                    Revenue Generated
+                                  </CTableHeaderCell>
+                                  <CTableHeaderCell className="rf-th text-center" style={{ width: 100 }}>
+                                    Actions
+                                  </CTableHeaderCell>
+                                </CTableRow>
+                              </CTableHead>
+
+                              <CTableBody>
+                                {searchedChannelsTableData.length === 0 ? (
+                                  <CTableRow>
+                                    <CTableDataCell colSpan={5}>
+                                      <div className="rf-empty">
+                                        <Share2 size={32} className="rf-empty-icon" />
+                                        <p className="mb-0 mt-2 font-weight-bold">
+                                          No channel referrals found
+                                        </p>
+                                      </div>
+                                    </CTableDataCell>
+                                  </CTableRow>
+                                ) : (
+                                  paginatedChannelsData.map((chan, idx) => (
+                                    <CTableRow key={chan.channel} className="rf-tr">
+                                      <CTableDataCell className="rf-td rf-td-num">{(chanPage - 1) * chanPageSize + idx + 1}</CTableDataCell>
+                                      <CTableDataCell
+                                        className={`rf-td font-weight-bold ${chan.patientCount > 0
+                                          ? 'rf-clickable-channel'
+                                          : 'color-primary'
+                                          }`}
+                                        onClick={() => {
+                                          if (chan.patientCount > 0) {
+                                            handleOpenChannelDetails(chan.channel)
+                                          }
+                                        }}
+                                      >
+                                        {chan.channel}
+                                      </CTableDataCell>
+                                      <CTableDataCell className="rf-td text-center font-weight-bold text-dark">
+                                        <CBadge
+                                          color={chan.patientCount > 0 ? 'info' : 'secondary'}
+                                          className="rf-badge-count"
+                                        >
+                                          {chan.patientCount}
+                                        </CBadge>
+                                      </CTableDataCell>
+                                      <CTableDataCell className="rf-td text-right font-weight-bold text-success">
+                                        ₹{chan.revenue?.toLocaleString('en-IN') || 0}
+                                      </CTableDataCell>
+                                      <CTableDataCell className="rf-td text-center">
+                                        <button
+                                          className="rf-action-btn info-btn"
+                                          title="View channel patients"
+                                          disabled={chan.patientCount === 0}
+                                          onClick={() => handleOpenChannelDetails(chan.channel)}
+                                        >
+                                          <Eye size={14} />
+                                        </button>
+                                      </CTableDataCell>
+                                    </CTableRow>
+                                  ))
+                                )}
+                              </CTableBody>
+                            </CTable>
+                          </div>
+                          {searchedChannelsTableData.length > 0 && (
+                            <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff' }}>
+                              <Pagination
+                                currentPage={chanPage}
+                                totalPages={Math.max(1, Math.ceil(searchedChannelsTableData.length / chanPageSize))}
+                                pageSize={chanPageSize}
+                                onPageChange={setChanPage}
+                                onPageSizeChange={setChanPageSize}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CTabContent>
+                  </>
                 )}
               </CCardBody>
             </CCard>
-          </CCol>
-        </CRow>
-      )}
+          )}
 
-      {viewMode === 'list' && displayMode === 'charts' && stats.total === 0 && (
-        <div className="rf-empty mb-4">
-          <BarChart3 size={32} className="rf-empty-icon" />
-          <p className="mb-0 mt-2 font-weight-bold">No data to chart</p>
-          <p className="text-muted small">Try a different date filter or switch to Table View.</p>
-        </div>
-      )}
-
-      {/* ── Tabs Navigation ── */}
-      {/* ── Tabs Navigation ── */}
-      {viewMode === 'list' && displayMode === 'table' && (
-        <CCard className="mb-4 rf-tabs-card">
-          <CCardBody className="p-0">
-            {loading ? (
-              <div className="text-center py-5">
-                <LoadingIndicator message="Loading table data..." />
-              </div>
-            ) : (
-              <>
-                <CNav variant="tabs" className="rf-nav-tabs">
-                  <CNavItem>
-                    <CNavLink
-                      active={activeTab === 'doctors'}
-                      onClick={() => setActiveTab('doctors')}
-                      className="rf-nav-link"
-                    >
-                      Referred by Doctors ({searchedDoctorTableData.length})
-                    </CNavLink>
-                  </CNavItem>
-                  <CNavItem>
-                    <CNavLink
-                      active={activeTab === 'channels'}
-                      onClick={() => setActiveTab('channels')}
-                      className="rf-nav-link"
-                    >
-                      Other Referral Channels (
-                      {searchedChannelsTableData.filter((c) => c.patientCount > 0).length})
-                    </CNavLink>
-                  </CNavItem>
-                </CNav>
-
-                <CTabContent className="p-3">
-                  {/* 🩺 Tab 1: Doctors */}
-                  {activeTab === 'doctors' && (
-                    <div>
-                      {/* Result count */}
-                      <div className="d-flex justify-content-end align-items-center flex-wrap gap-2 mb-3">
-                        <div className="text-muted small">
-                          Showing {searchedDoctorTableData.length} of {activeDoctors.length} doctors
-                        </div>
-                      </div>
-
-                      {/* Table */}
-                      <div className="rf-table-wrapper">
-                        <CTable className="rf-table">
-                          <CTableHead>
-                            <CTableRow>
-                              <CTableHeaderCell className="rf-th" style={{ width: 60 }}>
-                                S.No
-                              </CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th">Doctor Name</CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th">
-                                Clinic/Hospital Name
-                              </CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th">Specialization</CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th">Contact Info</CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th text-center">
-                                Patients Referred
-                              </CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th text-right">
-                                Revenue Generated
-                              </CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th text-center" style={{ width: 100 }}>
-                                Actions
-                              </CTableHeaderCell>
-                            </CTableRow>
-                          </CTableHead>
-
-                          <CTableBody>
-                            {searchedDoctorTableData.length === 0 ? (
-                              <CTableRow>
-                                <CTableDataCell colSpan={8}>
-                                  <div className="rf-empty">
-                                    <Users size={32} className="rf-empty-icon" />
-                                    <p className="mb-0 mt-2 font-weight-bold">
-                                      No referring doctors found
-                                    </p>
-                                    <p className="text-muted small">
-                                      Try adjusting your search or add refer doctors in Doctor
-                                      Management.
-                                    </p>
-                                  </div>
-                                </CTableDataCell>
-                              </CTableRow>
-                            ) : (
-                              paginatedDoctorData.map((doc, idx) => (
-                                <CTableRow key={doc.id || idx} className="rf-tr">
-                                  <CTableDataCell className="rf-td rf-td-num">{(docPage - 1) * docPageSize + idx + 1}</CTableDataCell>
-                                  <CTableDataCell className="rf-td font-weight-bold color-primary">
-                                    {doc.fullName?.toLowerCase().startsWith('dr')
-                                      ? capitalizeWords(doc.fullName)
-                                      : `Dr. ${capitalizeWords(doc.fullName || '')}`}
-                                  </CTableDataCell>
-                                  <CTableDataCell className="rf-td text-muted">
-                                    {doc.currentHospitalName ? (
-                                      <span>
-                                        {capitalizeWords(doc.currentHospitalName)}
-                                        {doc.branchname && (
-                                          <span className="rf-clinic-tag ms-2">{doc.branchname}</span>
-                                        )}
-                                      </span>
-                                    ) : (
-                                      '—'
-                                    )}
-                                  </CTableDataCell>
-                                  <CTableDataCell className="rf-td text-muted">
-                                    {doc.specialization || '—'}
-                                  </CTableDataCell>
-                                  <CTableDataCell className="rf-td text-muted">
-                                    {doc.mobileNumber || '—'}
-                                  </CTableDataCell>
-                                  <CTableDataCell className="rf-td text-center font-weight-bold text-dark">
-                                    <CBadge
-                                      color={doc.patientCount > 0 ? 'success' : 'secondary'}
-                                      className="rf-badge-count"
-                                    >
-                                      {doc.patientCount}
-                                    </CBadge>
-                                  </CTableDataCell>
-                                  <CTableDataCell className="rf-td text-right font-weight-bold text-success">
-                                    ₹{doc.revenue?.toLocaleString('en-IN') || 0}
-                                  </CTableDataCell>
-                                  <CTableDataCell className="rf-td text-center">
-                                    <button
-                                      className="rf-action-btn"
-                                      title="View patients referred"
-                                      disabled={doc.patientCount === 0}
-                                      onClick={() => handleOpenPatientsModal(doc, 'doctor')}
-                                    >
-                                      <Eye size={14} />
-                                    </button>
-                                  </CTableDataCell>
-                                </CTableRow>
-                              ))
-                            )}
-                          </CTableBody>
-                        </CTable>
-                      </div>
-                      {searchedDoctorTableData.length > 0 && (
-                        <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff' }}>
-                          <Pagination
-                            currentPage={docPage}
-                            totalPages={Math.max(1, Math.ceil(searchedDoctorTableData.length / docPageSize))}
-                            pageSize={docPageSize}
-                            onPageChange={setDocPage}
-                            onPageSizeChange={setDocPageSize}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 📣 Tab 2: Channels */}
-                  {activeTab === 'channels' && (
-                    <div>
-                      {/* Result count */}
-                      <div className="d-flex justify-content-end align-items-center flex-wrap gap-2 mb-3">
-                        <div className="text-muted small">
-                          Showing {searchedChannelsTableData.length} of {otherChannelsTableData.length}{' '}
-                          channels
-                        </div>
-                      </div>
-
-                      <div className="rf-table-wrapper">
-                        <CTable className="rf-table">
-                          <CTableHead>
-                            <CTableRow>
-                              <CTableHeaderCell className="rf-th" style={{ width: 60 }}>
-                                S.No
-                              </CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th">Referral Channel</CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th text-center">
-                                Patients Referred
-                              </CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th text-right">
-                                Revenue Generated
-                              </CTableHeaderCell>
-                              <CTableHeaderCell className="rf-th text-center" style={{ width: 100 }}>
-                                Actions
-                              </CTableHeaderCell>
-                            </CTableRow>
-                          </CTableHead>
-
-                          <CTableBody>
-                            {searchedChannelsTableData.length === 0 ? (
-                              <CTableRow>
-                                <CTableDataCell colSpan={5}>
-                                  <div className="rf-empty">
-                                    <Share2 size={32} className="rf-empty-icon" />
-                                    <p className="mb-0 mt-2 font-weight-bold">
-                                      No channel referrals found
-                                    </p>
-                                  </div>
-                                </CTableDataCell>
-                              </CTableRow>
-                            ) : (
-                              paginatedChannelsData.map((chan, idx) => (
-                                <CTableRow key={chan.channel} className="rf-tr">
-                                  <CTableDataCell className="rf-td rf-td-num">{(chanPage - 1) * chanPageSize + idx + 1}</CTableDataCell>
-                                  <CTableDataCell
-                                    className={`rf-td font-weight-bold ${chan.patientCount > 0
-                                        ? 'rf-clickable-channel'
-                                        : 'color-primary'
-                                      }`}
-                                    onClick={() => {
-                                      if (chan.patientCount > 0) {
-                                        handleOpenChannelDetails(chan.channel)
-                                      }
-                                    }}
-                                  >
-                                    {chan.channel}
-                                  </CTableDataCell>
-                                  <CTableDataCell className="rf-td text-center font-weight-bold text-dark">
-                                    <CBadge
-                                      color={chan.patientCount > 0 ? 'info' : 'secondary'}
-                                      className="rf-badge-count"
-                                    >
-                                      {chan.patientCount}
-                                    </CBadge>
-                                  </CTableDataCell>
-                                  <CTableDataCell className="rf-td text-right font-weight-bold text-success">
-                                    ₹{chan.revenue?.toLocaleString('en-IN') || 0}
-                                  </CTableDataCell>
-                                  <CTableDataCell className="rf-td text-center">
-                                    <button
-                                      className="rf-action-btn info-btn"
-                                      title="View channel patients"
-                                      disabled={chan.patientCount === 0}
-                                      onClick={() => handleOpenChannelDetails(chan.channel)}
-                                    >
-                                      <Eye size={14} />
-                                    </button>
-                                  </CTableDataCell>
-                                </CTableRow>
-                              ))
-                            )}
-                          </CTableBody>
-                        </CTable>
-                      </div>
-                      {searchedChannelsTableData.length > 0 && (
-                        <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff' }}>
-                          <Pagination
-                            currentPage={chanPage}
-                            totalPages={Math.max(1, Math.ceil(searchedChannelsTableData.length / chanPageSize))}
-                            pageSize={chanPageSize}
-                            onPageChange={setChanPage}
-                            onPageSizeChange={setChanPageSize}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CTabContent>
-              </>
-            )}
-          </CCardBody>
-        </CCard>
-      )}
-
-      {/* ── Sub-Page: Detailed Channel Referrals (Friend/Family) ── */}
-      {viewMode === 'details' && (
-        <CCard
-          className="rf-main-card mb-4"
-          style={{
-            borderRadius: '12px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-            border: '1px solid #cbd5e1',
-          }}
-        >
-          <CCardBody className="p-4">
-            {/* Header with Back button and Filter Dropdown */}
-            <div
-              className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-3"
-              style={{ borderBottom: '1px solid #e2e8f0' }}
+          {/* ── Sub-Page: Detailed Channel Referrals (Friend/Family) ── */}
+          {viewMode === 'details' && (
+            <CCard
+              className="rf-main-card mb-4"
+              style={{
+                borderRadius: '12px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                border: '1px solid #cbd5e1',
+              }}
             >
-              <div className="d-flex align-items-center gap-3">
-                <CButton
-                  color="light"
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className="d-flex align-items-center gap-1 font-weight-bold text-muted"
-                  style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 12px' }}
+              <CCardBody className="p-4">
+                {/* Header with Back button and Filter Dropdown */}
+                <div
+                  className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-3"
+                  style={{ borderBottom: '1px solid #e2e8f0' }}
                 >
-                  &larr; Back to Overview
-                </CButton>
-                <h4 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0c447c', margin: 0 }}>
-                  {selectedChannel} Referral Channels
-                </h4>
-              </div>
-
-              {selectedChannel === 'Family' && (
-                <div className="d-flex align-items-center gap-3 flex-wrap">
-                  <div className="d-flex align-items-center gap-2">
-                    <span className="text-muted small font-weight-bold">Filter Relation:</span>
-                    <CFormSelect
-                      value={selectedSubRelation}
-                      onChange={(e) => {
-                        setSelectedSubRelation(e.target.value)
-                        setSelectedFamilyMember('All')
-                      }}
-                      style={{
-                        width: '180px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        border: '1px solid #cbd5e1',
-                      }}
+                  <div className="d-flex align-items-center gap-3">
+                    <CButton
+                      color="light"
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      className="d-flex align-items-center gap-1 font-weight-bold text-muted"
+                      style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 12px' }}
                     >
-                      <option value="All">All Family Relations</option>
-                      <option value="Family (Mother)">Mother</option>
-                      <option value="Family (Father)">Father</option>
-                      <option value="Family (Brother)">Brother</option>
-                      <option value="Family (Sister)">Sister</option>
-                      <option value="Family (Spouse)">Spouse</option>
-                      <option value="Family (Cousin)">Cousin</option>
-                      <option value="Family (Other)">Other</option>
-                    </CFormSelect>
+                      &larr; Back to Overview
+                    </CButton>
+                    <h4 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0c447c', margin: 0 }}>
+                      {selectedChannel} Referral Channels
+                    </h4>
                   </div>
-                  <div className="d-flex align-items-center gap-2">
-                    <span className="text-muted small font-weight-bold">Select Family Member:</span>
-                    <CFormSelect
-                      value={selectedFamilyMember}
-                      onChange={(e) => setSelectedFamilyMember(e.target.value)}
-                      style={{
-                        width: '220px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        border: '1px solid #cbd5e1',
-                      }}
-                    >
-                      <option value="All">All Family Members</option>
-                      {uniqueFamilyMembers.map((member) => (
-                        <option
-                          key={`${member.name}|${member.type}`}
-                          value={`${member.name}|${member.type}`}
+
+                  {selectedChannel === 'Family' && (
+                    <div className="d-flex align-items-center gap-3 flex-wrap">
+                      <div className="d-flex align-items-center gap-2">
+                        <span className="text-muted small font-weight-bold">Filter Relation:</span>
+                        <CFormSelect
+                          value={selectedSubRelation}
+                          onChange={(e) => {
+                            setSelectedSubRelation(e.target.value)
+                            setSelectedFamilyMember('All')
+                          }}
+                          style={{
+                            width: '180px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            border: '1px solid #cbd5e1',
+                          }}
                         >
-                          {member.displayName}
-                        </option>
-                      ))}
-                    </CFormSelect>
+                          <option value="All">All Family Relations</option>
+                          <option value="Family (Mother)">Mother</option>
+                          <option value="Family (Father)">Father</option>
+                          <option value="Family (Brother)">Brother</option>
+                          <option value="Family (Sister)">Sister</option>
+                          <option value="Family (Spouse)">Spouse</option>
+                          <option value="Family (Cousin)">Cousin</option>
+                          <option value="Family (Other)">Other</option>
+                        </CFormSelect>
+                      </div>
+                      <div className="d-flex align-items-center gap-2">
+                        <span className="text-muted small font-weight-bold">Select Family Member:</span>
+                        <CFormSelect
+                          value={selectedFamilyMember}
+                          onChange={(e) => setSelectedFamilyMember(e.target.value)}
+                          style={{
+                            width: '220px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            border: '1px solid #cbd5e1',
+                          }}
+                        >
+                          <option value="All">All Family Members</option>
+                          {uniqueFamilyMembers.map((member) => (
+                            <option
+                              key={`${member.name}|${member.type}`}
+                              value={`${member.name}|${member.type}`}
+                            >
+                              {member.displayName}
+                            </option>
+                          ))}
+                        </CFormSelect>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="rf-search-pill" style={{ marginLeft: selectedChannel !== 'Family' ? 'auto' : '0' }}>
+                    <Search size={14} className="rf-search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search patient name, mobile..."
+                      value={detailsSearchQuery}
+                      onChange={(e) => setDetailsSearchQuery(e.target.value)}
+                      className="rf-search-pill-input"
+                      style={{ minWidth: '220px' }}
+                    />
+                    {detailsSearchQuery && (
+                      <button
+                        className="rf-search-clear"
+                        onClick={() => setDetailsSearchQuery('')}
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
-              )}
 
-              <div className="rf-search-pill" style={{ marginLeft: selectedChannel !== 'Family' ? 'auto' : '0' }}>
+                {/* Patients List Table */}
+                {channelPatientsLoading ? (
+                  <div className="text-center py-5">
+                    <LoadingIndicator message="Loading referred patients..." />
+                  </div>
+                ) : detailsPatientsData.length === 0 ? (
+                  <div className="text-center py-5">
+                    <Users size={48} className="text-muted mb-3" />
+                    <h5 className="font-weight-bold text-muted">No referrals recorded</h5>
+                    <p className="text-muted small">
+                      No patients match the selected relationship filter for this time range.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rf-table-wrapper border-0">
+                    <CTable responsive className="rf-table">
+                      <CTableHead>
+                        <CTableRow>
+                          <CTableHeaderCell
+                            className="rf-m-th"
+                            style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
+                          >
+                            S.No
+                          </CTableHeaderCell>
+                          <CTableHeaderCell
+                            className="rf-m-th"
+                            style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
+                          >
+                            Patient Name
+                          </CTableHeaderCell>
+                          <CTableHeaderCell
+                            className="rf-m-th"
+                            style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
+                          >
+                            Service Details
+                          </CTableHeaderCell>
+                          <CTableHeaderCell
+                            className="rf-m-th"
+                            style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
+                          >
+                            Date of Visit
+                          </CTableHeaderCell>
+                          <CTableHeaderCell
+                            className="rf-m-th"
+                            style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
+                          >
+                            Contact Number
+                          </CTableHeaderCell>
+                          <CTableHeaderCell
+                            className="rf-m-th text-center"
+                            style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
+                          >
+                            Status
+                          </CTableHeaderCell>
+                          <CTableHeaderCell
+                            className="rf-m-th"
+                            style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
+                          >
+                            Referred By Person
+                          </CTableHeaderCell>
+                          <CTableHeaderCell
+                            className="rf-m-th text-right"
+                            style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
+                          >
+                            Total Cost
+                          </CTableHeaderCell>
+                          <CTableHeaderCell
+                            className="rf-m-th text-right"
+                            style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
+                          >
+                            Paid
+                          </CTableHeaderCell>
+                          <CTableHeaderCell
+                            className="rf-m-th text-right"
+                            style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
+                          >
+                            Pending
+                          </CTableHeaderCell>
+                        </CTableRow>
+                      </CTableHead>
+                      <CTableBody>
+                        {paginatedDetailsData.map((pat, idx) => {
+                          const isPackOrProg = pat.totalAmount !== undefined && pat.totalAmount > 0
+                          const totalCost = isPackOrProg
+                            ? pat.totalAmount
+                            : Number(pat.servicecost || pat.consultationFee || 0)
+                          const paidAmount = isPackOrProg
+                            ? pat.totalPaid || 0
+                            : pat.status === 'Completed'
+                              ? totalCost
+                              : 0
+                          const pendingAmount = isPackOrProg
+                            ? pat.balanceAmount || 0
+                            : pat.status === 'Completed'
+                              ? 0
+                              : totalCost
+                          const typeLabel = getBookingType(pat)
+
+                          // Type badge color mapping
+                          const badgeColors = {
+                            Package: 'info',
+                            Program: 'primary',
+                            Therapy: 'success',
+                            Exercise: 'warning',
+                            Consultation: 'secondary',
+                          }
+                          const badgeColor = badgeColors[typeLabel] || 'secondary'
+
+                          return (
+                            <CTableRow key={pat.id || idx} className="rf-tr">
+                              <CTableDataCell className="rf-td rf-td-num">{(detPage - 1) * detPageSize + idx + 1}</CTableDataCell>
+                              <CTableDataCell className="rf-td font-weight-bold color-primary">
+                                {pat.name}
+                              </CTableDataCell>
+                              <CTableDataCell className="rf-td">
+                                <div className="font-weight-bold text-dark">
+                                  {getBookingServiceName(pat)}
+                                </div>
+                                <CBadge
+                                  color={badgeColor}
+                                  style={{ fontSize: '10px', padding: '3px 6px', marginTop: '4px' }}
+                                >
+                                  {typeLabel}
+                                </CBadge>
+                              </CTableDataCell>
+                              <CTableDataCell className="rf-td text-muted">
+                                {pat.serviceDate}
+                              </CTableDataCell>
+                              <CTableDataCell className="rf-td text-muted">
+                                {pat.patientMobileNumber || pat.mobileNumber || '—'}
+                              </CTableDataCell>
+                              <CTableDataCell className="rf-td text-center">
+                                <CBadge
+                                  color={
+                                    pat.status === 'Completed'
+                                      ? 'success'
+                                      : pat.status === 'Cancelled'
+                                        ? 'danger'
+                                        : 'warning'
+                                  }
+                                  className="rf-status-badge"
+                                >
+                                  {pat.status || 'Scheduled'}
+                                </CBadge>
+                              </CTableDataCell>
+                              <CTableDataCell className="rf-td text-muted">
+                                {formatReferredByPerson(pat)}
+                              </CTableDataCell>
+                              <CTableDataCell className="rf-td text-right font-weight-bold text-dark">
+                                ₹{totalCost.toLocaleString('en-IN')}
+                              </CTableDataCell>
+                              <CTableDataCell className="rf-td text-right font-weight-bold text-success">
+                                ₹{paidAmount.toLocaleString('en-IN')}
+                              </CTableDataCell>
+                              <CTableDataCell className="rf-td text-right font-weight-bold text-danger">
+                                ₹{pendingAmount.toLocaleString('en-IN')}
+                              </CTableDataCell>
+                            </CTableRow>
+                          )
+                        })}
+                      </CTableBody>
+                    </CTable>
+                  </div>
+                )}
+                {searchedDetailsData.length > 0 && (
+                  <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff', marginTop: '12px', borderRadius: '8px' }}>
+                    <Pagination
+                      currentPage={detPage}
+                      totalPages={Math.max(1, Math.ceil(searchedDetailsData.length / detPageSize))}
+                      pageSize={detPageSize}
+                      onPageChange={setDetPage}
+                      onPageSizeChange={setDetPageSize}
+                    />
+                  </div>
+                )}
+              </CCardBody>
+            </CCard>
+          )}
+
+          {/* ── Modal: Referred Patients List ── */}
+          <CModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            size="lg"
+            backdrop="static"
+            className="rf-patients-modal"
+          >
+            <CModalHeader style={{ borderBottom: '1px solid #d0dce9', padding: '16px 20px' }}>
+              <CModalTitle
+                className="d-flex align-items-center gap-2"
+                style={{ fontSize: 16, fontWeight: 600, color: '#0c447c', flex: 1 }}
+              >
+                <Users size={18} className="text-success" />
+                Referred Patients:{' '}
+                {modalType === 'doctor'
+                  ? selectedEntity?.fullName?.toLowerCase().startsWith('dr')
+                    ? capitalizeWords(selectedEntity.fullName)
+                    : `Dr. ${capitalizeWords(selectedEntity?.fullName || '')}`
+                  : selectedEntity?.channel}
+              </CModalTitle>
+              <div className="rf-search-pill" style={{ margin: 0, minWidth: '220px' }}>
                 <Search size={14} className="rf-search-icon" />
                 <input
                   type="text"
                   placeholder="Search patient name, mobile..."
-                  value={detailsSearchQuery}
-                  onChange={(e) => setDetailsSearchQuery(e.target.value)}
+                  value={modalSearchQuery}
+                  onChange={(e) => {
+                    setModalSearchQuery(e.target.value)
+                    setModalPage(1)
+                  }}
                   className="rf-search-pill-input"
-                  style={{ minWidth: '220px' }}
                 />
-                {detailsSearchQuery && (
+                {modalSearchQuery && (
                   <button
                     className="rf-search-clear"
-                    onClick={() => setDetailsSearchQuery('')}
+                    onClick={() => {
+                      setModalSearchQuery('')
+                      setModalPage(1)
+                    }}
                   >
                     <X size={14} />
                   </button>
                 )}
               </div>
-            </div>
-
-            {/* Patients List Table */}
-            {channelPatientsLoading ? (
-              <div className="text-center py-5">
-                <LoadingIndicator message="Loading referred patients..." />
-              </div>
-            ) : detailsPatientsData.length === 0 ? (
-              <div className="text-center py-5">
-                <Users size={48} className="text-muted mb-3" />
-                <h5 className="font-weight-bold text-muted">No referrals recorded</h5>
-                <p className="text-muted small">
-                  No patients match the selected relationship filter for this time range.
-                </p>
-              </div>
-            ) : (
-              <div className="rf-table-wrapper border-0">
-                <CTable responsive className="rf-table">
-                  <CTableHead>
-                    <CTableRow>
-                      <CTableHeaderCell
-                        className="rf-m-th"
-                        style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
-                      >
-                        S.No
-                      </CTableHeaderCell>
-                      <CTableHeaderCell
-                        className="rf-m-th"
-                        style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
-                      >
-                        Patient Name
-                      </CTableHeaderCell>
-                      <CTableHeaderCell
-                        className="rf-m-th"
-                        style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
-                      >
-                        Service Details
-                      </CTableHeaderCell>
-                      <CTableHeaderCell
-                        className="rf-m-th"
-                        style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
-                      >
-                        Date of Visit
-                      </CTableHeaderCell>
-                      <CTableHeaderCell
-                        className="rf-m-th"
-                        style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
-                      >
-                        Contact Number
-                      </CTableHeaderCell>
-                      <CTableHeaderCell
-                        className="rf-m-th text-center"
-                        style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
-                      >
-                        Status
-                      </CTableHeaderCell>
-                      <CTableHeaderCell
-                        className="rf-m-th"
-                        style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
-                      >
-                        Referred By Person
-                      </CTableHeaderCell>
-                      <CTableHeaderCell
-                        className="rf-m-th text-right"
-                        style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
-                      >
-                        Total Cost
-                      </CTableHeaderCell>
-                      <CTableHeaderCell
-                        className="rf-m-th text-right"
-                        style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
-                      >
-                        Paid
-                      </CTableHeaderCell>
-                      <CTableHeaderCell
-                        className="rf-m-th text-right"
-                        style={{ background: '#eaf3de !important', color: '#3b6d11 !important' }}
-                      >
-                        Pending
-                      </CTableHeaderCell>
-                    </CTableRow>
-                  </CTableHead>
-                  <CTableBody>
-                    {paginatedDetailsData.map((pat, idx) => {
-                      const isPackOrProg = pat.totalAmount !== undefined && pat.totalAmount > 0
-                      const totalCost = isPackOrProg
-                        ? pat.totalAmount
-                        : Number(pat.servicecost || pat.consultationFee || 0)
-                      const paidAmount = isPackOrProg
-                        ? pat.totalPaid || 0
-                        : pat.status === 'Completed'
-                          ? totalCost
-                          : 0
-                      const pendingAmount = isPackOrProg
-                        ? pat.balanceAmount || 0
-                        : pat.status === 'Completed'
-                          ? 0
-                          : totalCost
-                      const typeLabel = getBookingType(pat)
-
-                      // Type badge color mapping
-                      const badgeColors = {
-                        Package: 'info',
-                        Program: 'primary',
-                        Therapy: 'success',
-                        Exercise: 'warning',
-                        Consultation: 'secondary',
-                      }
-                      const badgeColor = badgeColors[typeLabel] || 'secondary'
-
-                      return (
-                        <CTableRow key={pat.id || idx} className="rf-tr">
-                          <CTableDataCell className="rf-td rf-td-num">{(detPage - 1) * detPageSize + idx + 1}</CTableDataCell>
-                          <CTableDataCell className="rf-td font-weight-bold color-primary">
-                            {pat.name}
-                          </CTableDataCell>
-                          <CTableDataCell className="rf-td">
-                            <div className="font-weight-bold text-dark">
-                              {getBookingServiceName(pat)}
-                            </div>
-                            <CBadge
-                              color={badgeColor}
-                              style={{ fontSize: '10px', padding: '3px 6px', marginTop: '4px' }}
-                            >
-                              {typeLabel}
-                            </CBadge>
-                          </CTableDataCell>
-                          <CTableDataCell className="rf-td text-muted">
-                            {pat.serviceDate}
-                          </CTableDataCell>
-                          <CTableDataCell className="rf-td text-muted">
-                            {pat.patientMobileNumber || pat.mobileNumber || '—'}
-                          </CTableDataCell>
-                          <CTableDataCell className="rf-td text-center">
-                            <CBadge
-                              color={
-                                pat.status === 'Completed'
-                                  ? 'success'
-                                  : pat.status === 'Cancelled'
-                                    ? 'danger'
-                                    : 'warning'
-                              }
-                              className="rf-status-badge"
-                            >
-                              {pat.status || 'Scheduled'}
-                            </CBadge>
-                          </CTableDataCell>
-                          <CTableDataCell className="rf-td text-muted">
-                            {formatReferredByPerson(pat)}
-                          </CTableDataCell>
-                          <CTableDataCell className="rf-td text-right font-weight-bold text-dark">
-                            ₹{totalCost.toLocaleString('en-IN')}
-                          </CTableDataCell>
-                          <CTableDataCell className="rf-td text-right font-weight-bold text-success">
-                            ₹{paidAmount.toLocaleString('en-IN')}
-                          </CTableDataCell>
-                          <CTableDataCell className="rf-td text-right font-weight-bold text-danger">
-                            ₹{pendingAmount.toLocaleString('en-IN')}
-                          </CTableDataCell>
-                        </CTableRow>
-                      )
-                    })}
-                  </CTableBody>
-                </CTable>
-              </div>
-            )}
-            {searchedDetailsData.length > 0 && (
-              <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff', marginTop: '12px', borderRadius: '8px' }}>
-                <Pagination
-                  currentPage={detPage}
-                  totalPages={Math.max(1, Math.ceil(searchedDetailsData.length / detPageSize))}
-                  pageSize={detPageSize}
-                  onPageChange={setDetPage}
-                  onPageSizeChange={setDetPageSize}
-                />
-              </div>
-            )}
-          </CCardBody>
-        </CCard>
-      )}
-
-      {/* ── Modal: Referred Patients List ── */}
-      <CModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        size="lg"
-        backdrop="static"
-        className="rf-patients-modal"
-      >
-        <CModalHeader style={{ borderBottom: '1px solid #d0dce9', padding: '16px 20px' }}>
-          <CModalTitle
-            className="d-flex align-items-center gap-2"
-            style={{ fontSize: 16, fontWeight: 600, color: '#0c447c', flex: 1 }}
-          >
-            <Users size={18} className="text-success" />
-            Referred Patients:{' '}
-            {modalType === 'doctor'
-              ? selectedEntity?.fullName?.toLowerCase().startsWith('dr')
-                ? capitalizeWords(selectedEntity.fullName)
-                : `Dr. ${capitalizeWords(selectedEntity?.fullName || '')}`
-              : selectedEntity?.channel}
-          </CModalTitle>
-          <div className="rf-search-pill" style={{ margin: 0, minWidth: '220px' }}>
-            <Search size={14} className="rf-search-icon" />
-            <input
-              type="text"
-              placeholder="Search patient name, mobile..."
-              value={modalSearchQuery}
-              onChange={(e) => {
-                setModalSearchQuery(e.target.value)
-                setModalPage(1)
-              }}
-              className="rf-search-pill-input"
-            />
-            {modalSearchQuery && (
-              <button
-                className="rf-search-clear"
-                onClick={() => {
-                  setModalSearchQuery('')
-                  setModalPage(1)
-                }}
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-        </CModalHeader>
-        <CModalBody className="p-3" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-          {modalLoading ? (
-            <div className="text-center py-5">
-              <LoadingIndicator message="Loading referred patients..." />
-            </div>
-          ) : modalPatientsData.length === 0 ? (
-            <div className="text-center py-4">
-              <Users size={32} className="text-muted mb-2" />
-              <p className="mb-0">No patients recorded in this time range.</p>
-            </div>
-          ) : (
-            <div className="rf-table-wrapper border-0 shadow-none">
-              <CTable responsive className="rf-modal-table">
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell className="rf-m-th">S.No</CTableHeaderCell>
-                    <CTableHeaderCell className="rf-m-th">Patient Name</CTableHeaderCell>
-                    <CTableHeaderCell className="rf-m-th">Service Details</CTableHeaderCell>
-                    <CTableHeaderCell className="rf-m-th">Date of Visit</CTableHeaderCell>
-                    <CTableHeaderCell className="rf-m-th">Contact Number</CTableHeaderCell>
-                    <CTableHeaderCell className="rf-m-th text-center">Status</CTableHeaderCell>
-                    {modalType === 'channel' && (
-                      <CTableHeaderCell className="rf-m-th">Referred By Person</CTableHeaderCell>
-                    )}
-                    <CTableHeaderCell className="rf-m-th text-right">Total Cost</CTableHeaderCell>
-                    <CTableHeaderCell className="rf-m-th text-right">Paid</CTableHeaderCell>
-                    <CTableHeaderCell className="rf-m-th text-right">Pending</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {paginatedModalData.map((pat, idx) => {
-                    const isPackOrProg = pat.totalAmount !== undefined && pat.totalAmount > 0
-                    const totalCost = isPackOrProg
-                      ? pat.totalAmount
-                      : Number(pat.servicecost || pat.consultationFee || 0)
-                    const paidAmount = isPackOrProg
-                      ? pat.totalPaid || 0
-                      : pat.status === 'Completed'
-                        ? totalCost
-                        : 0
-                    const pendingAmount = isPackOrProg
-                      ? pat.balanceAmount || 0
-                      : pat.status === 'Completed'
-                        ? 0
-                        : totalCost
-                    const typeLabel = getBookingType(pat)
-
-                    // Type badge color mapping
-                    const badgeColors = {
-                      Package: 'info',
-                      Program: 'primary',
-                      Therapy: 'success',
-                      Exercise: 'warning',
-                      Consultation: 'secondary',
-                    }
-                    const badgeColor = badgeColors[typeLabel] || 'secondary'
-
-                    return (
-                      <CTableRow key={pat.id || idx} className="rf-tr">
-                        <CTableDataCell className="rf-td rf-td-num">{(modalPage - 1) * modalPageSize + idx + 1}</CTableDataCell>
-                        <CTableDataCell className="rf-td font-weight-bold color-primary">
-                          {pat.name}
-                        </CTableDataCell>
-                        <CTableDataCell className="rf-td">
-                          <div className="font-weight-bold text-dark">
-                            {getBookingServiceName(pat)}
-                          </div>
-                          <CBadge
-                            color={badgeColor}
-                            style={{ fontSize: '10px', padding: '3px 6px', marginTop: '4px' }}
-                          >
-                            {typeLabel}
-                          </CBadge>
-                        </CTableDataCell>
-                        <CTableDataCell className="rf-td text-muted">
-                          {pat.serviceDate}
-                        </CTableDataCell>
-                        <CTableDataCell className="rf-td text-muted">
-                          {pat.patientMobileNumber || pat.mobileNumber || '—'}
-                        </CTableDataCell>
-                        <CTableDataCell className="rf-td text-center">
-                          <CBadge
-                            color={
-                              pat.status === 'Completed'
-                                ? 'success'
-                                : pat.status === 'Cancelled'
-                                  ? 'danger'
-                                  : 'warning'
-                            }
-                            className="rf-status-badge"
-                          >
-                            {pat.status || 'Scheduled'}
-                          </CBadge>
-                        </CTableDataCell>
+            </CModalHeader>
+            <CModalBody className="p-3" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+              {modalLoading ? (
+                <div className="text-center py-5">
+                  <LoadingIndicator message="Loading referred patients..." />
+                </div>
+              ) : modalPatientsData.length === 0 ? (
+                <div className="text-center py-4">
+                  <Users size={32} className="text-muted mb-2" />
+                  <p className="mb-0">No patients recorded in this time range.</p>
+                </div>
+              ) : (
+                <div className="rf-table-wrapper border-0 shadow-none">
+                  <CTable responsive className="rf-modal-table">
+                    <CTableHead>
+                      <CTableRow>
+                        <CTableHeaderCell className="rf-m-th">S.No</CTableHeaderCell>
+                        <CTableHeaderCell className="rf-m-th">Patient Name</CTableHeaderCell>
+                        <CTableHeaderCell className="rf-m-th">Service Details</CTableHeaderCell>
+                        <CTableHeaderCell className="rf-m-th">Date of Visit</CTableHeaderCell>
+                        <CTableHeaderCell className="rf-m-th">Contact Number</CTableHeaderCell>
+                        <CTableHeaderCell className="rf-m-th text-center">Status</CTableHeaderCell>
                         {modalType === 'channel' && (
-                          <CTableDataCell className="rf-td text-muted">
-                            {formatReferredByPerson(pat)}
-                          </CTableDataCell>
+                          <CTableHeaderCell className="rf-m-th">Referred By Person</CTableHeaderCell>
                         )}
-                        <CTableDataCell className="rf-td text-right font-weight-bold text-dark">
-                          ₹{totalCost.toLocaleString('en-IN')}
-                        </CTableDataCell>
-                        <CTableDataCell className="rf-td text-right font-weight-bold text-success">
-                          ₹{paidAmount.toLocaleString('en-IN')}
-                        </CTableDataCell>
-                        <CTableDataCell className="rf-td text-right font-weight-bold text-danger">
-                          ₹{pendingAmount.toLocaleString('en-IN')}
-                        </CTableDataCell>
+                        <CTableHeaderCell className="rf-m-th text-right">Total Cost</CTableHeaderCell>
+                        <CTableHeaderCell className="rf-m-th text-right">Paid</CTableHeaderCell>
+                        <CTableHeaderCell className="rf-m-th text-right">Pending</CTableHeaderCell>
                       </CTableRow>
-                    )
-                  })}
-                </CTableBody>
-              </CTable>
-            </div>
-          )}
-          {modalPatientsData.length > 0 && (
-            <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff', marginTop: '12px', borderRadius: '8px' }}>
-              <Pagination
-                currentPage={modalPage}
-                totalPages={Math.max(1, Math.ceil(modalPatientsData.length / modalPageSize))}
-                pageSize={modalPageSize}
-                onPageChange={setModalPage}
-                onPageSizeChange={setModalPageSize}
-              />
-            </div>
-          )}
-        </CModalBody>
-        <CModalFooter style={{ borderTop: '1px solid #d0dce9', padding: '12px 16px' }}>
-          <CButton color="secondary" onClick={() => setModalVisible(false)} size="sm">
-            Close
-          </CButton>
-        </CModalFooter>
-      </CModal>
+                    </CTableHead>
+                    <CTableBody>
+                      {paginatedModalData.map((pat, idx) => {
+                        const isPackOrProg = pat.totalAmount !== undefined && pat.totalAmount > 0
+                        const totalCost = isPackOrProg
+                          ? pat.totalAmount
+                          : Number(pat.servicecost || pat.consultationFee || 0)
+                        const paidAmount = isPackOrProg
+                          ? pat.totalPaid || 0
+                          : pat.status === 'Completed'
+                            ? totalCost
+                            : 0
+                        const pendingAmount = isPackOrProg
+                          ? pat.balanceAmount || 0
+                          : pat.status === 'Completed'
+                            ? 0
+                            : totalCost
+                        const typeLabel = getBookingType(pat)
+
+                        // Type badge color mapping
+                        const badgeColors = {
+                          Package: 'info',
+                          Program: 'primary',
+                          Therapy: 'success',
+                          Exercise: 'warning',
+                          Consultation: 'secondary',
+                        }
+                        const badgeColor = badgeColors[typeLabel] || 'secondary'
+
+                        return (
+                          <CTableRow key={pat.id || idx} className="rf-tr">
+                            <CTableDataCell className="rf-td rf-td-num">{(modalPage - 1) * modalPageSize + idx + 1}</CTableDataCell>
+                            <CTableDataCell className="rf-td font-weight-bold color-primary">
+                              {pat.name}
+                            </CTableDataCell>
+                            <CTableDataCell className="rf-td">
+                              <div className="font-weight-bold text-dark">
+                                {getBookingServiceName(pat)}
+                              </div>
+                              <CBadge
+                                color={badgeColor}
+                                style={{ fontSize: '10px', padding: '3px 6px', marginTop: '4px' }}
+                              >
+                                {typeLabel}
+                              </CBadge>
+                            </CTableDataCell>
+                            <CTableDataCell className="rf-td text-muted">
+                              {pat.serviceDate}
+                            </CTableDataCell>
+                            <CTableDataCell className="rf-td text-muted">
+                              {pat.patientMobileNumber || pat.mobileNumber || '—'}
+                            </CTableDataCell>
+                            <CTableDataCell className="rf-td text-center">
+                              <CBadge
+                                color={
+                                  pat.status === 'Completed'
+                                    ? 'success'
+                                    : pat.status === 'Cancelled'
+                                      ? 'danger'
+                                      : 'warning'
+                                }
+                                className="rf-status-badge"
+                              >
+                                {pat.status || 'Scheduled'}
+                              </CBadge>
+                            </CTableDataCell>
+                            {modalType === 'channel' && (
+                              <CTableDataCell className="rf-td text-muted">
+                                {formatReferredByPerson(pat)}
+                              </CTableDataCell>
+                            )}
+                            <CTableDataCell className="rf-td text-right font-weight-bold text-dark">
+                              ₹{totalCost.toLocaleString('en-IN')}
+                            </CTableDataCell>
+                            <CTableDataCell className="rf-td text-right font-weight-bold text-success">
+                              ₹{paidAmount.toLocaleString('en-IN')}
+                            </CTableDataCell>
+                            <CTableDataCell className="rf-td text-right font-weight-bold text-danger">
+                              ₹{pendingAmount.toLocaleString('en-IN')}
+                            </CTableDataCell>
+                          </CTableRow>
+                        )
+                      })}
+                    </CTableBody>
+                  </CTable>
+                </div>
+              )}
+              {modalPatientsData.length > 0 && (
+                <div style={{ padding: '16px', borderTop: '1px solid #d0dce9', background: '#fff', marginTop: '12px', borderRadius: '8px' }}>
+                  <Pagination
+                    currentPage={modalPage}
+                    totalPages={Math.max(1, Math.ceil(modalPatientsData.length / modalPageSize))}
+                    pageSize={modalPageSize}
+                    onPageChange={setModalPage}
+                    onPageSizeChange={setModalPageSize}
+                  />
+                </div>
+              )}
+            </CModalBody>
+            <CModalFooter style={{ borderTop: '1px solid #d0dce9', padding: '12px 16px' }}>
+              <CButton color="secondary" onClick={() => setModalVisible(false)} size="sm">
+                Close
+              </CButton>
+            </CModalFooter>
+          </CModal>
         </>
       )}
 

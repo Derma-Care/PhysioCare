@@ -6,6 +6,7 @@ import {
   CTableRow,
   CTableHeaderCell,
   CTableDataCell,
+  CFormSelect,
 } from '@coreui/react'
 import { AppointmentData } from '../AppointmentManagement/appointmentAPI'
 import { useNavigate } from 'react-router-dom'
@@ -13,6 +14,7 @@ import LoadingIndicator from '../../Utils/loader'
 import { useHospital } from '../Usecontext/HospitalContext'
 import Pagination from '../../Utils/Pagination'
 import { ClipboardList, SlidersHorizontal, Search, Calendar, X } from 'lucide-react'
+import { GetClinicBranches } from '../Doctors/DoctorAPI'
 
 const normalize = (value) => value?.toLowerCase().trim()
 
@@ -48,15 +50,19 @@ const ReportsManagement = () => {
   const navigate = useNavigate()
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
+  const role = localStorage.getItem('role');
+
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState('');
+  const [selectedBranchName, setSelectedBranchName] = useState('');
 
   // ── FETCH ──────────────────────────────────
-  const fetchAppointments = async (hospitalId) => {
+  const fetchAppointments = async (branchIdOverride) => {
     try {
       setLoading(true)
-      const data = await AppointmentData()
+      const data = await AppointmentData(branchIdOverride)
       if (data?.data) {
-        const relevant = data.data
-        setBookings(relevant || [])
+        setBookings(data.data || [])
       }
     } catch (err) {
       console.error('Failed to fetch appointments:', err)
@@ -68,9 +74,30 @@ const ReportsManagement = () => {
   }
 
   useEffect(() => {
-    const hospitalId = localStorage.getItem('HospitalId')
-    fetchAppointments(hospitalId || null)
-  }, [])
+    const initBranches = async () => {
+      const clinicId = localStorage.getItem('HospitalId');
+      const defaultBranchId = localStorage.getItem('branchId');
+      const defaultBranchName = localStorage.getItem('branchName');
+      if (!clinicId) return;
+
+      const res = await GetClinicBranches(clinicId);
+      setBranches(res.data || []);
+
+      if (res.data?.length) {
+        setSelectedBranch(defaultBranchId);
+        setSelectedBranchName(defaultBranchName);
+        fetchAppointments(defaultBranchId);
+      }
+    };
+    initBranches();
+  }, []);
+
+  const handleBranchChange = (branchId) => {
+    const branch = branches.find((b) => b.branchId === branchId);
+    setSelectedBranch(branchId);
+    setSelectedBranchName(branch?.branchName || '');
+    fetchAppointments(branchId);
+  };
 
   // ── FILTER ─────────────────────────────────
   useEffect(() => {
@@ -140,6 +167,30 @@ const ReportsManagement = () => {
 
         {/* ── Filters ─────────────────────────── */}
         <div className="rp-filter-group">
+
+          {/* Branch Dropdown */}
+          {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
+            <CFormSelect
+              value={selectedBranch}
+              onChange={(e) => handleBranchChange(e.target.value)}
+              style={{
+                width: '180px',
+                fontSize: '13px',
+                borderRadius: '8px',
+                border: '0.5px solid #d0dce9',
+                color: '#374151',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                padding: '6px 12px'
+              }}
+            >
+              {branches.map((branch) => (
+                <option key={branch.branchId} value={branch.branchId}>
+                  {branch.branchName}
+                </option>
+              ))}
+            </CFormSelect>
+          )}
+
           {/* Name Search */}
           <div className="rp-search-wrap">
             <Search size={14} className="rp-search-icon" />

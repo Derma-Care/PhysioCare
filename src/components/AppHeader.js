@@ -15,7 +15,7 @@ import { AppBreadcrumb } from './index'
 import { AppHeaderDropdown } from './header/index'
 import { useHospital } from '../views/Usecontext/HospitalContext'
 import { useGlobalSearch } from '../views/Usecontext/GlobalSearchContext'
-
+import logo from '../assets/images/DermaCare.png'
 const AppHeader = () => {
   const headerRef = useRef()
   const { colorMode, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
@@ -23,7 +23,14 @@ const AppHeader = () => {
     notificationCount, setNotificationCount,
     notifications, setNotifications
   } = useHospital() || {}
-
+  const data = JSON.parse(localStorage.getItem('selectedHospital') || '{}')
+  const hospitalData = data.data;
+  console.log(hospitalData, 'hospitalData')
+  console.log(data, 'data')
+  const hospitalName = hospitalData?.name || hospitalData?.clinicName || "CCMS"
+  const hospitalLogo = hospitalData?.hospitalLogo
+    ? `data:image/webp;base64,${hospitalData.hospitalLogo}`
+    : logo
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.sidebarShow)
   const navigate = useNavigate()
@@ -60,7 +67,7 @@ const AppHeader = () => {
         if (Notification.permission === 'granted') {
           new Notification(newNotif.title, {
             body: newNotif.message,
-            icon: '/src/assets/images/dermalogo.png',
+            icon: hospitalLogo,
           })
         }
       })

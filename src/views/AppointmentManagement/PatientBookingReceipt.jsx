@@ -38,7 +38,7 @@ const tokens = {
 
 const PatientBookingReceipt = ({ data }) => {
   if (!data) return <div className="p-5 text-center">No data available</div>
-
+  const clinicName = localStorage.getItem("HospitalName")
   const patient = data
   const normalizedStatus = patient.status || 'in-progress'
 
@@ -257,7 +257,7 @@ const PatientBookingReceipt = ({ data }) => {
 
               <CCard style={{ borderRadius: tokens.radius, border: 'none', boxShadow: tokens.shadow, backgroundColor: tokens.slate, color: '#fff' }}>
                 <CCardBody className="p-4 text-center">
-                  <p className="mb-0 small" style={{ opacity: 0.7 }}>Powered by Kinetix Wellness Care</p>
+                  <p className="mb-0 small" style={{ opacity: 0.7 }}>Powered by {clinicName}</p>
                 </CCardBody>
               </CCard>
             </CCol>

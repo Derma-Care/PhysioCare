@@ -427,11 +427,11 @@ const ReportDetails = () => {
         <div className="rd-info-card-body">
           <div className="rd-info-grid">
             <div className="rd-info-row"><span className="rd-info-label">Name</span><span className="rd-info-value">{appointmentInfo.name}</span></div>
-            <div className="rd-info-row"><span className="rd-info-label">Age</span><span className="rd-info-value">{appointmentInfo.age}</span></div>
-            <div className="rd-info-row"><span className="rd-info-label">Gender</span><span className="rd-info-value">{appointmentInfo.gender}</span></div>
+            {/* <div className="rd-info-row"><span className="rd-info-label">Age</span><span className="rd-info-value">{appointmentInfo.age}</span></div> */}
+            {/* <div className="rd-info-row"><span className="rd-info-label">Gender</span><span className="rd-info-value">{appointmentInfo.gender}</span></div> */}
+            <div className="rd-info-row"><span className="rd-info-label">Doctor Name</span><span className="rd-info-value">{appointmentInfo.item?.doctorName || 'N/A'}</span></div>
+            <div className="rd-info-row"><span className="rd-info-label">Clinic ID</span><span className="rd-info-value">{appointmentInfo.item?.clinicId || 'N/A'}</span></div>
             <div className="rd-info-row"><span className="rd-info-label">Problem</span><span className="rd-info-value">{appointmentInfo.problem || 'N/A'}</span></div>
-            <div className="rd-info-row"><span className="rd-info-label">Doctor ID</span><span className="rd-info-value">{appointmentInfo.item?.doctorId || 'N/A'}</span></div>
-            <div className="rd-info-row"><span className="rd-info-label">Hospital ID</span><span className="rd-info-value">{appointmentInfo.item?.clinicId || 'N/A'}</span></div>
           </div>
 
           {/* Recommended Tests */}

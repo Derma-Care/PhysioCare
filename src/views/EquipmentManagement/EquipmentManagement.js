@@ -22,6 +22,8 @@ import { cilCloudDownload, cilImage } from '@coreui/icons';
 import ConfirmationModal from "../../components/ConfirmationModal";
 import Pagination from '../../Utils/Pagination';
 import { useHospital } from '../Usecontext/HospitalContext';
+import { GetClinicBranches } from '../Doctors/DoctorAPI';
+import { CFormSelect } from '@coreui/react';
 
 
 // ─── Dropdown Constants ─────────────────────────────────────────────────────
@@ -76,6 +78,11 @@ const EquipmentManagement = () => {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedBranchName, setSelectedBranchName] = useState("");
+  const role = localStorage.getItem('role');
 
   // ─── Derived Stats ─────────────────────────────────────────────────────────
   const stats = useMemo(() => ({
@@ -150,11 +157,34 @@ const EquipmentManagement = () => {
 
   // ─── Fetch Real Data ────────────────────────────────────────────────────────
   useEffect(() => {
-    fetchEquipmentData();
+    const initBranches = async () => {
+      const clinicId = localStorage.getItem('HospitalId');
+      const defaultBranchId = localStorage.getItem('branchId');
+      const defaultBranchName = localStorage.getItem('branchName');
+
+      if (!clinicId) return;
+      const res = await GetClinicBranches(clinicId);
+      setBranches(res.data || []);
+
+      if (res.data?.length) {
+        setSelectedBranch(defaultBranchId);
+        setSelectedBranchName(defaultBranchName);
+        fetchEquipmentData(defaultBranchId);
+      }
+    };
+    initBranches();
+
     if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
       Notification.requestPermission();
     }
   }, []);
+
+  const handleBranchChange = (branchId) => {
+    const branch = branches.find((b) => b.branchId === branchId);
+    setSelectedBranch(branchId);
+    setSelectedBranchName(branch?.branchName || "");
+    fetchEquipmentData(branchId);
+  };
 
   // Send consolidated Local Browser Notification
   useEffect(() => {
@@ -203,10 +233,10 @@ const EquipmentManagement = () => {
     });
   }, [activeNotifications, setNotifications, setNotificationCount]);
 
-  const fetchEquipmentData = async () => {
+  const fetchEquipmentData = async (branchIdOverride = selectedBranch) => {
     try {
       const clinicId = localStorage.getItem('HospitalId');
-      const branchId = localStorage.getItem('branchId');
+      const branchId = branchIdOverride || localStorage.getItem('branchId');
       if (!clinicId || !branchId) return;
 
       const res = await getAllEquipment(clinicId, branchId);
@@ -227,7 +257,7 @@ const EquipmentManagement = () => {
 
     try {
       const clinicId = localStorage.getItem('HospitalId');
-      const branchId = localStorage.getItem('branchId');
+      const branchId = selectedBranch
 
       // Preserve image: new upload takes priority, else keep existing imageUrl or image from backend
       const existingImage = form.imageUrl || form.image || form.equipmentImage || '';
@@ -450,7 +480,30 @@ const EquipmentManagement = () => {
       {!isFormVisible ? (
         <>
           {/* Filters */}
-          <div className="em-filters">
+          <div className="em-filters d-flex align-items-center gap-3">
+            {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
+              <div style={{ width: "200px" }}>
+                <CFormSelect
+                  value={selectedBranch}
+                  onChange={(e) => handleBranchChange(e.target.value)}
+                  style={{
+                    fontSize: '13px',
+                    borderRadius: '8px',
+                    border: '0.5px solid #d0dce9',
+                    color: '#374151',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                    padding: '6px 12px'
+                  }}
+                >
+                  {branches.map((branch) => (
+                    <option key={branch.branchId} value={branch.branchId}>
+                      {branch.branchName}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </div>
+            )}
+
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, maxWidth: '340px' }}>
               <input
                 className="em-search"
