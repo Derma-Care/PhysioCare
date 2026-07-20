@@ -836,7 +836,7 @@ const Login = () => {
                 <CCol md={6} className="pe-authcol px-3 py-4">
                   <CCard className="pe-card border-0 w-100" style={{ maxWidth: 420, borderRadius: 16 }}>
                     <CCardBody className="p-4 p-md-5">
-                      <h3 className="pe-card-title text-center mb-1">CCMS Portal</h3>
+                      <h3 className="pe-card-title text-center mb-1">PhysioElite Portal</h3>
                       <p className="pe-card-sub text-center mb-4">Select your workspace to sign in</p>
 
                       {errorMessage && (

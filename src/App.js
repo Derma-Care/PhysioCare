@@ -52,7 +52,7 @@ const App = () => {
   const hospitalData = data.data;
   console.log(hospitalData, 'hospitalData')
   console.log(data, 'data')
-  const hospitalName = hospitalData?.name || hospitalData?.clinicName || "CCMS"
+  const hospitalName = hospitalData?.name || hospitalData?.clinicName || "PhysioElite"
   const hospitalLogo = hospitalData?.hospitalLogo
     ? `data:image/webp;base64,${hospitalData.hospitalLogo}`
     : appLogo
