@@ -34,7 +34,9 @@ const UserPermissionModal = ({
   const isEmployeeManagementChecked = !!permissions['Employee management']
   const isAppointmnetManagementChecked = !!permissions['Appointments']
 
-  const allFeaturesSelected = features.every((f) => {
+  const safeFeatures = Array.isArray(features) ? features : []
+
+  const allFeaturesSelected = safeFeatures.length > 0 && safeFeatures.every((f) => {
     const isChecked = !!permissions[f]
     if (f === 'Dashboard' || f === 'Employee management') return isChecked
     return isChecked && permissions[f]?.length === actions.length
@@ -79,68 +81,75 @@ const UserPermissionModal = ({
 
             <div className="modal-body">
               <div className="row">
-                {features.map((feature) => {
-                  const isFeatureChecked = !!permissions[feature]
-                  const allSelected =
-                    isFeatureChecked && permissions[feature]?.length === actions.length
+                {safeFeatures.length === 0 ? (
+                  <div className="col-12 text-center text-muted my-4">
+                    <h6>No permissions available to configure.</h6>
+                    <p className="mb-0 small">Please ensure the clinic has been assigned active features from the super admin dashboard.</p>
+                  </div>
+                ) : (
+                  safeFeatures.map((feature) => {
+                    const isFeatureChecked = !!permissions[feature]
+                    const allSelected =
+                      isFeatureChecked && permissions[feature]?.length === actions.length
 
-                  const isEmployeeDependent = employeeRelatedFeatures.includes(feature)
-                  const isAppointmentDependent = appointmnetRelatedFeatures.includes(feature)
+                    const isEmployeeDependent = employeeRelatedFeatures.includes(feature)
+                    const isAppointmentDependent = appointmnetRelatedFeatures.includes(feature)
 
-                  // Disable feature if its dependency is not checked
-                  const isDisabled =
-                    (isEmployeeDependent && !isEmployeeManagementChecked) ||
-                    (isAppointmentDependent && !isAppointmnetManagementChecked)
+                    // Disable feature if its dependency is not checked
+                    const isDisabled =
+                      (isEmployeeDependent && !isEmployeeManagementChecked) ||
+                      (isAppointmentDependent && !isAppointmnetManagementChecked)
 
-                  return (
-                    <div
-                      key={feature}
-                      className={`col-md-5 mb-3 border p-2 rounded mx-4 ${isDisabled ? 'opacity-50' : ''}`}
-                    >
-                      <div className="d-flex justify-content-between align-items-center">
-                        <label className="fw-bold">
-                          <input
-                            type="checkbox"
-                            disabled={false} // keep clickable for toast
-                            checked={isFeatureChecked}
-                            onChange={() => handleFeatureToggle(feature)}
-                          />{' '}
-                          {feature}
-                        </label>
-
-                        {/* Select All checkbox */}
-                        {feature !== 'Dashboard' && feature !== 'Employee management' && (
-                          <label>
+                    return (
+                      <div
+                        key={feature}
+                        className={`col-md-5 mb-3 border p-2 rounded mx-4 ${isDisabled ? 'opacity-50' : ''}`}
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <label className="fw-bold">
                             <input
                               type="checkbox"
-                              disabled={isDisabled || !isFeatureChecked}
-                              checked={allSelected}
-                              onChange={() => toggleAllActions(feature)}
+                              disabled={false} // keep clickable for toast
+                              checked={isFeatureChecked}
+                              onChange={() => handleFeatureToggle(feature)}
                             />{' '}
-                            Select All
+                            {feature}
                           </label>
-                        )}
-                      </div>
 
-                      {/* Actions */}
-                      {feature !== 'Dashboard' && feature !== 'Employee management' && (
-                        <div className="d-flex flex-wrap gap-3 mt-2">
-                          {actions.map((action) => (
-                            <label key={action} className="d-flex align-items-center gap-1">
+                          {/* Select All checkbox */}
+                          {feature !== 'Dashboard' && feature !== 'Employee management' && (
+                            <label>
                               <input
                                 type="checkbox"
                                 disabled={isDisabled || !isFeatureChecked}
-                                checked={permissions[feature]?.includes(action) || false}
-                                onChange={() => togglePermission(feature, action)}
-                              />
-                              {action}
+                                checked={allSelected}
+                                onChange={() => toggleAllActions(feature)}
+                              />{' '}
+                              Select All
                             </label>
-                          ))}
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )
-                })}
+
+                        {/* Actions */}
+                        {feature !== 'Dashboard' && feature !== 'Employee management' && (
+                          <div className="d-flex flex-wrap gap-3 mt-2">
+                            {actions.map((action) => (
+                              <label key={action} className="d-flex align-items-center gap-1">
+                                <input
+                                  type="checkbox"
+                                  disabled={isDisabled || !isFeatureChecked}
+                                  checked={permissions[feature]?.includes(action) || false}
+                                  onChange={() => togglePermission(feature, action)}
+                                />
+                                {action}
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+                )}
               </div>
             </div>
 

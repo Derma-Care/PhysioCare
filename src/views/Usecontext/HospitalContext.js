@@ -220,8 +220,20 @@ export const HospitalProvider = ({ children }) => {
       const res = await GetClinicBranches(id)
       const list = res.data || []
       setBranches(list)
-      const defaultBranchId = sessionStorage.getItem('branchId')
-      if (!defaultBranchId && list.length > 0) {
+
+      // Always sync context state from sessionStorage after loading branches.
+      // This fixes the "dropdown empty after login" bug: branchId is stored in
+      // sessionStorage during login BEFORE fetchBranches runs, so the old check
+      // (!defaultBranchId) would skip syncing the React state entirely.
+      const storedBranchId = sessionStorage.getItem('branchId')
+      const storedBranchName = sessionStorage.getItem('branchName')
+
+      if (storedBranchId) {
+        // Already have a branchId — just hydrate context state from storage
+        setGlobalBranchId(storedBranchId)
+        setGlobalBranchName(storedBranchName || '')
+      } else if (list.length > 0) {
+        // No branchId yet — default to the first branch
         const firstBranch = list[0]
         sessionStorage.setItem('branchId', firstBranch.branchId)
         sessionStorage.setItem('branchName', firstBranch.branchName)

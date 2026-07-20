@@ -1,5 +1,5 @@
-import React from 'react'
-import { NavLink } from 'react-router-dom'
+import React, { useEffect, useRef } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import PropTypes from 'prop-types'
 
 import SimpleBar from 'simplebar-react'
@@ -9,6 +9,25 @@ import { CBadge, CNavLink, CSidebarNav } from '@coreui/react'
 import { COLORS } from '../Constant/Themes'
 
 export const AppSidebarNav = ({ items }) => {
+  const location = useLocation()
+  const simpleBarRef = useRef(null)
+
+  // Auto-scroll the active nav item into view when the route changes
+  useEffect(() => {
+    const scrollTimeout = setTimeout(() => {
+      const scrollEl = simpleBarRef.current?.getScrollElement()
+      if (!scrollEl) return
+
+      // Find the active nav link inside the simplebar scroll element
+      const activeLink = scrollEl.querySelector('a.nav-link.active, a.active')
+      if (activeLink) {
+        activeLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
+    }, 100) // Small delay to let React render the active class first
+
+    return () => clearTimeout(scrollTimeout)
+  }, [location.pathname])
+
   const navLink = (name, icon, badge, indent = false) => {
     return (
       <>
@@ -62,7 +81,7 @@ export const AppSidebarNav = ({ items }) => {
   }
 
   return (
-    <CSidebarNav as={SimpleBar}>
+    <CSidebarNav as={SimpleBar} ref={simpleBarRef}>
       {Array.isArray(items) && items.length
         ? items.map((item, index) => (item.items ? navGroup(item, index) : navItem(item, index)))
         : null}

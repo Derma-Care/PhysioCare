@@ -918,7 +918,7 @@ const Login = () => {
                           </div>
 
                           <div className="d-flex justify-content-between mt-3 pe-row r3">
-                            <a
+                            {/* <a
                               href="#"
                               className="pe-link"
                               onClick={(e) => {
@@ -927,7 +927,7 @@ const Login = () => {
                               }}
                             >
                               Forgot password?
-                            </a>
+                            </a> */}
                             <a
                               href="#"
                               className="pe-link"
