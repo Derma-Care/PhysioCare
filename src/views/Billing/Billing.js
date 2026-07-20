@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import {
+  CButton,
   CCard,
   CCardBody,
   CCardHeader,
   CCol,
   CRow,
   CSpinner,
-  CFormSelect,
 } from '@coreui/react'
 import { AppointmentData } from '../AppointmentManagement/appointmentAPI'
 import Select from 'react-select'
 import ProgramPayment from '../AppointmentManagement/PaymentProgram'
 import { COLORS } from '../../Constant/Themes'
 import LoadingIndicator from '../../Utils/loader'
-import { GetClinicBranches } from '../Doctors/DoctorAPI'
+import { useHospital } from '../Usecontext/HospitalContext'
+import { useNavigate } from 'react-router-dom'
 
 /* ── status badge config ── */
 const STATUS_CONFIG = {
@@ -34,6 +35,8 @@ const formatDate = (dateStr) => {
 
 /* ── custom option renderer for react-select ── */
 const BookingOption = ({ data, innerRef, innerProps, isFocused, isSelected }) => {
+
+
   const b = data.value
   const s = statusStyle(b.status)
   return (
@@ -168,39 +171,17 @@ export default function Billing() {
   const [allData, setAllData] = useState([])      // all bookings (for stat counts)
   const [loading, setLoading] = useState(true)
   const [selectedBooking, setSelectedBooking] = useState(null)
-
-  const role = localStorage.getItem('role');
-  const [branches, setBranches] = useState([]);
-  const [selectedBranch, setSelectedBranch] = useState('');
-  const [selectedBranchName, setSelectedBranchName] = useState('');
+  const navigate = useNavigate()
+  const role = sessionStorage.getItem('role');
+  const { globalBranchId } = useHospital() || {};
 
   useEffect(() => {
-    const initBranches = async () => {
-      const clinicId = localStorage.getItem('HospitalId');
-      const defaultBranchId = localStorage.getItem('branchId');
-      const defaultBranchName = localStorage.getItem('branchName');
-      if (!clinicId) return;
+    if (globalBranchId) {
+      fetchBookings(globalBranchId);
+    }
+  }, [globalBranchId]);
 
-      const res = await GetClinicBranches(clinicId);
-      setBranches(res.data || []);
-
-      if (res.data?.length) {
-        setSelectedBranch(defaultBranchId);
-        setSelectedBranchName(defaultBranchName);
-        fetchBookings(defaultBranchId);
-      }
-    };
-    initBranches();
-  }, []);
-
-  const handleBranchChange = (branchId) => {
-    const branch = branches.find((b) => b.branchId === branchId);
-    setSelectedBranch(branchId);
-    setSelectedBranchName(branch?.branchName || '');
-    fetchBookings(branchId);
-  };
-
-  const fetchBookings = async (branchIdOverride) => {
+  const fetchBookings = async (branchIdOverride = globalBranchId) => {
     try {
       setLoading(true)
       const res = await AppointmentData(branchIdOverride)
@@ -273,27 +254,6 @@ export default function Billing() {
         </div>
 
         <div className="d-flex align-items-center gap-3">
-          {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
-            <CFormSelect
-              value={selectedBranch}
-              onChange={(e) => handleBranchChange(e.target.value)}
-              style={{
-                width: '200px',
-                fontSize: '13px',
-                borderRadius: '8px',
-                border: '0.5px solid #d0dce9',
-                color: '#374151',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                padding: '6px 12px'
-              }}
-            >
-              {branches.map((branch) => (
-                <option key={branch.branchId} value={branch.branchId}>
-                  {branch.branchName}
-                </option>
-              ))}
-            </CFormSelect>
-          )}
 
           {!loading && (
             <div
@@ -336,16 +296,14 @@ export default function Billing() {
       {/* <CCard style={{ border: '1px solid #d0dce9', borderRadius: 12, overflow: 'visible', marginBottom: 20, boxShadow: '0 2px 8px rgba(27,79,138,0.07)' }}> */}
 
       {/* <CCardBody style={{ padding: '20px' }}> */}
-      <CRow>
+      <CRow style={{ alignItems: 'flex-start', marginBottom: 12 }}>
         {loading ? (
-          <div>
-
+          <CCol xs={12}>
             <LoadingIndicator message="Loading bookings..." />
-          </div>
-        ) :
-          <CCol md={8} lg={6}>
-
-            <>
+          </CCol>
+        ) : (
+          <>
+            <CCol xs={12} md={8} lg={8} xl={9}>
               <Select
                 options={bookingOptions}
                 onChange={(opt) => setSelectedBooking(opt ? opt.value : null)}
@@ -371,10 +329,41 @@ export default function Billing() {
               <p style={{ fontSize: 11, color: '#999', marginTop: 6, marginBottom: 0 }}>
                 {bookings.length} bookings available · search by name, ID, or phone
               </p>
-            </>
-
-          </CCol>
-        }
+            </CCol>
+            {/* TODO: deploymenet next Underworking */}
+            {/* <CCol xs={12} md={4} lg={4} xl={3} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => navigate('/manual-billing')}
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  background: `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.sideColor || '#1a3a6b'})`,
+                  color: '#fff',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  boxShadow: '0 4px 12px rgba(27,79,138,0.2)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  height: 44
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(27,79,138,0.3)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(27,79,138,0.2)'; }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Create Manual Bill
+              </button>
+            </CCol> */}
+          </>
+        )}
       </CRow>
 
       {/* Selected booking summary strip */}

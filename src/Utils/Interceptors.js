@@ -80,7 +80,7 @@
 //     (error) => {
 //       if (error.response?.status === 401) {
 //         toast.error('Session expired. Please login again.')
-//         // localStorage.removeItem('token')
+//         // sessionStorage.removeItem('token')
 //         // window.location.href = '/login'
 //       } else {
 //         toast.error(error.response?.data?.message || 'Request failed.')
@@ -95,7 +95,7 @@
 //     (error) => {
 //       if (error.response?.status === 401) {
 //         toast.error('Session expired. Please login again.')
-//         // localStorage.removeItem('token')
+//         // sessionStorage.removeItem('token')
 //         // window.location.href = '/login'
 //       }
 //       return Promise.reject(error)
@@ -130,7 +130,7 @@
 //   // ✅ Request interceptor → attach token automatically
 //   const reqInterceptor = http.interceptors.request.use(
 //     (config) => {
-//       // const token = getAuthToken?.() || localStorage.getItem('token')
+//       // const token = getAuthToken?.() || sessionStorage.getItem('token')
 //       // if (token) {
 //       //   config.headers.Authorization = `Bearer ${token}`
 //       // }
@@ -149,7 +149,7 @@
 //       if (error.response?.status === 401) {
 //         toast.error('Session expired. Please login again.')
 //         // optional: log out user
-//         // localStorage.removeItem('token')
+//         // sessionStorage.removeItem('token')
 //         // window.location.href = '/login'
 //       } else if (error.response?.data?.message) {
 //         toast.error(error.response.data.message)
@@ -207,7 +207,7 @@ const showToastOnce = (message) => {
 export function attachInterceptors(getAuthToken) {
   const reqInterceptor = http.interceptors.request.use(
     (config) => {
-      // const token = getAuthToken?.() || localStorage.getItem('token')
+      // const token = getAuthToken?.() || sessionStorage.getItem('token')
       // if (token) config.headers.Authorization = `Bearer ${token}`
       return config
     },

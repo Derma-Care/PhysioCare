@@ -4,12 +4,12 @@ import { http } from '../Utils/Interceptors'
 
 
 export const getBookingsByPatientId = (patientId) => {
-  const clinicid = localStorage.getItem('HospitalId')
+  const clinicid = sessionStorage.getItem('HospitalId')
   return http.get(`${BASE_URL}/bookings/byInput/${patientId}/${clinicid}`)
 }
 
 export const getBookingByPatientId = (patientId) => {
-  const clinicid = localStorage.getItem('HospitalId')
+  const clinicid = sessionStorage.getItem('HospitalId')
   return http.get(`${BASE_URL}/customer/patientId/${patientId}/${clinicid}`)
 }
 

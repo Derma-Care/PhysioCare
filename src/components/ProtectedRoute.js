@@ -8,14 +8,14 @@ import { motion } from 'framer-motion'
 import { LogoLoader } from '../Utils/LogoLoder'
 const ProtectedRoute = ({ children }) => {
   const { loading, selectedHospital } = useHospital()
-  const hospitalId = localStorage.getItem('HospitalId')
+  const hospitalId = sessionStorage.getItem('HospitalId')
 
   if (loading) {
     return <LogoLoader />
 
   }
 
-  // ✅ Just check localStorage
+  // ✅ Just check sessionStorage
   const isAuthenticated = !!hospitalId && (selectedHospital !== null || selectedHospital !== '')
 
   return isAuthenticated ? children : <Navigate to="/login" replace />

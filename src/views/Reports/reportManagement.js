@@ -48,16 +48,12 @@ const ReportsManagement = () => {
   const [selectedAppointment] = useState([])
 
   const navigate = useNavigate()
-  const { user } = useHospital()
+  const { user, globalBranchId } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
-  const role = localStorage.getItem('role');
-
-  const [branches, setBranches] = useState([]);
-  const [selectedBranch, setSelectedBranch] = useState('');
-  const [selectedBranchName, setSelectedBranchName] = useState('');
+  const role = sessionStorage.getItem('role');
 
   // ── FETCH ──────────────────────────────────
-  const fetchAppointments = async (branchIdOverride) => {
+  const fetchAppointments = async (branchIdOverride = globalBranchId) => {
     try {
       setLoading(true)
       const data = await AppointmentData(branchIdOverride)
@@ -74,30 +70,10 @@ const ReportsManagement = () => {
   }
 
   useEffect(() => {
-    const initBranches = async () => {
-      const clinicId = localStorage.getItem('HospitalId');
-      const defaultBranchId = localStorage.getItem('branchId');
-      const defaultBranchName = localStorage.getItem('branchName');
-      if (!clinicId) return;
-
-      const res = await GetClinicBranches(clinicId);
-      setBranches(res.data || []);
-
-      if (res.data?.length) {
-        setSelectedBranch(defaultBranchId);
-        setSelectedBranchName(defaultBranchName);
-        fetchAppointments(defaultBranchId);
-      }
-    };
-    initBranches();
-  }, []);
-
-  const handleBranchChange = (branchId) => {
-    const branch = branches.find((b) => b.branchId === branchId);
-    setSelectedBranch(branchId);
-    setSelectedBranchName(branch?.branchName || '');
-    fetchAppointments(branchId);
-  };
+    if (globalBranchId) {
+      fetchAppointments(globalBranchId)
+    }
+  }, [globalBranchId]);
 
   // ── FILTER ─────────────────────────────────
   useEffect(() => {
@@ -167,29 +143,6 @@ const ReportsManagement = () => {
 
         {/* ── Filters ─────────────────────────── */}
         <div className="rp-filter-group">
-
-          {/* Branch Dropdown */}
-          {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
-            <CFormSelect
-              value={selectedBranch}
-              onChange={(e) => handleBranchChange(e.target.value)}
-              style={{
-                width: '180px',
-                fontSize: '13px',
-                borderRadius: '8px',
-                border: '0.5px solid #d0dce9',
-                color: '#374151',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                padding: '6px 12px'
-              }}
-            >
-              {branches.map((branch) => (
-                <option key={branch.branchId} value={branch.branchId}>
-                  {branch.branchName}
-                </option>
-              ))}
-            </CFormSelect>
-          )}
 
           {/* Name Search */}
           <div className="rp-search-wrap">

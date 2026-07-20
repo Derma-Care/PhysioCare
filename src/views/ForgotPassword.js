@@ -50,7 +50,7 @@ const ForgotPassword = ({ onClose }) => {
 
     try {
       await new Promise(resolve => setTimeout(resolve, 1500))
-      setOtpInfo('OTP has been sent to your registered mobile number.')
+      setOtpInfo('OTP has been sent to your registered Email Id.')
       setStep('otp')
     } catch (err) {
       setApiError(err?.response?.data?.message || 'Failed to send OTP. Please try again.')
@@ -89,14 +89,14 @@ const ForgotPassword = ({ onClose }) => {
     }
     if (!confirmPwd.trim()) errs.confirmPwd = 'Please confirm the password'
     else if (newPwd !== confirmPwd) errs.confirmPwd = 'Passwords do not match'
-    
+
     setPwdErrors(errs)
     if (Object.keys(errs).length) return
 
     setPwdLoading(true)
     try {
       await new Promise(resolve => setTimeout(resolve, 1500))
-      
+
       setSuccessMsg('✅ Password reset successfully!')
       setTimeout(() => {
         if (onClose) onClose()
@@ -109,9 +109,9 @@ const ForgotPassword = ({ onClose }) => {
   }
 
   const stepMeta = {
-    mobile:   { icon: <FaMobileAlt size={22} />, title: 'Forgot Password', sub: 'Enter your registered mobile number' },
-    otp:      { icon: <FaEnvelopeOpenText size={20} />, title: 'Verify OTP',      sub: 'Enter the OTP sent to your device' },
-    password: { icon: <FaLock size={20} />, title: 'Reset Password',   sub: 'Set your new secure password' },
+    mobile: { icon: <FaMobileAlt size={22} />, title: 'Forgot Password', sub: 'Enter your registered mobile number' },
+    otp: { icon: <FaEnvelopeOpenText size={20} />, title: 'Verify OTP', sub: 'Enter the OTP sent to your device' },
+    password: { icon: <FaLock size={20} />, title: 'Reset Password', sub: 'Set your new secure password' },
   }
   const { icon, title, sub } = stepMeta[step]
   const stepIndex = STEPS.indexOf(step)
@@ -359,7 +359,7 @@ const ForgotPassword = ({ onClose }) => {
       {step === 'otp' && (
         <form onSubmit={handleVerifyOtp} noValidate>
           {otpInfo && <div className="fp-message info">📬 {otpInfo}</div>}
-          
+
           <div className="fp-input-group">
             <label className="fp-label" style={{ textAlign: 'center' }}>Enter OTP</label>
             <div className={`fp-input-wrapper ${otpError ? 'error' : ''}`}>
@@ -385,7 +385,7 @@ const ForgotPassword = ({ onClose }) => {
               ) : 'Verify OTP'}
             </button>
           </div>
-          
+
           <div style={{ textAlign: 'center', marginTop: 16 }}>
             <button type="button" onClick={handleSendOtp} style={{ background: 'none', border: 'none', color: COLORS.primary, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
               Resend OTP

@@ -59,8 +59,8 @@ const PhysioManagement = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const { searchQuery, setSearchQuery } = useGlobalSearch()
 
-  const hospitalId = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
+  const hospitalId = sessionStorage.getItem('HospitalId')
+  const branchId = sessionStorage.getItem('branchId')
 
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)

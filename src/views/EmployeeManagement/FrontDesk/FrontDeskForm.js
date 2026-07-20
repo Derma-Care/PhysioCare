@@ -27,11 +27,11 @@ import {
    → formData resets → only one character survives per keystroke.
 ───────────────────────────────────────────────────────────────── */
 const makeEmptyForm = () => ({
-  clinicId: localStorage.getItem('HospitalId'),
-  branchId: localStorage.getItem('branchId'),
-  branchName: localStorage.getItem('branchName'),
-  hospitalName: localStorage.getItem('HospitalName'),
-  createdBy: localStorage.getItem('staffId') || 'admin',
+  clinicId: sessionStorage.getItem('HospitalId'),
+  branchId: sessionStorage.getItem('branchId'),
+  branchName: sessionStorage.getItem('branchName'),
+  hospitalName: sessionStorage.getItem('HospitalName'),
+  createdBy: sessionStorage.getItem('staffId') || 'admin',
   fullName: '',
   dateOfBirth: '',
   contactNumber: '',
@@ -126,7 +126,7 @@ const FrontDeskForm = ({
   technicians,
   fetchTechs,
 }) => {
-  const clinicId = localStorage.getItem('HospitalId')
+  const clinicId = sessionStorage.getItem('HospitalId')
 
   const [formData, setFormData] = useState(makeEmptyForm)
   const [showPModal, setShowPModal] = useState(false)

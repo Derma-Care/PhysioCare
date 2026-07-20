@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { CRow, CCol, CCard, CCardBody, CFormSelect } from '@coreui/react'
+import { CRow, CCol, CCard, CCardBody } from '@coreui/react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import {
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { getDashboardAnalytics } from './DashboardAnalyticsAPI'
 import LoadingIndicator from '../../Utils/loader'
-import { GetClinicBranches } from '../Doctors/DoctorAPI'
+import { useHospital } from '../Usecontext/HospitalContext'
 
 const AnalyticsMenu = () => {
   const navigate = useNavigate()
@@ -16,49 +16,21 @@ const AnalyticsMenu = () => {
   const sidebarShow = useSelector((state) => state.sidebarShow)
   const [dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [clinics, setClinics] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [selectedBranchName, setSelectedBranchName] = useState("");
-  const role = localStorage.getItem('role')
-
-  const [selectedClinic, setSelectedClinic] = useState("");
-  const [selectedBranch, setSelectedBranch] = useState("");
+  const role = sessionStorage.getItem('role')
+  const { globalBranchId } = useHospital() || {}
 
   useEffect(() => {
-    handleClinicChange();
-  }, []);
-  const handleClinicChange = async () => {
-    const clinicId = localStorage.getItem('HospitalId');
-    const defaultBranchId = localStorage.getItem('branchId');
-    const defaultBranchName = localStorage.getItem('branchName');
-    setClinics(clinicId);
-
-    const res = await GetClinicBranches(clinicId);
-
-    setBranches(res.data || []);
-    console.log(res.data, "branches");
-
-    if (res.data.length) {
-      setSelectedBranch(defaultBranchId);
-      setSelectedBranchName(defaultBranchName);
-      getAnalytics(defaultBranchId);
+    if (globalBranchId) {
+      getAnalytics(globalBranchId);
     }
-  };
-  const handleBranchChange = (branchId) => {
-    const branch = branches.find((b) => b.branchId === branchId);
-
-    setSelectedBranch(branchId);
-    setSelectedBranchName(branch?.branchName || "");
-
-    getAnalytics(branchId);
-  };
+  }, [globalBranchId]);
   /* ── Fetch dashboard analytics data ── */
   // useEffect(() => {
   //   const fetchData = async () => {
   //     try {
   //       setLoading(true)
-  //       const clinicId = localStorage.getItem('HospitalId')  
-  //       const branchId = localStorage.getItem('branchId') || '000101'
+  //       const clinicId = sessionStorage.getItem('HospitalId')  
+  //       const branchId = sessionStorage.getItem('branchId') || '000101'
   //       const res = await getDashboardAnalytics(clinicId, branchId)
   //       if (res.data) {
   //         setDashboardData(res.data?.data || res.data)
@@ -72,7 +44,7 @@ const AnalyticsMenu = () => {
   //   fetchData()
   // }, [])
   const getAnalytics = async (branchId) => {
-    const clinicId = localStorage.getItem('HospitalId');
+    const clinicId = sessionStorage.getItem('HospitalId');
     setLoading(true);
 
     try {
@@ -209,29 +181,7 @@ const AnalyticsMenu = () => {
           <h4 className="am-page-title">Analytics Dashboard</h4>
           <p className="am-page-sub">Your clinic's performance, at a glance.</p>
         </div>
-        
-        {branches?.length > 0 && (
-          <div style={{ width: "200px" }}>
-            <CFormSelect
-              value={selectedBranch}
-              onChange={(e) => handleBranchChange(e.target.value)}
-              style={{
-                fontSize: '13px',
-                borderRadius: '8px',
-                border: '0.5px solid #d0dce9',
-                color: '#374151',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                padding: '6px 12px'
-              }}
-            >
-              {branches.map((branch) => (
-                <option key={branch.branchId} value={branch.branchId}>
-                  {branch.branchName}
-                </option>
-              ))}
-            </CFormSelect>
-          </div>
-        )}
+        {/* Global branch dropdown is in AppBreadcrumb now */}
       </div>
 
       {/* ── KPI strip ── */}
@@ -276,9 +226,9 @@ const AnalyticsMenu = () => {
               onClick={() =>
                 navigate(option.path, {
                   state: {
-                    branchId: selectedBranch,
-                    clinicId: localStorage.getItem("HospitalId"),
-                    branchName: selectedBranchName,
+                    branchId: globalBranchId,
+                    clinicId: sessionStorage.getItem("HospitalId"),
+                    branchName: sessionStorage.getItem("branchName"),
                   },
                 })
               }

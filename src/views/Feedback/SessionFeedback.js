@@ -41,11 +41,10 @@ const RATING_OPTIONS = [
 ];
 
 const SessionFeedback = () => {
-  const { doctorData, addNotification, notifications, setNotifications, setNotificationCount } = useHospital() || {};
+  const { doctorData, addNotification, notifications, setNotifications, setNotificationCount, globalBranchId } = useHospital() || {};
 
   // State for CRUD
   const [sessions, setSessions] = useState([]);
-
 
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -60,12 +59,8 @@ const SessionFeedback = () => {
   // Data for Dropdowns
   const [patients, setPatients] = useState([]);
 
-  const hospitalId = localStorage.getItem('HospitalId');
-  const role = localStorage.getItem('role');
-
-  const [branches, setBranches] = useState([]);
-  const [selectedBranch, setSelectedBranch] = useState('');
-  const [selectedBranchName, setSelectedBranchName] = useState('');
+  const hospitalId = sessionStorage.getItem('HospitalId');
+  const role = sessionStorage.getItem('role');
 
   // View Modal
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -100,7 +95,7 @@ const SessionFeedback = () => {
     rating: '',
     whatWentWell: '',
     improvements: '',
-    clinicId: localStorage.getItem('HospitalId') || '',
+    clinicId: sessionStorage.getItem('HospitalId') || '',
     branchId: ''
   });
 
@@ -135,9 +130,9 @@ const SessionFeedback = () => {
     }
   }, [patients]);
 
-  const fetchFeedbackData = async (branchIdOverride = selectedBranch) => {
-    const hId = localStorage.getItem('HospitalId');
-    const bId = branchIdOverride || localStorage.getItem('branchId');
+  const fetchFeedbackData = async (branchIdOverride = globalBranchId) => {
+    const hId = sessionStorage.getItem('HospitalId');
+    const bId = branchIdOverride || sessionStorage.getItem('branchId');
     if (!hId || !bId) return;
 
     setLoading(true);
@@ -165,30 +160,10 @@ const SessionFeedback = () => {
   };
 
   useEffect(() => {
-    const initBranches = async () => {
-      const hId = localStorage.getItem('HospitalId');
-      const defaultBranchId = localStorage.getItem('branchId');
-      const defaultBranchName = localStorage.getItem('branchName');
-      if (!hId) return;
-
-      const res = await GetClinicBranches(hId);
-      setBranches(res.data || []);
-
-      if (res.data?.length) {
-        setSelectedBranch(defaultBranchId);
-        setSelectedBranchName(defaultBranchName);
-        fetchFeedbackData(defaultBranchId);
-      }
-    };
-    initBranches();
-  }, []);
-
-  const handleBranchChange = (bId) => {
-    const branch = branches.find((b) => b.branchId === bId);
-    setSelectedBranch(bId);
-    setSelectedBranchName(branch?.branchName || '');
-    fetchFeedbackData(bId);
-  };
+    if (globalBranchId) {
+      fetchFeedbackData(globalBranchId);
+    }
+  }, [globalBranchId]);
 
   const doctorsList = doctorData?.data || [];
 
@@ -256,7 +231,7 @@ const SessionFeedback = () => {
     console.log(form)
     const payload = {
       ...form,
-      branchId: selectedBranch || localStorage.getItem('branchId') || '',
+      branchId: globalBranchId || sessionStorage.getItem('branchId') || '',
       totalNoOfSessions: total,
       noOfSessionsCompleted: completed,
       halfSessionsCompleted: isHalf,
@@ -294,7 +269,7 @@ const SessionFeedback = () => {
       halfSessionsCompleted: false, fullSessionsCompleted: false,
       rating: '',
       whatWentWell: '', improvements: '',
-      clinicId: localStorage.getItem('HospitalId') || ''
+      clinicId: sessionStorage.getItem('HospitalId') || ''
     });
     setErrors({});
     setIsEditing(false);
@@ -399,28 +374,6 @@ const SessionFeedback = () => {
           {!isFormVisible ? (
             <>
               <div className="sf-filters d-flex align-items-center gap-3">
-                {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
-                  <div style={{ width: '200px' }}>
-                    <CFormSelect
-                      value={selectedBranch}
-                      onChange={(e) => handleBranchChange(e.target.value)}
-                      style={{
-                        fontSize: '13px',
-                        borderRadius: '8px',
-                        border: '0.5px solid #d0dce9',
-                        color: '#374151',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                        padding: '6px 12px'
-                      }}
-                    >
-                      {branches.map((branch) => (
-                        <option key={branch.branchId} value={branch.branchId}>
-                          {branch.branchName}
-                        </option>
-                      ))}
-                    </CFormSelect>
-                  </div>
-                )}
 
                 <input
                   type="text"

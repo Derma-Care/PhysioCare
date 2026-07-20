@@ -19,7 +19,7 @@ import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
 import { getExpenses, createExpense, updateExpense, deleteExpense } from "./ExpenseAPI"
 import LoadingIndicator from "../../Utils/loader"
 import { useLocation } from "react-router-dom"
-
+import { useHospital } from '../Usecontext/HospitalContext'
 const CATEGORY_META = {
     rent: { label: "Rent", color: "#185fa5", bg: "#e6f1fb" },
     salary: { label: "Salary", color: "#15803d", bg: "#dcfce7" },
@@ -52,10 +52,14 @@ const EMPTY_FORM = { title: "", category: "", amount: "", date: "", mode: "", tr
 const ExpenseScreen = () => {
     useAutoHideSidebar()
     const location = useLocation();
-    const { branchId, clinicId, branchName } =
+    const { branchId: stateBranchId, clinicId, branchName: stateBranchName } =
         location.state || {};
-    // const clinicId = localStorage.getItem('HospitalId')
-    // const branchId = localStorage.getItem('branchId') || 'all'
+    const { globalBranchId, globalBranchName } = useHospital() || {}
+    // Prefer the live global context; fall back to navigation state
+    const branchId = globalBranchId || stateBranchId
+    const branchName = globalBranchName || stateBranchName
+    // const clinicId = sessionStorage.getItem('HospitalId')
+    // const branchId = sessionStorage.getItem('branchId') || 'all'
 
     const [form, setForm] = useState(EMPTY_FORM)
     const [expenses, setExpenses] = useState([])

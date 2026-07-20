@@ -13,9 +13,9 @@ const themeOptions = {
 const ThemeSelector = () => {
   const [selectedTheme, setSelectedTheme] = useState('default')
 
-  // Load saved theme from localStorage on first render
+  // Load saved theme from sessionStorage on first render
   useEffect(() => {
-    const savedTheme = localStorage.getItem('selectedTheme')
+    const savedTheme = sessionStorage.getItem('selectedTheme')
     if (savedTheme && themeOptions[savedTheme]) {
       applyTheme(savedTheme)
       setSelectedTheme(savedTheme)
@@ -34,7 +34,7 @@ const ThemeSelector = () => {
   const handleThemeChange = (themeKey) => {
     setSelectedTheme(themeKey)
     applyTheme(themeKey)
-    localStorage.setItem('selectedTheme', themeKey) // ✅ Save to localStorage
+    sessionStorage.setItem('selectedTheme', themeKey) // ✅ Save to sessionStorage
   }
 
   return (

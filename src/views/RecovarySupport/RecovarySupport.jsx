@@ -250,7 +250,7 @@ const EquipmentManager = () => {
     const [imageChanged, setImageChanged] = useState(false);
     // ── GET all ──
     const loadRecoverySupports = async () => {
-        const clinicId = localStorage.getItem("HospitalId")
+        const clinicId = sessionStorage.getItem("HospitalId")
         try {
             setLoading(true);
 
@@ -344,7 +344,7 @@ const EquipmentManager = () => {
                 description: form.description,
                 image: form.image,
                 category: form.category,
-                clinicId: localStorage.getItem("HospitalId")
+                clinicId: sessionStorage.getItem("HospitalId")
             };
 
             const res = await http.post(
@@ -377,7 +377,7 @@ const EquipmentManager = () => {
     const updateRecoverySupport = async () => {
         try {
             const payload = {
-                clinicId: localStorage.getItem("HospitalId"),
+                clinicId: sessionStorage.getItem("HospitalId"),
                 name: form.name,
                 description: form.description,
                 category: form.category,

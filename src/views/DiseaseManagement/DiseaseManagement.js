@@ -65,7 +65,7 @@ const DiseasesManagement = () => {
     notes: '',
   })
   const { searchQuery, setSearchQuery } = useGlobalSearch()
-  const hospitalId = localStorage.getItem('HospitalId')
+  const hospitalId = sessionStorage.getItem('HospitalId')
   const normalizeDiseases = (data) =>
     data.map((item) => ({
       id: item.id || item._id,

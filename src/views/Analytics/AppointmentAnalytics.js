@@ -13,7 +13,7 @@ import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
 import { getAppointmentAnalytics, getAppointmentAnalyticsCustom } from "./AppointmentAnalyticsAPI"
 import LoadingIndicator from "../../Utils/loader"
 import { useLocation } from "react-router-dom"
-
+import { useHospital } from '../Usecontext/HospitalContext'
 const fmtInt = (n) => (n == null ? "—" : Math.max(0, Math.round(n)).toLocaleString())
 
 const InfoTip = ({ text }) => {
@@ -101,10 +101,14 @@ const TREND_LABELS = {
 const AppointmentAnalytics = () => {
   useAutoHideSidebar()
   const location = useLocation();
-  const { branchId, clinicId, branchName } =
+  const { branchId: stateBranchId, clinicId, branchName: stateBranchName } =
     location.state || {};
-  // const clinicId = localStorage.getItem("HospitalId")
-  // const branchId = localStorage.getItem("branchId")
+  const { globalBranchId, globalBranchName } = useHospital() || {}
+  // Prefer the live global context; fall back to navigation state
+  const branchId = globalBranchId || stateBranchId
+  const branchName = globalBranchName || stateBranchName
+  // const clinicId = sessionStorage.getItem("HospitalId")
+  // const branchId = sessionStorage.getItem("branchId")
 
   const [filter, setFilter] = useState("today")
   const [showCustom, setShowCustom] = useState(false)

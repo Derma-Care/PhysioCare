@@ -34,11 +34,11 @@ const PharmacistForm = ({
   const emptyPermissions = {} // ✅ no feature is selected by default
 
   const emptyForm = {
-    hospitalId: localStorage.getItem('HospitalId'),
-    branchId: localStorage.getItem('branchId'),
-    branchName: localStorage.getItem('branchName'),
-    hospitalName: localStorage.getItem('HospitalName'),
-    createdBy: localStorage.getItem('staffId') || 'admin',
+    hospitalId: sessionStorage.getItem('HospitalId'),
+    branchId: sessionStorage.getItem('branchId'),
+    branchName: sessionStorage.getItem('branchName'),
+    hospitalName: sessionStorage.getItem('HospitalName'),
+    createdBy: sessionStorage.getItem('staffId') || 'admin',
     fullName: '',
     gender: '',
     dateOfBirth: '',
@@ -83,7 +83,7 @@ const PharmacistForm = ({
 
   // 🔹 State
   const [formData, setFormData] = useState(emptyForm)
-  const [hospitalId, setHospitalId] = useState(localStorage.getItem('HospitalId'))
+  const [hospitalId, setHospitalId] = useState(sessionStorage.getItem('HospitalId'))
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [showPModal, setShowPModal] = useState(false)

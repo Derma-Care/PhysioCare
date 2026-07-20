@@ -44,7 +44,7 @@ const GenericConsentForm = () => {
   const [saveloading, setSaveLoading] = useState(false)
   const [delloading, setDelLoading] = useState(false)
 
-  const hospitalId = localStorage.getItem('HospitalId')
+  const hospitalId = sessionStorage.getItem('HospitalId')
   const consentFormType = '1'
 
   // Fetch saved generic forms

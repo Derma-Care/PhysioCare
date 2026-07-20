@@ -28,7 +28,7 @@ import EquipmentManagement from './views/EquipmentManagement/EquipmentManagement
 function Root() {
   // attach interceptors once when app mounts
   // useEffect(() => {
-  //   const detach = attachInterceptors(() => localStorage.getItem('token'))
+  //   const detach = attachInterceptors(() => sessionStorage.getItem('token'))
   //   return () => detach()
   // }, [])
 

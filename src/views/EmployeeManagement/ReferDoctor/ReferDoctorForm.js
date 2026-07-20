@@ -47,9 +47,9 @@ const ReferDoctorForm = ({
   const emptyPermissions = {} // ✅ no feature is selected by default
 
   const emptyForm = {
-    clinicId: localStorage.getItem('HospitalId'),
-    branchId: localStorage.getItem('branchId'),
-    hospitalName: localStorage.getItem('HospitalName'),
+    clinicId: sessionStorage.getItem('HospitalId'),
+    branchId: sessionStorage.getItem('branchId'),
+    hospitalName: sessionStorage.getItem('HospitalName'),
     fullName: '',
     gender: 'male',
     dateOfBirth: '',
@@ -94,7 +94,7 @@ const ReferDoctorForm = ({
 
   // 🔹 State
   const [formData, setFormData] = useState(emptyForm)
-  const [clinicId, setClinicID] = useState(localStorage.getItem('HospitalId'))
+  const [clinicId, setClinicID] = useState(sessionStorage.getItem('HospitalId'))
 
   const [showModal, setShowModal] = useState(false)
   const [showPModal, setShowPModal] = useState(false)

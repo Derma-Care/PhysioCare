@@ -77,17 +77,14 @@ const CustomerManagement = () => {
   const pincodeTimer = useRef(null)
 
   const [branches, setBranches] = useState([]);
-  const [selectedBranch, setSelectedBranch] = useState("");
-  const [selectedBranchName, setSelectedBranchName] = useState("");
-
-  const { user } = useHospital()
+  const { user, globalBranchId } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
-  const role = localStorage.getItem('role');
+  const role = sessionStorage.getItem('role');
 
   const emptyForm = {
-    hospitalId: localStorage.getItem('HospitalId') || '',
-    hospitalName: localStorage.getItem('HospitalName') || '',
-    branchId: localStorage.getItem('branchId') || '',
+    hospitalId: sessionStorage.getItem('HospitalId') || '',
+    hospitalName: sessionStorage.getItem('HospitalName') || '',
+    branchId: sessionStorage.getItem('branchId') || '',
     customerId: '', title: '', firstName: '', lastName: '',
     fullName: '', mobileNumber: '', gender: '', email: '',
     dateOfBirth: '', referredBy: '', age: '',
@@ -128,41 +125,20 @@ const CustomerManagement = () => {
 
   useEffect(() => () => { if (pincodeTimer.current) clearTimeout(pincodeTimer.current) }, [])
 
-  const fetchCustomers = useCallback(async (branchIdOverride = selectedBranch) => {
+  const fetchCustomers = useCallback(async (branchIdOverride = globalBranchId) => {
     setLoading(true); setError(null)
     try {
       const data = await CustomerData(branchIdOverride)
       setCustomerData(Array.isArray(data) ? data.filter(Boolean) : [])
     } catch { setError('Failed to fetch customer data.'); setCustomerData([]) }
     finally { setLoading(false) }
-  }, [])
-  const handleClinicChange = async () => {
-    const clinicId = localStorage.getItem('HospitalId');
-    const defaultBranchId = localStorage.getItem('branchId');
-    const defaultBranchName = localStorage.getItem('branchName');
-
-    if (!clinicId) return;
-    const res = await GetClinicBranches(clinicId);
-
-    setBranches(res.data || []);
-
-    if (res.data?.length) {
-      setSelectedBranch(defaultBranchId);
-      setSelectedBranchName(defaultBranchName);
-      fetchCustomers(defaultBranchId);
-    }
-  };
+  }, [globalBranchId])
 
   useEffect(() => {
-    handleClinicChange();
-  }, [])
-
-  const handleBranchChange = (branchId) => {
-    const branch = branches.find((b) => b.branchId === branchId);
-    setSelectedBranch(branchId);
-    setSelectedBranchName(branch?.branchName || "");
-    fetchCustomers(branchId);
-  };
+    if (globalBranchId) {
+      fetchCustomers(globalBranchId);
+    }
+  }, [globalBranchId, fetchCustomers])
 
   const TITLES = ['Mr.', 'Mrs.', 'Miss.', 'Ms.', 'Mx.', 'Dr.', 'Prof.', 'Rev.', 'Capt.', 'Col.']
 
@@ -209,9 +185,9 @@ const CustomerManagement = () => {
       dateOfBirth: formattedDate,
       referredBy: customer.referredBy || '',
       age: customer.age || '',
-      hospitalId: localStorage.getItem('HospitalId') || '',
-      hospitalName: localStorage.getItem('HospitalName') || '',
-      branchId: localStorage.getItem('branchId') || '',
+      hospitalId: sessionStorage.getItem('HospitalId') || '',
+      hospitalName: sessionStorage.getItem('HospitalName') || '',
+      branchId: sessionStorage.getItem('branchId') || '',
       address: {
         houseNo: customer.address?.houseNo || '',
         street: customer.address?.street || '',
@@ -301,9 +277,9 @@ const CustomerManagement = () => {
       const updated = {
         ...formData,
         fullName: [formData.title, formData.firstName, formData.lastName].filter(Boolean).join(' '),
-        hospitalId: localStorage.getItem('HospitalId') || formData.hospitalId,
-        hospitalName: localStorage.getItem('HospitalName') || formData.hospitalName,
-        branchId: selectedBranch || localStorage.getItem('branchId') || formData.branchId,
+        hospitalId: sessionStorage.getItem('HospitalId') || formData.hospitalId,
+        hospitalName: sessionStorage.getItem('HospitalName') || formData.hospitalName,
+        branchId: globalBranchId || sessionStorage.getItem('branchId') || formData.branchId,
       }
       if (updated.dateOfBirth) {
         const d = new Date(updated.dateOfBirth)
@@ -318,7 +294,7 @@ const CustomerManagement = () => {
         await addCustomer(updated)
         showCustomToast('Customer added successfully', 'success')
       }
-      fetchCustomers(); handleCancel(); handleClinicChange()
+      fetchCustomers(); handleCancel();
     } catch (error) {
       if (error?.response?.status === 409) showCustomToast('Customer already exists with this mobile or email', 'error')
       else showCustomToast('Something went wrong', 'error')
@@ -376,28 +352,6 @@ const CustomerManagement = () => {
             </div>
 
             <div className="d-flex align-items-center gap-3">
-              {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
-                <div style={{ width: "200px" }}>
-                  <CFormSelect
-                    value={selectedBranch}
-                    onChange={(e) => handleBranchChange(e.target.value)}
-                    style={{
-                      fontSize: '13px',
-                      borderRadius: '8px',
-                      border: '0.5px solid #d0dce9',
-                      color: '#374151',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                      padding: '6px 12px'
-                    }}
-                  >
-                    {branches.map((branch) => (
-                      <option key={branch.branchId} value={branch.branchId}>
-                        {branch.branchName}
-                      </option>
-                    ))}
-                  </CFormSelect>
-                </div>
-              )}
 
               <div className="cm-search-wrapper" style={{ margin: 0 }}>
                 <Search size={14} className="cm-search-icon-left" />

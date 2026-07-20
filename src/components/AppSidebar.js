@@ -22,7 +22,7 @@ const AppSidebar = () => {
   const navItems = getNavigation(user?.permissions || {})
 
   const handleHeaderClick = () => {
-    const role = localStorage.getItem('role')
+    const role = sessionStorage.getItem('role')
     navigate(role === 'physiotherapist' || role === 'intern' ? '/therapist' : '/dashboard')
   }
 

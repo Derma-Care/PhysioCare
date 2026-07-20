@@ -69,7 +69,7 @@ const TestsManagement = () => {
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 
-  const hospitalId = localStorage.getItem('HospitalId')
+  const hospitalId = sessionStorage.getItem('HospitalId')
 
   const nameRegex = /^[A-Za-z0-9\s.\-()\/']+$/
 

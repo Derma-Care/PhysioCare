@@ -271,8 +271,8 @@ const DoctorDetailsPage = () => {
       doctorSignatureKey = extractKey(doctorSignatureKey);
 
       const extraParams = {
-        hospitalId: localStorage.getItem('HospitalId'),
-        branchId: localStorage.getItem('branchId'),
+        hospitalId: sessionStorage.getItem('HospitalId'),
+        branchId: sessionStorage.getItem('branchId'),
         doctorId: doctorData.doctorId
       }
 
@@ -360,8 +360,8 @@ const DoctorDetailsPage = () => {
       availableSlots: newSlots.map(slot => ({ slot, slotbooked: false })),
     }
     try {
-      const hospitalId = localStorage.getItem('HospitalId')
-      const branchId = localStorage.getItem('branchId')
+      const hospitalId = sessionStorage.getItem('HospitalId')
+      const branchId = sessionStorage.getItem('branchId')
       const res = await http.post(`/addDoctorSlots/${hospitalId}/${branchId}/${doctorData.doctorId}`, payload)
       if (res.data.success) {
         showCustomToast('Slots added successfully', 'success')
@@ -381,8 +381,8 @@ const DoctorDetailsPage = () => {
 
   const fetchSlots = async () => {
     try {
-      const hospitalId = localStorage.getItem('HospitalId')
-      const branchId = localStorage.getItem('branchId')
+      const hospitalId = sessionStorage.getItem('HospitalId')
+      const branchId = sessionStorage.getItem('branchId')
       const response = await http.get(`/getDoctorSlots/${hospitalId}/${branchId}/${doctorData.doctorId}`)
       if (response.data.success) setAllSlots(response.data.data)
     } catch (error) {
@@ -502,10 +502,10 @@ const DoctorDetailsPage = () => {
 
   useEffect(() => {
     const fetchBranches = async () => {
-      console.log(localStorage.getItem('HospitalId'));
+      console.log(sessionStorage.getItem('HospitalId'));
 
       try {
-        const clinicId = localStorage.getItem('HospitalId')
+        const clinicId = sessionStorage.getItem('HospitalId')
         const response = await GetClinicBranches(clinicId)
         const branches = response?.data || []
         setBranchOptions(branches.map(b => ({ value: b.branchId || b.id, label: b.branchName || b.name })))
@@ -631,7 +631,7 @@ const DoctorDetailsPage = () => {
   const handleGenerate = async () => {
     if (!selectedHospital?.data?.openingTime || !selectedHospital?.data?.closingTime) return
     const doctorId = doctorData?.doctorId
-    const branchId = localStorage.getItem('branchId')
+    const branchId = sessionStorage.getItem('branchId')
     const date = selectedDate
     const intervaltime = interval
     const availableTimes = doctorData?.availableTimes || ''
@@ -650,7 +650,7 @@ const DoctorDetailsPage = () => {
 
   const checkSubServiceDetails = async (ids) => {
     let incomplete = false
-    const hospitalId = localStorage.getItem('HospitalId')
+    const hospitalId = sessionStorage.getItem('HospitalId')
     for (const id of ids) {
       const data = await getSubServiceById(hospitalId, id)
       if (!data || !data.price || !data.finalCost) { incomplete = true; break }
@@ -1157,7 +1157,7 @@ const DoctorDetailsPage = () => {
         <CModalFooter style={{ borderTop: `1px solid ${t.border}`, padding: '12px 20px', gap: '8px' }}>
           <Btn variant="secondary" onClick={() => setShowDeleteConfirmModal(false)}>Cancel</Btn>
           <Btn variant="danger" onClick={async () => {
-            const branchid = localStorage.getItem('branchId')
+            const branchid = sessionStorage.getItem('branchId')
             try {
               if (deleteMode === 'selected') {
                 for (const slot of selectedSlots) {

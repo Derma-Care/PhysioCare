@@ -62,14 +62,14 @@ const AttendanceTracker = () => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const location = useLocation();
-  const storedData = localStorage.getItem('therapistData');
+  const storedData = sessionStorage.getItem('therapistData');
   const therapistData = location.state || (storedData ? JSON.parse(storedData) : {});
 
-  // Get data from location state or localStorage
-  const userId = location.state?.userId || localStorage.getItem('staffId') || localStorage.getItem('branchId') || "";
-  const clinicId = localStorage.getItem('HospitalId');
-  const branchId = localStorage.getItem('branchId');
-  const role = location.state?.role || therapistData?.role || localStorage.getItem('role') || "THERAPIST";
+  // Get data from location state or sessionStorage
+  const userId = location.state?.userId || sessionStorage.getItem('staffId') || sessionStorage.getItem('branchId') || "";
+  const clinicId = sessionStorage.getItem('HospitalId');
+  const branchId = sessionStorage.getItem('branchId');
+  const role = location.state?.role || therapistData?.role || sessionStorage.getItem('role') || "THERAPIST";
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [detailsData, setDetailsData] = useState(null);

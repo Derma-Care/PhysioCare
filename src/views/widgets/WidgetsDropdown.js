@@ -125,14 +125,14 @@ const WidgetsDropdown = (props) => {
         status: 'confirmed',
       })
 
-      fetchAppointments(localStorage.getItem('HospitalId'))
+      fetchAppointments(sessionStorage.getItem('HospitalId'))
       setEditingPaymentId(null)
     } catch (error) {
       console.error('Payment update failed:', error)
     }
   }
 
-  const role = localStorage.getItem('role')
+  const role = sessionStorage.getItem('role')
 
   const PrintContent = ({ data }) => {
     if (!data) return null
@@ -250,7 +250,7 @@ const WidgetsDropdown = (props) => {
     setLoadingPatients(true)
     setPatientError(null)
     try {
-      const branchId = branchIdOverride || localStorage.getItem('branchId')
+      const branchId = branchIdOverride || sessionStorage.getItem('branchId')
       const response = await CustomerByClinicNdBranchId(clinicId, branchId)
       const patientArray = response || []
       if (Array.isArray(patientArray)) {
@@ -270,7 +270,7 @@ const WidgetsDropdown = (props) => {
     setLoadingDoctors(true)
     setDoctorError(null)
     try {
-      const branchId = branchIdOverride || localStorage.getItem('branchId')
+      const branchId = branchIdOverride || sessionStorage.getItem('branchId')
       const response = await getDoctorByClinicIdData(clinicId, branchId)
       const doctorArray = response?.data || []
       if (Array.isArray(doctorArray)) {
@@ -292,9 +292,9 @@ const WidgetsDropdown = (props) => {
 
   useEffect(() => {
     const handleClinicChange = async () => {
-      const hospitalId = localStorage.getItem('HospitalId')
-      const defaultBranchId = localStorage.getItem('branchId');
-      const defaultBranchName = localStorage.getItem('branchName');
+      const hospitalId = sessionStorage.getItem('HospitalId')
+      const defaultBranchId = sessionStorage.getItem('branchId');
+      const defaultBranchName = sessionStorage.getItem('branchName');
 
       if (!hospitalId) {
         setAppointmentError('No appointments found for this Hospital Id')
@@ -304,7 +304,7 @@ const WidgetsDropdown = (props) => {
 
       const res = await GetClinicBranches(hospitalId);
       setBranches(res.data || []);
-      
+
       if (res.data?.length) {
         setSelectedBranch(defaultBranchId);
         setSelectedBranchName(defaultBranchName);
@@ -329,15 +329,15 @@ const WidgetsDropdown = (props) => {
     handleClinicChange()
   }, [fetchAppointments, fetchDoctors, fetchPatients])
 
-  const handleBranchChange = (branchId) => {
-    const branch = branches.find((b) => b.branchId === branchId);
-    setSelectedBranch(branchId);
-    setSelectedBranchName(branch?.branchName || "");
-    const hospitalId = localStorage.getItem('HospitalId')
-    fetchAppointments(hospitalId, branchId)
-    fetchDoctors(hospitalId, branchId)
-    fetchPatients(hospitalId, branchId)
-  }
+  // const handleBranchChange = (branchId) => {
+  //   const branch = branches.find((b) => b.branchId === branchId);
+  //   setSelectedBranch(branchId);
+  //   setSelectedBranchName(branch?.branchName || "");
+  //   const hospitalId = sessionStorage.getItem('HospitalId')
+  //   fetchAppointments(hospitalId, branchId)
+  //   fetchDoctors(hospitalId, branchId)
+  //   fetchPatients(hospitalId, branchId)
+  // }
 
   useEffect(() => {
     clearInterval(intervalRef.current)
@@ -460,9 +460,9 @@ const WidgetsDropdown = (props) => {
               <p className="wd-page-sub">{todayBookings.length} appointment{todayBookings.length !== 1 ? 's' : ''} found</p>
             </div>
           </div>
-          
+
           <div className="d-flex align-items-center gap-3">
-            {branches?.length > 1 && role?.toLowerCase() === "admin" && (
+            {/* {branches?.length > 1 && role?.toLowerCase() === "admin" && (
               <div style={{ width: "200px" }}>
                 <CFormSelect
                   value={selectedBranch}
@@ -483,7 +483,7 @@ const WidgetsDropdown = (props) => {
                   ))}
                 </CFormSelect>
               </div>
-            )}
+            )} */}
 
             <div className="cm-search-wrapper" style={{ margin: 0 }}>
               <Search size={14} className="cm-search-icon-left" />

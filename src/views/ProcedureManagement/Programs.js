@@ -86,8 +86,8 @@ export default function Programs() {
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 
-  const clinicId = localStorage.getItem("HospitalId")
-  const branchId = localStorage.getItem("branchId")
+  const clinicId = sessionStorage.getItem("HospitalId")
+  const branchId = sessionStorage.getItem("branchId")
 
   const [form, setForm] = useState({
     therapyName: "",

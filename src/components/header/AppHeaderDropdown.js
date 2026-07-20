@@ -13,11 +13,11 @@ const AppHeaderDropdown = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('user')
-    localStorage.removeItem('HospitalId')
-    localStorage.removeItem('HospitalName')
-    localStorage.clear()
+    sessionStorage.removeItem('authToken')
+    sessionStorage.removeItem('user')
+    sessionStorage.removeItem('HospitalId')
+    sessionStorage.removeItem('HospitalName')
+    sessionStorage.clear()
     navigate('/login')
   }
 

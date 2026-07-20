@@ -15,8 +15,8 @@ export default function MonthlyReport() {
   const fetchMonthlyAttendance = useCallback(async () => {
     setLoading(true);
     try {
-      const hospitalId = localStorage.getItem("HospitalId");
-      const branchId = localStorage.getItem("branchId");
+      const hospitalId = sessionStorage.getItem("HospitalId");
+      const branchId = sessionStorage.getItem("branchId");
       const res = await http.get(`${BASE_URL}/${GetAllUsersMonthlyByClinicAndBranch}/${hospitalId}/${branchId}/${month}`);
       if (res.status === 200 && res.data && res.data.success) {
         setAttendanceData(res.data.data || []);

@@ -35,8 +35,8 @@ const TreatmentPackages = () => {
   const [therapyOptions, setTherapyOptions] = useState([])
 
 
-  const clinicId = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
+  const clinicId = sessionStorage.getItem('HospitalId')
+  const branchId = sessionStorage.getItem('branchId')
 
   const fetchPackages = async () => {
     try {
@@ -66,8 +66,8 @@ const TreatmentPackages = () => {
   // SAVE
   const handleSave = async (data) => {
     try {
-      const clinicId = localStorage.getItem('HospitalId')
-      const branchId = localStorage.getItem('branchId')
+      const clinicId = sessionStorage.getItem('HospitalId')
+      const branchId = sessionStorage.getItem('branchId')
 
       const payload = {
         ...data,

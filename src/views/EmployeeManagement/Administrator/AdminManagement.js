@@ -40,8 +40,8 @@ const AdminManagement = () => {
   const [modalData, setModalData] = useState(null)
   const [modalTVisible, setModalTVisible] = useState(false)
 
-  const clinicID = localStorage.getItem('HospitalId')
-  const branchID = localStorage.getItem('branchId')
+  const clinicID = sessionStorage.getItem('HospitalId')
+  const branchID = sessionStorage.getItem('branchId')
 
   const fetchAdmins = async () => {
     setLoading(true)

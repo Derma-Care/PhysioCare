@@ -45,7 +45,7 @@ const ReferDoctorManagement = () => {
   const fetchTechs = async () => {
     setLoading(true)
     try {
-      const clinicID = localStorage.getItem('HospitalId')
+      const clinicID = sessionStorage.getItem('HospitalId')
       if (clinicID) {
         const res = await getAllReferDoctors(clinicID)
         setTechnicians(res.data?.data || [])

@@ -32,11 +32,11 @@ const LabTechnicianForm = ({
   const emptyPermissions = {} // ✅ no feature is selected by default
 
   const emptyForm = {
-    clinicId: localStorage.getItem('HospitalId'),
-    branchId: localStorage.getItem('branchId'),
-    branchName: localStorage.getItem('branchName'),
-    hospitalName: localStorage.getItem('HospitalName'),
-    createdBy: localStorage.getItem('staffId') || 'admin',
+    clinicId: sessionStorage.getItem('HospitalId'),
+    branchId: sessionStorage.getItem('branchId'),
+    branchName: sessionStorage.getItem('branchName'),
+    hospitalName: sessionStorage.getItem('HospitalName'),
+    createdBy: sessionStorage.getItem('staffId') || 'admin',
     fullName: '',
     gender: '',
     dateOfBirth: '',
@@ -81,7 +81,7 @@ const LabTechnicianForm = ({
 
   // 🔹 State
   const [formData, setFormData] = useState(emptyForm)
-  const [clinicId, setClinicID] = useState(localStorage.getItem('HospitalId'))
+  const [clinicId, setClinicID] = useState(sessionStorage.getItem('HospitalId'))
   const [showModal, setShowModal] = useState(false)
   const [showPModal, setShowPModal] = useState(false)
   const [previewFileUrl, setPreviewFileUrl] = useState(null)

@@ -174,7 +174,7 @@ export default function FollowupDashboard() {
   const [confirmedCount, setConfirmedCount] = useState(0)
   const [inProgressCount, setInProgressCount] = useState(0)
   const [loading, setLoading] = useState(false)
-  const role = localStorage.getItem('role')
+  const role = sessionStorage.getItem('role')
   const [visible, setVisible] = useState(false)
   const [showReasonModal, setShowReasonModal] = useState(false)
   const [selectedRow, setSelectedRow] = useState(null)
@@ -192,48 +192,23 @@ export default function FollowupDashboard() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [editData, setEditData] = useState(null)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [branches, setBranches] = useState([]);
-  const [selectedBranch, setSelectedBranch] = useState("");
-  const [selectedBranchName, setSelectedBranchName] = useState("");
+  const { globalBranchId } = useHospital() || {}
 
   /* ══════════════════════════════════════════════════════════════════
      INITIAL LOAD
   ══════════════════════════════════════════════════════════════════ */
   useEffect(() => {
-    const handleClinicChange = async () => {
-      const clinicId = localStorage.getItem('HospitalId');
-      const defaultBranchId = localStorage.getItem('branchId');
-      const defaultBranchName = localStorage.getItem('branchName');
+    if (globalBranchId) {
+      setFromDate("");
+      setToDate("");
+      setActiveCard('today');
+      setFilter('All');
+      setCurrentPage(1);
+      getInitialCounts(globalBranchId);
+    }
+  }, [globalBranchId]);
 
-      if (!clinicId) return;
-      const res = await GetClinicBranches(clinicId);
-
-      setBranches(res.data || []);
-
-      if (res.data?.length) {
-        setSelectedBranch(defaultBranchId);
-        setSelectedBranchName(defaultBranchName);
-        getInitialCounts(defaultBranchId);
-      }
-    };
-    handleClinicChange();
-  }, [])
-
-  const handleBranchChange = (branchId) => {
-    const branch = branches.find((b) => b.branchId === branchId);
-    setSelectedBranch(branchId);
-    setSelectedBranchName(branch?.branchName || "");
-
-    // reset dates and fetch
-    setFromDate("");
-    setToDate("");
-    setActiveCard('today');
-    setFilter('All');
-    setCurrentPage(1);
-    getInitialCounts(branchId);
-  };
-
-  const getInitialCounts = async (branchIdOverride = selectedBranch) => {
+  const getInitialCounts = async (branchIdOverride = globalBranchId) => {
     setLoading(true)
     try {
       const [todayRes, upcomingRes] = await Promise.all([
@@ -313,15 +288,15 @@ export default function FollowupDashboard() {
 
       // ✅ refresh current tab data
       if (activeCard === "upcoming") {
-        await getUpcomingAppointments(selectedBranch)
+        await getUpcomingAppointments(globalBranchId)
       } else if (activeCard === "confirmed") {
-        const data = await getTodayFollowUps(selectedBranch)
+        const data = await getTodayFollowUps(globalBranchId)
         setRows(data.filter((r) => rowMatchesStatus(r, "confirmed")))
       } else if (activeCard === "inprogress") {
-        const data = await getTodayFollowUps(selectedBranch)
+        const data = await getTodayFollowUps(globalBranchId)
         setRows(data.filter((r) => rowMatchesStatus(r, "in progress")))
       } else {
-        await getTodayFollowUps(selectedBranch)
+        await getTodayFollowUps(globalBranchId)
       }
     } catch (error) {
       console.error("Update failed:", error)
@@ -345,9 +320,9 @@ export default function FollowupDashboard() {
       showCustomToast('Appointment deleted successfully', 'success')
 
       // Refresh data
-      if (activeCard === 'today') await getTodayFollowUps(selectedBranch)
-      else if (activeCard === 'upcoming') await getUpcomingAppointments(selectedBranch)
-      else await getInitialCounts(selectedBranch)
+      if (activeCard === 'today') await getTodayFollowUps(globalBranchId)
+      else if (activeCard === 'upcoming') await getUpcomingAppointments(globalBranchId)
+      else await getInitialCounts(globalBranchId)
 
     } catch (error) {
       console.error('Delete failed:', error)
@@ -367,7 +342,7 @@ export default function FollowupDashboard() {
   const fetchSlots = async (doctorId, branchId) => {
     try {
       setLoadingSlots(true)
-      const hospitalId = localStorage.getItem('HospitalId')
+      const hospitalId = sessionStorage.getItem('HospitalId')
       const response = await axios.get(
         `${BASE_URL}/getDoctorSlots/${hospitalId}/${branchId}/${doctorId}`
       )
@@ -407,7 +382,7 @@ export default function FollowupDashboard() {
   const visibleSlots = showAllSlots ? sortedSlots : sortedSlots.slice(0, 12)
 
   /* ── Today ────────────────────────────────────────────────────────── */
-  const getTodayFollowUps = async (branchIdOverride = selectedBranch) => {
+  const getTodayFollowUps = async (branchIdOverride = globalBranchId) => {
     setLoading(true)
     try {
       const res = await getBookingsTodayFollowUps(branchIdOverride)
@@ -434,7 +409,7 @@ export default function FollowupDashboard() {
   }
 
   /* ── 1 Week ───────────────────────────────────────────────────────── */
-  const getUpcomingAppointments = async (branchIdOverride = selectedBranch) => {
+  const getUpcomingAppointments = async (branchIdOverride = globalBranchId) => {
     setLoading(true)
     try {
       const [upcomingRes, todayRes] = await Promise.all([
@@ -464,7 +439,7 @@ export default function FollowupDashboard() {
   }
 
   /* ── Date range ───────────────────────────────────────────────────── */
-  const getDateRangeAppointments = async (branchIdOverride = selectedBranch) => {
+  const getDateRangeAppointments = async (branchIdOverride = globalBranchId) => {
     if (!fromDate || !toDate) return
     setLoading(true)
     try {
@@ -594,28 +569,7 @@ export default function FollowupDashboard() {
           </div>
 
           <div className="wd-header-right">
-            {branches?.length > 0 && role?.toLowerCase() === "admin" && (
-              <div style={{ width: "200px" }}>
-                <CFormSelect
-                  value={selectedBranch}
-                  onChange={(e) => handleBranchChange(e.target.value)}
-                  style={{
-                    fontSize: '13px',
-                    borderRadius: '8px',
-                    border: '0.5px solid #d0dce9',
-                    color: '#374151',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                    padding: '6px 12px'
-                  }}
-                >
-                  {branches.map((branch) => (
-                    <option key={branch.branchId} value={branch.branchId}>
-                      {branch.branchName}
-                    </option>
-                  ))}
-                </CFormSelect>
-              </div>
-            )}
+            {/* Global branch dropdown is in AppBreadcrumb now */}
             <div className="cm-search-wrapper" style={{ minWidth: '250px', marginLeft: '0' }}>
               <Search size={14} className="cm-search-icon-left" />
               <input

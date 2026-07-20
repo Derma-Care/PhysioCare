@@ -68,7 +68,7 @@ const ProcedureConsentForm = () => {
   const [qaList, setQaList] = useState([])
   const [editIndex, setEditIndex] = useState(null)
   const [errors, setErrors] = useState({}) // State for form validation errors
-  const hospitalId = localStorage.getItem('HospitalId')
+  const hospitalId = sessionStorage.getItem('HospitalId')
   const consentFormType = '2' // from your Postman example
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(5)

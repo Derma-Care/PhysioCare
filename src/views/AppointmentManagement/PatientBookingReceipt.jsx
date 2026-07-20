@@ -38,7 +38,7 @@ const tokens = {
 
 const PatientBookingReceipt = ({ data }) => {
   if (!data) return <div className="p-5 text-center">No data available</div>
-  const clinicName = localStorage.getItem("HospitalName")
+  const clinicName = sessionStorage.getItem("HospitalName")
   const patient = data
   const normalizedStatus = patient.status || 'in-progress'
 

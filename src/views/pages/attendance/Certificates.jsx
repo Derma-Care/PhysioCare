@@ -63,8 +63,8 @@ export default function CertificateTablePreview({ staffId, role }) {
 
     // API CALL
     const fetchCertificates = async () => {
-        const clinicId = localStorage.getItem("HospitalId")
-        const branchId = localStorage.getItem("branchId")
+        const clinicId = sessionStorage.getItem("HospitalId")
+        const branchId = sessionStorage.getItem("branchId")
         console.log("staffId", staffId)
         console.log("role", role)
         try {

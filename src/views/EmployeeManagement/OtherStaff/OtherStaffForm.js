@@ -31,11 +31,11 @@ import {
 ───────────────────────────────────────────────────────────────── */
 const makeEmptyForm = () => ({
   wardBoyId: '',
-  clinicId: localStorage.getItem('HospitalId'),
-  branchId: localStorage.getItem('branchId'),
-  branchName: localStorage.getItem('branchName'),
-  hospitalName: localStorage.getItem('HospitalName'),
-  createdBy: localStorage.getItem('staffId') || 'admin',
+  clinicId: sessionStorage.getItem('HospitalId'),
+  branchId: sessionStorage.getItem('branchId'),
+  branchName: sessionStorage.getItem('branchName'),
+  hospitalName: sessionStorage.getItem('HospitalName'),
+  createdBy: sessionStorage.getItem('staffId') || 'admin',
   fullName: '',
   gender: '',
   dateOfBirth: '',

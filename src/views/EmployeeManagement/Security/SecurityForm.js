@@ -21,15 +21,15 @@ import { User, Briefcase, MapPin, CreditCard, FileText, Save, X, RotateCcw } fro
    → formData resets → only one character survives per keystroke.
 ───────────────────────────────────────────────────────────────── */
 const makeEmptyForm = () => ({
-  clinicId: localStorage.getItem('HospitalId'),
-  branchId: localStorage.getItem('branchId'),
-  branchName: localStorage.getItem('branchName'),
-  hospitalName: localStorage.getItem('HospitalName'),
+  clinicId: sessionStorage.getItem('HospitalId'),
+  branchId: sessionStorage.getItem('branchId'),
+  branchName: sessionStorage.getItem('branchName'),
+  hospitalName: sessionStorage.getItem('HospitalName'),
   fullName: '',
   gender: '',
   dateOfBirth: '',
   contactNumber: '',
-  createdBy: localStorage.getItem('staffId') || 'admin',
+  createdBy: sessionStorage.getItem('staffId') || 'admin',
   emailId: '',
   govermentId: '',
   dateOfJoining: '',

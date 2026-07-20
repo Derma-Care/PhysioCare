@@ -48,7 +48,7 @@ const App = () => {
     return () => { clearTimeout(fadeTimer); clearTimeout(removeTimer) }
   }, [])
 
-  const data = JSON.parse(localStorage.getItem('selectedHospital') || '{}')
+  const data = JSON.parse(sessionStorage.getItem('selectedHospital') || '{}')
   const hospitalData = data.data;
   console.log(hospitalData, 'hospitalData')
   console.log(data, 'data')

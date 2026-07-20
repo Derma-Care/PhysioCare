@@ -161,8 +161,8 @@ const ImpactWarning = ({ message }) => (
 )
 
 export default function ExerciseTable() {
-  const clinicId = localStorage.getItem("HospitalId")
-  const branchId = localStorage.getItem("branchId")
+  const clinicId = sessionStorage.getItem("HospitalId")
+  const branchId = sessionStorage.getItem("branchId")
 
   const [exercises, setExercises] = useState([])
   const [form, setForm] = useState(emptyExercise)

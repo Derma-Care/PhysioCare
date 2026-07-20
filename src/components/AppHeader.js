@@ -23,7 +23,7 @@ const AppHeader = () => {
     notificationCount, setNotificationCount,
     notifications, setNotifications
   } = useHospital() || {}
-  const data = JSON.parse(localStorage.getItem('selectedHospital') || '{}')
+  const data = JSON.parse(sessionStorage.getItem('selectedHospital') || '{}')
   const hospitalData = data.data;
   console.log(hospitalData, 'hospitalData')
   console.log(data, 'data')
@@ -39,10 +39,10 @@ const AppHeader = () => {
   const [showNotifPanel, setShowNotifPanel] = useState(false)
   const notifRef = useRef(null)
 
-  const HospitalName = localStorage.getItem('staffName')
-    ? localStorage.getItem('staffName')
-    : localStorage.getItem('HospitalName')?.split(' ')[0] || 'Hospital'
-  const branch = localStorage.getItem('branchName') || 'branchName'
+  const HospitalName = sessionStorage.getItem('staffName')
+    ? sessionStorage.getItem('staffName')
+    : sessionStorage.getItem('HospitalName')?.split(' ')[0] || 'Hospital'
+  const branch = sessionStorage.getItem('branchName') || 'branchName'
 
   useEffect(() => {
     import('../firebase').then(({ listenNotification }) => {

@@ -163,8 +163,8 @@ const FCMNotification = () => {
   // same resolved value without re-computing.
   // ───────────────────────────────────────────────────────
   const fetchNotifications = useCallback(async () => {
-    const clinicId = localStorage.getItem('HospitalId')
-    const branchId = localStorage.getItem('branchId')
+    const clinicId = sessionStorage.getItem('HospitalId')
+    const branchId = sessionStorage.getItem('branchId')
     try {
       const res = await http.get(`/priceDropNotification/${clinicId}/${branchId}`)
       if (res.data.success) {
@@ -226,8 +226,8 @@ const FCMNotification = () => {
       showCustomToast('Title and Body are required!', 'error')
       return
     }
-    const clinicId = localStorage.getItem('HospitalId')
-    const branchId = localStorage.getItem('branchId')
+    const clinicId = sessionStorage.getItem('HospitalId')
+    const branchId = sessionStorage.getItem('branchId')
 
     if (activeTab === 'inapp') {
       const tokens = form.sendAll ? [] : form.selectedCustomers.map((c) => c.deviceId).filter(Boolean)
@@ -272,8 +272,8 @@ const FCMNotification = () => {
       const payload = {
         // clinicId,
         // branchId,
-        clinicName: localStorage.getItem('HospitalName'),
-        branchName: localStorage.getItem('branchName'),
+        clinicName: sessionStorage.getItem('HospitalName'),
+        branchName: sessionStorage.getItem('branchName'),
         title: form.title,
         body: form.body.replace(/\n/g, ' ').trim(),  // ✅ newlines → single space, merged clean
         // body: selected.length > 0 ? `Hi ${selected[0].name}. ${form.body}` : form.body,
@@ -307,8 +307,8 @@ const FCMNotification = () => {
       const payload = {
         clinicId,
         branchId,
-        clinicName: localStorage.getItem('HospitalName'),
-        branchName: localStorage.getItem('branchName'),
+        clinicName: sessionStorage.getItem('HospitalName'),
+        branchName: sessionStorage.getItem('branchName'),
         title: form.title,
         body: form.body,
         list
@@ -369,8 +369,8 @@ const FCMNotification = () => {
   };
   const confirmDelete = async () => {
     if (!notifToDelete) return
-    const clinicId = localStorage.getItem('HospitalId')
-    const branchId = localStorage.getItem('branchId')
+    const clinicId = sessionStorage.getItem('HospitalId')
+    const branchId = sessionStorage.getItem('branchId')
     try {
       setIsLoading(true)
       const res = await http.delete(
@@ -461,8 +461,8 @@ const FCMNotification = () => {
     try {
       setIsLoading(true);
 
-      const clinicId = localStorage.getItem('HospitalId');
-      const branchId = localStorage.getItem('branchId');
+      const clinicId = sessionStorage.getItem('HospitalId');
+      const branchId = sessionStorage.getItem('branchId');
 
       await Promise.all(
         selectedNotifications.map((id) =>

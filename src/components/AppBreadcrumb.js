@@ -3,14 +3,11 @@ import { useLocation } from 'react-router-dom'
 import routes from '../routes'
 import { CBreadcrumb, CBreadcrumbItem, CFormSelect } from '@coreui/react'
 import BackButton from '../views/widgets/BackButton'
-import { GetClinicBranches } from '../views/Doctors/DoctorAPI'
+import { useHospital } from '../views/Usecontext/HospitalContext'
 
 const AppBreadcrumb = () => {
   const currentLocation = useLocation().pathname
-  // const [branches, setBranches] = useState([]);
-  // const [selectedBranch, setSelectedBranch] = useState("");
-  // const [selectedBranchName, setSelectedBranchName] = useState("");
-  // const role = localStorage.getItem('role');
+  const { globalBranchId, branches, changeBranch, role } = useHospital() || {}
   const getRouteName = (pathname, routes) => {
     const currentRoute = routes.find((route) => route.path === pathname)
     return currentRoute ? currentRoute.name : false
@@ -40,35 +37,7 @@ const AppBreadcrumb = () => {
     fontSize: '0.775rem',
     fontWeight: 400,
   })
-  // useEffect(() => {
-  //   const initBranches = async () => {
-  //     const hId = localStorage.getItem('HospitalId');
-  //     const defaultBranchId = localStorage.getItem('branchId');
-  //     const defaultBranchName = localStorage.getItem('branchName');
-  //     if (!hId) return;
-
-  //     const res = await GetClinicBranches(hId);
-  //     setBranches(res.data || []);
-
-  //     if (res.data?.length) {
-  //       setSelectedBranch(defaultBranchId);
-  //       setSelectedBranchName(defaultBranchName);
-
-  //     }
-  //   };
-  //   initBranches();
-
-
-  // }, []);
-
-  // const handleBranchChange = (bId) => {
-  //   const branch = branches.find((b) => b.branchId === bId);
-  //   setSelectedBranch(bId);
-  //   setSelectedBranchName(branch?.branchName || "");
-  //   localStorage.setItem("branchId", selectedBranch);
-  //   localStorage.setItem("branchName", selectedBranchName);
-
-  // };
+  // No local branch changes needed anymore since it is globally handled by useHospital context
 
   return (
     <div
@@ -150,11 +119,11 @@ const AppBreadcrumb = () => {
           )}
         </CBreadcrumb>
       </div>
-      {/* {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
-        <div style={{ width: "200px", marginBottom: "1rem" }}>
+      {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
+        <div style={{ width: "200px" }}>
           <CFormSelect
-            value={selectedBranch}
-            onChange={(e) => handleBranchChange(e.target.value)}
+            value={globalBranchId}
+            onChange={(e) => changeBranch(e.target.value)}
             style={{
               fontSize: '13px',
               borderRadius: '8px',
@@ -171,7 +140,7 @@ const AppBreadcrumb = () => {
             ))}
           </CFormSelect>
         </div>
-      )} */}
+      )}
     </div>
   )
 }

@@ -77,7 +77,7 @@ const ReportDetails = () => {
   useEffect(() => {
     const fetchTestNames = async () => {
       try {
-        const hospitalId = localStorage.getItem('HospitalId')
+        const hospitalId = sessionStorage.getItem('HospitalId')
         if (!hospitalId) return
         const response = await TestDataById(hospitalId)
         setTestNames(response.data || [])

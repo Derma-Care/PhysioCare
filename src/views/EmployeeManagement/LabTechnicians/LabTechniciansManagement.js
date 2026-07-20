@@ -44,14 +44,14 @@ const LabTechnicianManagement = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
 
-  // ✅ Load from localStorage on mount
+  // ✅ Load from sessionStorage on mount
   const [modalData, setModalData] = useState(null) // store username & password
   const [modalTVisible, setModalTVisible] = useState(false)
   const fetchTechs = async () => {
     setLoading(true)
     try {
-      const clinicID = localStorage.getItem('HospitalId')
-      const branchID = localStorage.getItem('branchId')
+      const clinicID = sessionStorage.getItem('HospitalId')
+      const branchID = sessionStorage.getItem('branchId')
       if (clinicID) {
         const res = await getAllLabTechnicians(clinicID, branchID) // wait for API
         console.log('API Response:', res)

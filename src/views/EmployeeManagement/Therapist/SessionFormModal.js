@@ -40,7 +40,7 @@ const navigate = useNavigate()
 
   const [error, setError] = useState({})
  
-  const storedData = localStorage.getItem('therapistData')
+  const storedData = sessionStorage.getItem('therapistData')
   const theraphydata = location.state || (storedData ? JSON.parse(storedData) : {})
   const [dashboard, setDashboard] = useState(null)
   const clinicId = theraphydata?.clinicId
@@ -81,7 +81,7 @@ const save = async () => {
 
     const now = new Date()
 
-    const theraphydata = JSON.parse(localStorage.getItem("therapistData"))
+    const theraphydata = JSON.parse(sessionStorage.getItem("therapistData"))
 
     const payload = {
       therapistRecordId:data.therapistRecordId,// "69c7fb9e12a2888ad282076d",

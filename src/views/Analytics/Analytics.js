@@ -17,6 +17,7 @@ import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
 import { wifiUrl } from "../../baseUrl"
 import { http } from "../../Utils/Interceptors"
 import LoadingIndicator from "../../Utils/loader"
+import { useHospital } from '../Usecontext/HospitalContext'
 
 
 
@@ -43,8 +44,12 @@ const DONUT_COLORS = { Paid: "#16a34a", Due: "#dc2626" }
 const RevenueTable = () => {
   useAutoHideSidebar()
   const location = useLocation();
-  const { branchId, clinicId, branchName } =
+  const { branchId: stateBranchId, clinicId, branchName: stateBranchName } =
     location.state || {};
+  const { globalBranchId, globalBranchName } = useHospital() || {}
+  // Prefer the live global context; fall back to navigation state
+  const branchId = globalBranchId || stateBranchId
+  const branchName = globalBranchName || stateBranchName
   const [filter, setFilter] = useState("month")
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
@@ -125,7 +130,7 @@ const RevenueTable = () => {
     if (filter !== "custom") {
       getRevenueData(filterMap[filter]);
     }
-  }, [filter]);
+  }, [filter, branchId]);
 
   const getCustomRevenueData = async () => {
     if (!fromDate || !toDate) {
@@ -135,8 +140,8 @@ const RevenueTable = () => {
     setLoading(true);
 
     try {
-      const clinicId = localStorage.getItem("HospitalId");
-      // const branchId = localStorage.getItem("branchId");
+      const clinicId = sessionStorage.getItem("HospitalId");
+      // const branchId = sessionStorage.getItem("branchId");
 
       const response = await http.get(
         `${wifiUrl}/api/physiotherapy-doctor/revenue-management/date-range/${clinicId}/${branchId}/${fromDate}/${toDate}`
@@ -169,8 +174,8 @@ const RevenueTable = () => {
   const getRevenueData = async (type) => {
     setLoading(true);
     try {
-      const clinicId = localStorage.getItem("HospitalId");
-      // const branchId = localStorage.getItem("branchId");
+      const clinicId = sessionStorage.getItem("HospitalId");
+      // const branchId = sessionStorage.getItem("branchId");
 
       const response = await http.get(
         `${wifiUrl}/api/physiotherapy-doctor/revenue-management/${clinicId}/${branchId}/${type}`
@@ -202,8 +207,8 @@ const RevenueTable = () => {
   };
   const getRevenueSummary = async () => {
     try {
-      const clinicId = localStorage.getItem("HospitalId");
-      // const branchId = localStorage.getItem("branchId");
+      const clinicId = sessionStorage.getItem("HospitalId");
+      // const branchId = sessionStorage.getItem("branchId");
 
       const response = await http.get(
         `${wifiUrl}/api/physiotherapy-doctor/revenue-summary/${clinicId}/${branchId}`
@@ -223,7 +228,7 @@ const RevenueTable = () => {
   console.log("Revenue Summary renTotals:", renTotals);
   useEffect(() => {
     getRevenueSummary();
-  }, [])
+  }, [branchId])
 
   const filteredData = useMemo(() => {
     let list = [...data];

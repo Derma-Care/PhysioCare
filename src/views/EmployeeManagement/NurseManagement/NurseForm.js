@@ -197,8 +197,8 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   ]
 
   const emptyForm = {
-    clinicId: localStorage.getItem('HospitalId'),
-    branchId: localStorage.getItem('branchId'),
+    clinicId: sessionStorage.getItem('HospitalId'),
+    branchId: sessionStorage.getItem('branchId'),
     role: 'physiotherapist',
     fullName: '', contactNumber: '', emailId: '',
     gender: '', dateOfBirth: '', qualification: '',

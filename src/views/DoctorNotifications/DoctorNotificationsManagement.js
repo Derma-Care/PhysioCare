@@ -102,9 +102,9 @@ const DoctorNotifications = () => {
   useEffect(() => {
     const fetchDoctorIdAndNotifications = async () => {
       setLoading(true) // start loading
-      const hospitalId = localStorage.getItem('HospitalId')
+      const hospitalId = sessionStorage.getItem('HospitalId')
       if (!hospitalId) {
-        showCustomToast('Missing Hospital ID in localStorage', 'error')
+        showCustomToast('Missing Hospital ID in sessionStorage', 'error')
         setLoading(false) // stop loading even on early return
         return
       }

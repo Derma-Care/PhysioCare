@@ -55,11 +55,11 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
   const emptyPermissions = {}
 
   const emptyForm = {
-    clinicId: localStorage.getItem('HospitalId'),
-    branchId: localStorage.getItem('branchId'),
-    branchName: localStorage.getItem('branchName'),
-    hospitalName: localStorage.getItem('HospitalName'),
-    createdBy: localStorage.getItem('staffId') || 'admin',
+    clinicId: sessionStorage.getItem('HospitalId'),
+    branchId: sessionStorage.getItem('branchId'),
+    branchName: sessionStorage.getItem('branchName'),
+    hospitalName: sessionStorage.getItem('HospitalName'),
+    createdBy: sessionStorage.getItem('staffId') || 'admin',
     fullName: '',
     gender: '',
     dateOfBirth: '',
@@ -96,7 +96,7 @@ const AdminForm = ({ visible, onClose, onSave, initialData, viewMode, admins, fe
   }
 
   const [formData, setFormData] = useState(emptyForm)
-  const [clinicId] = useState(localStorage.getItem('HospitalId'))
+  const [clinicId] = useState(sessionStorage.getItem('HospitalId'))
   const [showModal, setShowModal] = useState(false)
   const [showPModal, setShowPModal] = useState(false)
   const [previewFileUrl, setPreviewFileUrl] = useState(null)

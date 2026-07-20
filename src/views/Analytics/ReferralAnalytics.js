@@ -70,7 +70,7 @@ import LoadingIndicator from '../../Utils/loader'
 import Pagination from '../../Utils/Pagination'
 import useAutoHideSidebar from '../widgets/useAutoHideSidebar'
 import { useLocation } from 'react-router-dom'
-
+import { useHospital } from '../Usecontext/HospitalContext'
 const formatReferredByPerson = (pat) => {
   if (!pat.referredByName) return pat.referredByType || '—'
   if (pat.referredByType && pat.referredByType.startsWith('Family')) {
@@ -118,8 +118,12 @@ const CHART_COLORS = [
 const ReferralAnalytics = () => {
   useAutoHideSidebar()
   const location = useLocation();
-  const { branchId, clinicId, branchName } =
+  const { branchId: stateBranchId, clinicId, branchName: stateBranchName } =
     location.state || {};
+  const { globalBranchId, globalBranchName } = useHospital() || {}
+  // Prefer the live global context; fall back to navigation state
+  const branchId = globalBranchId || stateBranchId
+  const branchName = globalBranchName || stateBranchName
   const [filter, setFilter] = useState('month')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
@@ -161,7 +165,7 @@ const ReferralAnalytics = () => {
   const [modalPage, setModalPage] = useState(1)
   const [modalPageSize, setModalPageSize] = useState(10)
 
-  const hospitalId = localStorage.getItem('HospitalId')
+  const hospitalId = sessionStorage.getItem('HospitalId')
 
   // Fetch doctors and bookings
   const fetchData = async () => {
@@ -184,7 +188,7 @@ const ReferralAnalytics = () => {
       }
 
       // 3. Fetch Doctor Referral Analytics from backend
-      // const branchId = localStorage.getItem('branchId')
+      // const branchId = sessionStorage.getItem('branchId')
       let analyticsData = []
       if (hospitalId && branchId) {
         try {
@@ -275,7 +279,7 @@ const ReferralAnalytics = () => {
       }
       setModalLoading(true)
       try {
-        // const branchId = localStorage.getItem('branchId')
+        // const branchId = sessionStorage.getItem('branchId')
         const res = await getDoctorReferralPatientDetails(
           hospitalId,
           branchId,
@@ -301,7 +305,7 @@ const ReferralAnalytics = () => {
       }
       setChannelPatientsLoading(true)
       try {
-        // const branchId = localStorage.getItem('branchId')
+        // const branchId = sessionStorage.getItem('branchId')
         const res = await getReferralChannelPatientDetails(
           hospitalId,
           branchId,

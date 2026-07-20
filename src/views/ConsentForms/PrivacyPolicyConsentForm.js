@@ -23,7 +23,7 @@ const PrivacyPolicyManager = () => {
   const editFileRef = useRef(null)
   // fetch policies from backend
   const fetchPolicies = async () => {
-    const clinicId = localStorage.getItem('HospitalId')
+    const clinicId = sessionStorage.getItem('HospitalId')
     try {
       const res = await http.get(`${BASE_URL}/getPoliciesByClinicId/${clinicId}`)
       if (res.data?.data) setPolicies(res.data.data)
@@ -65,7 +65,7 @@ const PrivacyPolicyManager = () => {
     reader.readAsDataURL(selectedFile)
 
     reader.onload = async () => {
-      var clinicId = localStorage.getItem('HospitalId')
+      var clinicId = sessionStorage.getItem('HospitalId')
       // get base64 string only
       const base64File = reader.result.split(',')[1]
       try {

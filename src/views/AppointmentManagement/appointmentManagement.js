@@ -41,10 +41,10 @@ import BookAppointmentModal from './BookAppointmentModal'
 import Select from 'react-select'
 import { COLORS } from '../../Constant/Themes'
 import { useGlobalSearch } from '../Usecontext/GlobalSearchContext'
+import { useHospital } from '../Usecontext/HospitalContext'
 import LoadingIndicator from '../../Utils/loader'
 import Pagination from '../../Utils/Pagination'
 import PrintLetterHead from '../../Utils/PrintLetterHead'
-import { GetClinicBranches } from '../Doctors/DoctorAPI'
 import { Edit2, Eye, Loader, Printer, Trash2, Search, X } from "lucide-react"
 const appointmentManagement = () => {
   const [viewService, setViewService] = useState(null)
@@ -70,7 +70,7 @@ const appointmentManagement = () => {
   const itemsPerPage = 7
   const navigate = useNavigate()
   const [sortOrder, setSortOrder] = useState('asc')
-  const role = localStorage.getItem('role') // or from context/state
+  const role = sessionStorage.getItem('role') // or from context/state
   const [localSearch, setLocalSearch] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
 
@@ -87,14 +87,12 @@ const appointmentManagement = () => {
     { label: 'Dropped', value: 'Dropped' },
   ]
 
-  const [branches, setBranches] = useState([]);
-  const [selectedBranch, setSelectedBranch] = useState("");
-  const [selectedBranchName, setSelectedBranchName] = useState("");
+  const { globalBranchId } = useHospital() || {};
 
-  const fetchAppointments = async (branchIdOverride) => {
+  const fetchAppointments = async (branchIdOverride = globalBranchId) => {
     try {
-      const hospitalId = localStorage.getItem('HospitalId')
-      console.log('Hospital ID from localStorage:', hospitalId)
+      const hospitalId = sessionStorage.getItem('HospitalId')
+      console.log('Hospital ID from sessionStorage:', hospitalId)
 
       if (!hospitalId) {
         setBookings([])
@@ -141,31 +139,10 @@ const appointmentManagement = () => {
   // }
   const [printData, setPrintData] = useState(null)
   useEffect(() => {
-    const handleClinicChange = async () => {
-      const clinicId = localStorage.getItem('HospitalId');
-      const defaultBranchId = localStorage.getItem('branchId');
-      const defaultBranchName = localStorage.getItem('branchName');
-
-      if (!clinicId) return;
-      const res = await GetClinicBranches(clinicId);
-      
-      setBranches(res.data || []);
-      
-      if (res.data?.length) {
-        setSelectedBranch(defaultBranchId);
-        setSelectedBranchName(defaultBranchName);
-        fetchAppointments(defaultBranchId);
-      }
-    };
-    handleClinicChange();
-  }, [])
-
-  const handleBranchChange = (branchId) => {
-    const branch = branches.find((b) => b.branchId === branchId);
-    setSelectedBranch(branchId);
-    setSelectedBranchName(branch?.branchName || "");
-    fetchAppointments(branchId);
-  };
+    if (globalBranchId) {
+      fetchAppointments(globalBranchId);
+    }
+  }, [globalBranchId]);
 
   //filtering
   useEffect(() => {
@@ -411,28 +388,7 @@ const appointmentManagement = () => {
       <div className="container ">
         <div className="d-flex align-items-center justify-content-between mb-4">
           <h2>Appointments</h2>
-          {branches?.length > 0 && (
-            <div style={{ width: "200px" }}>
-              <CFormSelect
-                value={selectedBranch}
-                onChange={(e) => handleBranchChange(e.target.value)}
-                style={{
-                  fontSize: '13px',
-                  borderRadius: '8px',
-                  border: '0.5px solid #d0dce9',
-                  color: '#374151',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                  padding: '6px 12px'
-                }}
-              >
-                {branches.map((branch) => (
-                  <option key={branch.branchId} value={branch.branchId}>
-                    {branch.branchName}
-                  </option>
-                ))}
-              </CFormSelect>
-            </div>
-          )}
+          {/* Global branch dropdown is in AppBreadcrumb now */}
         </div>
         <div className="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
 

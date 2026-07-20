@@ -15,6 +15,7 @@ import useAutoHideSidebar from "../widgets/useAutoHideSidebar"
 import { getTreatmentAnalytics, getTreatmentAnalyticsCustomDate } from './TreatmentAnalyticsAPI'
 import LoadingIndicator from "../../Utils/loader"
 import { useLocation } from "react-router-dom"
+import { useHospital } from '../Usecontext/HospitalContext'
 
 const TYPE_OPTIONS = [
   { value: "all", label: "All Types" },
@@ -62,8 +63,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 const TreatmentAnalytics = () => {
   useAutoHideSidebar()
   const location = useLocation();
-  const { branchId, clinicId, branchName } =
+  const { branchId: stateBranchId, clinicId, branchName: stateBranchName } =
     location.state || {};
+  const { globalBranchId, globalBranchName } = useHospital() || {}
+  // Prefer the live global context; fall back to navigation state
+  const branchId = globalBranchId || stateBranchId
+  const branchName = globalBranchName || stateBranchName
   const [typeFilter, setTypeFilter] = useState("all")
   const [periodFilter, setPeriodFilter] = useState("month")
   const [customFrom, setCustomFrom] = useState("")
@@ -76,8 +81,7 @@ const TreatmentAnalytics = () => {
   const [apiData, setApiData] = useState([])
   const [apiSummary, setApiSummary] = useState(null)
   const [loading, setLoading] = useState(false)
-  const hospitalId = localStorage.getItem('HospitalId')
-  // const branchId = localStorage.getItem('branchId') || 'all'
+  const hospitalId = sessionStorage.getItem('HospitalId')
 
   useEffect(() => {
     const fetchData = async () => {

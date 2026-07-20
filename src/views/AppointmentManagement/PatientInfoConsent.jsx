@@ -14,7 +14,7 @@ const PatientRegistration = ({ booking, vitals }) => {
     phone: booking?.mobileNumber || "NA",
     email: "NA",
   };
-  const clinicName = localStorage.getItem("HospitalName")
+  const clinicName = sessionStorage.getItem("HospitalName")
   const signRef = useRef();
   const [signature, setSignature] = useState("");
   const [emergencyData, setEmergencyData] = useState({

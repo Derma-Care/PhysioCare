@@ -11,8 +11,8 @@ import {
 import { http } from '../../Utils/Interceptors'
 
 // export const AppointmentData = async () => {
-//   const hospitalId = localStorage.getItem('HospitalId')
-//   const branchId = localStorage.getItem('branchId')
+//   const hospitalId = sessionStorage.getItem('HospitalId')
+//   const branchId = sessionStorage.getItem('branchId')
 //   try {
 //     const response = await http.get(`/getAllbookingsDetailsByClinicAndBranchId/${hospitalId}/${branchId}`) //TODO:chnage when apigetway call axios to http
 //     return response.data
@@ -23,8 +23,8 @@ import { http } from '../../Utils/Interceptors'
 // }
 
 export const AppointmentData = async (branchIdOverride) => {
-  const hospitalId = localStorage.getItem('HospitalId')
-  const branchId = branchIdOverride || localStorage.getItem('branchId')
+  const hospitalId = sessionStorage.getItem('HospitalId')
+  const branchId = branchIdOverride || sessionStorage.getItem('branchId')
   try {
     const response = await http.get(`/filter/status/${hospitalId}/${branchId}`) //TODO:chnage when apigetway call axios to http
     return response.data
@@ -59,8 +59,8 @@ export const GetdoctorsByClinicIdData = async (doctorId) => {
 }
 
 export const GetBookingByClinicIdData = async (id, branchIdOverride) => {
-  const hID = localStorage.getItem('HospitalId')
-  const branchId = branchIdOverride || localStorage.getItem('branchId')
+  const hID = sessionStorage.getItem('HospitalId')
+  const branchId = branchIdOverride || sessionStorage.getItem('branchId')
   console.log(id)
   try {
     const response = await axios.get(
@@ -73,8 +73,8 @@ export const GetBookingByClinicIdData = async (id, branchIdOverride) => {
   }
 }
 export const GetTodayBooking = async (id, branchIdOverride) => {
-  const hID = localStorage.getItem('HospitalId')
-  const branchId = branchIdOverride || localStorage.getItem('branchId')
+  const hID = sessionStorage.getItem('HospitalId')
+  const branchId = branchIdOverride || sessionStorage.getItem('branchId')
   console.log(id)
   try {
     const response = await axios.get(
@@ -145,8 +145,8 @@ export const bookingUpdate = async (bookingDetails) => {
 }
 
 export const GetBookingInprogress = async () => {
-  const hID = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
+  const hID = sessionStorage.getItem('HospitalId')
+  const branchId = sessionStorage.getItem('branchId')
   try {
     const response = await axios.get(`${BASE_URL}/appointments/byIds/${hID}/${branchId}`) //TODO:chnage when apigetway call axios to http
     console.log(`${BASE_URL}/appointments/byIds/${hID}/${branchId}`)

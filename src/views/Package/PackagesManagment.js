@@ -84,8 +84,8 @@ export default function PackagesManagement() {
     setViewModal(true)
     setViewLoading(true)
     try {
-      const clinicId = localStorage.getItem("HospitalId")
-      const branchId = localStorage.getItem("branchId")
+      const clinicId = sessionStorage.getItem("HospitalId")
+      const branchId = sessionStorage.getItem("branchId")
       const res = await getTherapiesServicebytherapyId(item.packageId, clinicId, branchId)
       const data = res?.data?.data ?? res?.data ?? res ?? null
       if (!data) throw new Error("No data returned")
@@ -100,8 +100,8 @@ export default function PackagesManagement() {
 
   const fetchPrograms = async () => {
     try {
-      const hospitalId = localStorage.getItem("HospitalId")
-      const branchId = localStorage.getItem("branchId")
+      const hospitalId = sessionStorage.getItem("HospitalId")
+      const branchId = sessionStorage.getItem("branchId")
       const res = await getProgramService(hospitalId, branchId)
       const options = safeArray(res?.data?.data).map((item) => ({
         value: item.id,
@@ -116,8 +116,8 @@ export default function PackagesManagement() {
 
   const fetchData = async () => {
     try {
-      const clinicId = localStorage.getItem("HospitalId")
-      const branchId = localStorage.getItem("branchId")
+      const clinicId = sessionStorage.getItem("HospitalId")
+      const branchId = sessionStorage.getItem("branchId")
       const res = await getTherapiesService(clinicId, branchId)
       setList(safeArray(res?.data?.data))
       setCurrentPage(1) // reset on fresh fetch
@@ -151,8 +151,8 @@ export default function PackagesManagement() {
   const handleSave = async () => {
     if (!validate()) return
     const payload = {
-      clinicId: localStorage.getItem("HospitalId"),
-      branchId: localStorage.getItem("branchId"),
+      clinicId: sessionStorage.getItem("HospitalId"),
+      branchId: sessionStorage.getItem("branchId"),
       packageName: form.packageName,
       programIds: form.programIds,
       offerType: form.offerType,
@@ -199,7 +199,7 @@ export default function PackagesManagement() {
   const handleConfirmDelete = async () => {
     try {
       setDelLoading(true)
-      await deleteTherapy(serviceIdToDelete, localStorage.getItem("HospitalId"))
+      await deleteTherapy(serviceIdToDelete, sessionStorage.getItem("HospitalId"))
       fetchData()
     } finally {
       setDelLoading(false)

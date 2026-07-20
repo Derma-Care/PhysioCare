@@ -40,7 +40,7 @@ const RATING_OPTIONS = [
 ];
 
 const PatientFeedback = () => {
-  const { doctorData, addNotification } = useHospital() || {};
+  const { doctorData, addNotification, globalBranchId } = useHospital() || {};
   const navigate = useNavigate();
 
   // State for CRUD
@@ -76,12 +76,8 @@ const PatientFeedback = () => {
   const [receptionistsList, setReceptionistsList] = useState([]);
   const [doctorsList, setDoctorsList] = useState([]);
 
-  const hospitalId = localStorage.getItem('HospitalId');
-  const role = localStorage.getItem('role');
-
-  const [branches, setBranches] = useState([]);
-  const [selectedBranch, setSelectedBranch] = useState("");
-  const [selectedBranchName, setSelectedBranchName] = useState("");
+  const hospitalId = sessionStorage.getItem('HospitalId');
+  const role = sessionStorage.getItem('role');
 
   const [form, setForm] = useState({
     clinicId: hospitalId,
@@ -97,10 +93,10 @@ const PatientFeedback = () => {
 
   const [errors, setErrors] = useState({});
 
-  const fetchFeedbacks = async (branchIdOverride = selectedBranch) => {
+  const fetchFeedbacks = async (branchIdOverride = globalBranchId) => {
     setLoading(true);
     try {
-      const bId = branchIdOverride || localStorage.getItem('branchId');
+      const bId = branchIdOverride || sessionStorage.getItem('branchId');
       const res = await getAllOverallFeedback(hospitalId, bId);
       if (res?.data?.data) setFeedbacks(res.data.data);
       else if (res?.data) setFeedbacks(res.data);
@@ -113,61 +109,14 @@ const PatientFeedback = () => {
     }
   };
 
-  // Fetch Data on mount
   useEffect(() => {
-    const initBranches = async () => {
-      const hId = localStorage.getItem('HospitalId');
-      const defaultBranchId = localStorage.getItem('branchId');
-      const defaultBranchName = localStorage.getItem('branchName');
-      if (!hId) return;
-
-      const res = await GetClinicBranches(hId);
-      setBranches(res.data || []);
-
-      if (res.data?.length) {
-        setSelectedBranch(defaultBranchId);
-        setSelectedBranchName(defaultBranchName);
-        fetchFeedbacks(defaultBranchId);
-        fetchDoctors(defaultBranchId);
-      }
-    };
-    initBranches();
-
-    // const fetchPatients = async () => {
-    //   try {
-    //     const data = await CustomerData(selectedBranch);
-    //     setPatients(Array.isArray(data) ? data : []);
-    //   } catch (error) {
-    //     console.error("Failed to fetch patients", error);
-    //   }
-    // };
-
-    // const fetchStaff = async () => {
-    //   const hId = localStorage.getItem('HospitalId');
-    //   const bId = selectedBranch || localStorage.getItem('branchId');
-    //   if (hId && bId) {
-    //     try {
-    //       const physiosRes = await getAllPhysios(hId, bId);
-    //       let physioData = [];
-    //       if (Array.isArray(physiosRes?.data?.data)) physioData = physiosRes.data.data;
-    //       else if (Array.isArray(physiosRes?.data)) physioData = physiosRes.data;
-    //       else if (Array.isArray(physiosRes)) physioData = physiosRes;
-    //       setTherapistsList(physioData);
-
-    //       const staffRes = await getAllFrontDeskAPI(hId, bId);
-    //       let staffData = [];
-    //       if (Array.isArray(staffRes?.data?.data)) staffData = staffRes.data.data;
-    //       else if (Array.isArray(staffRes?.data)) staffData = staffRes.data;
-    //       else if (Array.isArray(staffRes)) staffData = staffRes;
-    //       setReceptionistsList(staffData);
-    //     } catch (error) {
-    //       console.error("PatientFeedback: Failed to fetch staff data", error);
-    //     }
-    //   }
-    // };
-    // fetchPatients();
-    // fetchStaff();
-  }, []);
+    if (globalBranchId) {
+      fetchFeedbacks(globalBranchId);
+      fetchPatients(globalBranchId);
+      fetchStaff(globalBranchId);
+      fetchDoctors(globalBranchId);
+    }
+  }, [globalBranchId]);
   const fetchPatients = async (branchId) => {
     try {
       const data = await CustomerData(branchId);
@@ -209,7 +158,7 @@ const PatientFeedback = () => {
 
   const fetchDoctors = async (branchId) => {
     try {
-      const hId = localStorage.getItem('HospitalId');
+      const hId = sessionStorage.getItem('HospitalId');
       const res = await getDoctorByClinicIdData(hId, branchId);
       const data = res?.data || res || [];
       setDoctorsList(Array.isArray(data) ? data : []);
@@ -218,15 +167,7 @@ const PatientFeedback = () => {
     }
   };
 
-  const handleBranchChange = (bId) => {
-    const branch = branches.find((b) => b.branchId === bId);
-    setSelectedBranch(bId);
-    setSelectedBranchName(branch?.branchName || "");
-    fetchFeedbacks(bId);
-    fetchPatients(bId);
-    fetchStaff(bId);
-    fetchDoctors(bId);
-  };
+  // Local branch change handler removed since it is globally handled by useHospital context
 
   // Use branch-fetched doctors, fallback to context
   const activeDoctorsList = doctorsList.length > 0 ? doctorsList : (doctorData?.data || []);
@@ -299,7 +240,7 @@ const PatientFeedback = () => {
     // Construct payload for backend
     const payload = {
       clinicId: hospitalId,
-      branchId: selectedBranch || localStorage.getItem('branchId'),
+      branchId: globalBranchId || sessionStorage.getItem('branchId'),
       patientId: form.patientId,
       patientName: form.patientName,
       patientPhone: form.patientPhone,
@@ -518,28 +459,6 @@ const PatientFeedback = () => {
             /* --- Data Table View --- */
             <>
               <div className="pf-filters d-flex align-items-center gap-3">
-                {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
-                  <div style={{ width: "200px", marginBottom: "1rem" }}>
-                    <CFormSelect
-                      value={selectedBranch}
-                      onChange={(e) => handleBranchChange(e.target.value)}
-                      style={{
-                        fontSize: '13px',
-                        borderRadius: '8px',
-                        border: '0.5px solid #d0dce9',
-                        color: '#374151',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                        padding: '6px 12px'
-                      }}
-                    >
-                      {branches.map((branch) => (
-                        <option key={branch.branchId} value={branch.branchId}>
-                          {branch.branchName}
-                        </option>
-                      ))}
-                    </CFormSelect>
-                  </div>
-                )}
 
                 <input
                   type="text"

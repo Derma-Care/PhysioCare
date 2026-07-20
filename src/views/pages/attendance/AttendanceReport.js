@@ -10,6 +10,7 @@ import capitalizeWords from "../../../Utils/capitalizeWords";
 import { showCustomToast } from "../../../Utils/Toaster";
 import { GetClinicBranches } from "../../Doctors/DoctorAPI";
 import { CFormSelect } from "@coreui/react";
+import { useHospital } from "../../Usecontext/HospitalContext";
 
 const styles = `
   .ar-wrapper {
@@ -447,7 +448,7 @@ function getStatusBadge(status) {
 export default function AttendanceReport() {
   const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
-  const role = localStorage.getItem("role");
+  const role = sessionStorage.getItem("role");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filters for Main Page
@@ -464,40 +465,12 @@ export default function AttendanceReport() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [saveLoading, setSaveLoading] = useState(false);
-  const [branches, setBranches] = useState([]);
-  const [selectedBranch, setSelectedBranch] = useState("");
-  const [selectedBranchName, setSelectedBranchName] = useState("");
-  useEffect(() => {
-    const handleClinicChange = async () => {
-      const clinicId = localStorage.getItem('HospitalId');
-      const defaultBranchId = localStorage.getItem('branchId');
-      const defaultBranchName = localStorage.getItem('branchName');
-
-      if (!clinicId) return;
-      const res = await GetClinicBranches(clinicId);
-
-      setBranches(res.data || []);
-
-      if (res.data?.length) {
-        setSelectedBranch(defaultBranchId);
-        setSelectedBranchName(defaultBranchName);
-        // getInitialCounts(defaultBranchId);
-      }
-    };
-    handleClinicChange();
-  }, [])
-  const handleBranchChange = (branchId) => {
-    const branch = branches.find((b) => b.branchId === branchId);
-    setSelectedBranch(branchId);
-    setSelectedBranchName(branch?.branchName || "");
-    fetchAttendance(branchId)
-
-  };
-  const fetchAttendance = useCallback(async (DbranchId) => {
+  const { globalBranchId } = useHospital() || {};
+  const fetchAttendance = useCallback(async (DbranchId = globalBranchId) => {
     setLoading(true);
     try {
-      const hospitalId = localStorage.getItem("HospitalId");
-      const branchId = DbranchId || selectedBranch || localStorage.getItem("branchId");
+      const hospitalId = sessionStorage.getItem("HospitalId");
+      const branchId = DbranchId || sessionStorage.getItem("branchId");
 
       const res = await http.get(`${BASE_URL}/${GetAllUsersDailyByClinicAndBranch}/${hospitalId}/${branchId}/${selectedDate}`);
       if (res.status === 200 && res.data.success === true) {
@@ -508,11 +481,13 @@ export default function AttendanceReport() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, globalBranchId]);
 
   useEffect(() => {
-    fetchAttendance();
-  }, [fetchAttendance]);
+    if (globalBranchId) {
+      fetchAttendance(globalBranchId);
+    }
+  }, [globalBranchId, fetchAttendance]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -557,8 +532,8 @@ export default function AttendanceReport() {
 
       const payload = {
         date: selectedDate,
-        clinicId: localStorage.getItem("HospitalId"),
-        branchId: selectedBranch || localStorage.getItem("branchId"),
+        clinicId: sessionStorage.getItem("HospitalId"),
+        branchId: globalBranchId || sessionStorage.getItem("branchId"),
         role: selectedUserRole,
         login: {
           time: manualTime,
@@ -713,28 +688,7 @@ export default function AttendanceReport() {
               )}
             </div>
           </div>
-          {branches?.length > 0 && role?.toLowerCase() === "admin" && (
-            <div style={{ width: "200px" }}>
-              <CFormSelect
-                value={selectedBranch}
-                onChange={(e) => handleBranchChange(e.target.value)}
-                style={{
-                  fontSize: '13px',
-                  borderRadius: '8px',
-                  border: '0.5px solid #d0dce9',
-                  color: '#374151',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                  padding: '6px 12px'
-                }}
-              >
-                {branches.map((branch) => (
-                  <option key={branch.branchId} value={branch.branchId}>
-                    {branch.branchName}
-                  </option>
-                ))}
-              </CFormSelect>
-            </div>
-          )}
+          {/* Global branch dropdown is in AppBreadcrumb now */}
         </div>
 
         {/* Table Card */}

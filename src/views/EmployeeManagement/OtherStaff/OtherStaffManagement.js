@@ -48,8 +48,8 @@ const OtherStaffManagement = () => {
   const fetchTechs = async () => {
     setLoading(true)
     try {
-      const clinicID = localStorage.getItem('HospitalId')
-      const branchId = localStorage.getItem('branchId')
+      const clinicID = sessionStorage.getItem('HospitalId')
+      const branchId = sessionStorage.getItem('branchId')
       if (clinicID) {
         const res = await getAllOtherStaffs(clinicID, branchId)
         setTechnicians(res.data?.data || [])

@@ -63,7 +63,7 @@ const TreatmentsManagement = () => {
   const [newTreatment, setNewTreatment] = useState({ treatmentName: '' })
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
-  const hospitalId = localStorage.getItem('HospitalId')
+  const hospitalId = sessionStorage.getItem('HospitalId')
   const { user } = useHospital()
   const can = (feature, action) => user?.permissions?.[feature]?.includes(action)
 

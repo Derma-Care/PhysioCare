@@ -6,16 +6,16 @@ const ATT_KEY = 'attendance_list'
 const SHIFT_ASSIGN_KEY = "shift_assign";
 
 export const getData = (key, dummy) => {
-  const data = localStorage.getItem(key)
+  const data = sessionStorage.getItem(key)
 
   if (data) return JSON.parse(data)
 
-  localStorage.setItem(key, JSON.stringify(dummy))
+  sessionStorage.setItem(key, JSON.stringify(dummy))
   return dummy
 }
 
 export const saveData = (key, data) => {
-  localStorage.setItem(key, JSON.stringify(data))
+  sessionStorage.setItem(key, JSON.stringify(data))
 }
 
 export { EMP_KEY, SHIFT_KEY, HOLIDAY_KEY, LEAVE_KEY, ATT_KEY, SHIFT_ASSIGN_KEY }

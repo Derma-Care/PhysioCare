@@ -250,10 +250,10 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
   // ── Initial state factory ─────────────────────────────────────────────────
   const getInitialBookingDetails = () => ({
-    branchId: localStorage.getItem('branchId') || '',
-    branchname: localStorage.getItem('branchName') || '',
-    clinicId: localStorage.getItem('HospitalId') || '',
-    clinicName: localStorage.getItem('HospitalName') || '',
+    branchId: sessionStorage.getItem('branchId') || '',
+    branchname: sessionStorage.getItem('branchName') || '',
+    clinicId: sessionStorage.getItem('HospitalId') || '',
+    clinicName: sessionStorage.getItem('HospitalName') || '',
     clinicAddress: selectedHospital?.data?.address || '',
     title: '', customerId: '', patientId: '',
 
@@ -350,12 +350,12 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
 
   useEffect(() => {
     if (!visible) return
-    GetClinicBranches(localStorage.getItem('HospitalId'))
+    GetClinicBranches(sessionStorage.getItem('HospitalId'))
       .then((res) => {
         const list = Array.isArray(res.data) ? res.data : []
         setBranches(list.map((b) => ({ branchId: b.branchId || b.id, branchName: b.branchName || b.name })))
       }).catch(() => setBranches([]))
-    getAllReferDoctors(localStorage.getItem('HospitalId'))
+    getAllReferDoctors(sessionStorage.getItem('HospitalId'))
       .then((res) => setReferDoctor(res.data?.data || [])).catch(() => setReferDoctor([]))
     // CategoryData().then().catch()
   }, [visible])
@@ -369,7 +369,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     }
     setLoadingDoctors(true)
     try {
-      const clinicId = localStorage.getItem('HospitalId')
+      const clinicId = sessionStorage.getItem('HospitalId')
       const res = await getDoctorByClinicIdData(clinicId, bookingDetails.branchId)
       if (res && res.data) {
         setDoctors(res.data)
@@ -631,7 +631,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
   const fetchSlots = async (doctorId) => {
     try {
       const res = await axios.get(
-        `${BASE_URL}/getDoctorSlots/${localStorage.getItem('HospitalId')}/${bookingDetails.branchId}/${doctorId}`
+        `${BASE_URL}/getDoctorSlots/${sessionStorage.getItem('HospitalId')}/${bookingDetails.branchId}/${doctorId}`
       )
       setSlotsForSelectedDate(res.data.success ? res.data.data : [])
     } catch { setSlotsForSelectedDate([]) }
@@ -885,9 +885,9 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
             dateOfBirth: `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`,
             age: bookingDetails.age,
             email: bookingDetails.email,
-            hospitalId: localStorage.getItem('HospitalId') || '',
-            hospitalName: localStorage.getItem('HospitalName') || '',
-            branchId: localStorage.getItem('branchId') || '',
+            hospitalId: sessionStorage.getItem('HospitalId') || '',
+            hospitalName: sessionStorage.getItem('HospitalName') || '',
+            branchId: sessionStorage.getItem('branchId') || '',
             address,
           })
           customerData = r?.data?.data

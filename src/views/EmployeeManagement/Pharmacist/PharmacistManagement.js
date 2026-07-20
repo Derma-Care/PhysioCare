@@ -49,7 +49,7 @@ const PharmacistManagement = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
 
-  // ✅ Load from localStorage on mount
+  // ✅ Load from sessionStorage on mount
   const [modalData, setModalData] = useState(null) // store username & password
   const [modalTVisible, setModalTVisible] = useState(false)
   const [credentialsModalVisible, setCredentialsModalVisible] = useState(false)
@@ -58,8 +58,8 @@ const PharmacistManagement = () => {
   const fetchTechs = async () => {
     setLoading(true)
     try {
-      const hospitalId = localStorage.getItem('HospitalId')
-      const branchId = localStorage.getItem('branchId')
+      const hospitalId = sessionStorage.getItem('HospitalId')
+      const branchId = sessionStorage.getItem('branchId')
       if (hospitalId) {
         const res = await getPharmacistsById(hospitalId, branchId)
         const list = res.data?.data || res.data || []

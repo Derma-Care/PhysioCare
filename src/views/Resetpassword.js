@@ -3,9 +3,10 @@ import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa'
 import { http } from '../Utils/Interceptors'
 import { COLORS } from '../Constant/Themes'
 
-const ResetPassword = ({ onClose }) => {
+const ResetPassword = ({ onClose, role }) => {
   const [form, setForm] = useState({
     username: '',
+    role: role,
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -52,6 +53,7 @@ const ResetPassword = ({ onClose }) => {
       const response = await http.put(
         `/updatePassword/${form.username}`,
         {
+          role: role,
           password: currentPassword,
           newPassword: newPassword,
           confirmPassword: confirmPassword,
@@ -67,7 +69,7 @@ const ResetPassword = ({ onClose }) => {
           confirmPassword: '',
         })
         setTimeout(() => {
-          onClose?.() 
+          onClose?.()
         }, 1200)
       } else {
         setMessage(response.data.message || '❌ Failed to update password.')

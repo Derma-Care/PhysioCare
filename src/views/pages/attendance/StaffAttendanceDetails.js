@@ -204,8 +204,8 @@ export default function StaffAttendanceDetails() {
     if (!showPerformanceModal) return;
     setLoadingPerformance(true);
     try {
-      const clinicId = localStorage.getItem("HospitalId");
-      const branchId = localStorage.getItem("branchId");
+      const clinicId = sessionStorage.getItem("HospitalId");
+      const branchId = sessionStorage.getItem("branchId");
       const res = await http.get(`${BASE_URL}/${GetTherapistPerformanceSummary}/${clinicId}/${branchId}/${userId}/${performanceYear}`);
       if (res.data.success) {
         setPerformanceData(res.data.data);

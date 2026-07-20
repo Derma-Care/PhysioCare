@@ -21,8 +21,8 @@ export const getDoctorReferralPatientDetails = async (clinicId, branchId, doctor
 
 // 5. Get all patient bookings for Referral and Payment details
 export const GetBookingByClinicIdData = async () => {
-  const hID = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
+  const hID = sessionStorage.getItem('HospitalId')
+  const branchId = sessionStorage.getItem('branchId')
   try {
     const response = await http.get(
       `${BASE_URL}/getAllbookingsDetailsByClinicAndBranchId/${hID}/${branchId}`,

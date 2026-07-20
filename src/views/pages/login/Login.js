@@ -30,7 +30,7 @@ import { useHospital } from '../../Usecontext/HospitalContext'
 import ResetPassword from '../../../views/Resetpassword'
 import ForgotPassword from '../../../views/ForgotPassword'
 import { http, httpPublic } from '../../../Utils/Interceptors'
-// import DermaLogo from '../../../assets/images/DermaCare.png' // adjust path if needed
+import DermaLogo from '../../../assets/images/DermaCare.png' // adjust path if needed
 // import medicalBg from 'src/assets/images/medical_bg.jpg'
 import { COLORS } from '../../../Constant/Themes'
 import { toast, ToastContainer } from 'react-toastify'
@@ -42,11 +42,12 @@ const INK = '#0E2A32'
 const TEAL = COLORS.sideColor
 const TEAL_DEEP = COLORS.primary
 const AMBER = '#E2A73B'
-const MIST = '#F3F7F6'
+const PAPER = '#FBFAF6'
+const MIST = '#EEF4F2'
+const LINE = 'rgba(14,42,50,0.12)'
 const CORAL = '#C1473A'
 
-// Role tabs, styled like colour-coded folder dividers on a patient chart.
-// Order here also drives the sliding tab indicator's position.
+// Role tabs — order drives the sliding segmented-control indicator's position.
 const WORKSPACE_TABS = [
   { key: 'clinic', label: 'Super Admin', role: 'admin', tint: TEAL },
   { key: 'administrator', label: 'Clinic Admin', role: 'administrator', tint: AMBER },
@@ -81,7 +82,7 @@ const Login = () => {
 
   useEffect(() => {
     // ✅ Clear storage when login page loads
-    localStorage.clear()
+    sessionStorage.clear()
   }, [])
 
   const handleClinicLogin = async (e) => {
@@ -137,38 +138,38 @@ const Login = () => {
         const branchName = payload.branchName
         console.log(HospitalId, HospitalName, selectedHospital, role)
 
-        // ✅ Store in localStorage
+        // ✅ Store in sessionStorage
         if (HospitalId) {
-          localStorage.setItem('HospitalId', HospitalId)
+          sessionStorage.setItem('HospitalId', HospitalId)
           setHospitalId(HospitalId)
         }
 
         if (HospitalName) {
-          localStorage.setItem('HospitalName', HospitalName)
+          sessionStorage.setItem('HospitalName', HospitalName)
         }
 
         if (token) {
-          localStorage.setItem('token', token)
+          sessionStorage.setItem('token', token)
         }
 
         if (role) {
-          localStorage.setItem('role', role)
+          sessionStorage.setItem('role', role)
         }
         if (branchId) {
-          localStorage.setItem('branchId', branchId)
+          sessionStorage.setItem('branchId', branchId)
         }
         if (staffId) {
-          localStorage.setItem('staffId', staffId)
+          sessionStorage.setItem('staffId', staffId)
         }
         if (staffName) {
-          localStorage.setItem('staffName', staffName)
+          sessionStorage.setItem('staffName', staffName)
         }
         if (branchName) {
-          localStorage.setItem('branchName', branchName)
+          sessionStorage.setItem('branchName', branchName)
         }
 
         if (payload.accessToken) {
-          localStorage.setItem('token', payload.accessToken)
+          sessionStorage.setItem('token', payload.accessToken)
         }
 
         // ✅ Always save THIS device's own FCM token (not the server's returned one).
@@ -176,8 +177,8 @@ const Login = () => {
         // same account. We must persist our locally generated token so push
         // notifications are delivered to THIS browser only.
         if (fcmToken) {
-          localStorage.setItem('fcmToken', fcmToken)
-          console.log('✅ Saved this device FCM token to localStorage:', fcmToken)
+          sessionStorage.setItem('fcmToken', fcmToken)
+          console.log('✅ Saved this device FCM token to sessionStorage:', fcmToken)
         }
 
         await new Promise((resolve) => setTimeout(resolve, 100))
@@ -185,23 +186,23 @@ const Login = () => {
         if (HospitalId) {
           const hospitalData = payload.hospitalData || {} // logo, name, etc.
 
-          // 1. Set user in context & localStorage
+          // 1. Set user in context & sessionStorage
           const userData = { name: HospitalName || staffName, role, permissions }
           setUser(userData)
-          localStorage.setItem('hospitalUser', JSON.stringify(userData))
-          localStorage.setItem('permissions', JSON.stringify(permissions))
+          sessionStorage.setItem('hospitalUser', JSON.stringify(userData))
+          sessionStorage.setItem('permissions', JSON.stringify(permissions))
 
-          // 2. Set hospital in context & localStorage
+          // 2. Set hospital in context & sessionStorage
           const hospitalContextData = {
             hospitalId: HospitalId,
             hospitalName: HospitalName,
             data: hospitalData,
           }
           setSelectedHospital(hospitalContextData)
-          localStorage.setItem('selectedHospital', JSON.stringify(hospitalContextData))
+          sessionStorage.setItem('selectedHospital', JSON.stringify(hospitalContextData))
 
           setHospitalId(HospitalId)
-          localStorage.setItem('HospitalId', HospitalId)
+          sessionStorage.setItem('HospitalId', HospitalId)
           await fetchAllData(HospitalId)
           showCustomToast(res.data?.message || 'Login successful!', 'success')
 
@@ -233,7 +234,7 @@ const Login = () => {
     }
   }
 
-  // Same mapping the old <CFormSelect onChange> used — now driven by the folder tabs.
+  // Same mapping the old <CFormSelect onChange> used — now driven by the segmented tabs.
   const handleWorkspaceSelect = (value) => {
     setActiveTab(value)
     let newRole = value
@@ -258,281 +259,327 @@ const Login = () => {
 
         html, body, #root { height: 100%; }
 
-        @keyframes gradientShift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        @keyframes ambientDrift {
-          0% { transform: translate(0, 0); }
-          50% { transform: translate(-2%, 1.5%); }
-          100% { transform: translate(0, 0); }
-        }
-        @keyframes floatSlow {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(10px, -14px) scale(1.06); }
-          66% { transform: translate(-8px, 10px) scale(0.95); }
-        }
-        @keyframes waveSweep {
-          from { stroke-dashoffset: 620; }
-          to { stroke-dashoffset: 0; }
-        }
-        @keyframes wavePulseDot {
-          0%, 100% { opacity: 0.35; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.3); }
-        }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(14px); }
+        * { box-sizing: border-box; }
+
+        @keyframes peFadeUp {
+          from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes cardRise {
-          from { opacity: 0; transform: translateY(26px) scale(0.97); }
+        @keyframes peCardRise {
+          from { opacity: 0; transform: translateY(20px) scale(0.98); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes tabGlideIn {
-          from { opacity: 0; transform: translateY(-6px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes peTraceDraw {
+          from { stroke-dashoffset: 760; }
+          to { stroke-dashoffset: 0; }
         }
-        @keyframes shakeErr {
+        @keyframes peTraceGlow {
+          0%, 100% { filter: drop-shadow(0 0 0 rgba(226,167,59,0)); }
+          50% { filter: drop-shadow(0 0 6px rgba(226,167,59,0.45)); }
+        }
+        @keyframes peBpmPulse {
+          0%, 100% { opacity: 0.55; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.06); }
+        }
+        @keyframes peShake {
           0%, 100% { transform: translateX(0); }
           20% { transform: translateX(-6px); }
           40% { transform: translateX(5px); }
           60% { transform: translateX(-4px); }
           80% { transform: translateX(3px); }
         }
-        @keyframes stampPress {
-          0% { transform: scale(1); }
-          40% { transform: scale(0.96); }
-          100% { transform: scale(1); }
+        @keyframes peShimmer {
+          from { transform: translateX(-130%) skewX(-12deg); }
+          to { transform: translateX(230%) skewX(-12deg); }
         }
-        @keyframes clipShine {
-          0%, 100% { filter: drop-shadow(0 2px 4px rgba(14,42,50,0.25)); }
-          50% { filter: drop-shadow(0 4px 8px rgba(20,107,94,0.28)); }
-        }
-        @keyframes logoBreathe {
-          0%, 100% { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.18)); transform: scale(1); }
-          50% { filter: drop-shadow(0 8px 18px rgba(226,167,59,0.35)); transform: scale(1.03); }
-        }
-        @keyframes shimmerSweep {
-          0% { transform: translateX(-130%) skewX(-15deg); }
-          100% { transform: translateX(230%) skewX(-15deg); }
-        }
-        @keyframes spinGlow {
-          0% { box-shadow: 0 0 0 0 rgba(226,167,59,0.35); }
-          100% { box-shadow: 0 0 0 10px rgba(226,167,59,0); }
-        }
-        @keyframes badgeGlow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(226,167,59,0.25), inset 0 0 0 1px rgba(226,167,59,0.45); }
-          50% { box-shadow: 0 0 14px 2px rgba(226,167,59,0.22), inset 0 0 0 1px rgba(226,167,59,0.6); }
+        @keyframes peBreathe {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.035); }
         }
 
-        * { box-sizing: border-box; }
-
-   .cc-app {
-  width: 100%;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-     .cc-scroll {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-        .cc-tex {
-          position: absolute;
-          inset: 0;
-          background-image: radial-gradient(rgba(14,42,50,0.055) 1px, transparent 1px);
-          background-size: 24px 24px;
-          opacity: 0.6;
-          animation: ambientDrift 22s ease-in-out infinite;
-          pointer-events: none;
+        /* ================= Layout shell ================= */
+        .pe-app {
+          width: 100%;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          background: ${PAPER};
         }
+        .pe-scroll { flex: 1; display: flex; flex-direction: column; }
 
-        /* ---- Brand panel (left on desktop, top strip on mobile) ---- */
-        .cc-brand {
-          background: linear-gradient(135deg, ${TEAL_DEEP} 0%, ${INK} 55%, ${TEAL_DEEP} 100%);
-          background-size: 220% 220%;
-          animation: gradientShift 14s ease-in-out infinite;
+        /* ================= Left: clinical panel ================= */
+        .pe-panel {
+          background: linear-gradient(175deg, ${INK} 0%, ${TEAL_DEEP} 100%);
           position: relative;
           overflow: hidden;
         }
-        .cc-orb {
+        .pe-panel-grid {
           position: absolute;
-          border-radius: 50%;
-          filter: blur(2px);
+          inset: 0;
+          background-image:
+            linear-gradient(rgba(243,247,246,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(243,247,246,0.05) 1px, transparent 1px);
+          background-size: 34px 34px;
           pointer-events: none;
         }
-        .cc-orb.o1 { width: 480px; height: 480px; top: -180px; right: -140px; background: radial-gradient(circle, rgba(226,167,59,0.12) 0%, transparent 70%); animation: floatSlow 16s ease-in-out infinite; }
-        .cc-orb.o2 { width: 360px; height: 360px; bottom: -140px; left: -100px; background: radial-gradient(circle, rgba(20,107,94,0.35) 0%, transparent 70%); animation: floatSlow 20s ease-in-out infinite reverse; }
-        .cc-orb.o3 { width: 10px; height: 10px; top: 22%; left: 18%; background: ${AMBER}; opacity: 0.5; animation: floatSlow 9s ease-in-out infinite, wavePulseDot 3s ease-in-out infinite; }
-        .cc-orb.o4 { width: 7px; height: 7px; top: 62%; left: 72%; background: #F3F7F6; opacity: 0.4; animation: floatSlow 11s ease-in-out infinite reverse, wavePulseDot 4s ease-in-out infinite; }
-        .cc-orb.o5 { width: 5px; height: 5px; top: 78%; left: 30%; background: ${AMBER}; opacity: 0.6; animation: floatSlow 7s ease-in-out infinite, wavePulseDot 2.4s ease-in-out infinite; }
+        .pe-panel-inner {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          padding: 40px 48px;
+        }
 
-        /* ---- Brand highlight badge: the one thing every viewer should read first ---- */
-        .cc-brand-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 9px;
-          padding: 8px 16px 8px 10px;
-          border-radius: 999px;
-          background: rgba(226,167,59,0.08);
-          animation: badgeGlow 3.2s ease-in-out infinite;
-        }
-        .cc-brand-badge-dot {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: ${AMBER};
-          flex-shrink: 0;
-          animation: wavePulseDot 1.8s ease-in-out infinite;
-        }
-        .cc-brand-badge-text {
+        .pe-brandmark { display: flex; align-items: center; gap: 10px; }
+        .pe-brandmark img { width: 34px; height: 34px; border-radius: 8px; }
+        .pe-brandmark-text {
          
-          font-size: 11.5px;
           font-weight: 600;
-          letter-spacing: 0.8px;
-          color: ${AMBER};
-          white-space: nowrap;
+          font-size: 14px;
+          letter-spacing: 0.3px;
+          color: rgba(243,247,246,0.9);
         }
+        /* Logo stays pinned to the viewport's top-right corner at every breakpoint */
+        /* Logo stays pinned to the top-right corner */
+.pe-brand-link {
+  position: fixed;
+  top: 10px;
+  left: 49.5%;
+  transform: translateX(-50%);
+  margin-left: -24px; /* Move slightly into the blue panel */
+  z-index: 1000;
+  cursor: pointer;
+  text-decoration: none;
+}
 
-        .cc-heading {
+.pe-brand-link img {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  transition: transform .2s ease;
+}
+
+.pe-brand-link:hover img {
+  transform: scale(1.08);
+}
+
+@media (max-width: 767.98px) {
+  .pe-brand-link {
+    top: max(10px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
+  }
+
+  .pe-brand-link img {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+  }
+}
+        .pe-hero {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          max-width: 460px;
+        }
+        .pe-eyebrow {
+         
+          font-size: 11px;
+          font-weight: 500;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: ${AMBER};
+          opacity: 0;
+          animation: peFadeUp 0.6s ease-out 0.05s forwards;
+        }
+        .pe-heading {
          
           font-weight: 700;
           color: #F3F7F6;
           letter-spacing: -0.5px;
-          font-size: clamp(1.2rem, 1rem + 1.6vw, 2.4rem);
-          line-height: 1.12;
+          font-size: clamp(1.9rem, 1.4rem + 2vw, 2.9rem);
+          line-height: 1.08;
+          margin: 10px 0 6px;
+          opacity: 0;
+          animation: peFadeUp 0.6s ease-out 0.15s forwards;
         }
-        .cc-sub {
-          color: rgba(243,247,246,0.68);
-          font-size: clamp(12.5px, 12px + 0.2vw, 14.5px);
-          line-height: 1.55;
+        .pe-tagline {
+          font-size: 14.5px;
+          color: rgba(243,247,246,0.62);
+          line-height: 1.6;
+          max-width: 360px;
+          margin-bottom: 30px;
+          opacity: 0;
+          animation: peFadeUp 0.6s ease-out 0.25s forwards;
         }
-        .cc-fade { opacity: 0; animation: fadeUp 0.6s ease-out forwards; }
-        .cc-fade.d1 { animation-delay: 0.05s; }
-        .cc-fade.d2 { animation-delay: 0.18s; }
-        .cc-fade.d3 { animation-delay: 0.32s; }
-        .cc-fade.d4 { animation-delay: 0.46s; }
 
-        .cc-wave-path {
+        /* Signature: live vitals trace */
+        .pe-vitals {
+          border: 1px solid rgba(243,247,246,0.12);
+          background: rgba(243,247,246,0.03);
+          border-radius: 14px;
+          padding: 18px 20px 14px;
+          opacity: 0;
+          animation: peFadeUp 0.6s ease-out 0.35s forwards;
+        }
+        .pe-vitals-head {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          margin-bottom: 6px;
+        }
+        .pe-vitals-label {
+          
+          font-size: 10.5px;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+          color: rgba(243,247,246,0.45);
+        }
+        .pe-vitals-bpm {
+          display: flex;
+          align-items: baseline;
+          gap: 5px;
+          
+        }
+        .pe-vitals-bpm-num {
+          font-size: 20px;
+          font-weight: 600;
+          color: ${AMBER};
+          animation: peBpmPulse 1.15s ease-in-out infinite;
+        }
+        .pe-vitals-bpm-unit {
+          font-size: 10px;
+          color: rgba(243,247,246,0.4);
+          letter-spacing: 0.5px;
+        }
+        .pe-trace-path {
           stroke: ${AMBER};
           stroke-width: 2;
           fill: none;
           stroke-linecap: round;
           stroke-linejoin: round;
-          stroke-dasharray: 620;
-          animation: waveSweep 2.1s ease-out 0.4s both;
+          stroke-dasharray: 760;
+          animation: peTraceDraw 1.8s ease-out 0.5s both, peTraceGlow 2.6s ease-in-out 2.3s infinite;
         }
+        .pe-trace-dot { fill: #F3F7F6; }
 
-        .cc-annotation {
+        .pe-feature-list {
+          list-style: none;
+          margin: 22px 0 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 11px;
+          opacity: 0;
+          animation: peFadeUp 0.6s ease-out 0.45s forwards;
+        }
+        .pe-feature-list li {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 10px 14px;
-          border-radius: 8px;
-          border: 1px solid rgba(243,247,246,0.14);
-          background: rgba(243,247,246,0.04);
-          transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
-          opacity: 0;
-          animation: fadeUp 0.5s ease-out forwards;
+          gap: 10px;
+          font-size: 13px;
+          color: rgba(243,247,246,0.72);
         }
-        .cc-annotation:nth-of-type(1) { animation-delay: 0.6s; }
-        .cc-annotation:nth-of-type(2) { animation-delay: 0.72s; }
-        .cc-annotation:nth-of-type(3) { animation-delay: 0.84s; }
-        .cc-annotation:hover {
-          background: rgba(243,247,246,0.08);
-          border-color: rgba(226,167,59,0.35);
-          transform: translateX(3px);
-        }
-        .cc-annotation-tag {
-         
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-          color: ${AMBER};
-          border: 1px solid rgba(226,167,59,0.4);
-          border-radius: 4px;
-          padding: 2px 6px;
+        .pe-feature-tick {
+          width: 15px;
+          height: 15px;
           flex-shrink: 0;
+          border-radius: 50%;
+          border: 1px solid rgba(226,167,59,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-        .cc-annotation-text {
-          font-size: 11px;
-          color: rgba(243,247,246,0.88);
-          font-weight: 500;
-          text-align: center;
-        
-        }
-
-        .cc-logo { animation: logoBreathe 4.5s ease-in-out infinite; }
-
-        .cc-brand-mobile { display: none; }
-
-        /* ---- Chart card ---- */
-        .cc-chart-card {
-          background: #FFFFFF;
-          border-radius: 16px;
-          border: 1px solid rgba(14,42,50,0.08);
-          box-shadow: 0 24px 56px rgba(14,42,50,0.16);
-          position: relative;
-          animation: cardRise 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .cc-clip {
-          position: absolute;
-          top: -18px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 64px;
-          height: 26px;
-          border-radius: 6px;
-          background: linear-gradient(160deg, #C7CFCE 0%, #8E9C9A 100%);
-          animation: clipShine 3.6s ease-in-out infinite;
-        }
-        .cc-clip::after {
+        .pe-feature-tick::after {
           content: '';
-          position: absolute;
-          inset: 6px 14px;
-          border-radius: 3px;
-          background: #FFFFFF;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: ${AMBER};
         }
 
-        .cc-title {
-       
+        .pe-panel-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding-top: 22px;
+          margin-top: 22px;
+          border-top: 1px solid rgba(243,247,246,0.12);
+          font-size: 11.5px;
+          color: rgba(243,247,246,0.55);
+        }
+        .pe-panel-footer a { color: rgba(243,247,246,0.65); text-decoration: none; }
+        .pe-panel-footer a:hover { color: #F3F7F6; }
+
+        .pe-brand-mobile {
+          display: none;
+        }
+
+        /* ================= Right: auth card ================= */
+        .pe-authcol {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: ${PAPER};
+        }
+        .pe-card {
+          background: #FFFFFF;
+          border: 1px solid ${LINE};
+          border-radius: 16px;
+          box-shadow: 0 20px 44px rgba(14,42,50,0.10);
+          animation: peCardRise 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .pe-card-title {
+         
           font-weight: 700;
           color: ${INK};
-          font-size: clamp(1.35rem, 1.2rem + 0.5vw, 1.6rem);
+          font-size: clamp(1.3rem, 1.15rem + 0.4vw, 1.5rem);
         }
-        .cc-field-label {
-     
-          font-size: 10.5px;
-          font-weight: 600;
-          letter-spacing: 0.6px;
-          text-transform: uppercase;
+        .pe-card-sub {
           color: ${INK};
           opacity: 0.55;
-        }
-        .cc-field-hint {
-          font-size: 11px;
-          color: ${INK};
-          opacity: 0.4;
-          font-weight: 500;
+          font-size: 13px;
         }
 
-        /* folder-tab workspace selector w/ sliding pill indicator + role colour dot */
-        .cc-tabs {
+        .pe-error-banner {
+          background: rgba(193,71,58,0.07);
+          border: 1px solid rgba(193,71,58,0.25);
+          color: ${CORAL};
+          border-radius: 10px;
+          font-size: 13.5px;
+          font-weight: 500;
+          padding: 9px 12px;
+          animation: peShake 0.45s ease;
+        }
+
+        /* Segmented workspace control */
+        .pe-segmented {
           position: relative;
           display: flex;
-          gap: 4px;
-          border-bottom: 1px solid rgba(14,42,50,0.1);
-          margin-bottom: 20px;
+          background: ${MIST};
+          border-radius: 11px;
+          padding: 4px;
+          gap: 2px;
         }
-        .cc-tab-btn {
+        .pe-segmented-indicator {
+          position: absolute;
+          top: 4px;
+          bottom: 4px;
+          left: 4px;
+          width: calc(33.333% - 4px);
+          border-radius: 8px;
+          background: #FFFFFF;
+          box-shadow: 0 2px 6px rgba(14,42,50,0.14);
+          transition: transform 0.32s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+        .pe-seg-btn {
+          position: relative;
+          z-index: 1;
           flex: 1 1 0;
           appearance: none;
           border: none;
@@ -541,90 +588,82 @@ const Login = () => {
           align-items: center;
           justify-content: center;
           gap: 6px;
-          padding: 9px 6px 11px;
-        
-          font-size: clamp(11px, 10.5px + 0.3vw, 13px);
+          padding: 9px 4px;
+          
+          font-size: clamp(10.5px, 10px + 0.3vw, 12.5px);
           font-weight: 600;
-          color: rgba(14,42,50,0.5);
-          border-radius: 8px 8px 0 0;
-          position: relative;
+          color: rgba(14,42,50,0.48);
           cursor: pointer;
-          transition: color 0.2s ease, background 0.2s ease;
-          opacity: 0;
-          animation: tabGlideIn 0.4s ease-out forwards;
           white-space: nowrap;
+          transition: color 0.2s ease;
         }
-        .cc-tab-btn:nth-of-type(1) { animation-delay: 0.1s; }
-        .cc-tab-btn:nth-of-type(2) { animation-delay: 0.18s; }
-        .cc-tab-btn:nth-of-type(3) { animation-delay: 0.26s; }
-        .cc-tab-btn:hover { color: ${INK}; background: rgba(14,42,50,0.03); }
-        .cc-tab-btn.active { color: ${INK}; }
-        .cc-tab-dot {
+        .pe-seg-btn.active { color: ${INK}; }
+        .pe-seg-dot {
           width: 6px;
           height: 6px;
           border-radius: 50%;
           flex-shrink: 0;
-          opacity: 0.45;
+          opacity: 0.4;
           transition: opacity 0.2s ease, transform 0.2s ease;
         }
-        .cc-tab-btn.active .cc-tab-dot { opacity: 1; transform: scale(1.15); }
-        .cc-tab-indicator {
-          position: absolute;
-          bottom: -1px;
-          height: 2.5px;
-          border-radius: 2px;
-          width: calc(33.333% - 8px);
-          transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1), background 0.3s ease;
+        .pe-seg-btn.active .pe-seg-dot { opacity: 1; transform: scale(1.2); }
+
+        .pe-field-label {
+         
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          color: ${INK};
+          opacity: 0.5;
+        }
+        .pe-field-hint {
+          font-size: 11px;
+          color: ${INK};
+          opacity: 0.38;
         }
 
-        .cc-input-group .input-group-text {
-          background: ${MIST};
-          border-right: none;
-          border-color: rgba(14,42,50,0.16);
-          transition: border-color 0.2s ease, background 0.2s ease;
+        .pe-input-group .input-group-text {
+          background: #FFFFFF;
+          border: none;
+          border-bottom: 1.5px solid ${LINE};
+          border-radius: 0;
+          padding-left: 2px;
         }
-        .cc-input-group .form-control {
-          border-left: none;
-          border-color: rgba(14,42,50,0.16);
-          padding-top: 11px;
-          padding-bottom: 11px;
+        .pe-input-group .form-control {
+          border: none;
+          border-bottom: 1.5px solid ${LINE};
+          border-radius: 0;
+          background: #FFFFFF;
+          padding: 9px 4px;
           font-size: 14.5px;
-          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+          box-shadow: none !important;
+          transition: border-color 0.2s ease;
         }
-        .cc-input-group .form-control:focus {
-          box-shadow: 0 0 0 3px rgba(20,107,94,0.16);
+        .pe-input-group:focus-within .input-group-text,
+        .pe-input-group:focus-within .form-control {
           border-color: ${TEAL};
         }
-        .cc-input-group:focus-within .input-group-text {
-          border-color: ${TEAL};
-          background: #EAF3F1;
-        }
-        .cc-field-error {
+        .pe-field-error {
           font-size: 11.5px;
           color: ${CORAL};
           font-weight: 500;
           margin-top: 4px;
           opacity: 0;
-          animation: fadeUp 0.25s ease-out forwards;
+          animation: peFadeUp 0.25s ease-out forwards;
         }
 
-        .cc-row { opacity: 0; animation: fadeUp 0.45s ease-out forwards; }
-        .cc-row.r1 { animation-delay: 0.2s; }
-        .cc-row.r2 { animation-delay: 0.3s; }
-        .cc-row.r3 { animation-delay: 0.4s; }
-        .cc-row.r4 { animation-delay: 0.5s; }
-
-        .cc-link {
-     
+        .pe-link {
           font-weight: 600;
           font-size: 12.5px;
           color: ${INK};
-          opacity: 0.7;
+          opacity: 0.65;
+          text-decoration: none;
           transition: color 0.2s, opacity 0.2s;
         }
-        .cc-link:hover { color: ${TEAL}; opacity: 1; }
+        .pe-link:hover { color: ${TEAL}; opacity: 1; }
 
-        .cc-submit {
+        .pe-submit {
           position: relative;
           overflow: hidden;
           border: none;
@@ -632,340 +671,238 @@ const Login = () => {
           padding: 12px;
           font-weight: 600;
           font-size: 15px;
-          transition: transform 0.15s ease, box-shadow 0.25s ease, background 0.3s ease;
-          box-shadow: 0 6px 16px rgba(14,42,50,0.22);
+          transition: transform 0.15s ease, box-shadow 0.25s ease;
+          box-shadow: 0 6px 16px rgba(14,42,50,0.2);
         }
-        .cc-submit::after {
+        .pe-submit::after {
           content: '';
           position: absolute;
           top: 0; left: 0;
           width: 40%; height: 100%;
           background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
-          transform: translateX(-130%) skewX(-15deg);
+          transform: translateX(-130%) skewX(-12deg);
         }
-        .cc-submit:not(:disabled):hover::after { animation: shimmerSweep 0.9s ease; }
-        .cc-submit:not(:disabled):active { animation: stampPress 0.28s ease; }
-        .cc-submit:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(14,42,50,0.3); }
-        .cc-submit:disabled { animation: spinGlow 1.4s ease-out infinite; }
+        .pe-submit:not(:disabled):hover::after { animation: peShimmer 0.85s ease; }
+        .pe-submit:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(14,42,50,0.28); }
+        .pe-submit:disabled { opacity: 0.85; animation: peBreathe 1.3s ease-in-out infinite; }
 
-        .cc-error-banner {
-          animation: shakeErr 0.45s ease;
-        
-        }
+        .pe-row { opacity: 0; animation: peFadeUp 0.4s ease-out forwards; }
+        .pe-row.r1 { animation-delay: 0.12s; }
+        .pe-row.r2 { animation-delay: 0.2s; }
+        .pe-row.r3 { animation-delay: 0.28s; }
+        .pe-row.r4 { animation-delay: 0.36s; }
+        .pe-row.r5 { animation-delay: 0.44s; }
 
-        /* ---- Responsive: tablets & phones ---- */
+        /* ================= Responsive ================= */
         @media (max-width: 767.98px) {
-          .cc-brand-mobile {
+          .pe-brand-mobile {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 14px 18px;
+            padding: 16px 56px 16px 20px; /* right padding clears the fixed logo */
             background: linear-gradient(120deg, ${TEAL_DEEP} 0%, ${INK} 100%);
-            background-size: 200% 200%;
-            animation: gradientShift 14s ease-in-out infinite;
-            position: relative;
-            overflow: hidden;
             flex-shrink: 0;
           }
-          .cc-brand-mobile .cc-brand-badge { padding: 6px 12px 6px 8px; }
-          .cc-brand-mobile .cc-brand-badge-text { font-size: 10px; letter-spacing: 0.5px; }
+          .pe-brand-mobile span {
+            
+            font-weight: 600;
+            font-size: 14px;
+            color: #F3F7F6;
+          }
         }
+        @media (min-width: 768px) {
+          .pe-panel-inner { padding-top: 70px; } /* clears the fixed logo on desktop */
+        }
+        /* Tablets: both columns are visible side-by-side but tighter than desktop */
+        @media (min-width: 768px) and (max-width: 991.98px) {
+          .pe-panel-inner { padding: 70px 26px 26px; }
+          .pe-tagline { max-width: none; }
+          .pe-feature-list li { font-size: 12px; }
+          .pe-authcol { padding: 24px 16px !important; }
+        }
+        @media (min-width: 992px) {
+          .pe-panel, .pe-card { height: auto; }
+          .pe-scroll { justify-content: center; }
+          .pe-authcol { padding: 32px !important; }
+        }
+        @media (min-width: 1400px) {
+          .pe-panel-inner { padding-left: 64px; padding-right: 64px; }
+        }
+        /* Small phones: keep the segmented control and card comfortable */
         @media (max-width: 380px) {
-          .cc-chart-card { border-radius: 14px; }
-          .cc-tab-btn { font-size: 10.5px; }
+          .pe-seg-btn { font-size: 9.5px; padding: 8px 2px; letter-spacing: 0; }
+          .pe-card-title { font-size: 1.2rem; }
+          .pe-card { border-radius: 14px; }
+          .pe-authcol { padding: 20px 12px !important; }
         }
-@media (min-width:992px){
-
-    .cc-brand,
-    .cc-chart-card{
-        height:auto;
-    }
-
-    .cc-scroll{
-        justify-content:center;
-    }
-
-}
         @supports (padding: max(0px)) {
-          .cc-safe-bottom { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
-          .cc-safe-top { padding-top: max(0px, env(safe-area-inset-top)); }
+          .pe-safe-top { padding-top: max(0px, env(safe-area-inset-top)); }
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .cc-tex, .cc-fade, .cc-annotation, .cc-chart-card, .cc-clip, .cc-orb,
-          .cc-tab-btn, .cc-row, .cc-submit:hover, .cc-wave-path, .cc-brand,
-          .cc-brand-mobile, .cc-logo, .cc-submit:disabled, .cc-brand-badge,
-          .cc-brand-badge-dot { animation: none !important; }
-          .cc-fade, .cc-annotation, .cc-tab-btn, .cc-row { opacity: 1 !important; }
+          .pe-heading, .pe-tagline, .pe-eyebrow, .pe-vitals, .pe-feature-list,
+          .pe-card, .pe-row, .pe-trace-path, .pe-vitals-bpm-num,
+          .pe-submit:hover, .pe-submit:disabled {
+            animation: none !important;
+          }
+          .pe-heading, .pe-tagline, .pe-eyebrow, .pe-vitals, .pe-feature-list, .pe-row {
+            opacity: 1 !important;
+          }
         }
       `}</style>
 
-      <div className="cc-app cc-safe-top">
-        {/* Mobile-only compact brand strip — the Chiselon name stays visible on phones too */}
-        {/* <div className="cc-brand-mobile">
-          <img src={DermaLogo} alt="Derma Care" style={{ width: 30, height: 'auto' }} className="cc-logo" />
-          <span className="cc-brand-badge">
-            <span className="cc-brand-badge-dot" />
-            <span className="cc-brand-badge-text">CHISELON CLINIC MANAGEMENT SYSTEM</span>
-          </span>
-        </div> */}
+      <div className="pe-app pe-safe-top">
 
-        <div className="cc-scroll">
-          <div className="cc-tex" style={{ zIndex: 0 }} />
 
-          <div
-            className="d-flex justify-content-center align-items-center flex-grow-1"
-            style={{ position: 'relative', zIndex: 2 }}
-          >
-            <CContainer fluid className="p-0  ">
-              <CRow className="g-0 ">
-                {/* LEFT: brand / chart-room panel — desktop/tablet only */}
-                <CCol md={6} className="d-none d-md-flex flex-column justify-content-center cc-brand px-5 py-4" style={{ minHeight: '100vh' }}>
-                  <div className="cc-orb o1" />
-                  <div className="cc-orb o2" />
-                  <div className="cc-orb o3" />
-                  <div className="cc-orb o4" />
-                  <div className="cc-orb o5" />
-                  <div />
-                  <div className="px-3" style={{ position: 'relative', zIndex: 1 }}>
-                    {/* <img
-                      src={DermaLogo}
-                      alt="Derma Care"
-                      className="mb-4 cc-fade d1 cc-logo"
-                      style={{ width: 96, height: 'auto' }}
-                    /> */}
+        <div className="pe-scroll">
+          <div className="d-flex justify-content-center align-items-center flex-grow-1">
+            <CContainer fluid className="p-0">
 
-                    {/* Highlight: the Chiselon CMS name gets its own glowing badge,
-                        so it's the first thing read — not just small eyebrow text */}
-                    {/* <span className="cc-brand-badge cc-fade d1">
-                      <span className="cc-brand-badge-dot" />
-                      <span className="cc-brand-badge-text">CHISELON CLINIC MANAGEMENT SYSTEM</span>
-                    </span> */}
-
-                    {/* <h2 className="cc-heading mt-3 mb-3 cc-fade d2">
-                      Every chart,<br />one console.
-                    </h2> */}
+              <a
+                href="https://chiselontechnologies.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Chiselon Technologies"
+                className='pe-brand-link'
+              >
+                <img src={DermaLogo} alt="Chiselon Technologies" />
+              </a>
+              <CRow className="g-0">
 
 
 
-                    <h3 className="cc-heading mt-3 mb-3 cc-fade d2">
-                      Complete Clinic Management,
-                      <br />
-                      All in One Place.
-                    </h3>
-                    <svg
-                      width="100%"
-                      height="48"
-                      viewBox="0 0 420 48"
-                      className="cc-fade d3"
-                      style={{ display: 'block', marginBottom: 26, maxWidth: 360 }}
-                      aria-hidden="true"
-                    >
-                      <polyline
-                        className="cc-wave-path"
-                        points="0,24 60,24 78,24 92,7 108,41 124,14 140,32 158,24 190,24 230,24 246,10 260,36 276,24 420,24"
-                      />
-                    </svg>
-                    <p
-                      className="cc-sub cc-fade d4 mb-4"
-                      style={{
-                        maxWidth: "520px",
-                        lineHeight: "1.8",
-                        fontSize: "15px",
-                        color: "rgba(243,247,246,0.82)",
-                      }}
-                    >
-                      Streamline your entire healthcare workflow with a unified platform for
-                      patient records, appointment scheduling, billing, doctor management,
-                      and insightful analytics—designed to
-                      improve efficiency, security, and patient care.
-                    </p>
 
-                    {/* <div className="d-flex flex-wrap gap-2 mb-4">
-                      <span className="badge rounded-pill bg-light text-dark px-3 py-2">
-                        👨‍⚕️ Patient Management
-                      </span>
+                {/* LEFT: clinical brand panel — desktop/tablet only */}
+                <CCol
+                  md={6}
+                  className="d-none d-md-flex pe-panel"
+                  style={{ minHeight: '100vh' }}
+                >
+                  <div className="pe-panel-grid" />
+                  <div className="pe-panel-inner">
+                    <div className="pe-hero">
+                      <span className="pe-eyebrow">Clinic Management Suite</span>
+                      <h3 className="pe-heading">PhysioElite</h3>
+                      <p className="pe-tagline"><em>Every patient, appointment and outcome — all in one place.</em></p>
 
-                      <span className="badge rounded-pill bg-light text-dark px-3 py-2">
-                        📅 Smart Appointments
-                      </span>
-
-                      <span className="badge rounded-pill bg-light text-dark px-3 py-2">
-                        💳 Billing & Payments
-                      </span>
-
-                      <span className="badge rounded-pill bg-light text-dark px-3 py-2">
-                        📊 Analytics
-                      </span>
-
-                      <span className="badge rounded-pill bg-light text-dark px-3 py-2">
-                        🔒 Secure Access
-                      </span>
-                    </div> */}
-
-                    <CRow className="g-2 mt-1" style={{ maxWidth: 480 }}>
-                      <CCol xs={12} sm={6} lg={4}>
-                        <div className="cc-annotation h-100">
-
-                          <span className="cc-annotation-text">Clinic Management</span>
+                      <div className="pe-vitals">
+                        <div className="pe-vitals-head">
+                          <span className="pe-vitals-label">Live system status</span>
+                          {/* <span className="pe-vitals-bpm">
+                            <span className="pe-vitals-bpm-num">72</span>
+                            <span className="pe-vitals-bpm-unit">bpm avg. response</span>
+                          </span> */}
                         </div>
-                      </CCol>
+                        <svg width="100%" height="52" viewBox="0 0 420 52">
+                          <path
+                            id="peTracePath"
+                            className="pe-trace-path"
+                            d="M0,30 L60,30 L78,30 L92,10 L108,48 L124,18 L140,38 L158,30 L230,30 L246,14 L260,44 L276,30 L420,30"
+                          />
+                          <circle r="4" className="pe-trace-dot">
+                            <animateMotion dur="3.2s" repeatCount="indefinite" rotate="auto">
+                              <mpath href="#peTracePath" />
+                            </animateMotion>
+                          </circle>
+                        </svg>
+                      </div>
 
-                      <CCol xs={12} sm={6} lg={4}>
-                        <div className="cc-annotation h-100">
+                      <ul className="pe-feature-list">
+                        <li><span className="pe-feature-tick" />Clinic &amp; branch management</li>
+                        <li><span className="pe-feature-tick" />Patient records &amp; appointments</li>
+                        <li><span className="pe-feature-tick" />Billing, payments &amp; analytics</li>
+                        <li><span className="pe-feature-tick" />Role-based secure access</li>
+                      </ul>
+                    </div>
 
-                          <span className="cc-annotation-text">Analytics Dashboard</span>
-                        </div>
-                      </CCol>
-
-                      <CCol xs={12} sm={6} lg={4}>
-                        <div className="cc-annotation h-100">
-
-                          <span className="cc-annotation-text">Secure Access</span>
-                        </div>
-                      </CCol>
-
-                      <CCol xs={12} sm={6} lg={4}>
-                        <div className="cc-annotation h-100">
-
-                          <span className="cc-annotation-text">Patient Management</span>
-                        </div>
-                      </CCol>
-
-                      <CCol xs={12} sm={6} lg={4}>
-                        <div className="cc-annotation h-100">
-
-                          <span className="cc-annotation-text">Appointments</span>
-                        </div>
-                      </CCol>
-
-                      <CCol xs={12} sm={6} lg={4}>
-                        <div className="cc-annotation h-100">
-
-                          <span className="cc-annotation-text">Billing & Payments</span>
-                        </div>
-                      </CCol>
-                    </CRow>
-                  </div>
-                  <div
-                    className="mt-auto pt-4"
-                    style={{
-                      position: "relative",
-                      zIndex: 1,
-                      borderTop: "1px solid rgba(255,255,255,0.15)",
-                    }}
-                  >
-                    <div className="d-flex flex-row gap-3 text-center justify-content-between" style={{ fontSize: "10px" }}>
-                      <span className="d-inline-flex justify-content-center align-items-center gap-2 text-white">
+                    <div className="pe-panel-footer">
+                      <span className="d-inline-flex align-items-center gap-2 text-white">
                         <CIcon icon={cilShieldAlt} />
-                        Secure by Design
+                        Secure by design
                       </span>
-
-                      <span className="text-white">
-                        © {new Date().getFullYear()} Chiselon Technologies
-                      </span>
-
-                      <a
-                        href="https://chiselontechnologies.com"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-white text-decoration-none"
-                      >
-                        About Chiselon Technologies
+                      <span className="text-white">© {new Date().getFullYear()} Chiselon Technologies</span>
+                      <a href="https://chiselontechnologies.com" target="_blank" rel="noreferrer" className="text-white">
+                        About us
                       </a>
                     </div>
                   </div>
                 </CCol>
 
-                {/* RIGHT: chart card + form */}
-                <CCol md={6} className="d-flex align-items-center justify-content-center px-3 py-3 py-md-4">
-                  <CCard className="cc-chart-card border-0 w-100" style={{
-                    maxWidth: 430,
-                    borderRadius: 18
-                  }}>
-                    <div className="cc-clip d-none d-md-block" />
-                    <CCardBody className="p-4 p-md-5 pt-4 pt-md-5">
-                      <h3 className="cc-title text-center mb-1">CCMS Portal</h3>
-                      <p className="text-center mb-4" style={{ color: INK, opacity: 0.6, fontSize: '13.5px' }}>
-                        Select your workspace to sign in
-                      </p>
+                {/* Mobile brand strip */}
+                <CCol xs={12} className="pe-brand-mobile">
+                  <span>PhysioElite</span>
+                </CCol>
+
+                {/* RIGHT: auth card */}
+                <CCol md={6} className="pe-authcol px-3 py-4">
+                  <CCard className="pe-card border-0 w-100" style={{ maxWidth: 420, borderRadius: 16 }}>
+                    <CCardBody className="p-4 p-md-5">
+                      <h3 className="pe-card-title text-center mb-1">CCMS Portal</h3>
+                      <p className="pe-card-sub text-center mb-4">Select your workspace to sign in</p>
 
                       {errorMessage && (
-                        <div
-                          className="text-center py-2 mb-3 cc-error-banner"
-                          style={{
-                            background: 'rgba(193,71,58,0.08)',
-                            border: '1px solid rgba(193,71,58,0.25)',
-                            color: CORAL,
-                            borderRadius: 10,
-                            fontSize: 13.5,
-                            fontWeight: 500,
-                          }}
-                        >
-                          {errorMessage}
-                        </div>
+                        <div className="pe-error-banner text-center mb-3">{errorMessage}</div>
                       )}
 
                       {['clinic', 'administrator', 'receptionist'].includes(activeTab) && (
                         <CForm onSubmit={handleClinicLogin} noValidate>
-                          {/* folder-tab workspace selector — replaces the old dropdown,
-                              same onChange logic, now visualised with a sliding pill
-                              plus a colour dot per role for faster recognition */}
-                          <div className="cc-tabs">
+                          {/* segmented workspace selector — same onChange logic as before */}
+                          <div className="pe-segmented mb-4">
+                            <span
+                              className="pe-segmented-indicator"
+                              style={{ transform: `translateX(calc(${activeIndex} * 100%))` }}
+                            />
                             {WORKSPACE_TABS.map((tab) => (
                               <button
                                 key={tab.key}
                                 type="button"
-                                className={`cc-tab-btn${activeTab === tab.key ? ' active' : ''}`}
+                                className={`pe-seg-btn${activeTab === tab.key ? ' active' : ''}`}
                                 onClick={() => handleWorkspaceSelect(tab.key)}
                               >
-                                <span className="cc-tab-dot" style={{ background: tab.tint }} />
+                                <span className="pe-seg-dot" style={{ background: tab.tint }} />
                                 {tab.label}
                               </button>
                             ))}
-                            <span
-                              className="cc-tab-indicator"
-                              style={{
-                                background: activeTint,
-                                transform: `translateX(calc(${activeIndex} * (100% + 12px)))`,
-                                left: 4,
-                              }}
-                            />
                           </div>
 
-                          <div className="cc-row r1">
+                          <div className="pe-row r1">
                             <div className="d-flex justify-content-between align-items-center mb-1">
-                              <label className="cc-field-label mb-0">Username</label>
-                              <span className="cc-field-hint">Required</span>
+                              <label className="pe-field-label mb-0">Username</label>
+                              <span className="pe-field-hint">Required</span>
                             </div>
-                            <CInputGroup className="cc-input-group mb-1">
+                            <CInputGroup className="pe-input-group mb-1">
                               <CInputGroupText>
-                                <CIcon icon={cilUser} style={{ color: INK, opacity: 0.6 }} />
+                                <CIcon icon={cilUser} style={{ color: INK, opacity: 0.55 }} />
                               </CInputGroupText>
                               <CFormInput
-                                placeholder="Enter Your Id"
+                                placeholder="Enter User Name/ID"
                                 value={userName}
                                 onChange={(e) => setUserName(e.target.value.trim())}
                               />
                             </CInputGroup>
                             {fieldErrors.userName && (
-                              <div className="cc-field-error">{fieldErrors.userName}</div>
+                              <div className="pe-field-error">{fieldErrors.userName}</div>
                             )}
                           </div>
 
-                          <div className="cc-row r2 mt-3">
+                          <div className="pe-row r2 mt-3">
                             <div className="d-flex justify-content-between align-items-center mb-1">
-                              <label className="cc-field-label mb-0">Password</label>
-                              <span className="cc-field-hint">{showPassword ? 'Hide' : 'Show'}</span>
+                              <label className="pe-field-label mb-0">Password</label>
+                              <span
+                                className="pe-field-hint"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => setShowPassword((s) => !s)}
+                              >
+                                {showPassword ? 'Hide' : 'Show'}
+                              </span>
                             </div>
-                            <CInputGroup className="cc-input-group mb-1">
+                            <CInputGroup className="pe-input-group mb-1">
                               <CInputGroupText
                                 onClick={() => setShowPassword((s) => !s)}
                                 style={{ cursor: 'pointer' }}
                               >
                                 <CIcon
                                   icon={showPassword ? cilLockUnlocked : cilLockLocked}
-                                  style={{ color: INK, opacity: 0.6 }}
+                                  style={{ color: INK, opacity: 0.55 }}
                                 />
                               </CInputGroupText>
                               <CFormInput
@@ -976,14 +913,14 @@ const Login = () => {
                               />
                             </CInputGroup>
                             {fieldErrors.password && (
-                              <div className="cc-field-error">{fieldErrors.password}</div>
+                              <div className="pe-field-error">{fieldErrors.password}</div>
                             )}
                           </div>
 
-                          <div className="d-flex justify-content-between mt-3 cc-row r3">
+                          <div className="d-flex justify-content-between mt-3 pe-row r3">
                             <a
                               href="#"
-                              className="cc-link text-decoration-none"
+                              className="pe-link"
                               onClick={(e) => {
                                 e.preventDefault()
                                 setShowForgotModal(true)
@@ -993,7 +930,7 @@ const Login = () => {
                             </a>
                             <a
                               href="#"
-                              className="cc-link text-decoration-none"
+                              className="pe-link"
                               onClick={(e) => {
                                 e.preventDefault()
                                 setShowResetModal(true)
@@ -1003,11 +940,11 @@ const Login = () => {
                             </a>
                           </div>
 
-                          <div className="cc-row r4">
+                          <div className="pe-row r4">
                             <CButton
                               type="submit"
                               disabled={isLoading}
-                              className="cc-submit w-100 mt-4"
+                              className="pe-submit w-100 mt-4"
                               style={{ color: 'white', background: `linear-gradient(135deg, ${activeTint} 0%, ${INK} 130%)` }}
                             >
                               {isLoading ? <CSpinner size="sm" style={{ color: 'white' }} /> : 'Sign in'}
@@ -1021,29 +958,6 @@ const Login = () => {
               </CRow>
             </CContainer>
           </div>
-
-          {/* <footer
-            className="d-flex flex-wrap justify-content-around small py-2 cc-safe-bottom"
-            style={{
-              color: INK,
-              opacity: 0.7,
-              backgroundColor: 'rgba(243,247,246,0.9)',
-              position: 'relative',
-              zIndex: 2,
-              fontSize: 12.5,
-              animation: 'fadeIn 0.8s ease-out 0.6s both',
-              gap: 6,
-              flexShrink: 0,
-            }}
-          >
-            <span className="d-inline-flex align-items-center gap-2">
-              <CIcon icon={cilShieldAlt} /> Secure by design
-            </span>
-            <span>© {new Date().getFullYear()} Chiselon Technologies</span>
-            <a href="https://chiselontechnologies.com" target="_blank" style={{ color: INK }} rel="noreferrer">
-              About Chiselon Technologies
-            </a>
-          </footer> */}
         </div>
 
         {/* Reset Modal */}
@@ -1052,7 +966,7 @@ const Login = () => {
             <CModalTitle>Reset Password</CModalTitle>
           </CModalHeader>
           <CModalBody>
-            <ResetPassword onClose={() => setShowResetModal(false)} />
+            <ResetPassword onClose={() => setShowResetModal(false)} role={activeTab} />
           </CModalBody>
         </CModal>
 

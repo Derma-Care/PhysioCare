@@ -124,11 +124,11 @@ const ClinicSummaryPopup = () => {
   const navigate = useNavigate()
 
   // ── unchanged: read hospital data ─────────────────────────────────────────
-  const data = JSON.parse(localStorage.getItem('selectedHospital') || '{}')
+  const data = JSON.parse(sessionStorage.getItem('selectedHospital') || '{}')
   const hospitalData = data.data || {}
-  const clinicId = localStorage.getItem('HospitalId')
-  const branchId = localStorage.getItem('branchId')
-  const role = localStorage.getItem('role')
+  const clinicId = sessionStorage.getItem('HospitalId')
+  const branchId = sessionStorage.getItem('branchId')
+  const role = sessionStorage.getItem('role')
 
   // ── fetch logic ───────────────────────────────────────────────────────────
   const checkSummary = async () => {

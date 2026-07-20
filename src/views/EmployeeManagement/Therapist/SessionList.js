@@ -41,7 +41,7 @@ const [selectedSession, setSelectedSession] = useState(null)
  
 
 // const handleView = async (item,therapistRecordId) => {
-//   const storedData = localStorage.getItem('therapistData')
+//   const storedData = sessionStorage.getItem('therapistData')
 //   const raw = JSON.parse(storedData) || {}
 
 //   console.log("RAW DATA:", raw)
@@ -72,7 +72,7 @@ const handleView = async (item, therapistRecordId) => {
   setLoadingId(item.sessionId) // ✅ start loading
 
   try {
-    const storedData = localStorage.getItem('therapistData')
+    const storedData = sessionStorage.getItem('therapistData')
     const raw = JSON.parse(storedData) || {}
 
     const clinicId = raw?.clinicId || raw?.data?.clinicId

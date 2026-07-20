@@ -163,7 +163,7 @@ const TreatmentPackageForm = ({ data, onSave, therapyOptions, onCancel }) => {
   /* ── Fetch therapy options ──────────────────────────────────────── */
   const getTherapyOptions = async () => {
     try {
-      const hospitalId = localStorage.getItem('HospitalId')
+      const hospitalId = sessionStorage.getItem('HospitalId')
       const res = await GetSubServices_ByClinicId(hospitalId)
       const subServiceData = res || []
       setTherapyOptions(

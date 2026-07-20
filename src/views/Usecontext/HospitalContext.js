@@ -6,13 +6,14 @@ import {
   readPendingNotificationsFromIDB,
   subscribeToBroadcastChannel,
 } from '../../firebase'
+import { GetClinicBranches } from '../Doctors/DoctorAPI'
 
 const HospitalContext = createContext()
 
 export const HospitalProvider = ({ children }) => {
-  // Hydrate from localStorage
+  // Hydrate from sessionStorage
   const [selectedHospital, setSelectedHospital] = useState(() => {
-    const stored = localStorage.getItem('selectedHospital')
+    const stored = sessionStorage.getItem('selectedHospital')
     return stored ? JSON.parse(stored) : null
   })
 
@@ -22,14 +23,18 @@ export const HospitalProvider = ({ children }) => {
   const [errorMessage, setErrorMessage] = useState('')
   const [doctorLoading, setDoctorLoading] = useState(false)
   const [notificationCount, setNotificationCount] = useState('')
-  const [role, setRole] = useState(localStorage.getItem('role'))
+  const [role, setRole] = useState(sessionStorage.getItem('role'))
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('hospitalUser')
+    const saved = sessionStorage.getItem('hospitalUser')
     return saved ? JSON.parse(saved) : null
   })
-  const [hospitalId, setHospitalId] = useState(localStorage.getItem('HospitalId'))
+  const [hospitalId, setHospitalId] = useState(sessionStorage.getItem('HospitalId'))
   const [hydrated, setHydrated] = useState(false) // Track data readiness
   const [notifications, setNotifications] = useState([])
+
+  const [globalBranchId, setGlobalBranchId] = useState(sessionStorage.getItem('branchId') || '')
+  const [globalBranchName, setGlobalBranchName] = useState(sessionStorage.getItem('branchName') || '')
+  const [branches, setBranches] = useState([])
 
   const addNotification = useCallback((notif) => {
     setNotifications(prev => [{ ...notif, id: Date.now(), read: false }, ...prev])
@@ -96,15 +101,15 @@ export const HospitalProvider = ({ children }) => {
     }
   }, [])
 
-  // Persist user & hospital to localStorage
+  // Persist user & hospital to sessionStorage
   useEffect(() => {
-    if (user) localStorage.setItem('hospitalUser', JSON.stringify(user))
-    else localStorage.removeItem('hospitalUser')
+    if (user) sessionStorage.setItem('hospitalUser', JSON.stringify(user))
+    else sessionStorage.removeItem('hospitalUser')
   }, [user])
 
   useEffect(() => {
-    if (selectedHospital) localStorage.setItem('selectedHospital', JSON.stringify(selectedHospital))
-    else localStorage.removeItem('selectedHospital')
+    if (selectedHospital) sessionStorage.setItem('selectedHospital', JSON.stringify(selectedHospital))
+    else sessionStorage.removeItem('selectedHospital')
   }, [selectedHospital])
 
   // Fetch hospital & doctor data
@@ -119,7 +124,7 @@ export const HospitalProvider = ({ children }) => {
   //       if (hospitalRes.status === 200 && hospitalRes.data) setSelectedHospital(hospitalRes.data)
   //       console.log(hospitalRes.data)
   //       // Fetch doctors
-  //       const branchId = localStorage.getItem('branchId')
+  //       const branchId = sessionStorage.getItem('branchId')
   //       const doctorRes = await http.get(`${getDoctorByClinicId}/${id}/${branchId}`)
   //       if (doctorRes.status === 200 && doctorRes.data) setDoctorData(doctorRes.data)
 
@@ -162,8 +167,8 @@ export const HospitalProvider = ({ children }) => {
   //   if (!hospitalId) return
   //   setLoading(true)
   //   try {
-  //     const branchId = localStorage.getItem('branchId')
-  //     const hospitalId = localStorage.getItem('HospitalId')
+  //     const branchId = sessionStorage.getItem('branchId')
+  //     const hospitalId = sessionStorage.getItem('HospitalId')
   //     const res = await http.get(`${getDoctorByClinicId}/${hospitalId}/${branchId}`)
   //     if (res.status === 200 && res.data) setDoctorData(res.data)
   //   } catch (err) {
@@ -177,8 +182,8 @@ export const HospitalProvider = ({ children }) => {
     try {
       setDoctorLoading(true)
 
-      const branchId = selectedBranch || localStorage.getItem('branchId')
-      const hospitalId = localStorage.getItem('HospitalId')
+      const branchId = selectedBranch || globalBranchId || sessionStorage.getItem('branchId')
+      const hospitalId = sessionStorage.getItem('HospitalId')
 
       const res = await http.get(
         `${getDoctorByClinicId}/${hospitalId}/${branchId}`
@@ -190,11 +195,11 @@ export const HospitalProvider = ({ children }) => {
     } finally {
       setDoctorLoading(false)
     }
-  }, [])
+  }, [globalBranchId])
 
   // Fetch subservices by hospital
   // const fetchSubServices = useCallback(async () => {
-  //   const hospitalId = localStorage.getItem('HospitalId')
+  //   const hospitalId = sessionStorage.getItem('HospitalId')
   //   if (!hospitalId) return
   //   setLoading(true)
   //   try {
@@ -209,17 +214,47 @@ export const HospitalProvider = ({ children }) => {
   //   }
   // }, [])
 
+  const fetchBranches = useCallback(async (id = hospitalId) => {
+    if (!id) return
+    try {
+      const res = await GetClinicBranches(id)
+      const list = res.data || []
+      setBranches(list)
+      const defaultBranchId = sessionStorage.getItem('branchId')
+      if (!defaultBranchId && list.length > 0) {
+        const firstBranch = list[0]
+        sessionStorage.setItem('branchId', firstBranch.branchId)
+        sessionStorage.setItem('branchName', firstBranch.branchName)
+        setGlobalBranchId(firstBranch.branchId)
+        setGlobalBranchName(firstBranch.branchName)
+      }
+    } catch (err) {
+      console.error('Error fetching branches in context', err)
+    }
+  }, [hospitalId])
+
+  const changeBranch = useCallback((branchId) => {
+    const branch = branches.find((b) => b.branchId === branchId)
+    const branchName = branch ? branch.branchName : ''
+    sessionStorage.setItem('branchId', branchId)
+    sessionStorage.setItem('branchName', branchName)
+    setGlobalBranchId(branchId)
+    setGlobalBranchName(branchName)
+    fetchDoctors(branchId)
+  }, [branches, fetchDoctors])
+
   const fetchAllData = useCallback(
     async (id = hospitalId) => {
-      const branchId = localStorage.getItem('branchId')
+      const branchId = sessionStorage.getItem('branchId')
       if (!id) return
       setHydrated(false)
       await fetchHospital(id)
+      await fetchBranches(id)
       await fetchDoctors(branchId)
       // await fetchSubServices()
       setHydrated(true)
     },
-    [hospitalId, fetchHospital, fetchDoctors],
+    [hospitalId, fetchHospital, fetchBranches, fetchDoctors],
   )
 
   // Auto-fetch on hospitalId change
@@ -255,6 +290,10 @@ export const HospitalProvider = ({ children }) => {
         notifications,
         setNotifications,
         addNotification,
+        globalBranchId,
+        globalBranchName,
+        branches,
+        changeBranch,
       }}
     >
       {children}

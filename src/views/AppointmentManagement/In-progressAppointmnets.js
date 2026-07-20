@@ -329,8 +329,8 @@ const InProgressAppointmentsPage = () => {
     if (!modalData) return
     try {
       setModalLoading(true)
-      const hospitalId = localStorage.getItem('HospitalId')
-      const branchId = localStorage.getItem('branchId')
+      const hospitalId = sessionStorage.getItem('HospitalId')
+      const branchId = sessionStorage.getItem('branchId')
       const response = await http.get(
         `/getDoctorSlots/${hospitalId}/${branchId}/${modalData.doctorId}`,
       )
@@ -347,7 +347,7 @@ const InProgressAppointmentsPage = () => {
 
   const getSubServiceByIdFun = async (subServiceId) => {
     try {
-      const hospitalId = localStorage.getItem('HospitalId')
+      const hospitalId = sessionStorage.getItem('HospitalId')
       const res = await getSubServiceById(hospitalId, subServiceId)
       console.log('API Response:', res)
 
