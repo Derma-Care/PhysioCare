@@ -12,7 +12,7 @@ const AppBreadcrumb = () => {
     const currentRoute = routes.find((route) => route.path === pathname)
     return currentRoute ? currentRoute.name : false
   }
-
+  const ismainBranch = sessionStorage.getItem("mainBranch")
   const getBreadcrumbs = (location) => {
     const breadcrumbs = []
     location.split('/').reduce((prev, curr, index, array) => {
@@ -119,7 +119,7 @@ const AppBreadcrumb = () => {
           )}
         </CBreadcrumb>
       </div>
-      {branches?.length > 1 && role?.toLowerCase() === 'admin' && (
+      {branches?.length > 1 && role?.toLowerCase() === 'admin' && ismainBranch && (
         <div style={{ width: "200px" }}>
           <CFormSelect
             value={globalBranchId}

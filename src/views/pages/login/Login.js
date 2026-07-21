@@ -49,13 +49,13 @@ const CORAL = '#C1473A'
 
 // Role tabs — order drives the sliding segmented-control indicator's position.
 const WORKSPACE_TABS = [
-  { key: 'clinic', label: 'Super Admin', role: 'admin', tint: TEAL },
+  { key: 'admin', label: 'Super Admin', role: 'admin', tint: TEAL },
   { key: 'administrator', label: 'Clinic Admin', role: 'administrator', tint: AMBER },
   { key: 'receptionist', label: 'Receptionist', role: 'receptionist', tint: '#5B7FA6' },
 ]
 
 const Login = () => {
-  const [activeTab, setActiveTab] = useState('clinic') // clinic | doctor
+  const [activeTab, setActiveTab] = useState('admin') // clinic | doctor
   const [userName, setUserName] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('admin')
@@ -171,6 +171,9 @@ const Login = () => {
         if (payload.accessToken) {
           sessionStorage.setItem('token', payload.accessToken)
         }
+        if (payload.mainBranch) {
+          sessionStorage.setItem('mainBranch', payload.mainBranch)
+        }
 
         // ✅ Always save THIS device's own FCM token (not the server's returned one).
         // The server may return another device's token if multiple devices share the
@@ -238,7 +241,7 @@ const Login = () => {
   const handleWorkspaceSelect = (value) => {
     setActiveTab(value)
     let newRole = value
-    if (value === 'clinic') {
+    if (value === 'admin') {
       newRole = 'admin'
     } else if (value === 'receptionist') {
       newRole = 'receptionist'
@@ -251,7 +254,7 @@ const Login = () => {
 
   const activeIndex = WORKSPACE_TABS.findIndex((t) => t.key === activeTab)
   const activeTint = WORKSPACE_TABS[activeIndex]?.tint || TEAL
-
+  console.log(activeTab)
   return (
     <>
       <style>{`
@@ -843,7 +846,7 @@ const Login = () => {
                         <div className="pe-error-banner text-center mb-3">{errorMessage}</div>
                       )}
 
-                      {['clinic', 'administrator', 'receptionist'].includes(activeTab) && (
+                      {['admin', 'administrator', 'receptionist'].includes(activeTab) && (
                         <CForm onSubmit={handleClinicLogin} noValidate>
                           {/* segmented workspace selector — same onChange logic as before */}
                           <div className="pe-segmented mb-4">
@@ -918,7 +921,7 @@ const Login = () => {
                           </div>
 
                           <div className="d-flex justify-content-between mt-3 pe-row r3">
-                            {/* <a
+                            <a
                               href="#"
                               className="pe-link"
                               onClick={(e) => {
@@ -927,7 +930,7 @@ const Login = () => {
                               }}
                             >
                               Forgot password?
-                            </a> */}
+                            </a>
                             <a
                               href="#"
                               className="pe-link"
@@ -976,7 +979,7 @@ const Login = () => {
             <CModalTitle>Forgot Password</CModalTitle>
           </CModalHeader>
           <CModalBody>
-            <ForgotPassword onClose={() => setShowForgotModal(false)} />
+            <ForgotPassword onClose={() => setShowForgotModal(false)} role={activeTab.toUpperCase()} initialMobile={userName} />
           </CModalBody>
         </CModal>
       </div>

@@ -111,7 +111,8 @@ const PrintLetterHead = ({ children, printDate }) => {
         .print-letter {
           width: 100%;
           display: block;
-          padding-bottom: 30px;
+          padding: 15mm 15mm 30px 15mm;
+          box-sizing: border-box;
         }
 
         .letter-header {

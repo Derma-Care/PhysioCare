@@ -5,11 +5,12 @@ import { COLORS } from '../Constant/Themes'
 
 const STEPS = ['mobile', 'otp', 'password']
 
-const ForgotPassword = ({ onClose }) => {
+const ForgotPassword = ({ onClose, role, initialMobile = '' }) => {
   const [step, setStep] = useState('mobile')
+  console.log(role);
 
   // Step 1: Mobile
-  const [mobile, setMobile] = useState('')
+  const [mobile, setMobile] = useState(initialMobile)
   const [mobileError, setMobileError] = useState('')
   const [mobileLoading, setMobileLoading] = useState(false)
   const [otpInfo, setOtpInfo] = useState('')
@@ -49,8 +50,8 @@ const ForgotPassword = ({ onClose }) => {
     setMobileLoading(true)
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      setOtpInfo('OTP has been sent to your registered Email Id.')
+      const response = await http.get(`/forgot-password/${mobile}/${role.toUpperCase()}`)
+      setOtpInfo(response.data?.message || 'OTP has been sent to your registered Email Id.')
       setStep('otp')
     } catch (err) {
       setApiError(err?.response?.data?.message || 'Failed to send OTP. Please try again.')
@@ -68,8 +69,7 @@ const ForgotPassword = ({ onClose }) => {
     setOtpLoading(true)
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1200))
-      if (otp === '0000') throw new Error('Invalid OTP')
+      await http.get(`/verify-otp/${mobile}/${role.toUpperCase()}/${otp}`)
       setStep('password')
     } catch (err) {
       setOtpError(err.message || err?.response?.data?.message || 'Invalid OTP. Please try again.')
@@ -95,7 +95,12 @@ const ForgotPassword = ({ onClose }) => {
 
     setPwdLoading(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      const payload = {
+        otp: otp,
+        newPassword: newPwd,
+        confirmPassword: confirmPwd
+      }
+      await http.post(`/reset-password/${role.toUpperCase()}/${mobile}`, payload)
 
       setSuccessMsg('✅ Password reset successfully!')
       setTimeout(() => {

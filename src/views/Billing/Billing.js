@@ -332,7 +332,7 @@ export default function Billing() {
             </CCol>
             {/* TODO: deploymenet next Underworking */}
             {/* <CCol xs={12} md={4} lg={4} xl={3} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button 
+              <button
                 onClick={() => navigate('/manual-billing')}
                 style={{
                   width: '100%',

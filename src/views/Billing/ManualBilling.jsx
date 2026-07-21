@@ -1,100 +1,520 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { COLORS } from '../../Constant/Themes'
+import { useHospital } from '../Usecontext/HospitalContext'
+import { AppointmentData } from '../AppointmentManagement/appointmentAPI'
+import PrintLetterHead from '../../Utils/PrintLetterHead'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
+import { ToWords } from 'to-words'
+import Select from 'react-select'
+import { http } from '../../Utils/Interceptors'
+import ConfirmationModal from '../../components/ConfirmationModal'
+import LoadingIndicator from '../../Utils/loader'
 
 // ---- Design tokens ----
 const INK = '#1a1a2e'
-const TEAL = COLORS.primary
+const TEAL = COLORS.primary || '#1B4F8A'
 const TEAL_DEEP = COLORS.sideColor || '#1a3a6b'
 const AMBER = '#f57f17'
 const MIST = '#f4f7fe'
-const CORAL = COLORS.danger
-const SAGE = COLORS.success
+const CORAL = COLORS.danger || '#ff4d4f'
+const SAGE = COLORS.success || '#28a745'
 const SLATE = '#64748b'
 
 const DOCTORS = ['Dr. Ayesha Khan', 'Dr. Rohan Mehta', 'Dr. Priya Nair', 'Dr. Sameer Verma']
 const BRANCHES = ['Banjara Hills', 'Kondapur', 'Madhapur', 'Gachibowli']
 const VISIT_TYPES = ['New Patient', 'Follow-up', 'Walk-in', 'Referral']
-const GENDERS = ['Female', 'Male', 'Other']
 const PAYMENT_MODES = ['Cash', 'Card', 'UPI', 'Net Banking', 'Insurance', 'Cheque']
 const STATUSES = ['Draft', 'Paid', 'Partially Paid', 'Pending', 'Cancelled', 'Refunded']
 
-const makeBillNo = () => `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+// Field wrapper — defined OUTSIDE the component to prevent remount on every render
+const labelStyle = {
+    fontSize: 10.5,
+    fontWeight: 600,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: '#1a1a2e',
+    opacity: 0.55,
+    marginBottom: 6,
+    display: 'block',
+}
+const Field = ({ label, children, span = 4 }) => (
+    <div style={{ gridColumn: `span ${span}` }}>
+        <label style={labelStyle}>{label}</label>
+        {children}
+    </div>
+)
+
+const makeBillingId = () => {
+    const chars = '0123456789ABCDEF'
+    let result = 'BILL-'
+    for (let i = 0; i < 12; i++) {
+        result += chars[Math.floor(Math.random() * 16)]
+    }
+    return result
+}
 const todayStr = () => new Date().toISOString().slice(0, 10)
 const currency = (n) =>
     `₹${(Number.isFinite(n) ? n : 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-const seedRows = [
-    { id: 1, name: 'Consultation Fee', qty: 1, price: 500, disc: 0, tax: 0 },
-    { id: 2, name: 'Chemical Peel', qty: 1, price: 2200, disc: 10, tax: 18 },
-    { id: 3, name: 'Blood Test - CBC', qty: 2, price: 350, disc: 0, tax: 5 },
-]
+export default function ManualBilling() {
+    const { selectedHospital, doctorData, branches } = useHospital() || {}
 
-export default function ManualBillingPreview() {
-    const [billNo] = useState(makeBillNo)
+    // Resolve Dynamic Data with context fallbacks
+    const doctorList = useMemo(() => {
+        if (doctorData?.data && Array.isArray(doctorData.data)) {
+            return doctorData.data.map(d => d.doctorName || d.name).filter(Boolean)
+        }
+        if (Array.isArray(doctorData)) {
+            return doctorData.map(d => d.doctorName || d.name).filter(Boolean)
+        }
+        return DOCTORS
+    }, [doctorData])
+
+    const branchList = useMemo(() => {
+        if (branches && Array.isArray(branches)) {
+            return branches.map(b => b.branchName || b.name).filter(Boolean)
+        }
+        return BRANCHES
+    }, [branches])
+
+    // Tabs / View State
+    const [viewMode, setViewMode] = useState('create') // 'create' | 'list'
+    const [isEditMode, setIsEditMode] = useState(false)
+    const [editBillingId, setEditBillingId] = useState(null)
+
+    // Form fields
+    const [billNo, setBillNo] = useState(makeBillingId)
     const [status, setStatus] = useState('Draft')
     const [billDate, setBillDate] = useState(todayStr())
     const [invoiceDate, setInvoiceDate] = useState(todayStr())
 
-    const [patientSearch, setPatientSearch] = useState('')
-    const [patientName, setPatientName] = useState('Ananya Reddy')
-    const [mobile, setMobile] = useState('9876543210')
-    const [age, setAge] = useState('29')
-    const [gender, setGender] = useState('Female')
-    const [doctor, setDoctor] = useState(DOCTORS[0])
-    const [branch, setBranch] = useState(BRANCHES[0])
-    const [visitType, setVisitType] = useState(VISIT_TYPES[0])
+    const [patientName, setPatientName] = useState('')
+    const [mobile, setMobile] = useState('')
 
-    const [rows, setRows] = useState(seedRows)
-    const nextId = React.useRef(seedRows.length + 1)
+    // Core billing fields
+    const [treatmentName, setTreatmentName] = useState('')
+    const [doctor, setDoctor] = useState(doctorList[0] || '')
+    const [branch, setBranch] = useState(branchList[0] || '')
+    const [visitType, setVisitType] = useState('')
 
-    const [paymentMode, setPaymentMode] = useState(PAYMENT_MODES[0])
+    // Simplified Service details: single treatment service type, base price, discount, tax
+    const [amount, setAmount] = useState('')
+    const [discount, setDiscount] = useState('')  // percentage
+    const [tax, setTax] = useState('')  // percentage
+
+    // Payment Info
+    const [paymentMode, setPaymentMode] = useState('')
     const [transactionId, setTransactionId] = useState('')
     const [remarks, setRemarks] = useState('')
-    const [paidAmount, setPaidAmount] = useState(0)
+    const [paidAmount, setPaidAmount] = useState('')
 
-    const [billingStaff, setBillingStaff] = useState('Front Desk - Kavya')
+    // Additional info — staffName if staffId present, otherwise role
+    const [billingStaff, setBillingStaff] = useState(() => {
+        const staffId = sessionStorage.getItem('staffId')
+        const staffName = sessionStorage.getItem('staffName')
+        const role = sessionStorage.getItem('role')
+        if (staffId && staffName) return staffName
+        return role || 'Staff'
+    })
     const [notes, setNotes] = useState('')
     const [internalComments, setInternalComments] = useState('')
 
+    // Async data states
+    const [appointments, setAppointments] = useState([])
+    const [selectedAppointmentOption, setSelectedAppointmentOption] = useState(null)
+    const [isLoadingAppointments, setIsLoadingAppointments] = useState(false)
+    const [billingsList, setBillingsList] = useState([])
+    const [isLoadingBillings, setIsLoadingBillings] = useState(false)
+
     const [toast, setToast] = useState(null) // { msg, error }
+    const [isDownloading, setIsDownloading] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [billingToDelete, setBillingToDelete] = useState(null)
+
+    // Sync default Doctor & Branch
+    useEffect(() => {
+        if (doctorList.length > 0 && !doctorList.includes(doctor)) {
+            setDoctor(doctorList[0])
+        }
+    }, [doctorList, doctor])
+
+    useEffect(() => {
+        if (branchList.length > 0 && !branchList.includes(branch)) {
+            setBranch(branchList[0])
+        }
+    }, [branchList, branch])
+
+    // Fetch Appointments for autofill dropdown
+    useEffect(() => {
+        const fetchAppointments = async () => {
+            try {
+                setIsLoadingAppointments(true)
+                const currentBranchId = sessionStorage.getItem('branchId') || '000101'
+                const res = await AppointmentData(currentBranchId)
+                const data = res?.data || []
+
+                // Filter for "in-progress" and "completed"
+                const filtered = data.filter(b =>
+                    ['in-progress', 'completed'].includes((b.status || '').toLowerCase())
+                )
+                setAppointments(filtered)
+            } catch (err) {
+                console.error('Error fetching appointments:', err)
+            } finally {
+                setIsLoadingAppointments(false)
+            }
+        }
+        fetchAppointments()
+    }, [branch])
+
+    // Fetch Billings List
+    const fetchBillings = async () => {
+        try {
+            setIsLoadingBillings(true)
+            const cId = sessionStorage.getItem('HospitalId') || '0001'
+            const bId = sessionStorage.getItem('branchId') || '000101'
+            const res = await http.get(`/getAllBillingsByUsingClinicIdAndBranchId/${cId}/${bId}`)
+            const list = res?.data?.data || res?.data || []
+            setBillingsList(Array.isArray(list) ? list : [])
+        } catch (err) {
+            console.error('Error fetching all billings:', err)
+        } finally {
+            setIsLoadingBillings(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchBillings()
+    }, [])
+
+    const toWords = new ToWords({
+        localeCode: 'en-IN',
+        converterOptions: {
+            currency: true,
+            ignoreDecimal: false,
+            ignoreZeroCurrency: false,
+        },
+    })
+
+    const amountInWords = (amountValue) => {
+        try {
+            return toWords.convert(Number(amountValue || 0))
+        } catch {
+            return ''
+        }
+    }
 
     const showToast = (msg, error) => {
         setToast({ msg, error })
-        setTimeout(() => setToast(null), 2200)
+        setTimeout(() => setToast(null), 2500)
     }
 
-    const addRow = () => setRows((r) => [...r, { id: nextId.current++, name: '', qty: 1, price: 0, disc: 0, tax: 0 }])
-    const removeRow = (id) => setRows((r) => (r.length > 1 ? r.filter((row) => row.id !== id) : r))
-    const updateRow = (id, field, value) =>
-        setRows((r) => r.map((row) => (row.id === id ? { ...row, [field]: value } : row)))
-
-    const computed = useMemo(
-        () =>
-            rows.map((r) => {
-                const qty = Number(r.qty) || 0
-                const price = Number(r.price) || 0
-                const disc = Number(r.disc) || 0
-                const tax = Number(r.tax) || 0
-                const subtotal = qty * price
-                const discAmt = subtotal * (disc / 100)
-                const taxable = subtotal - discAmt
-                const taxAmt = taxable * (tax / 100)
-                const total = taxable + taxAmt
-                return { ...r, subtotal, discAmt, taxAmt, total }
-            }),
-        [rows],
-    )
-
-    const subTotal = computed.reduce((s, r) => s + r.subtotal, 0)
-    const totalDiscount = computed.reduce((s, r) => s + r.discAmt, 0)
-    const totalTax = computed.reduce((s, r) => s + r.taxAmt, 0)
-    const grandTotal = computed.reduce((s, r) => s + r.total, 0)
+    // Calculations
+    const subTotal = Number(amount) || 0
+    const totalDiscount = subTotal * ((Number(discount) || 0) / 100)
+    const taxableAmount = subTotal - totalDiscount
+    const totalTax = taxableAmount * ((Number(tax) || 0) / 100)
+    const grandTotal = taxableAmount + totalTax
     const balance = grandTotal - (Number(paidAmount) || 0)
+
+    const resetForm = () => {
+        setBillNo(makeBillingId())
+        setIsEditMode(false)
+        setEditBillingId(null)
+        setStatus('Draft')
+        setBillDate(todayStr())
+        setInvoiceDate(todayStr())
+        setSelectedAppointmentOption(null)
+        setPatientName('')
+        setMobile('')
+        setTreatmentName('')
+        setDoctor(doctorList[0] || '')
+        setBranch(branchList[0] || '')
+        setVisitType('')
+        setAmount('')
+        setDiscount('')
+        setTax('')
+        setPaymentMode('')
+        setTransactionId('')
+        setRemarks('')
+        setPaidAmount('')
+        setNotes('')
+        setInternalComments('')
+    }
+
+    // Appointment Selection Handler
+    const appointmentOptions = useMemo(() => {
+        return appointments.map(b => ({
+            label: `${b.name || b.patientName || 'Patient'} (#${b.bookingId}) - ${b.status}`,
+            value: b
+        }))
+    }, [appointments])
+
+    const handleAppointmentSelect = (option) => {
+        setSelectedAppointmentOption(option)
+        if (!option) return
+        const b = option.value
+        setPatientName(b.name || b.patientName || '')
+        setMobile(b.mobileNumber || b.patientMobileNumber || b.mobile || '')
+        if (b.doctorName || b.doctor) setDoctor(b.doctorName || b.doctor)
+        if (b.branchName || b.branch) setBranch(b.branchName || b.branch)
+        if (b.serviceName || b.treatmentName) setTreatmentName(b.serviceName || b.treatmentName)
+        if (b.visitType) setVisitType(b.visitType)
+        if (b.amount || b.price || b.totalAmount) {
+            const val = Number(b.amount || b.price || b.totalAmount) || 0
+            setAmount(val)
+            setPaidAmount(val)
+        }
+        showToast('Form pre-filled from appointment!')
+    }
+
+    // CRUD - Create & Update
+    const handleSaveBilling = async () => {
+        if (!patientName.trim()) {
+            showToast('Patient Name is required', true)
+            return
+        }
+        if (!mobile.trim()) {
+            showToast('Mobile Number is required', true)
+            return
+        }
+        setIsSaving(true)
+        try {
+            const cId = sessionStorage.getItem('HospitalId') || '0001'
+            const bId = sessionStorage.getItem('branchId') || '000101'
+
+            // Payload matches the API entity structure exactly
+            const payload = {
+                billingId: isEditMode ? editBillingId : billNo,
+                clinicId: cId,
+                branchId: bId,
+                patient: {
+                    patientName,
+                    mobileNumber: mobile,
+                },
+                doctorId: doctor,
+                visitType,
+                billDate,
+                invoiceDate,
+                services: [
+                    {
+                        serviceName: treatmentName,
+                        qty: 1,
+                        unitPrice: Number(amount) || 0,
+                        discountPercent: Number(discount) || 0,
+                        taxPercent: Number(tax) || 0,
+                    }
+                ],
+                payment: {
+                    paymentMode,
+                    transactionId,
+                    paidAmount: Number(paidAmount) || 0,
+                    dueAmount: Math.max(0, balance),
+                    remarks,
+                },
+                additionalDetails: {
+                    billingStaff,
+                    notes,
+                    internalComments,
+                },
+                invoiceStatus: status,
+            }
+
+            if (isEditMode) {
+                await http.put(`/updateBillingByUsingBillingId/${editBillingId}`, payload)
+                showToast('Billing updated successfully!')
+            } else {
+                await http.post(`/createBilling`, payload)
+                showToast('Billing created successfully!')
+            }
+
+            // After save: trigger print first, then reset state after a delay
+            handlePrint('printable-receipt')
+            setTimeout(() => {
+                resetForm()
+                fetchBillings()
+            }, 1500)
+        } catch (err) {
+            console.error('Error saving billing:', err)
+            showToast('Failed to save billing', true)
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    // CRUD - Edit Action — reads from nested API response structure
+    const handleEditBilling = async (bId) => {
+        try {
+            showToast('Loading billing details...')
+            const res = await http.get(`/getBillingById/${bId}`)
+            const data = res?.data?.data || res?.data
+            if (data) {
+                const svc = data.services?.[0] || {}
+                setEditBillingId(data.billingId)
+                setBillNo(data.billingId)
+                setIsEditMode(true)
+                setPatientName(data.patient?.patientName || '')
+                setMobile(data.patient?.mobileNumber || '')
+                setTreatmentName(svc.serviceName || '')
+                setDoctor(data.doctorId || '')
+                setVisitType(data.visitType || '')
+                setStatus(data.invoiceStatus || 'Draft')
+                setBillDate(data.billDate || todayStr())
+                setInvoiceDate(data.invoiceDate || todayStr())
+                setAmount(svc.unitPrice || 0)
+                setDiscount(svc.discountPercent || 0)
+                setTax(svc.taxPercent || 0)
+                setPaymentMode(data.payment?.paymentMode || '')
+                setTransactionId(data.payment?.transactionId || '')
+                setRemarks(data.payment?.remarks || '')
+                setPaidAmount(data.payment?.paidAmount || 0)
+                setBillingStaff(data.additionalDetails?.billingStaff || '')
+                setNotes(data.additionalDetails?.notes || '')
+                setInternalComments(data.additionalDetails?.internalComments || '')
+
+                setViewMode('create')
+            } else {
+                showToast('Failed to retrieve billing details', true)
+            }
+        } catch (err) {
+            console.error('Error fetching billing details:', err)
+            showToast('Failed to fetch billing details', true)
+        }
+    }
+
+    // CRUD - Delete Action
+    const handleDeleteBilling = (bId) => {
+        setBillingToDelete(bId)
+        setShowDeleteConfirm(true)
+    }
+
+    const confirmDeleteBilling = async () => {
+        try {
+            await http.delete(`/deleteBillingByUsingBillingId/${billingToDelete}`)
+            showToast('Billing deleted successfully!')
+            fetchBillings()
+        } catch (err) {
+            console.error('Error deleting billing:', err)
+            showToast('Failed to delete billing', true)
+        } finally {
+            setShowDeleteConfirm(false)
+            setBillingToDelete(null)
+        }
+    }
+
+    const handlePrint = (elementId) => {
+        const printContent = document.getElementById(elementId)
+        if (printContent) {
+            const iframe = document.createElement('iframe')
+            iframe.style.position = 'absolute'
+            iframe.style.width = '0px'
+            iframe.style.height = '0px'
+            iframe.style.border = 'none'
+
+            document.body.appendChild(iframe)
+            const doc = iframe.contentWindow.document
+
+            doc.open()
+            doc.write('<html><head><title>Print Invoice</title>')
+
+            const styles = document.querySelectorAll("style, link[rel='stylesheet']")
+            styles.forEach((s) => {
+                doc.write(s.outerHTML)
+            })
+
+            doc.write('</head><body>')
+            doc.write(printContent.innerHTML)
+            doc.write('</body></html>')
+            doc.close()
+
+            iframe.contentWindow.focus()
+
+            setTimeout(() => {
+                try {
+                    iframe.contentWindow.focus()
+                    iframe.contentWindow.print()
+                } catch (e) {
+                    console.error('Print error:', e)
+                }
+                setTimeout(() => {
+                    if (document.body.contains(iframe)) {
+                        document.body.removeChild(iframe)
+                    }
+                }, 2000)
+            }, 600)
+        }
+    }
+
+    const handleDownloadPDF = async () => {
+        if (isDownloading) return
+        setIsDownloading(true)
+        showToast('Preparing PDF download…')
+
+        try {
+            const printContent = document.getElementById('printable-receipt')
+            if (!printContent) {
+                showToast('Print element not found', true)
+                setIsDownloading(false)
+                return
+            }
+
+            const originalDisplay = printContent.style.display
+
+            printContent.style.display = 'block'
+            printContent.style.position = 'absolute'
+            printContent.style.left = '-9999px'
+            printContent.style.top = '0'
+
+            await new Promise(resolve => setTimeout(resolve, 400))
+
+            const canvas = await html2canvas(printContent, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+            })
+
+            printContent.style.display = originalDisplay
+            printContent.style.position = ''
+            printContent.style.left = ''
+            printContent.style.top = ''
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.98)
+            const pdf = new jsPDF('p', 'mm', 'a4')
+
+            const pdfWidth = 210
+            const pdfHeight = 297
+            const imgWidth = pdfWidth
+            const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+            let heightLeft = imgHeight
+            let position = 0
+
+            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
+            heightLeft -= pdfHeight
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight
+                pdf.addPage()
+                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
+                heightLeft -= pdfHeight
+            }
+
+            const fileName = `Invoice_${billNo}_${patientName.replace(/\s+/g, '_')}`
+            pdf.save(`${fileName}.pdf`)
+            showToast('PDF downloaded successfully!')
+        } catch (error) {
+            console.error('PDF Generation Error:', error)
+            showToast('Failed to download PDF', true)
+        } finally {
+            setIsDownloading(false)
+        }
+    }
 
     const inputStyle = {
         width: '100%',
         fontSize: 13.5,
-
         padding: '9px 12px',
         border: '1px solid rgba(14,42,50,0.16)',
         borderRadius: 8,
@@ -102,17 +522,7 @@ export default function ManualBillingPreview() {
         color: INK,
         outline: 'none',
     }
-    const labelStyle = {
 
-        fontSize: 10.5,
-        fontWeight: 600,
-        letterSpacing: 0.5,
-        textTransform: 'uppercase',
-        color: INK,
-        opacity: 0.55,
-        marginBottom: 6,
-        display: 'block',
-    }
     const cardStyle = {
         background: '#fff',
         border: '1px solid rgba(14,42,50,0.08)',
@@ -121,22 +531,27 @@ export default function ManualBillingPreview() {
         marginBottom: 20,
         overflow: 'hidden',
     }
+
     const cardHeaderStyle = {
         borderBottom: '1px solid rgba(14,42,50,0.08)',
         padding: '14px 20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        background: '#FAFBFD',
     }
-    const cardTitleStyle = {
 
+    const cardTitleStyle = {
         fontWeight: 700,
         fontSize: 14.5,
         display: 'flex',
         alignItems: 'center',
         gap: 9,
+        color: TEAL_DEEP,
     }
+
     const dot = (color) => ({ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 })
+
     const btnBase = {
         border: 'none',
         borderRadius: 9,
@@ -148,44 +563,54 @@ export default function ManualBillingPreview() {
         alignItems: 'center',
         gap: 7,
         whiteSpace: 'nowrap',
-
+        transition: 'all 0.2s',
     }
 
-    const Field = ({ label, children, span = 4 }) => (
-        <div style={{ gridColumn: `span ${span}` }}>
-            <label style={labelStyle}>{label}</label>
-            {children}
-        </div>
-    )
+    // Field is defined at module level (outside component) to avoid remount on re-render
 
     return (
         <div style={{ background: MIST, minHeight: '100vh', color: INK, paddingBottom: 100 }}>
             <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@600&display=swap');
-        * { box-sizing: border-box; }
-        .mbp-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
-        @media (max-width: 700px) { .mbp-grid > div { grid-column: span 12 !important; } }
-        .mbp-table-scroll { overflow-x: auto; }
-        .mbp-table { width: 100%; border-collapse: collapse; min-width: 680px; }
-        .mbp-table th {
-         font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase;
-          color: ${INK}; opacity: 0.55; background: ${MIST}; text-align: left; padding: 10px 8px;
-          border-bottom: 1px solid rgba(14,42,50,0.1); white-space: nowrap;
-        }
-        .mbp-table td { padding: 8px; vertical-align: middle; border-bottom: 1px solid rgba(14,42,50,0.06); }
-        .mbp-input:focus, .mbp-select:focus, .mbp-textarea:focus {
-          border-color: ${TEAL} !important; box-shadow: 0 0 0 3px rgba(20,107,94,0.14);
-        }
-        .mbp-actions-inner { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
-        .mbp-btn:hover { transform: translateY(-1px); }
-        @media (max-width: 700px) {
-          .mbp-actions-inner { justify-content: stretch; }
-          .mbp-actions-inner button { flex: 1 1 calc(50% - 8px); justify-content: center; }
-        }
-      `}</style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+                * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+                .mbp-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+                @media (max-width: 700px) { .mbp-grid > div { grid-column: span 12 !important; } }
+                .mbp-table-scroll { overflow-x: auto; }
+                .mbp-table { width: 100%; border-collapse: collapse; min-width: 680px; }
+                .mbp-table th {
+                    font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase;
+                    color: ${INK}; opacity: 0.55; background: ${MIST}; text-align: left; padding: 12px 10px;
+                    border-bottom: 1px solid rgba(14,42,50,0.1); white-space: nowrap;
+                }
+                .mbp-table td { padding: 10px; vertical-align: middle; border-bottom: 1px solid rgba(14,42,50,0.06); }
+                .mbp-input:focus, .mbp-select:focus, .mbp-textarea:focus {
+                    border-color: ${TEAL} !important; box-shadow: 0 0 0 3px ${TEAL}24;
+                }
+                .mbp-actions-inner { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+                .mbp-btn:hover { transform: translateY(-1px); }
+                @media (max-width: 700px) {
+                    .mbp-actions-inner { justify-content: stretch; }
+                    .mbp-actions-inner button { flex: 1 1 calc(50% - 8px); justify-content: center; }
+                }
+                .mbp-tab-btn {
+                    border: none;
+                    background: transparent;
+                    padding: 8px 16px;
+                    font-size: 13.5px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    color: ${SLATE};
+                    border-bottom: 2px solid transparent;
+                    transition: all 0.2s;
+                }
+                .mbp-tab-btn.active {
+                    color: ${TEAL};
+                    border-bottom-color: ${TEAL};
+                }
+            `}</style>
 
             {/* Header */}
-            <div style={{ background: `linear-gradient(135deg, ${TEAL_DEEP} 0%, ${INK} 100%)`, padding: '22px 20px 26px' }}>
+            <div style={{ color: COLORS.primary, padding: '22px 20px' }}>
                 <div
                     style={{
                         maxWidth: 1180,
@@ -194,467 +619,816 @@ export default function ManualBillingPreview() {
                         flexWrap: 'wrap',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        gap: 10,
+                        gap: 15,
                     }}
                 >
                     <div>
-                        <div style={{ fontWeight: 700, color: '#F3F7F6', fontSize: 22 }}>
-                            Manual Billing
+                        <div style={{ fontWeight: 800, color: '#F3F7F6', fontSize: 24, letterSpacing: '-0.3px', color: COLORS.primary, }}>
+                            Manual Billing Portal
                         </div>
-                        <div style={{ fontSize: 11, letterSpacing: 0.6, color: 'rgba(243,247,246,0.65)' }}>
-                            CLINIC ADMIN · NEW BILL
+                        <div style={{ fontSize: 11, letterSpacing: 0.8, color: 'rgba(115, 119, 118, 0.88)' }}>
+                            CLINIC ADMIN · BRANDED CLINIC RECEIPT SYSTEM
                         </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12.5, color: AMBER, fontWeight: 600 }}>
-                            {billNo}
-                        </span>
-                        <select
-                            className="mbp-select"
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value)}
-                            style={{
-                                fontSize: 12.5,
-                                padding: '6px 10px',
-                                borderRadius: 7,
-                                border: '1px solid rgba(243,247,246,0.25)',
-                                background: 'rgba(243,247,246,0.08)',
-                                color: '#F3F7F6',
-                            }}
+
+                    {/* Navigation Tabs */}
+                    <div style={{ background: 'rgba(255, 255, 255, 0.1)', padding: 4, borderRadius: 8, display: 'flex' }}>
+                        <button
+                            className={`mbp-tab-btn ${viewMode === 'create' ? 'active' : ''}`}
+                            onClick={() => { setViewMode('create'); if (!isEditMode) resetForm(); }}
+                            style={{ color: viewMode === 'create' ? COLORS.primary : 'rgba(56, 54, 54, 0.7)', borderBottomColor: viewMode === 'create' ? COLORS.primary : 'transparent' }}
                         >
-                            {STATUSES.map((s) => (
-                                <option key={s} style={{ color: INK }}>
-                                    {s}
-                                </option>
-                            ))}
-                        </select>
+                            {isEditMode ? '✍ Edit Invoice' : '➕ Create Invoice'}
+                        </button>
+                        <button
+                            className={`mbp-tab-btn ${viewMode === 'list' ? 'active' : ''}`}
+                            onClick={() => setViewMode('list')}
+                            style={{ color: viewMode === 'list' ? COLORS.primary : 'rgba(56, 54, 54, 0.7)', borderBottomColor: viewMode === 'list' ? COLORS.primary : 'transparent' }}
+                        >
+                            📋 Billing History
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 20px 0' }}>
-                {/* Patient Information */}
-                <div style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                        <span style={cardTitleStyle}>
-                            <span style={dot(TEAL)} /> Patient Information
-                        </span>
-                    </div>
-                    <div style={{ padding: 20 }} className="mbp-grid">
-                        <Field label="Patient Search" span={4}>
-                            <input
-                                className="mbp-input"
-                                style={inputStyle}
-                                placeholder="Search by name or mobile"
-                                value={patientSearch}
-                                onChange={(e) => setPatientSearch(e.target.value)}
-                            />
-                        </Field>
-                        <Field label="Patient Name" span={4}>
-                            <input className="mbp-input" style={inputStyle} value={patientName} onChange={(e) => setPatientName(e.target.value)} />
-                        </Field>
-                        <Field label="Mobile Number" span={4}>
-                            <input className="mbp-input" style={inputStyle} value={mobile} onChange={(e) => setMobile(e.target.value)} />
-                        </Field>
-                        <Field label="Age" span={6}>
-                            <input className="mbp-input" style={inputStyle} value={age} onChange={(e) => setAge(e.target.value)} />
-                        </Field>
-                        <Field label="Gender" span={6}>
-                            <select className="mbp-select" style={inputStyle} value={gender} onChange={(e) => setGender(e.target.value)}>
-                                {GENDERS.map((g) => (
-                                    <option key={g}>{g}</option>
-                                ))}
-                            </select>
-                        </Field>
-                    </div>
-                </div>
-
-                {/* Appointment Details */}
-                <div style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                        <span style={cardTitleStyle}>
-                            <span style={dot(TEAL_DEEP)} /> Appointment Details
-                        </span>
-                    </div>
-                    <div style={{ padding: 20 }} className="mbp-grid">
-                        <Field label="Doctor" span={4}>
-                            <select className="mbp-select" style={inputStyle} value={doctor} onChange={(e) => setDoctor(e.target.value)}>
-                                {DOCTORS.map((d) => (
-                                    <option key={d}>{d}</option>
-                                ))}
-                            </select>
-                        </Field>
-                        <Field label="Branch" span={4}>
-                            <select className="mbp-select" style={inputStyle} value={branch} onChange={(e) => setBranch(e.target.value)}>
-                                {BRANCHES.map((b) => (
-                                    <option key={b}>{b}</option>
-                                ))}
-                            </select>
-                        </Field>
-                        <Field label="Visit Type" span={4}>
-                            <select className="mbp-select" style={inputStyle} value={visitType} onChange={(e) => setVisitType(e.target.value)}>
-                                {VISIT_TYPES.map((v) => (
-                                    <option key={v}>{v}</option>
-                                ))}
-                            </select>
-                        </Field>
-                    </div>
-                </div>
-
-                {/* Bill Information */}
-                <div style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                        <span style={cardTitleStyle}>
-                            <span style={dot(AMBER)} /> Bill Information
-                        </span>
-                    </div>
-                    <div style={{ padding: 20 }} className="mbp-grid">
-                        <Field label="Bill No." span={4}>
-                            <input className="mbp-input" style={{ ...inputStyle, background: MIST, opacity: 0.8 }} value={billNo} disabled />
-                        </Field>
-                        <Field label="Bill Date" span={4}>
-                            <input type="date" className="mbp-input" style={inputStyle} value={billDate} onChange={(e) => setBillDate(e.target.value)} />
-                        </Field>
-                        <Field label="Invoice Date" span={4}>
-                            <input type="date" className="mbp-input" style={inputStyle} value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
-                        </Field>
-                    </div>
-                </div>
-
-                {/* Service Details */}
-                <div style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                        <span style={cardTitleStyle}>
-                            <span style={dot(SLATE)} /> Service Details
-                        </span>
-                        <span style={{ fontSize: 12, opacity: 0.5 }}>{rows.length} item(s)</span>
-                    </div>
-                    <div style={{ padding: 20 }}>
-                        <div className="mbp-table-scroll">
-                            <table className="mbp-table">
-                                <thead>
-                                    <tr>
-                                        <th style={{ minWidth: 200 }}>Service Name</th>
-                                        <th style={{ width: 80 }}>Qty</th>
-                                        <th style={{ width: 110 }}>Unit Price</th>
-                                        <th style={{ width: 100 }}>Discount %</th>
-                                        <th style={{ width: 80 }}>Tax %</th>
-                                        <th style={{ width: 120 }}>Total</th>
-                                        <th style={{ width: 44 }} />
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {computed.map((row) => (
-                                        <tr key={row.id}>
-                                            <td>
-                                                <input
-                                                    className="mbp-input"
-                                                    style={inputStyle}
-                                                    value={row.name}
-                                                    onChange={(e) => updateRow(row.id, 'name', e.target.value)}
-                                                />
-                                            </td>
-                                            <td>
-                                                <input
-                                                    type="number"
-                                                    min={0}
-                                                    className="mbp-input"
-                                                    style={inputStyle}
-                                                    value={row.qty}
-                                                    onChange={(e) => updateRow(row.id, 'qty', e.target.value)}
-                                                />
-                                            </td>
-                                            <td>
-                                                <input
-                                                    type="number"
-                                                    min={0}
-                                                    className="mbp-input"
-                                                    style={inputStyle}
-                                                    value={row.price}
-                                                    onChange={(e) => updateRow(row.id, 'price', e.target.value)}
-                                                />
-                                            </td>
-                                            <td>
-                                                <input
-                                                    type="number"
-                                                    min={0}
-                                                    max={100}
-                                                    className="mbp-input"
-                                                    style={inputStyle}
-                                                    value={row.disc}
-                                                    onChange={(e) => updateRow(row.id, 'disc', e.target.value)}
-                                                />
-                                            </td>
-                                            <td>
-                                                <input
-                                                    type="number"
-                                                    min={0}
-                                                    max={100}
-                                                    className="mbp-input"
-                                                    style={inputStyle}
-                                                    value={row.tax}
-                                                    onChange={(e) => updateRow(row.id, 'tax', e.target.value)}
-                                                />
-                                            </td>
-                                            <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                                                {currency(row.total)}
-                                            </td>
-                                            <td>
-                                                <button
-                                                    onClick={() => removeRow(row.id)}
-                                                    disabled={rows.length === 1}
-                                                    style={{
-                                                        border: '1px solid rgba(193,71,58,0.3)',
-                                                        background: 'rgba(193,71,58,0.06)',
-                                                        color: CORAL,
-                                                        borderRadius: 7,
-                                                        width: 30,
-                                                        height: 30,
-                                                        cursor: rows.length === 1 ? 'not-allowed' : 'pointer',
-                                                        opacity: rows.length === 1 ? 0.35 : 1,
-                                                    }}
-                                                >
-                                                    ✕
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+            <div style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 20px 0' }}>
+                {viewMode === 'create' ? (
+                    <>
+                        {/* Autofill / Appointment Selector */}
+                        <div style={cardStyle}>
+                            <div style={{ ...cardHeaderStyle, background: '#F0F4FA' }}>
+                                <span style={cardTitleStyle}>
+                                    <span style={dot(TEAL)} /> Autofill From Appointment
+                                </span>
+                                <span style={{ fontSize: 11.5, color: SLATE, fontWeight: 500 }}>
+                                    Select in-progress or completed appointment to pre-fill patient details
+                                </span>
+                            </div>
+                            <div style={{ padding: '16px 20px' }}>
+                                <Select
+                                    options={appointmentOptions}
+                                    value={selectedAppointmentOption}
+                                    onChange={handleAppointmentSelect}
+                                    placeholder="Search patient name, booking ID, or status..."
+                                    isClearable
+                                    isLoading={isLoadingAppointments}
+                                    menuPortalTarget={document.body}
+                                    menuPosition="fixed"
+                                    styles={{
+                                        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                        control: (base) => ({
+                                            ...base,
+                                            border: '1px solid rgba(14,42,50,0.16)',
+                                            borderRadius: 8,
+                                            padding: '2px 4px',
+                                            boxShadow: 'none',
+                                            '&:hover': { borderColor: TEAL }
+                                        }),
+                                        option: (base, { isFocused, isSelected }) => ({
+                                            ...base,
+                                            fontSize: 13,
+                                            background: isSelected ? TEAL : isFocused ? `${TEAL}15` : '#fff',
+                                            color: isSelected ? '#fff' : INK,
+                                            cursor: 'pointer'
+                                        })
+                                    }}
+                                />
+                            </div>
                         </div>
-                        <button
-                            onClick={addRow}
-                            style={{
-                                border: '1.5px dashed rgba(20,107,94,0.4)',
-                                background: 'rgba(20,107,94,0.04)',
-                                color: TEAL_DEEP,
-                                fontWeight: 600,
-                                fontSize: 13,
-                                borderRadius: 9,
-                                padding: '9px 16px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 7,
-                                cursor: 'pointer',
-                                marginTop: 14,
-                            }}
-                        >
-                            + Add Row
-                        </button>
-                    </div>
-                </div>
 
-                <div className="mbp-grid">
-                    {/* Payment Summary */}
-                    <div style={{ gridColumn: 'span 5' }}>
-                        <div
-                            style={{
-                                background: `linear-gradient(160deg, ${INK} 0%, ${TEAL_DEEP} 130%)`,
-                                borderRadius: 14,
-                                padding: '22px 22px 18px',
-                                color: '#F3F7F6',
-                                height: '100%',
-                            }}
-                        >
-                            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>
-                                Payment Summary
+                        {/* Patient Information */}
+                        <div style={cardStyle}>
+                            <div style={cardHeaderStyle}>
+                                <span style={cardTitleStyle}>
+                                    <span style={dot(TEAL)} /> Patient Information
+                                </span>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '7px 0', color: 'rgba(243,247,246,0.78)' }}>
-                                <span>Sub Total</span>
-                                <span style={{ fontWeight: 600 }}>{currency(subTotal)}</span>
+                            <div style={{ padding: 20 }} className="mbp-grid">
+                                <Field label="Patient Name" span={6}>
+                                    <input className="mbp-input" style={inputStyle} placeholder="Enter patient full name" value={patientName} onChange={(e) => setPatientName(e.target.value)} />
+                                </Field>
+                                <Field label="Mobile Number" span={6}>
+                                    <input className="mbp-input" style={inputStyle} placeholder="10-digit mobile number" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+                                </Field>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '7px 0', color: 'rgba(243,247,246,0.78)' }}>
-                                <span>Discount</span>
-                                <span style={{ fontWeight: 600 }}>− {currency(totalDiscount)}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '7px 0', color: 'rgba(243,247,246,0.78)' }}>
-                                <span>Tax</span>
-                                <span style={{ fontWeight: 600 }}>+ {currency(totalTax)}</span>
-                            </div>
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    borderTop: '1px solid rgba(243,247,246,0.18)',
-                                    marginTop: 6,
-                                    paddingTop: 14,
+                        </div>
 
-                                    fontSize: 19,
-                                    fontWeight: 700,
-                                    color: '#fff',
-                                }}
-                            >
-                                <span>Grand Total</span>
-                                <span  >{currency(grandTotal)}</span>
+                        {/* Appointment Details */}
+                        <div style={cardStyle}>
+                            <div style={cardHeaderStyle}>
+                                <span style={cardTitleStyle}>
+                                    <span style={dot(TEAL_DEEP)} /> Appointment & Treatment Details
+                                </span>
                             </div>
+                            <div style={{ padding: 20 }} className="mbp-grid">
+                                <Field label="Doctor Name" span={3}>
+                                    <select className="mbp-select" style={inputStyle} value={doctor} onChange={(e) => setDoctor(e.target.value)}>
+                                        <option value="">-- Select Doctor --</option>
+                                        {doctorList.map((d) => (
+                                            <option key={d}>{d}</option>
+                                        ))}
+                                    </select>
+                                </Field>
+                                <Field label="Branch" span={3}>
+                                    <select className="mbp-select" style={inputStyle} value={branch} onChange={(e) => setBranch(e.target.value)}>
+                                        <option value="">-- Select Branch --</option>
+                                        {branchList.map((b) => (
+                                            <option key={b}>{b}</option>
+                                        ))}
+                                    </select>
+                                </Field>
+                                <Field label="Visit Type" span={3}>
+                                    <select className="mbp-select" style={inputStyle} value={visitType} onChange={(e) => setVisitType(e.target.value)}>
+                                        <option value="">-- Select Type --</option>
+                                        {VISIT_TYPES.map((v) => (
+                                            <option key={v}>{v}</option>
+                                        ))}
+                                    </select>
+                                </Field>
+                                <Field label="Bill Date" span={3}>
+                                    <input type="date" className="mbp-input" style={inputStyle} value={billDate} onChange={(e) => setBillDate(e.target.value)} />
+                                </Field>
+                                <Field label="Invoice Status" span={4}>
+                                    <select className="mbp-select" style={inputStyle} value={status} onChange={(e) => setStatus(e.target.value)}>
+                                        <option value="">-- Select Status --</option>
+                                        {STATUSES.map((s) => (
+                                            <option key={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                </Field>
+                            </div>
+                        </div>
 
-                            <div
-                                style={{
-                                    marginTop: 14,
-                                    borderRadius: 10,
-                                    padding: '10px 14px',
-                                    background: 'rgba(243,247,246,0.08)',
-                                    border: '1px solid rgba(243,247,246,0.14)',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    gap: 10,
-                                }}
-                            >
-                                <div>
-                                    <div style={{ fontSize: 11, opacity: 0.7 }}>Paid Amount</div>
+                        {/* Service & Pricing Details - Simplified without Rows */}
+                        <div style={cardStyle}>
+                            <div style={cardHeaderStyle}>
+                                <span style={cardTitleStyle}>
+                                    <span style={dot(SLATE)} /> Service & Pricing Details
+                                </span>
+                            </div>
+                            <div style={{ padding: 20 }} className="mbp-grid">
+                                <Field label="Treatment / Service Description" span={3}>
+                                    <input
+                                        className="mbp-input"
+                                        style={inputStyle}
+                                        placeholder="e.g. Spine Rehab, Chemical Peel..."
+                                        value={treatmentName}
+                                        onChange={(e) => setTreatmentName(e.target.value)}
+                                    />
+                                </Field>
+                                <Field label="Amount (₹)" span={3}>
                                     <input
                                         type="number"
                                         min={0}
-                                        value={paidAmount}
-                                        onChange={(e) => setPaidAmount(e.target.value)}
-                                        style={{
-                                            width: 110,
-                                            fontSize: 13,
-
-                                            padding: '6px 8px',
-                                            borderRadius: 6,
-                                            border: '1px solid rgba(243,247,246,0.25)',
-                                            background: 'rgba(255,255,255,0.06)',
-                                            color: '#fff',
-                                        }}
+                                        className="mbp-input"
+                                        style={inputStyle}
+                                        value={amount}
+                                        onChange={(e) => setAmount(Number(e.target.value) || 0)}
                                     />
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: 11, opacity: 0.7 }}>{balance > 0 ? 'Balance Due' : 'Change / Overpaid'}</div>
+                                </Field>
+                                <Field label="Discount (%)" span={3}>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={100}
+                                        className="mbp-input"
+                                        style={inputStyle}
+                                        value={discount}
+                                        onChange={(e) => setDiscount(Number(e.target.value) || 0)}
+                                    />
+                                </Field>
+                                <Field label="Tax (%)" span={3}>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={100}
+                                        className="mbp-input"
+                                        style={inputStyle}
+                                        value={tax}
+                                        onChange={(e) => setTax(Number(e.target.value) || 0)}
+                                    />
+                                </Field>
+                            </div>
+                        </div>
+
+                        <div className="mbp-grid">
+                            {/* Payment Summary */}
+                            <div style={{ gridColumn: 'span 5' }}>
+                                <div
+                                    style={{
+                                        // background: `linear-gradient(160deg, ${INK} 0%, ${TEAL_DEEP} 130%)`,
+                                        borderRadius: 14,
+                                        padding: '22px 22px 18px',
+                                        color: '#F3F7F6',
+                                        height: '100%',
+                                        boxShadow: '0 8px 24px rgba(26,26,46,0.15)',
+                                    }}
+                                >
+                                    <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, borderBottom: '1px solid rgba(243,247,246,0.12)', paddingBottom: 6 }}>
+                                        Payment Summary
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '7px 0', color: 'rgba(243,247,246,0.78)' }}>
+                                        <span>Base Price</span>
+                                        <span style={{ fontWeight: 600 }}>{currency(subTotal)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '7px 0', color: 'rgba(243,247,246,0.78)' }}>
+                                        <span>Discount Amount</span>
+                                        <span style={{ fontWeight: 600 }}>− {currency(totalDiscount)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '7px 0', color: 'rgba(243,247,246,0.78)' }}>
+                                        <span>Tax Amount</span>
+                                        <span style={{ fontWeight: 600 }}>+ {currency(totalTax)}</span>
+                                    </div>
                                     <div
                                         style={{
-
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            borderTop: '1px solid rgba(243,247,246,0.18)',
+                                            marginTop: 6,
+                                            paddingTop: 14,
+                                            fontSize: 19,
                                             fontWeight: 700,
-                                            fontSize: 16,
-                                            color: balance > 0 ? AMBER : '#8FE3C0',
+                                            color: '#fff',
                                         }}
                                     >
-                                        {currency(Math.abs(balance))}
+                                        <span>Grand Total</span>
+                                        <span>{currency(grandTotal)}</span>
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            marginTop: 14,
+                                            borderRadius: 10,
+                                            padding: '10px 14px',
+                                            background: 'rgba(243,247,246,0.08)',
+                                            border: '1px solid rgba(243,247,246,0.14)',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            gap: 10,
+                                        }}
+                                    >
+                                        <div>
+                                            <div
+                                                style={{
+                                                    fontSize: 11,
+                                                    opacity: 0.7,
+                                                    color: '#383636',
+                                                }}
+                                            >
+                                                Paid Amount
+                                            </div>
+
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                value={paidAmount}
+                                                onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
+                                                style={{
+                                                    width: 110,
+                                                    fontSize: 13,
+                                                    padding: '6px 8px',
+                                                    borderRadius: 6,
+                                                    border: '1px solid #ced4da',
+                                                    background: '#fff',
+                                                    color: '#212529',
+                                                    outline: 'none',
+                                                }}
+                                            />
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: 11, opacity: 0.7 }}>{balance > 0 ? 'Balance Due' : 'Change Due'}</div>
+                                            <div
+                                                style={{
+                                                    fontWeight: 700,
+                                                    fontSize: 16,
+                                                    color: balance > 0 ? AMBER : '#8FE3C0',
+                                                }}
+                                            >
+                                                {currency(Math.abs(balance))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Payment Details */}
+                            <div style={{ gridColumn: 'span 7' }}>
+                                <div style={{ ...cardStyle, height: '100%', marginBottom: 0 }}>
+                                    <div style={cardHeaderStyle}>
+                                        <span style={cardTitleStyle}>
+                                            <span style={dot(SAGE)} /> Payment Details
+                                        </span>
+                                    </div>
+                                    <div style={{ padding: 20 }} className="mbp-grid">
+                                        <Field label="Payment Mode" span={6}>
+                                            <select className="mbp-select" style={inputStyle} value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
+                                                {PAYMENT_MODES.map((m) => (
+                                                    <option key={m}>{m}</option>
+                                                ))}
+                                            </select>
+                                        </Field>
+                                        <Field label="Transaction ID" span={6}>
+                                            <input
+                                                className="mbp-input"
+                                                style={inputStyle}
+                                                placeholder="Transaction reference number"
+                                                value={transactionId}
+                                                onChange={(e) => setTransactionId(e.target.value)}
+                                            />
+                                        </Field>
+                                        <Field label="Remarks" span={12}>
+                                            <textarea
+                                                className="mbp-textarea"
+                                                rows={3}
+                                                style={{ ...inputStyle, resize: 'vertical' }}
+                                                placeholder="Enter payment logs or remarks"
+                                                value={remarks}
+                                                onChange={(e) => setRemarks(e.target.value)}
+                                            />
+                                        </Field>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Payment Details */}
-                    <div style={{ gridColumn: 'span 7' }}>
-                        <div style={{ ...cardStyle, height: '100%', marginBottom: 0 }}>
+                        {/* Additional Details */}
+                        <div style={{ ...cardStyle, marginTop: 20 }}>
                             <div style={cardHeaderStyle}>
                                 <span style={cardTitleStyle}>
-                                    <span style={dot(SAGE)} /> Payment Details
+                                    <span style={dot('#7A5AB8')} /> Additional Details
                                 </span>
                             </div>
                             <div style={{ padding: 20 }} className="mbp-grid">
-                                <Field label="Payment Mode" span={6}>
-                                    <select className="mbp-select" style={inputStyle} value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
-                                        {PAYMENT_MODES.map((m) => (
-                                            <option key={m}>{m}</option>
-                                        ))}
-                                    </select>
+                                <Field label="Billing Staff (Dynamic)" span={4}>
+                                    <input className="mbp-input" style={{ ...inputStyle, background: '#f8fafc' }} value={billingStaff} disabled />
                                 </Field>
-                                <Field label="Transaction ID" span={6}>
-                                    <input
-                                        className="mbp-input"
-                                        style={inputStyle}
-                                        placeholder="Optional"
-                                        value={transactionId}
-                                        onChange={(e) => setTransactionId(e.target.value)}
-                                    />
+                                <Field label="Public Notes (Prints on Bill)" span={4}>
+                                    <input className="mbp-input" style={inputStyle} value={notes} onChange={(e) => setNotes(e.target.value)} />
                                 </Field>
-                                <Field label="Remarks" span={12}>
-                                    <textarea
-                                        className="mbp-textarea"
-                                        rows={2}
-                                        style={{ ...inputStyle, resize: 'vertical' }}
-                                        placeholder="Any note for this payment"
-                                        value={remarks}
-                                        onChange={(e) => setRemarks(e.target.value)}
-                                    />
+                                <Field label="Internal Comments" span={4}>
+                                    <input className="mbp-input" style={inputStyle} value={internalComments} onChange={(e) => setInternalComments(e.target.value)} />
                                 </Field>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Additional Details */}
-                <div style={{ ...cardStyle, marginTop: 20 }}>
-                    <div style={cardHeaderStyle}>
-                        <span style={cardTitleStyle}>
-                            <span style={dot('#7A5AB8')} /> Additional Details
-                        </span>
+                        {/* Create Sticky actions */}
+                        <div
+                            style={{
+                                position: 'fixed',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                background: '#fff',
+                                borderTop: '1px solid rgba(14,42,50,0.1)',
+                                boxShadow: '0 -8px 24px rgba(14,42,50,0.08)',
+                                padding: '12px 16px',
+                                zIndex: 10,
+                            }}
+                        >
+                            <div className="mbp-actions-inner" style={{ maxWidth: 1180, margin: '0 auto' }}>
+                                <button className="mbp-btn" onClick={resetForm} style={{ ...btnBase, background: 'rgba(193,71,58,0.08)', color: CORAL, border: '1px solid rgba(193,71,58,0.28)' }}>
+                                    ✕ Reset Form
+                                </button>
+                                <button className="mbp-btn" disabled={isSaving} onClick={handleSaveBilling} style={{ ...btnBase, background: TEAL, color: '#fff' }}>
+                                    💾 {isSaving ? 'Saving & Printing...' : isEditMode ? 'Update & Print' : 'Save & Print'}
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    /* Billings History List View */
+                    <div style={cardStyle}>
+                        <div style={cardHeaderStyle}>
+                            <span style={cardTitleStyle}>
+                                <span style={dot(TEAL)} /> Invoice History
+                            </span>
+                            <span style={{ fontSize: 12, opacity: 0.7, fontWeight: 600 }}>{billingsList.length} bill(s) found</span>
+                        </div>
+                        <div style={{ padding: 20 }}>
+                            {isLoadingBillings ? (
+                                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                    <LoadingIndicator message="Loading Invoice Logs..." />
+                                </div>
+                            ) : billingsList.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: SLATE }}>
+                                    No invoices created yet. Go to "Create Invoice" to start.
+                                </div>
+                            ) : (
+                                <div className="mbp-table-scroll">
+                                    <table className="mbp-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Bill No.</th>
+                                                <th>Patient Name</th>
+                                                <th>Mobile</th>
+                                                <th>Date</th>
+                                                <th>Treatment</th>
+                                                <th>Grand Total</th>
+                                                <th>Paid</th>
+                                                <th>Balance</th>
+                                                <th>Status</th>
+                                                <th style={{ textAlign: 'center' }}>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {billingsList.map((b) => {
+                                                const svc = b.services?.[0] || {}
+                                                const st = b.invoiceStatus || b.status || 'Draft'
+                                                const stColor = st === 'Paid' ? { bg: '#eefdf4', color: '#16a34a', border: '#bbf7d0' }
+                                                    : st === 'Pending' || st === 'Partially Paid' ? { bg: '#fffaf0', color: '#d97706', border: '#fef3c7' }
+                                                        : { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' }
+
+                                                const fillAndPrint = () => {
+                                                    setBillNo(b.billingId)
+                                                    setPatientName(b.patient?.patientName || '')
+                                                    setMobile(b.patient?.mobileNumber || '')
+                                                    setTreatmentName(svc.serviceName || '')
+                                                    setDoctor(b.doctorId || '')
+                                                    setVisitType(b.visitType || '')
+                                                    setStatus(st)
+                                                    setBillDate(b.billDate || todayStr())
+                                                    setInvoiceDate(b.invoiceDate || todayStr())
+                                                    setAmount(svc.unitPrice || 0)
+                                                    setDiscount(svc.discountPercent || 0)
+                                                    setTax(svc.taxPercent || 0)
+                                                    setPaymentMode(b.payment?.paymentMode || '')
+                                                    setTransactionId(b.payment?.transactionId || '')
+                                                    setRemarks(b.payment?.remarks || '')
+                                                    setPaidAmount(b.payment?.paidAmount || 0)
+                                                    setBillingStaff(b.additionalDetails?.billingStaff || '')
+                                                    setNotes(b.additionalDetails?.notes || '')
+                                                    setInternalComments(b.additionalDetails?.internalComments || '')
+                                                }
+
+                                                return (
+                                                    <tr key={b.billingId}>
+                                                        <td style={{ fontWeight: 700, color: TEAL, whiteSpace: 'nowrap' }}>{b.billingId}</td>
+                                                        <td style={{ fontWeight: 600 }}>{b.patient?.patientName || '-'}</td>
+                                                        <td>{b.patient?.mobileNumber || '-'}</td>
+                                                        <td style={{ whiteSpace: 'nowrap' }}>{b.billDate}</td>
+                                                        <td>{svc.serviceName || '-'}</td>
+                                                        <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{currency(b.payment?.paidAmount + b.payment?.dueAmount)}</td>
+                                                        <td style={{ color: SAGE, fontWeight: 600, whiteSpace: 'nowrap' }}>{currency(b.payment?.paidAmount)}</td>
+                                                        <td style={{ color: Number(b.payment?.dueAmount) > 0 ? CORAL : INK, fontWeight: 600, whiteSpace: 'nowrap' }}>{currency(b.payment?.dueAmount)}</td>
+                                                        <td>
+                                                            <span style={{
+                                                                fontSize: '11px',
+                                                                fontWeight: 700,
+                                                                padding: '3px 9px',
+                                                                borderRadius: '12px',
+                                                                background: stColor.bg,
+                                                                color: stColor.color,
+                                                                border: `1px solid ${stColor.border}`,
+                                                                whiteSpace: 'nowrap',
+                                                                display: 'inline-block',
+                                                            }}>
+                                                                {st}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <div style={{ display: 'flex', gap: 5, justifyContent: 'center', flexWrap: 'nowrap' }}>
+                                                                <button
+                                                                    onClick={() => handleEditBilling(b.billingId)}
+                                                                    title="Edit"
+                                                                    style={{ border: 'none', background: `${TEAL}18`, color: TEAL_DEEP, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                                >
+                                                                    ✏ Edit
+                                                                </button>
+                                                                <button
+                                                                    title="Print"
+                                                                    onClick={() => { fillAndPrint(); setTimeout(() => handlePrint('printable-receipt'), 300) }}
+                                                                    style={{ border: 'none', background: '#f1f5f9', color: SLATE, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                                >
+                                                                    🖨 Print
+                                                                </button>
+                                                                <button
+                                                                    title="Download PDF"
+                                                                    onClick={() => { fillAndPrint(); setTimeout(() => handleDownloadPDF(), 300) }}
+                                                                    style={{ border: 'none', background: '#f0fdf4', color: SAGE, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                                >
+                                                                    ⬇ PDF
+                                                                </button>
+                                                                <button
+                                                                    title="Delete"
+                                                                    onClick={() => handleDeleteBilling(b.billingId)}
+                                                                    style={{ border: 'none', background: 'rgba(193,71,58,0.07)', color: CORAL, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                                >
+                                                                    🗑 Del
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <div style={{ padding: 20 }} className="mbp-grid">
-                        <Field label="Billing Staff" span={4}>
-                            <input className="mbp-input" style={inputStyle} value={billingStaff} onChange={(e) => setBillingStaff(e.target.value)} />
-                        </Field>
-                        <Field label="Notes" span={4}>
-                            <input className="mbp-input" style={inputStyle} value={notes} onChange={(e) => setNotes(e.target.value)} />
-                        </Field>
-                        <Field label="Internal Comments" span={4}>
-                            <input className="mbp-input" style={inputStyle} value={internalComments} onChange={(e) => setInternalComments(e.target.value)} />
-                        </Field>
-                    </div>
-                </div>
+                )}
             </div>
 
-            {/* Sticky actions */}
-            <div
-                style={{
-                    position: 'fixed',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    background: '#fff',
-                    borderTop: '1px solid rgba(14,42,50,0.1)',
-                    boxShadow: '0 -8px 24px rgba(14,42,50,0.08)',
-                    padding: '12px 16px',
-                    zIndex: 10,
+            {
+                toast && (
+                    <div
+                        style={{
+                            position: 'fixed',
+                            top: 16,
+                            right: 16,
+                            background: toast.error ? CORAL : INK,
+                            color: '#fff',
+                            padding: '10px 16px',
+                            borderRadius: 9,
+                            fontSize: 13,
+                            fontWeight: 500,
+                            boxShadow: '0 10px 24px rgba(0,0,0,0.2)',
+                            zIndex: 1000,
+                        }}
+                    >
+                        {toast.msg}
+                    </div>
+                )
+            }
+
+            {/* ── Hidden Printable Receipt ── */}
+            <div id="printable-receipt" style={{ display: 'none' }}>
+                <style>{`
+                    @media print {
+                        @page { margin: 15mm; }
+                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    }
+                    .printable-container {
+                        padding: 30px 40px;
+                        color: #1a1a2e;
+                        font-family: 'Inter', sans-serif;
+                        font-size: 12.5px;
+                        line-height: 1.45;
+                    }
+                    .invoice-header {
+                        text-align: center;
+                        margin-bottom: 20px;
+                        padding-bottom: 10px;
+                        border-bottom: 2.5px solid ${TEAL};
+                    }
+                    .invoice-title {
+                        margin: 0;
+                        font-size: 19px;
+                        font-weight: 700;
+                        color: ${TEAL};
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+                    .info-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 0;
+                        margin-bottom: 20px;
+                        border: 1px solid rgba(14,42,50,0.1);
+                        border-radius: 8px;
+                        background: #f7fafd;
+                        overflow: hidden;
+                    }
+                    .info-block {
+                        padding: 12px 16px;
+                    }
+                    .info-block-left {
+                        border-right: 1px solid rgba(14,42,50,0.1);
+                    }
+                    .info-block-title {
+                        margin: 0 0 2px;
+                        font-size: 9.5px;
+                        font-weight: 700;
+                        color: ${TEAL};
+                        text-transform: uppercase;
+                        letter-spacing: 0.8px;
+                    }
+                    .info-block-value {
+                        margin: 0 0 8px;
+                        font-size: 13.5px;
+                        font-weight: 700;
+                        color: ${INK};
+                    }
+                    .info-row {
+                        display: flex;
+                        margin-bottom: 2px;
+                    }
+                    .info-label {
+                        color: #64748b;
+                        width: 90px;
+                        font-size: 11px;
+                    }
+                    .info-val {
+                        font-weight: 600;
+                        color: ${INK};
+                        font-size: 11px;
+                    }
+                    .invoice-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 18px;
+                    }
+                    .invoice-table th {
+                        background: ${TEAL};
+                        color: #fff;
+                        font-weight: 600;
+                        font-size: 10.5px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        padding: 7px 9px;
+                        text-align: left;
+                    }
+                    .invoice-table td {
+                        padding: 8px 9px;
+                        border-bottom: 1px solid rgba(14,42,50,0.06);
+                        font-size: 11.5px;
+                        color: ${INK};
+                    }
+                    .invoice-totals {
+                        width: 250px;
+                        margin-left: auto;
+                        border: 1px solid rgba(14,42,50,0.1);
+                        border-radius: 8px;
+                        overflow: hidden;
+                        margin-bottom: 20px;
+                    }
+                    .totals-row {
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 7px 12px;
+                        font-size: 11.5px;
+                        border-bottom: 1px solid rgba(14,42,50,0.05);
+                    }
+                    .totals-row-grand {
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 9px 12px;
+                        font-size: 13px;
+                        font-weight: 700;
+                        background: ${TEAL}10;
+                        border-top: 2px solid ${TEAL};
+                        color: ${TEAL};
+                    }
+                `}</style>
+                <PrintLetterHead printDate={new Date(billDate)}>
+                    <div className="printable-container">
+                        <div className="invoice-header">
+                            <h2 className="invoice-title">INVOICE RECEIPT</h2>
+                            <span style={{ fontWeight: 600, color: '#64748b', fontSize: '12px' }}>Invoice No: {billNo}</span>
+                        </div>
+
+                        <div className="info-grid">
+                            <div className="info-block info-block-left">
+                                <p className="info-block-title">Patient Details</p>
+                                <p className="info-block-value">{patientName}</p>
+                                <div className="info-row">
+                                    <span className="info-label">Mobile</span>
+                                    <span className="info-val">: {mobile}</span>
+                                </div>
+                            </div>
+                            <div className="info-block">
+                                <p className="info-block-title">Billing & Treatment</p>
+                                <p className="info-block-value">{treatmentName || '-'}</p>
+                                <div className="info-row">
+                                    <span className="info-label">Doctor</span>
+                                    <span className="info-val">: {doctor}</span>
+                                </div>
+                                <div className="info-row">
+                                    <span className="info-label">Branch</span>
+                                    <span className="info-val">: {branch}</span>
+                                </div>
+                                <div className="info-row">
+                                    <span className="info-label">Date</span>
+                                    <span className="info-val">: {new Date(billDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <table className="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th style={{ width: '40px' }}>S.No</th>
+                                    <th>Service/Item Description</th>
+                                    <th style={{ width: '120px', textAlign: 'right' }}>Price</th>
+                                    <th style={{ width: '100px', textAlign: 'center' }}>Disc %</th>
+                                    <th style={{ width: '100px', textAlign: 'center' }}>Tax %</th>
+                                    <th style={{ width: '120px', textAlign: 'right' }}>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style={{ textAlign: 'center' }}>1</td>
+                                    <td style={{ fontWeight: 600 }}>{treatmentName || 'General Physiotherapy'}</td>
+                                    <td style={{ textAlign: 'right' }}>{currency(subTotal)}</td>
+                                    <td style={{ textAlign: 'center' }}>{discount}%</td>
+                                    <td style={{ textAlign: 'center' }}>{tax}%</td>
+                                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{currency(grandTotal)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '10px' }}>
+                            <div style={{ maxWidth: '340px' }}>
+                                <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Amount in Words</div>
+                                <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '11px', fontStyle: 'italic', lineHeight: 1.3 }}>
+                                    {amountInWords(grandTotal)}
+                                </div>
+
+                                {remarks && (
+                                    <div style={{ marginTop: '12px' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '2px' }}>Remarks</div>
+                                        <div style={{ color: '#475569', fontSize: '11px' }}>{remarks}</div>
+                                    </div>
+                                )}
+
+                                <div style={{ marginTop: '12px', display: 'flex', gap: '20px' }}>
+                                    <div>
+                                        <span style={{ fontSize: '10px', color: '#64748b', display: 'block' }}>Payment Mode</span>
+                                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#1e293b' }}>{paymentMode}</span>
+                                    </div>
+                                    {transactionId && (
+                                        <div>
+                                            <span style={{ fontSize: '10px', color: '#64748b', display: 'block' }}>Transaction ID</span>
+                                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#1e293b' }}>{transactionId}</span>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <span style={{ fontSize: '10px', color: '#64748b', display: 'block' }}>Status</span>
+                                        <span style={{
+                                            fontSize: '11px',
+                                            fontWeight: 700,
+                                            color: status === 'Paid' ? '#16a34a' : status === 'Pending' ? '#d97706' : '#2563eb'
+                                        }}>{status}</span>
+                                    </div>
+                                </div>
+                                {notes && (
+                                    <div style={{ marginTop: '12px' }}>
+                                        <span style={{ fontSize: '10px', color: '#64748b', display: 'block' }}>Notes</span>
+                                        <span style={{ fontSize: '11.5px', color: '#475569' }}>{notes}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="invoice-totals">
+                                <div className="totals-row">
+                                    <span style={{ color: '#64748b' }}>Sub Total</span>
+                                    <span style={{ fontWeight: 600 }}>{currency(subTotal)}</span>
+                                </div>
+                                <div className="totals-row">
+                                    <span style={{ color: '#64748b' }}>Discount</span>
+                                    <span style={{ fontWeight: 600, color: '#b91c1c' }}>- {currency(totalDiscount)}</span>
+                                </div>
+                                <div className="totals-row">
+                                    <span style={{ color: '#64748b' }}>Tax</span>
+                                    <span style={{ fontWeight: 600, color: '#15803d' }}>+ {currency(totalTax)}</span>
+                                </div>
+                                <div className="totals-row-grand">
+                                    <span>Grand Total</span>
+                                    <span>{currency(grandTotal)}</span>
+                                </div>
+                                <div className="totals-row" style={{ background: '#f8fafc' }}>
+                                    <span style={{ color: '#64748b' }}>Paid Amount</span>
+                                    <span style={{ fontWeight: 600 }}>{currency(paidAmount)}</span>
+                                </div>
+                                <div className="totals-row" style={{
+                                    borderTop: '1px solid rgba(14,42,50,0.1)',
+                                    background: balance > 0 ? '#fef2f2' : '#f0fdf4'
+                                }}>
+                                    <span style={{ fontWeight: 700, color: balance > 0 ? '#b91c1c' : '#15803d' }}>
+                                        {balance > 0 ? 'Balance Due' : 'Overpaid / Change'}
+                                    </span>
+                                    <span style={{ fontWeight: 700, color: balance > 0 ? '#b91c1c' : '#15803d' }}>
+                                        {currency(Math.abs(balance))}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '30px', paddingTop: '10px', borderTop: '1px dashed #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontSize: '10.5px', color: '#64748b' }}>
+                                Prepared By: {billingStaff || 'Front Desk'}
+                            </div>
+                            <div style={{ fontSize: '10.5px', color: '#64748b', fontStyle: 'italic' }}>
+                                This is a computer-generated invoice.
+                            </div>
+                        </div>
+                    </div>
+                </PrintLetterHead>
+            </div>
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isVisible={showDeleteConfirm}
+                title="Confirm Delete"
+                message="Are you sure you want to delete this invoice? This action cannot be undone."
+                confirmText="Yes, Delete"
+                confirmColor="danger"
+                onConfirm={confirmDeleteBilling}
+                onCancel={() => {
+                    setShowDeleteConfirm(false)
+                    setBillingToDelete(null)
                 }}
-            >
-                <div className="mbp-actions-inner" style={{ maxWidth: 1180, margin: '0 auto' }}>
-                    <button className="mbp-btn" onClick={() => showToast('Billing cancelled', true)} style={{ ...btnBase, background: 'rgba(193,71,58,0.08)', color: CORAL, border: '1px solid rgba(193,71,58,0.28)' }}>
-                        ✕ Cancel
-                    </button>
-                    <button className="mbp-btn" onClick={() => showToast('Bill saved as draft')} style={{ ...btnBase, background: MIST, color: INK, border: '1px solid rgba(14,42,50,0.14)' }}>
-                        💾 Save Draft
-                    </button>
-                    <button className="mbp-btn" onClick={() => window.print()} style={{ ...btnBase, background: '#fff', color: TEAL_DEEP, border: '1px solid rgba(20,107,94,0.35)' }}>
-                        🖨 Print Invoice
-                    </button>
-                    <button className="mbp-btn" onClick={() => showToast('Preparing PDF download…')} style={{ ...btnBase, background: '#fff', color: TEAL_DEEP, border: '1px solid rgba(20,107,94,0.35)' }}>
-                        ⬇ Download PDF
-                    </button>
-                    <button className="mbp-btn" onClick={() => showToast('Invoice sent via WhatsApp')} style={{ ...btnBase, background: '#fff', color: TEAL_DEEP, border: '1px solid rgba(20,107,94,0.35)' }}>
-                        📱 WhatsApp
-                    </button>
-                    <button className="mbp-btn" onClick={() => showToast('Invoice sent via email')} style={{ ...btnBase, background: '#fff', color: TEAL_DEEP, border: '1px solid rgba(20,107,94,0.35)' }}>
-                        ✉ Email
-                    </button>
-                    <button className="mbp-btn" onClick={() => showToast('Invoice generated')} style={{ ...btnBase, background: AMBER, color: INK }}>
-                        ✓ Generate Invoice
-                    </button>
-                </div>
-            </div>
-
-            {toast && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: 16,
-                        right: 16,
-                        background: toast.error ? CORAL : INK,
-                        color: '#fff',
-                        padding: '10px 16px',
-                        borderRadius: 9,
-                        fontSize: 13,
-                        fontWeight: 500,
-                        boxShadow: '0 10px 24px rgba(0,0,0,0.2)',
-                        zIndex: 50,
-                    }}
-                >
-                    {toast.msg}
-                </div>
-            )}
-        </div>
+            />
+        </div >
     )
 }
