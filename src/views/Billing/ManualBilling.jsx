@@ -10,6 +10,9 @@ import Select from 'react-select'
 import { http } from '../../Utils/Interceptors'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import LoadingIndicator from '../../Utils/loader'
+import { CTable, CTableHead, CTableBody, CTableRow, CTableHeaderCell, CTableDataCell } from '@coreui/react'
+import { Edit, Printer, Download, Trash } from 'lucide-react'
+import Pagination from '../../Utils/Pagination'
 
 // ---- Design tokens ----
 const INK = '#1a1a2e'
@@ -29,13 +32,13 @@ const STATUSES = ['Draft', 'Paid', 'Partially Paid', 'Pending', 'Cancelled', 'Re
 
 // Field wrapper — defined OUTSIDE the component to prevent remount on every render
 const labelStyle = {
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontWeight: 600,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: '#1a1a2e',
-    opacity: 0.55,
-    marginBottom: 6,
+    opacity: 0.7,
+    marginBottom: 8,
     display: 'block',
 }
 const Field = ({ label, children, span = 4 }) => (
@@ -93,15 +96,14 @@ export default function ManualBilling() {
     const [mobile, setMobile] = useState('')
 
     // Core billing fields
-    const [treatmentName, setTreatmentName] = useState('')
     const [doctor, setDoctor] = useState(doctorList[0] || '')
     const [branch, setBranch] = useState(branchList[0] || '')
     const [visitType, setVisitType] = useState('')
 
-    // Simplified Service details: single treatment service type, base price, discount, tax
-    const [amount, setAmount] = useState('')
-    const [discount, setDiscount] = useState('')  // percentage
-    const [tax, setTax] = useState('')  // percentage
+    // Multiple Services State
+    const [services, setServices] = useState([
+        { id: Date.now(), serviceName: '', unitPrice: '', discountPercent: '', taxPercent: '' }
+    ])
 
     // Payment Info
     const [paymentMode, setPaymentMode] = useState('')
@@ -126,6 +128,14 @@ export default function ManualBilling() {
     const [isLoadingAppointments, setIsLoadingAppointments] = useState(false)
     const [billingsList, setBillingsList] = useState([])
     const [isLoadingBillings, setIsLoadingBillings] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(10)
+
+    const paginatedBillings = useMemo(() => {
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        return billingsList.slice(start, end);
+    }, [billingsList, currentPage, rowsPerPage]);
 
     const [toast, setToast] = useState(null) // { msg, error }
     const [isDownloading, setIsDownloading] = useState(false)
@@ -157,7 +167,7 @@ export default function ManualBilling() {
 
                 // Filter for "in-progress" and "completed"
                 const filtered = data.filter(b =>
-                    ['in-progress', 'completed'].includes((b.status || '').toLowerCase())
+                    ['in-progress', 'completed',].includes((b.status || '').toLowerCase())
                 )
                 setAppointments(filtered)
             } catch (err) {
@@ -212,11 +222,23 @@ export default function ManualBilling() {
     }
 
     // Calculations
-    const subTotal = Number(amount) || 0
-    const totalDiscount = subTotal * ((Number(discount) || 0) / 100)
-    const taxableAmount = subTotal - totalDiscount
-    const totalTax = taxableAmount * ((Number(tax) || 0) / 100)
-    const grandTotal = taxableAmount + totalTax
+    const { subTotal, totalDiscount, totalTax, grandTotal } = useMemo(() => {
+        let st = 0;
+        let td = 0;
+        let tt = 0;
+        services.forEach(s => {
+            const price = Number(s.unitPrice) || 0;
+            const disc = price * ((Number(s.discountPercent) || 0) / 100);
+            const taxable = price - disc;
+            const taxAmt = taxable * ((Number(s.taxPercent) || 0) / 100);
+            st += price;
+            td += disc;
+            tt += taxAmt;
+        });
+        const gt = st - td + tt;
+        return { subTotal: st, totalDiscount: td, totalTax: tt, grandTotal: gt };
+    }, [services]);
+
     const balance = grandTotal - (Number(paidAmount) || 0)
 
     const resetForm = () => {
@@ -229,13 +251,10 @@ export default function ManualBilling() {
         setSelectedAppointmentOption(null)
         setPatientName('')
         setMobile('')
-        setTreatmentName('')
+        setServices([{ id: Date.now(), serviceName: '', unitPrice: '', discountPercent: '', taxPercent: '' }])
         setDoctor(doctorList[0] || '')
         setBranch(branchList[0] || '')
         setVisitType('')
-        setAmount('')
-        setDiscount('')
-        setTax('')
         setPaymentMode('')
         setTransactionId('')
         setRemarks('')
@@ -260,11 +279,16 @@ export default function ManualBilling() {
         setMobile(b.mobileNumber || b.patientMobileNumber || b.mobile || '')
         if (b.doctorName || b.doctor) setDoctor(b.doctorName || b.doctor)
         if (b.branchName || b.branch) setBranch(b.branchName || b.branch)
-        if (b.serviceName || b.treatmentName) setTreatmentName(b.serviceName || b.treatmentName)
         if (b.visitType) setVisitType(b.visitType)
-        if (b.amount || b.price || b.totalAmount) {
+        if (b.serviceName || b.treatmentName || b.amount || b.price || b.totalAmount) {
             const val = Number(b.amount || b.price || b.totalAmount) || 0
-            setAmount(val)
+            setServices([{
+                id: Date.now(),
+                serviceName: b.serviceName || b.treatmentName || '',
+                unitPrice: val,
+                discountPercent: '',
+                taxPercent: ''
+            }])
             setPaidAmount(val)
         }
         showToast('Form pre-filled from appointment!')
@@ -298,15 +322,13 @@ export default function ManualBilling() {
                 visitType,
                 billDate,
                 invoiceDate,
-                services: [
-                    {
-                        serviceName: treatmentName,
-                        qty: 1,
-                        unitPrice: Number(amount) || 0,
-                        discountPercent: Number(discount) || 0,
-                        taxPercent: Number(tax) || 0,
-                    }
-                ],
+                services: services.map(s => ({
+                    serviceName: s.serviceName,
+                    qty: 1,
+                    unitPrice: Number(s.unitPrice) || 0,
+                    discountPercent: Number(s.discountPercent) || 0,
+                    taxPercent: Number(s.taxPercent) || 0,
+                })),
                 payment: {
                     paymentMode,
                     transactionId,
@@ -351,21 +373,27 @@ export default function ManualBilling() {
             const res = await http.get(`/getBillingById/${bId}`)
             const data = res?.data?.data || res?.data
             if (data) {
-                const svc = data.services?.[0] || {}
                 setEditBillingId(data.billingId)
                 setBillNo(data.billingId)
                 setIsEditMode(true)
                 setPatientName(data.patient?.patientName || '')
                 setMobile(data.patient?.mobileNumber || '')
-                setTreatmentName(svc.serviceName || '')
+                if (data.services && data.services.length > 0) {
+                    setServices(data.services.map((s, idx) => ({
+                        id: Date.now() + idx,
+                        serviceName: s.serviceName || '',
+                        unitPrice: s.unitPrice || '',
+                        discountPercent: s.discountPercent || '',
+                        taxPercent: s.taxPercent || ''
+                    })))
+                } else {
+                    setServices([{ id: Date.now(), serviceName: '', unitPrice: '', discountPercent: '', taxPercent: '' }])
+                }
                 setDoctor(data.doctorId || '')
                 setVisitType(data.visitType || '')
                 setStatus(data.invoiceStatus || 'Draft')
                 setBillDate(data.billDate || todayStr())
                 setInvoiceDate(data.invoiceDate || todayStr())
-                setAmount(svc.unitPrice || 0)
-                setDiscount(svc.discountPercent || 0)
-                setTax(svc.taxPercent || 0)
                 setPaymentMode(data.payment?.paymentMode || '')
                 setTransactionId(data.payment?.transactionId || '')
                 setRemarks(data.payment?.remarks || '')
@@ -514,8 +542,8 @@ export default function ManualBilling() {
 
     const inputStyle = {
         width: '100%',
-        fontSize: 13.5,
-        padding: '9px 12px',
+        fontSize: 14.5,
+        padding: '10px 14px',
         border: '1px solid rgba(14,42,50,0.16)',
         borderRadius: 8,
         background: '#fff',
@@ -569,7 +597,7 @@ export default function ManualBilling() {
     // Field is defined at module level (outside component) to avoid remount on re-render
 
     return (
-        <div style={{ background: MIST, minHeight: '100vh', color: INK, paddingBottom: 100 }}>
+        <div style={{ background: 'transparent', minHeight: '100vh', color: INK, paddingBottom: 100 }}>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
                 * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -759,55 +787,106 @@ export default function ManualBilling() {
                             </div>
                         </div>
 
-                        {/* Service & Pricing Details - Simplified without Rows */}
+                        {/* Service & Pricing Details - Multiple Rows */}
                         <div style={cardStyle}>
                             <div style={cardHeaderStyle}>
                                 <span style={cardTitleStyle}>
                                     <span style={dot(SLATE)} /> Service & Pricing Details
                                 </span>
+                                <button
+                                    className="mbp-btn"
+                                    style={{ ...btnBase, background: `${TEAL}22`, color: TEAL_DEEP, padding: '5px 12px', fontSize: 13 }}
+                                    onClick={() => setServices([...services, { id: Date.now(), serviceName: '', unitPrice: '', discountPercent: '', taxPercent: '' }])}
+                                >
+                                    + Add Row
+                                </button>
                             </div>
-                            <div style={{ padding: 20 }} className="mbp-grid">
-                                <Field label="Treatment / Service Description" span={3}>
-                                    <input
-                                        className="mbp-input"
-                                        style={inputStyle}
-                                        placeholder="e.g. Spine Rehab, Chemical Peel..."
-                                        value={treatmentName}
-                                        onChange={(e) => setTreatmentName(e.target.value)}
-                                    />
-                                </Field>
-                                <Field label="Amount (₹)" span={3}>
-                                    <input
-                                        type="number"
-                                        min={0}
-                                        className="mbp-input"
-                                        style={inputStyle}
-                                        value={amount}
-                                        onChange={(e) => setAmount(Number(e.target.value) || 0)}
-                                    />
-                                </Field>
-                                <Field label="Discount (%)" span={3}>
-                                    <input
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        className="mbp-input"
-                                        style={inputStyle}
-                                        value={discount}
-                                        onChange={(e) => setDiscount(Number(e.target.value) || 0)}
-                                    />
-                                </Field>
-                                <Field label="Tax (%)" span={3}>
-                                    <input
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        className="mbp-input"
-                                        style={inputStyle}
-                                        value={tax}
-                                        onChange={(e) => setTax(Number(e.target.value) || 0)}
-                                    />
-                                </Field>
+                            <div style={{ padding: 20 }}>
+                                <CTable striped responsive>
+                                    <CTableHead className="pink-table">
+                                        <CTableRow>
+                                            <CTableHeaderCell>Service Description</CTableHeaderCell>
+                                            <CTableHeaderCell>Amount (₹)</CTableHeaderCell>
+                                            <CTableHeaderCell>Discount (%)</CTableHeaderCell>
+                                            <CTableHeaderCell>Tax (%)</CTableHeaderCell>
+                                            <CTableHeaderCell className="text-center">Action</CTableHeaderCell>
+                                        </CTableRow>
+                                    </CTableHead>
+                                    <CTableBody>
+                                        {services.map((s, idx) => (
+                                            <CTableRow key={s.id} className="align-middle">
+                                                <CTableDataCell>
+                                                    <input
+                                                        className="mbp-input"
+                                                        style={inputStyle}
+                                                        placeholder="e.g. Spine Rehab"
+                                                        value={s.serviceName}
+                                                        onChange={(e) => {
+                                                            const newS = [...services];
+                                                            newS[idx].serviceName = e.target.value;
+                                                            setServices(newS);
+                                                        }}
+                                                    />
+                                                </CTableDataCell>
+                                                <CTableDataCell>
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        className="mbp-input"
+                                                        style={inputStyle}
+                                                        value={s.unitPrice}
+                                                        onChange={(e) => {
+                                                            const newS = [...services];
+                                                            newS[idx].unitPrice = e.target.value;
+                                                            setServices(newS);
+                                                        }}
+                                                    />
+                                                </CTableDataCell>
+                                                <CTableDataCell>
+                                                    <input
+                                                        type="number"
+                                                        min={0} max={100}
+                                                        className="mbp-input"
+                                                        style={inputStyle}
+                                                        value={s.discountPercent}
+                                                        onChange={(e) => {
+                                                            const newS = [...services];
+                                                            newS[idx].discountPercent = e.target.value;
+                                                            setServices(newS);
+                                                        }}
+                                                    />
+                                                </CTableDataCell>
+                                                <CTableDataCell>
+                                                    <input
+                                                        type="number"
+                                                        min={0} max={100}
+                                                        className="mbp-input"
+                                                        style={inputStyle}
+                                                        value={s.taxPercent}
+                                                        onChange={(e) => {
+                                                            const newS = [...services];
+                                                            newS[idx].taxPercent = e.target.value;
+                                                            setServices(newS);
+                                                        }}
+                                                    />
+                                                </CTableDataCell>
+                                                <CTableDataCell className="text-center">
+                                                    <button
+                                                        onClick={() => {
+                                                            if (services.length > 1) {
+                                                                setServices(services.filter((_, i) => i !== idx));
+                                                            }
+                                                        }}
+                                                        style={{ border: 'none', background: 'rgba(193,71,58,0.1)', color: CORAL, padding: '8px', borderRadius: 6, cursor: services.length > 1 ? 'pointer' : 'not-allowed', opacity: services.length > 1 ? 1 : 0.5 }}
+                                                        disabled={services.length <= 1}
+                                                    >
+                                                        <Trash size={16} />
+                                                    </button>
+                                                </CTableDataCell>
+                                            </CTableRow>
+                                        ))}
+                                    </CTableBody>
+                                </CTable>
                             </div>
                         </div>
 
@@ -986,6 +1065,18 @@ export default function ManualBilling() {
                             }}
                         >
                             <div className="mbp-actions-inner" style={{ maxWidth: 1180, margin: '0 auto' }}>
+                                {isEditMode && (
+                                    <button
+                                        className="mbp-btn"
+                                        onClick={() => {
+                                            resetForm();
+                                            setViewMode('list');
+                                        }}
+                                        style={{ ...btnBase, background: '#f8fafc', color: SLATE, border: '1px solid #e2e8f0' }}
+                                    >
+                                        Cancel Edit
+                                    </button>
+                                )}
                                 <button className="mbp-btn" onClick={resetForm} style={{ ...btnBase, background: 'rgba(193,71,58,0.08)', color: CORAL, border: '1px solid rgba(193,71,58,0.28)' }}>
                                     ✕ Reset Form
                                 </button>
@@ -1015,23 +1106,23 @@ export default function ManualBilling() {
                                 </div>
                             ) : (
                                 <div className="mbp-table-scroll">
-                                    <table className="mbp-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Bill No.</th>
-                                                <th>Patient Name</th>
-                                                <th>Mobile</th>
-                                                <th>Date</th>
-                                                <th>Treatment</th>
-                                                <th>Grand Total</th>
-                                                <th>Paid</th>
-                                                <th>Balance</th>
-                                                <th>Status</th>
-                                                <th style={{ textAlign: 'center' }}>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {billingsList.map((b) => {
+                                    <CTable striped hover responsive>
+                                        <CTableHead className="pink-table w-auto">
+                                            <CTableRow>
+                                                <CTableHeaderCell>Bill No.</CTableHeaderCell>
+                                                <CTableHeaderCell>Patient Name</CTableHeaderCell>
+                                                <CTableHeaderCell>Mobile</CTableHeaderCell>
+                                                <CTableHeaderCell>Date</CTableHeaderCell>
+                                                <CTableHeaderCell>Treatment</CTableHeaderCell>
+                                                <CTableHeaderCell>Grand Total</CTableHeaderCell>
+                                                <CTableHeaderCell>Paid</CTableHeaderCell>
+                                                <CTableHeaderCell>Balance</CTableHeaderCell>
+                                                <CTableHeaderCell>Status</CTableHeaderCell>
+                                                <CTableHeaderCell className="text-center">Actions</CTableHeaderCell>
+                                            </CTableRow>
+                                        </CTableHead>
+                                        <CTableBody>
+                                            {paginatedBillings.map((b) => {
                                                 const svc = b.services?.[0] || {}
                                                 const st = b.invoiceStatus || b.status || 'Draft'
                                                 const stColor = st === 'Paid' ? { bg: '#eefdf4', color: '#16a34a', border: '#bbf7d0' }
@@ -1042,15 +1133,22 @@ export default function ManualBilling() {
                                                     setBillNo(b.billingId)
                                                     setPatientName(b.patient?.patientName || '')
                                                     setMobile(b.patient?.mobileNumber || '')
-                                                    setTreatmentName(svc.serviceName || '')
+                                                    if (b.services && b.services.length > 0) {
+                                                        setServices(b.services.map((s, i) => ({
+                                                            id: Date.now() + i,
+                                                            serviceName: s.serviceName || '',
+                                                            unitPrice: s.unitPrice || '',
+                                                            discountPercent: s.discountPercent || '',
+                                                            taxPercent: s.taxPercent || ''
+                                                        })))
+                                                    } else {
+                                                        setServices([{ id: Date.now(), serviceName: '', unitPrice: '', discountPercent: '', taxPercent: '' }])
+                                                    }
                                                     setDoctor(b.doctorId || '')
                                                     setVisitType(b.visitType || '')
                                                     setStatus(st)
                                                     setBillDate(b.billDate || todayStr())
                                                     setInvoiceDate(b.invoiceDate || todayStr())
-                                                    setAmount(svc.unitPrice || 0)
-                                                    setDiscount(svc.discountPercent || 0)
-                                                    setTax(svc.taxPercent || 0)
                                                     setPaymentMode(b.payment?.paymentMode || '')
                                                     setTransactionId(b.payment?.transactionId || '')
                                                     setRemarks(b.payment?.remarks || '')
@@ -1061,16 +1159,16 @@ export default function ManualBilling() {
                                                 }
 
                                                 return (
-                                                    <tr key={b.billingId}>
-                                                        <td style={{ fontWeight: 700, color: TEAL, whiteSpace: 'nowrap' }}>{b.billingId}</td>
-                                                        <td style={{ fontWeight: 600 }}>{b.patient?.patientName || '-'}</td>
-                                                        <td>{b.patient?.mobileNumber || '-'}</td>
-                                                        <td style={{ whiteSpace: 'nowrap' }}>{b.billDate}</td>
-                                                        <td>{svc.serviceName || '-'}</td>
-                                                        <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{currency(b.payment?.paidAmount + b.payment?.dueAmount)}</td>
-                                                        <td style={{ color: SAGE, fontWeight: 600, whiteSpace: 'nowrap' }}>{currency(b.payment?.paidAmount)}</td>
-                                                        <td style={{ color: Number(b.payment?.dueAmount) > 0 ? CORAL : INK, fontWeight: 600, whiteSpace: 'nowrap' }}>{currency(b.payment?.dueAmount)}</td>
-                                                        <td>
+                                                    <CTableRow key={b.billingId} className="pink-table">
+                                                        <CTableDataCell style={{ fontWeight: 700, color: TEAL, whiteSpace: 'nowrap' }}>{b.billingId}</CTableDataCell>
+                                                        <CTableDataCell style={{ fontWeight: 600 }}>{b.patient?.patientName || '-'}</CTableDataCell>
+                                                        <CTableDataCell>{b.patient?.mobileNumber || '-'}</CTableDataCell>
+                                                        <CTableDataCell style={{ whiteSpace: 'nowrap' }}>{b.billDate}</CTableDataCell>
+                                                        <CTableDataCell>{svc.serviceName || '-'}</CTableDataCell>
+                                                        <CTableDataCell style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{currency(b.payment?.paidAmount + b.payment?.dueAmount)}</CTableDataCell>
+                                                        <CTableDataCell style={{ color: SAGE, fontWeight: 600, whiteSpace: 'nowrap' }}>{currency(b.payment?.paidAmount)}</CTableDataCell>
+                                                        <CTableDataCell style={{ color: Number(b.payment?.dueAmount) > 0 ? CORAL : INK, fontWeight: 600, whiteSpace: 'nowrap' }}>{currency(b.payment?.dueAmount)}</CTableDataCell>
+                                                        <CTableDataCell>
                                                             <span style={{
                                                                 fontSize: '11px',
                                                                 fontWeight: 700,
@@ -1084,44 +1182,56 @@ export default function ManualBilling() {
                                                             }}>
                                                                 {st}
                                                             </span>
-                                                        </td>
-                                                        <td style={{ textAlign: 'center' }}>
+                                                        </CTableDataCell>
+                                                        <CTableDataCell className="text-center">
                                                             <div style={{ display: 'flex', gap: 5, justifyContent: 'center', flexWrap: 'nowrap' }}>
                                                                 <button
                                                                     onClick={() => handleEditBilling(b.billingId)}
                                                                     title="Edit"
-                                                                    style={{ border: 'none', background: `${TEAL}18`, color: TEAL_DEEP, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                                    style={{ border: 'none', background: `${TEAL}18`, color: TEAL_DEEP, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}
                                                                 >
-                                                                    ✏ Edit
+                                                                    <Edit size={14} style={{ marginRight: 4 }} /> Edit
                                                                 </button>
                                                                 <button
                                                                     title="Print"
                                                                     onClick={() => { fillAndPrint(); setTimeout(() => handlePrint('printable-receipt'), 300) }}
-                                                                    style={{ border: 'none', background: '#f1f5f9', color: SLATE, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                                    style={{ border: 'none', background: '#f1f5f9', color: SLATE, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}
                                                                 >
-                                                                    🖨 Print
+                                                                    <Printer size={14} style={{ marginRight: 4 }} /> Print
                                                                 </button>
                                                                 <button
                                                                     title="Download PDF"
                                                                     onClick={() => { fillAndPrint(); setTimeout(() => handleDownloadPDF(), 300) }}
-                                                                    style={{ border: 'none', background: '#f0fdf4', color: SAGE, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                                    style={{ border: 'none', background: '#f0fdf4', color: SAGE, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}
                                                                 >
-                                                                    ⬇ PDF
+                                                                    <Download size={14} style={{ marginRight: 4 }} /> PDF
                                                                 </button>
                                                                 <button
                                                                     title="Delete"
                                                                     onClick={() => handleDeleteBilling(b.billingId)}
-                                                                    style={{ border: 'none', background: 'rgba(193,71,58,0.07)', color: CORAL, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                                    style={{ border: 'none', background: 'rgba(193,71,58,0.07)', color: CORAL, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}
                                                                 >
-                                                                    🗑 Del
+                                                                    <Trash size={14} style={{ marginRight: 4 }} /> Del
                                                                 </button>
                                                             </div>
-                                                        </td>
-                                                    </tr>
+                                                        </CTableDataCell>
+                                                    </CTableRow>
                                                 )
                                             })}
-                                        </tbody>
-                                    </table>
+                                        </CTableBody>
+                                    </CTable>
+
+                                    {billingsList.length > 0 && (
+                                        <div style={{ marginTop: 20 }}>
+                                            <Pagination
+                                                currentPage={currentPage}
+                                                totalPages={Math.ceil(billingsList.length / rowsPerPage)}
+                                                pageSize={rowsPerPage}
+                                                onPageChange={setCurrentPage}
+                                                onPageSizeChange={setRowsPerPage}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -1288,7 +1398,7 @@ export default function ManualBilling() {
                             </div>
                             <div className="info-block">
                                 <p className="info-block-title">Billing & Treatment</p>
-                                <p className="info-block-value">{treatmentName || '-'}</p>
+                                <p className="info-block-value">{services.map(s => s.serviceName).filter(Boolean).join(', ') || '-'}</p>
                                 <div className="info-row">
                                     <span className="info-label">Doctor</span>
                                     <span className="info-val">: {doctor}</span>
@@ -1316,14 +1426,22 @@ export default function ManualBilling() {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td style={{ textAlign: 'center' }}>1</td>
-                                    <td style={{ fontWeight: 600 }}>{treatmentName || 'General Physiotherapy'}</td>
-                                    <td style={{ textAlign: 'right' }}>{currency(subTotal)}</td>
-                                    <td style={{ textAlign: 'center' }}>{discount}%</td>
-                                    <td style={{ textAlign: 'center' }}>{tax}%</td>
-                                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{currency(grandTotal)}</td>
-                                </tr>
+                                {services.map((s, idx) => {
+                                    const price = Number(s.unitPrice) || 0;
+                                    const disc = price * ((Number(s.discountPercent) || 0) / 100);
+                                    const taxAmt = (price - disc) * ((Number(s.taxPercent) || 0) / 100);
+                                    const total = price - disc + taxAmt;
+                                    return (
+                                        <tr key={s.id || idx}>
+                                            <td style={{ textAlign: 'center' }}>{idx + 1}</td>
+                                            <td style={{ fontWeight: 600 }}>{s.serviceName || '-'}</td>
+                                            <td style={{ textAlign: 'right' }}>{currency(price)}</td>
+                                            <td style={{ textAlign: 'center' }}>{s.discountPercent || 0}%</td>
+                                            <td style={{ textAlign: 'center' }}>{s.taxPercent || 0}%</td>
+                                            <td style={{ textAlign: 'right', fontWeight: 600 }}>{currency(total)}</td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
 

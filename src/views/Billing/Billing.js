@@ -331,7 +331,7 @@ export default function Billing() {
               </p>
             </CCol>
             {/* TODO: deploymenet next Underworking */}
-            {/* <CCol xs={12} md={4} lg={4} xl={3} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <CCol xs={12} md={4} lg={4} xl={3} style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => navigate('/manual-billing')}
                 style={{
@@ -361,7 +361,7 @@ export default function Billing() {
                 </svg>
                 Create Manual Bill
               </button>
-            </CCol> */}
+            </CCol>
           </>
         )}
       </CRow>
