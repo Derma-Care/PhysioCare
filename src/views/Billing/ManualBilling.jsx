@@ -106,7 +106,7 @@ export default function ManualBilling() {
     ])
 
     // Payment Info
-    const [paymentMode, setPaymentMode] = useState('')
+    const [paymentMode, setPaymentMode] = useState(PAYMENT_MODES[0])
     const [transactionId, setTransactionId] = useState('')
     const [remarks, setRemarks] = useState('')
     const [paidAmount, setPaidAmount] = useState('')
@@ -130,6 +130,7 @@ export default function ManualBilling() {
     const [isLoadingBillings, setIsLoadingBillings] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(10)
+    const [errors, setErrors] = useState({})
 
     const paginatedBillings = useMemo(() => {
         const start = (currentPage - 1) * rowsPerPage;
@@ -255,12 +256,13 @@ export default function ManualBilling() {
         setDoctor(doctorList[0] || '')
         setBranch(branchList[0] || '')
         setVisitType('')
-        setPaymentMode('')
+        setPaymentMode(PAYMENT_MODES[0])
         setTransactionId('')
         setRemarks('')
         setPaidAmount('')
         setNotes('')
         setInternalComments('')
+        setErrors({})
     }
 
     // Appointment Selection Handler
@@ -296,14 +298,36 @@ export default function ManualBilling() {
 
     // CRUD - Create & Update
     const handleSaveBilling = async () => {
-        if (!patientName.trim()) {
-            showToast('Patient Name is required', true)
+        const newErrs = {}
+        if (!patientName.trim()) newErrs.patientName = 'Patient Name is required'
+        if (!mobile.trim() || mobile.length < 10) newErrs.mobile = 'Valid Mobile Number is required'
+        if (!doctor) newErrs.doctor = 'Doctor Name is required'
+        if (!branch) newErrs.branch = 'Branch is required'
+        if (!visitType) newErrs.visitType = 'Visit Type is required'
+        if (!status) newErrs.status = 'Invoice Status is required'
+        
+        if (!services || services.length === 0) {
+            showToast('At least one service is required', true)
             return
         }
-        if (!mobile.trim()) {
-            showToast('Mobile Number is required', true)
+        let servicesValid = true
+        for (let i = 0; i < services.length; i++) {
+            if (!services[i].serviceName.trim() || services[i].unitPrice === '' || Number(services[i].unitPrice) < 0) {
+                servicesValid = false
+            }
+        }
+        if (!servicesValid) newErrs.services = 'Service description and valid amount are required for all rows'
+
+        if (!paymentMode) newErrs.paymentMode = 'Payment Mode is required'
+        if (paidAmount === '' || Number(paidAmount) < 0) newErrs.paidAmount = 'Valid Paid Amount is required'
+
+        if (Object.keys(newErrs).length > 0) {
+            setErrors(newErrs)
+            showToast('Please fix the highlighted errors', true)
             return
         }
+        setErrors({})
+
         setIsSaving(true)
         try {
             const cId = sessionStorage.getItem('HospitalId') || '0001'
@@ -540,16 +564,18 @@ export default function ManualBilling() {
         }
     }
 
-    const inputStyle = {
+    const inputStyle = (hasError = false) => ({
         width: '100%',
         fontSize: 14.5,
         padding: '10px 14px',
-        border: '1px solid rgba(14,42,50,0.16)',
+        border: `1px solid ${hasError ? CORAL : 'rgba(14,42,50,0.16)'}`,
         borderRadius: 8,
         background: '#fff',
         color: INK,
         outline: 'none',
-    }
+    })
+
+    const ErrorLabel = ({ msg }) => msg ? <div style={{ color: CORAL, fontSize: 11, marginTop: 4, fontWeight: 500 }}>{msg}</div> : null
 
     const cardStyle = {
         background: '#fff',
@@ -733,10 +759,12 @@ export default function ManualBilling() {
                             </div>
                             <div style={{ padding: 20 }} className="mbp-grid">
                                 <Field label="Patient Name" span={6}>
-                                    <input className="mbp-input" style={inputStyle} placeholder="Enter patient full name" value={patientName} onChange={(e) => setPatientName(e.target.value)} />
+                                    <input className="mbp-input" style={inputStyle(errors.patientName)} placeholder="Enter patient full name" value={patientName} onChange={(e) => { setPatientName(e.target.value); if(errors.patientName) setErrors({...errors, patientName: null}) }} />
+                                    <ErrorLabel msg={errors.patientName} />
                                 </Field>
                                 <Field label="Mobile Number" span={6}>
-                                    <input className="mbp-input" style={inputStyle} placeholder="10-digit mobile number" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+                                    <input className="mbp-input" style={inputStyle(errors.mobile)} placeholder="10-digit mobile number" value={mobile} onChange={(e) => { setMobile(e.target.value); if(errors.mobile) setErrors({...errors, mobile: null}) }} />
+                                    <ErrorLabel msg={errors.mobile} />
                                 </Field>
                             </div>
                         </div>
@@ -750,39 +778,43 @@ export default function ManualBilling() {
                             </div>
                             <div style={{ padding: 20 }} className="mbp-grid">
                                 <Field label="Doctor Name" span={3}>
-                                    <select className="mbp-select" style={inputStyle} value={doctor} onChange={(e) => setDoctor(e.target.value)}>
+                                    <select className="mbp-select" style={inputStyle(errors.doctor)} value={doctor} onChange={(e) => { setDoctor(e.target.value); if(errors.doctor) setErrors({...errors, doctor: null}) }}>
                                         <option value="">-- Select Doctor --</option>
                                         {doctorList.map((d) => (
                                             <option key={d}>{d}</option>
                                         ))}
                                     </select>
+                                    <ErrorLabel msg={errors.doctor} />
                                 </Field>
                                 <Field label="Branch" span={3}>
-                                    <select className="mbp-select" style={inputStyle} value={branch} onChange={(e) => setBranch(e.target.value)}>
+                                    <select className="mbp-select" style={inputStyle(errors.branch)} value={branch} onChange={(e) => { setBranch(e.target.value); if(errors.branch) setErrors({...errors, branch: null}) }}>
                                         <option value="">-- Select Branch --</option>
                                         {branchList.map((b) => (
                                             <option key={b}>{b}</option>
                                         ))}
                                     </select>
+                                    <ErrorLabel msg={errors.branch} />
                                 </Field>
                                 <Field label="Visit Type" span={3}>
-                                    <select className="mbp-select" style={inputStyle} value={visitType} onChange={(e) => setVisitType(e.target.value)}>
+                                    <select className="mbp-select" style={inputStyle(errors.visitType)} value={visitType} onChange={(e) => { setVisitType(e.target.value); if(errors.visitType) setErrors({...errors, visitType: null}) }}>
                                         <option value="">-- Select Type --</option>
                                         {VISIT_TYPES.map((v) => (
                                             <option key={v}>{v}</option>
                                         ))}
                                     </select>
+                                    <ErrorLabel msg={errors.visitType} />
                                 </Field>
                                 <Field label="Bill Date" span={3}>
-                                    <input type="date" className="mbp-input" style={inputStyle} value={billDate} onChange={(e) => setBillDate(e.target.value)} />
+                                    <input type="date" className="mbp-input" style={inputStyle()} value={billDate} onChange={(e) => setBillDate(e.target.value)} />
                                 </Field>
                                 <Field label="Invoice Status" span={4}>
-                                    <select className="mbp-select" style={inputStyle} value={status} onChange={(e) => setStatus(e.target.value)}>
+                                    <select className="mbp-select" style={inputStyle(errors.status)} value={status} onChange={(e) => { setStatus(e.target.value); if(errors.status) setErrors({...errors, status: null}) }}>
                                         <option value="">-- Select Status --</option>
                                         {STATUSES.map((s) => (
                                             <option key={s}>{s}</option>
                                         ))}
                                     </select>
+                                    <ErrorLabel msg={errors.status} />
                                 </Field>
                             </div>
                         </div>
@@ -818,13 +850,14 @@ export default function ManualBilling() {
                                                 <CTableDataCell>
                                                     <input
                                                         className="mbp-input"
-                                                        style={inputStyle}
+                                                        style={inputStyle(errors.services && !s.serviceName.trim())}
                                                         placeholder="e.g. Spine Rehab"
                                                         value={s.serviceName}
                                                         onChange={(e) => {
                                                             const newS = [...services];
                                                             newS[idx].serviceName = e.target.value;
                                                             setServices(newS);
+                                                            if (errors.services) setErrors({ ...errors, services: null });
                                                         }}
                                                     />
                                                 </CTableDataCell>
@@ -833,12 +866,13 @@ export default function ManualBilling() {
                                                         type="number"
                                                         min={0}
                                                         className="mbp-input"
-                                                        style={inputStyle}
+                                                        style={inputStyle(errors.services && (s.unitPrice === '' || Number(s.unitPrice) < 0))}
                                                         value={s.unitPrice}
                                                         onChange={(e) => {
                                                             const newS = [...services];
                                                             newS[idx].unitPrice = e.target.value;
                                                             setServices(newS);
+                                                            if (errors.services) setErrors({ ...errors, services: null });
                                                         }}
                                                     />
                                                 </CTableDataCell>
@@ -847,7 +881,7 @@ export default function ManualBilling() {
                                                         type="number"
                                                         min={0} max={100}
                                                         className="mbp-input"
-                                                        style={inputStyle}
+                                                        style={inputStyle()}
                                                         value={s.discountPercent}
                                                         onChange={(e) => {
                                                             const newS = [...services];
@@ -861,7 +895,7 @@ export default function ManualBilling() {
                                                         type="number"
                                                         min={0} max={100}
                                                         className="mbp-input"
-                                                        style={inputStyle}
+                                                        style={inputStyle()}
                                                         value={s.taxPercent}
                                                         onChange={(e) => {
                                                             const newS = [...services];
@@ -887,6 +921,7 @@ export default function ManualBilling() {
                                         ))}
                                     </CTableBody>
                                 </CTable>
+                                <ErrorLabel msg={errors.services} />
                             </div>
                         </div>
 
@@ -961,18 +996,19 @@ export default function ManualBilling() {
                                                 type="number"
                                                 min={0}
                                                 value={paidAmount}
-                                                onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
+                                                onChange={(e) => { setPaidAmount(Number(e.target.value) || 0); if (errors.paidAmount) setErrors({ ...errors, paidAmount: null }) }}
                                                 style={{
                                                     width: 110,
                                                     fontSize: 13,
                                                     padding: '6px 8px',
                                                     borderRadius: 6,
-                                                    border: '1px solid #ced4da',
+                                                    border: `1px solid ${errors.paidAmount ? CORAL : '#ced4da'}`,
                                                     background: '#fff',
                                                     color: '#212529',
                                                     outline: 'none',
                                                 }}
                                             />
+                                            {errors.paidAmount && <div style={{ color: CORAL, fontSize: 10, marginTop: 4 }}>Required</div>}
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
                                             <div style={{ fontSize: 11, opacity: 0.7 }}>{balance > 0 ? 'Balance Due' : 'Change Due'}</div>
@@ -1000,16 +1036,17 @@ export default function ManualBilling() {
                                     </div>
                                     <div style={{ padding: 20 }} className="mbp-grid">
                                         <Field label="Payment Mode" span={6}>
-                                            <select className="mbp-select" style={inputStyle} value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
+                                            <select className="mbp-select" style={inputStyle(errors.paymentMode)} value={paymentMode} onChange={(e) => { setPaymentMode(e.target.value); if (errors.paymentMode) setErrors({ ...errors, paymentMode: null }) }}>
                                                 {PAYMENT_MODES.map((m) => (
                                                     <option key={m}>{m}</option>
                                                 ))}
                                             </select>
+                                            <ErrorLabel msg={errors.paymentMode} />
                                         </Field>
                                         <Field label="Transaction ID" span={6}>
                                             <input
                                                 className="mbp-input"
-                                                style={inputStyle}
+                                                style={inputStyle()}
                                                 placeholder="Transaction reference number"
                                                 value={transactionId}
                                                 onChange={(e) => setTransactionId(e.target.value)}
@@ -1019,7 +1056,7 @@ export default function ManualBilling() {
                                             <textarea
                                                 className="mbp-textarea"
                                                 rows={3}
-                                                style={{ ...inputStyle, resize: 'vertical' }}
+                                                style={{ ...inputStyle(), resize: 'vertical' }}
                                                 placeholder="Enter payment logs or remarks"
                                                 value={remarks}
                                                 onChange={(e) => setRemarks(e.target.value)}
@@ -1038,16 +1075,16 @@ export default function ManualBilling() {
                                 </span>
                             </div>
                             <div style={{ padding: 20 }} className="mbp-grid">
-                                <Field label="Billing Staff (Dynamic)" span={4}>
-                                    <input className="mbp-input" style={{ ...inputStyle, background: '#f8fafc' }} value={billingStaff} disabled />
-                                </Field>
-                                <Field label="Public Notes (Prints on Bill)" span={4}>
-                                    <input className="mbp-input" style={inputStyle} value={notes} onChange={(e) => setNotes(e.target.value)} />
-                                </Field>
-                                <Field label="Internal Comments" span={4}>
-                                    <input className="mbp-input" style={inputStyle} value={internalComments} onChange={(e) => setInternalComments(e.target.value)} />
-                                </Field>
-                            </div>
+                                        <Field label="Billing Staff (Dynamic)" span={4}>
+                                            <input className="mbp-input" style={{ ...inputStyle(), background: '#f8fafc' }} value={billingStaff} disabled />
+                                        </Field>
+                                        <Field label="Public Notes (Prints on Bill)" span={4}>
+                                            <input className="mbp-input" style={inputStyle()} value={notes} onChange={(e) => setNotes(e.target.value)} />
+                                        </Field>
+                                        <Field label="Internal Comments" span={4}>
+                                            <input className="mbp-input" style={inputStyle()} value={internalComments} onChange={(e) => setInternalComments(e.target.value)} />
+                                        </Field>
+                                    </div>
                         </div>
 
                         {/* Create Sticky actions */}
