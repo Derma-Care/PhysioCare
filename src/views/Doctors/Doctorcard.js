@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CFormSwitch } from '@coreui/react'
 import { Eye } from 'lucide-react'
@@ -10,19 +10,41 @@ import CIcon from '@coreui/icons-react'
 
 const DoctorCard = ({ doctor }) => {
   const navigate = useNavigate()
-  const [availability, setAvailability] = useState(doctor?.doctorAvailabilityStatus || false)
+  const [availability, setAvailability] = useState(
+    doctor?.doctorAvailabilityStatus === true
+  )
+
+  useEffect(() => {
+    setAvailability(doctor?.doctorAvailabilityStatus === true)
+  }, [doctor?.doctorAvailabilityStatus])
 
   if (!doctor) return null
 
   const handleToggle = async (e) => {
     const value = e.target.checked
+
+    // Optimistic UI update
     setAvailability(value)
-    const success = await updateDoctorAvailability(doctor.doctorId, value)
-    if (success) {
-      showCustomToast(`Availability set to ${value ? 'Available' : 'Not Available'}`, 'success')
-    } else {
-      showCustomToast('Failed to update availability', 'error')
+
+    try {
+      const success = await updateDoctorAvailability(
+        doctor.doctorId,
+        value
+      )
+
+      if (success) {
+        showCustomToast(
+          `Availability set to ${value ? 'Available' : 'Not Available'}`,
+          'success'
+        )
+      } else {
+        setAvailability(!value)
+        showCustomToast('Failed to update availability', 'error')
+      }
+    } catch (error) {
       setAvailability(!value)
+      showCustomToast('Failed to update availability', 'error')
+      console.error('Availability update error:', error)
     }
   }
 
@@ -184,13 +206,23 @@ const DoctorCard = ({ doctor }) => {
           color: #6b7280;
           white-space: nowrap;
         }
-        .dc-toggle {
-          /* override CoreUI switch to use brand blue */
-          --cui-form-switch-checked-bg: #185fa5 !important;
-          --cui-form-switch-bg: #ccc !important;
-          margin-bottom: 0 !important;
-          cursor: pointer;
-        }
+      .dc-toggle.form-check-input {
+  width: 2.4rem;
+  height: 1.25rem;
+  cursor: pointer;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.dc-toggle.form-check-input:checked {
+  background-color: #198754 !important;
+  border-color: #198754 !important;
+}
+
+.dc-toggle.form-check-input:not(:checked) {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+}
         .dc-avail-badge {
           font-size: 11px;
           font-weight: 500;

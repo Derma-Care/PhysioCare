@@ -22,7 +22,7 @@ import {
 
 import { GetClinicBranches, getDoctorByClinicIdData } from '../Doctors/DoctorAPI'
 import { useNavigate } from 'react-router-dom'
-import { getAllReferDoctors } from '../EmployeeManagement/ReferDoctor/ReferDoctorAPI'
+import { getAllReferDoctors, addReferDoctor } from '../EmployeeManagement/ReferDoctor/ReferDoctorAPI'
 import Select from 'react-select'
 // import { CategoryData } from '../ProcedureManagement/ProcedureManagementAPI'
 import { BASE_URL, wifiUrl } from '../../baseUrl'
@@ -1015,12 +1015,52 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     }
   }
 
-  const goNext = () => {
+  const goNext = async () => {
     const currentTabId = visibleTabs[currentTab]?.id
     if (!validateTab(currentTabId)) {
       showCustomToast('Please fill in all required fields before proceeding.', 'error')
       return
     }
+
+    // ── Auto-save new referral person when "Other" type + name is provided ──
+    if (
+      currentTabId === 'booking' &&
+      bookingDetails.doctorRefCode === 'OTHER' &&
+      bookingDetails.referredByType === 'Other' &&
+      bookingDetails.referredByName?.trim()
+    ) {
+      try {
+        const clinicId = sessionStorage.getItem('HospitalId') || ''
+        const clinicName = sessionStorage.getItem('HospitalName') || ''
+        const branchId = sessionStorage.getItem('branchId') || ''
+        const payload = {
+          fullName: bookingDetails.referredByName.trim(),
+          mobileNumber: '0000000000',   // required by backend; placeholder for quick-add
+          clinicId,
+          clinicName,
+          branchId,
+          role: 'referdoctor',
+          status: 'Active',
+          referredByType: bookingDetails.referredByType,
+        }
+        const res = await addReferDoctor(payload)
+        const newDoctor = res?.data?.data
+        if (newDoctor?.referralId) {
+          // Add to local list and update doctorRefCode to new referralId
+          setReferDoctor((prev) => [...prev, newDoctor])
+          setBookingDetails((p) => ({ ...p, doctorRefCode: newDoctor.referralId }))
+          showCustomToast(`"${newDoctor.fullName}" added as a referral doctor.`, 'success')
+        }
+      } catch (err) {
+        console.error('Failed to save referral person:', err)
+        showCustomToast(
+          err?.response?.data?.message || 'Failed to save referral person. Proceeding anyway.',
+          'error'
+        )
+        // Do NOT block navigation — proceed anyway
+      }
+    }
+
     setCurrentTab((t) => Math.min(t + 1, visibleTabs.length - 1))
   }
   const goPrev = () => setCurrentTab((t) => Math.max(t - 1, 0))
@@ -1492,22 +1532,30 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
               <Select styles={rsStyles}
                 value={
                   referDoctor.find((d) => d.referralId === bookingDetails.doctorRefCode) ||
-                  (bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)
+                  (bookingDetails.doctorRefCode === 'SELF' ? { referralId: 'SELF', fullName: 'Self' } :
+                   bookingDetails.doctorRefCode === 'OTHER' ? { referralId: 'OTHER', fullName: 'Others' } : null)
                 }
-                getOptionLabel={(o) => o.referralId === 'OTHER'
-                  ? 'Others'
-                  : `${o.fullName} - ${o.mobileNumber}`
+                getOptionLabel={(o) =>
+                  o.referralId === 'SELF'
+                    ? 'Self'
+                    : o.referralId === 'OTHER'
+                      ? 'Others'
+                      : `${o.fullName} - ${o.mobileNumber}`
                 }
                 getOptionValue={(o) => o.referralId}
                 onChange={(sel) => {
                   const v = sel ? sel.referralId : ''
                   setBookingDetails((p) => ({
                     ...p, doctorRefCode: v,
-                    referredByType: v === 'OTHER' ? '' : p.referredByType,
-                    referredByName: v === 'OTHER' ? '' : p.referredByName,
+                    referredByType: v === 'OTHER' ? p.referredByType : '',
+                    referredByName: v === 'OTHER' && p.referredByType === 'Other' ? p.referredByName : '',
                   }))
                 }}
-                options={[...referDoctor, { referralId: 'OTHER', fullName: 'Others' }]}
+                options={[
+                  { referralId: 'SELF', fullName: 'Self' },
+                  ...referDoctor,
+                  { referralId: 'OTHER', fullName: 'Others' }
+                ]}
                 placeholder="Select or search..." isSearchable />
             </CCol>)
           }
@@ -1517,18 +1565,27 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
               <CCol md={6}>
                 <CFormLabel style={labelStyle}>Referred By Type</CFormLabel>
                 <CFormSelect value={bookingDetails.referredByType || ''} style={selectStyle(false)}
-                  onChange={(e) => setBookingDetails((p) => ({ ...p, referredByType: e.target.value }))}>
+                  onChange={(e) => {
+                    const selectedType = e.target.value
+                    setBookingDetails((p) => ({
+                      ...p,
+                      referredByType: selectedType,
+                      referredByName: selectedType === 'Other' ? p.referredByName : '',
+                    }))
+                  }}>
                   <option value="">Select Type</option>
-                  {['Friend', 'Family', 'Facebook', 'Instagram', 'Google', 'Advertisement', 'Other'].map((t) => (
+                  {['Facebook', 'Instagram', 'Google', 'Advertisement', 'Other'].map((t) => (
                     <option key={t}>{t}</option>
                   ))}
                 </CFormSelect>
               </CCol>
-              <CCol md={6}>
-                <CFormLabel style={labelStyle}>Referred Person Name</CFormLabel>
-                <CFormInput value={bookingDetails.referredByName || ''} style={inputStyle(false)}
-                  onChange={(e) => setBookingDetails((p) => ({ ...p, referredByName: e.target.value }))} />
-              </CCol>
+              {bookingDetails.referredByType === 'Other' && (
+                <CCol md={6}>
+                  <CFormLabel style={labelStyle}>Referred Person Name</CFormLabel>
+                  <CFormInput value={bookingDetails.referredByName || ''} style={inputStyle(false)}
+                    onChange={(e) => setBookingDetails((p) => ({ ...p, referredByName: e.target.value }))} />
+                </CCol>
+              )}
             </>
           )}
         </CRow>

@@ -106,11 +106,11 @@ const ReferDoctorForm = ({
   const mandatoryFields = [
     'fullName',
     // 'dateOfBirth',
-    'gender',
-    'mobileNumber',
-    'emergencyContact',
-    'yearsOfExperience',
-    'status',
+    // 'gender',
+    // 'mobileNumber',
+    // 'emergencyContact',
+    // 'yearsOfExperience',
+    // 'status',
 
     // address fields (Address is @NotNull)
     // 'address.houseNo', // make sure Address DTO has these
@@ -272,70 +272,35 @@ const ReferDoctorForm = ({
     const newErrors = {}
     let isValid = true
 
-    const fieldLabels = {
-      fullName: 'Full Name',
-      gender: 'Gender',
-      dateOfBirth: 'Date of Birth',
-      mobileNumber: 'Mobile Number',
-      email: 'Email',
-      governmentId: 'Government ID',
-      emergencyContact: 'Emergency Contact',
-      yearsOfExperience: 'Years of Experience',
-      currentHospitalName: 'Current Hospital Name',
-      specialization: 'Specialization',
-      medicalRegistrationNumber: 'Medical Registration Number',
-      status: 'Status',
-      'address.houseNo': 'House Number',
-      'address.street': 'Street',
-      'address.city': 'City',
-      'address.state': 'State',
-      'address.postalCode': 'Postal Code',
-      'address.country': 'Country',
-      'bankAccountNumber.accountNumber': 'Account Number',
-      'bankAccountNumber.accountHolderName': 'Account Holder Name',
-      'bankAccountNumber.bankName': 'Bank Name',
-      'bankAccountNumber.branchName': 'Branch Name',
-      'bankAccountNumber.ifscCode': 'IFSC Code',
-      'bankAccountNumber.panCardNumber': 'PAN Card Number',
+    // 1. Mandatory field: fullName
+    if (!formData.fullName || formData.fullName.trim() === '') {
+      newErrors.fullName = 'Full Name is required.'
+      isValid = false
+    } else if (formData.fullName.trim().length < 3 || formData.fullName.trim().length > 50) {
+      newErrors.fullName = 'Full Name must be between 3 and 50 characters.'
+      isValid = false
     }
 
-    mandatoryFields.forEach((field) => {
-      let value = formData
-      field.split('.').forEach((key) => { value = value?.[key] })
-      if (!value || String(value).trim() === '') {
-        isValid = false
-        const label = fieldLabels[field] || field
-        if (field.includes('.')) {
-          const [parent, child] = field.split('.')
-          if (!newErrors[parent]) newErrors[parent] = {}
-          newErrors[parent][child] = `${label} is required.`
-        } else {
-          newErrors[field] = `${label} is required.`
-        }
-      }
-    })
-
+    // 2. Format validations for optional fields (if filled)
     if (formData.governmentId) {
-      if (formData.governmentId.length !== 12) {
-        newErrors.governmentId = 'Aadhar ID must be exactly 12 digits.'
+      if (!/^[2-9][0-9]{11}$/.test(formData.governmentId)) {
+        newErrors.governmentId = 'Government ID (Aadhaar) must be 12 digits and cannot start with 0 or 1.'
         isValid = false
-      } else if (/^(.)\1+$/.test(formData.governmentId)) {
-        newErrors.governmentId = 'Aadhar ID cannot have all identical digits.'
+      } else if (/^(\d)\1{11}$/.test(formData.governmentId)) {
+        newErrors.governmentId = 'Government ID (Aadhaar) cannot have all identical digits.'
         isValid = false
       }
     }
-
-    const todayStr = new Date().toISOString().split('T')[0]
-
 
     if (formData.dateOfBirth) {
+      const todayStr = new Date().toISOString().split('T')[0]
       if (formData.dateOfBirth > todayStr) {
         newErrors.dateOfBirth = 'Date of Birth cannot be in the future.'
         isValid = false
       } else {
         const dob = new Date(formData.dateOfBirth)
         const today = new Date()
-        const age = today.getFullYear() - dob.getFullYear()
+        let age = today.getFullYear() - dob.getFullYear()
         const isBeforeBirthday =
           today.getMonth() < dob.getMonth() ||
           (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
@@ -343,8 +308,7 @@ const ReferDoctorForm = ({
         if (actualAge < 21) {
           newErrors.dateOfBirth = 'Doctor must be at least 21 years old.'
           isValid = false
-        }
-        if (actualAge >= 100) {
+        } else if (actualAge >= 100) {
           newErrors.dateOfBirth = 'Doctor must be less than 100 years old.'
           isValid = false
         }
@@ -368,23 +332,48 @@ const ReferDoctorForm = ({
       }
     }
 
-    if (formData.mobileNumber && !/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
-      newErrors.mobileNumber = 'Invalid mobile number (must be 10 digits starting 6-9).'
+    if (formData.bankAccountNumber?.ifscCode) {
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.bankAccountNumber.ifscCode)) {
+        if (!newErrors.bankAccountNumber) newErrors.bankAccountNumber = {}
+        newErrors.bankAccountNumber.ifscCode = 'Invalid IFSC format (e.g., HDFC0001234).'
+        isValid = false
+      }
+    }
+
+    if (formData.mobileNumber) {
+      if (!/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
+        newErrors.mobileNumber = 'Invalid mobile number (must be 10 digits starting 6-9).'
+        isValid = false
+      } else if (technicians?.some((t) => (t.mobileNumber === formData.mobileNumber || t.contactNumber === formData.mobileNumber) && t.id !== formData.id)) {
+        newErrors.mobileNumber = 'Mobile number already exists!'
+        isValid = false
+      }
+    }
+
+    if (formData.email) {
+      if (!emailPattern.test(formData.email)) {
+        newErrors.email = 'Invalid email address format.'
+        isValid = false
+      } else if (technicians?.some((t) => (t.email === formData.email || t.emailId === formData.email) && t.id !== formData.id)) {
+        newErrors.email = 'Email already exists!'
+        isValid = false
+      }
+    }
+
+    if (formData.address?.postalCode && formData.address.postalCode.length !== 6) {
+      if (!newErrors.address) newErrors.address = {}
+      newErrors.address.postalCode = 'Postal code must be 6 digits.'
       isValid = false
     }
 
-    if (formData.email && !emailPattern.test(formData.email)) {
-      newErrors.email = 'Invalid email address format.'
-      isValid = false
-    }
-
-    if (technicians?.some((t) => t.mobileNumber === formData.mobileNumber && t.id !== formData.id)) {
-      newErrors.mobileNumber = 'Mobile number already exists!'
-      isValid = false
-    }
-    if (technicians?.some((t) => t.emailId === formData.email && t.id !== formData.id)) {
-      newErrors.email = 'Email already exists!'
-      isValid = false
+    if (formData.emergencyContact) {
+      if (formData.emergencyContact.length !== 10 || !/^[6-9]/.test(formData.emergencyContact)) {
+        newErrors.emergencyContact = 'Emergency contact must be 10 digits starting with 6-9.'
+        isValid = false
+      } else if (formData.mobileNumber && formData.emergencyContact === formData.mobileNumber) {
+        newErrors.emergencyContact = 'Emergency contact cannot be the same as contact number.'
+        isValid = false
+      }
     }
 
     setErrors(newErrors)
@@ -400,9 +389,7 @@ const ReferDoctorForm = ({
 
       // Ensure "Dr. " prefix is added if missing
       const formattedName = formData.fullName.trim();
-      const finalFullName = formattedName.toLowerCase().startsWith('dr')
-        ? formattedName
-        : `Dr. ${formattedName}`;
+      const finalFullName = formattedName;
 
       const dataToSave = {
         ...formData,
@@ -566,7 +553,7 @@ const ReferDoctorForm = ({
                 </div>
                 <div>
                   <h3 className="sf-profile-name">
-                    {formData.fullName?.toLowerCase().startsWith('dr') ? formData.fullName : `Dr. ${formData.fullName}`}
+                    {formData.fullName?.toLowerCase() ? formData.fullName : ` ${formData.fullName}`}
                   </h3>
                   <p className="sf-profile-meta">{formData.email || 'N/A'}</p>
                   <p className="sf-profile-meta">{formData.mobileNumber || 'N/A'}</p>
@@ -579,7 +566,7 @@ const ReferDoctorForm = ({
               {/* 👤 Personal Information */}
               <Section title="Personal Information" icon={User}>
                 <div className="sf-inner-grid">
-                  <Row label="Full Name" icon={User} value={formData.fullName?.toLowerCase().startsWith('dr') ? formData.fullName : `Dr. ${formData.fullName}`} />
+                  <Row label="Full Name" icon={User} value={formData.fullName?.toLowerCase() ? formData.fullName : ` ${formData.fullName}`} />
                   <Row label="Email Address" icon={Mail} value={formData.email} />
                   <Row label="Contact Number" icon={Phone} value={formData.mobileNumber} />
                   <Row label="Gender" icon={Activity} value={formData.gender} />
@@ -639,9 +626,7 @@ const ReferDoctorForm = ({
                     <div className="col-md-4">
                       <div className="row">
                         <div className="col-md-5">
-                          <CFormLabel>
-                            ClinicID <span style={{ color: 'red' }}>*</span>
-                          </CFormLabel>
+                          <CFormLabel>ClinicID</CFormLabel>
                           <CFormInput
                             className="sf-input"
                             value={clinicId}
@@ -650,9 +635,7 @@ const ReferDoctorForm = ({
                           />
                         </div>
                         <div className="col-md-7">
-                          <CFormLabel>
-                            Role <span style={{ color: 'red' }}>*</span>
-                          </CFormLabel>
+                          <CFormLabel>Role</CFormLabel>
                           <CFormInput
                             className="sf-input"
                             value={formData.role || 'referdoctor'}
@@ -683,13 +666,13 @@ const ReferDoctorForm = ({
                       )}
                     </div>
                     <div className="col-md-4">
-                      <CFormLabel>Gender <span style={{ color: 'red' }}>*</span></CFormLabel>
+                      <CFormLabel>Gender</CFormLabel>
                       <CFormSelect
                         className="sf-input"
                         value={formData.gender}
                         onChange={(e) => {
                           handleChange('gender', e.target.value)
-                          setErrors(p => ({ ...p, gender: e.target.value ? '' : 'Gender is required.' }))
+                          setErrors((p) => ({ ...p, gender: '' }))
                         }}
                       >
                         <option value="">Select Gender</option>
@@ -697,7 +680,6 @@ const ReferDoctorForm = ({
                         <option value="female">Female</option>
                         <option value="other">Other</option>
                       </CFormSelect>
-                      {errors.gender && <div style={{ color: 'red', fontSize: '12px' }}>{errors.gender}</div>}
                     </div>
                   </div>
 
@@ -712,33 +694,60 @@ const ReferDoctorForm = ({
                           new Date(new Date().setFullYear(new Date().getFullYear() - 21))
                             .toISOString()
                             .split('T')[0]
-                        } // ✅ only allow DOB ≤ today-18yrs
+                        }
                         onChange={(e) => {
-                          handleChange('dateOfBirth', e.target.value)
-                          setErrors(p => ({ ...p, dateOfBirth: validateField('dateOfBirth', e.target.value) }))
+                          const value = e.target.value
+                          handleChange('dateOfBirth', value)
+                          if (!value) {
+                            setErrors((p) => ({ ...p, dateOfBirth: '' }))
+                          } else {
+                            const todayStr = new Date().toISOString().split('T')[0]
+                            if (value > todayStr) {
+                              setErrors((p) => ({ ...p, dateOfBirth: 'Date of Birth cannot be in the future.' }))
+                            } else {
+                              const dob = new Date(value)
+                              const today = new Date()
+                              let age = today.getFullYear() - dob.getFullYear()
+                              const isBeforeBirthday =
+                                today.getMonth() < dob.getMonth() ||
+                                (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+                              if (isBeforeBirthday) age--
+                              if (age < 21) {
+                                setErrors((p) => ({ ...p, dateOfBirth: 'Doctor must be at least 21 years old.' }))
+                              } else if (age >= 100) {
+                                setErrors((p) => ({ ...p, dateOfBirth: 'Doctor must be less than 100 years old.' }))
+                              } else {
+                                setErrors((p) => ({ ...p, dateOfBirth: '' }))
+                              }
+                            }
+                          }
                         }}
                       />
                       {errors.dateOfBirth && <div className="text-danger mt-1">{errors.dateOfBirth}</div>}
                     </div>
 
                     <div className="col-md-4">
-                      <CFormLabel>Mobile Number <span style={{ color: 'red' }}>*</span></CFormLabel>
+                      <CFormLabel>Mobile Number </CFormLabel>
                       <CFormInput
                         className="sf-input"
                         type="text"
-                        maxLength={10} // ✅ Restrict to 10 digits
+                        maxLength={10}
                         value={formData.mobileNumber}
                         onChange={(e) => {
                           const value = e.target.value
-
-                          // Allow only digits
                           if (/^\d*$/.test(value)) {
-                            // Update form data
                             handleChange('mobileNumber', value)
-
-                            // Run live validation
-                            const err = validateField('contactNumber', value, formData)
-                            setErrors((prev) => ({ ...prev, mobileNumber: err }))
+                            if (!value) {
+                              setErrors((prev) => ({ ...prev, mobileNumber: '' }))
+                            } else {
+                              let err = ''
+                              if (!/^[6-9]\d{9}$/.test(value)) {
+                                err = 'Invalid mobile number (must be 10 digits starting 6-9).'
+                              } else if (technicians?.some((t) => (t.mobileNumber === value || t.contactNumber === value) && t.id !== formData.id)) {
+                                err = 'Mobile number already exists!'
+                              }
+                              setErrors((prev) => ({ ...prev, mobileNumber: err }))
+                            }
                           }
                         }}
                       />
@@ -753,9 +762,19 @@ const ReferDoctorForm = ({
                         type="email"
                         value={formData.email}
                         onChange={(e) => {
-                          handleChange('email', e.target.value)
-                          const err = validateField('emailId', e.target.value)
-                          setErrors((prev) => ({ ...prev, email: err }))
+                          const value = e.target.value
+                          handleChange('email', value)
+                          if (!value) {
+                            setErrors((prev) => ({ ...prev, email: '' }))
+                          } else {
+                            let err = ''
+                            if (!emailPattern.test(value)) {
+                              err = 'Invalid email address format.'
+                            } else if (technicians?.some((t) => (t.email === value || t.emailId === value) && t.id !== formData.id)) {
+                              err = 'Email already exists!'
+                            }
+                            setErrors((prev) => ({ ...prev, email: err }))
+                          }
                         }}
                       />
                       {errors.email && <div className="text-danger mt-1">{errors.email}</div>}
@@ -771,15 +790,19 @@ const ReferDoctorForm = ({
                         value={formData.governmentId}
                         onChange={(e) => {
                           const value = e.target.value
-
-                          // ✅ Only digits allowed, max 12
                           if (/^\d*$/.test(value)) {
-                            // Update form data
                             handleChange('governmentId', value)
-
-                            // Run live validation
-                            const err = validateField('governmentId', value, formData)
-                            setErrors((prev) => ({ ...prev, governmentId: err }))
+                            if (!value) {
+                              setErrors((prev) => ({ ...prev, governmentId: '' }))
+                            } else {
+                              let err = ''
+                              if (!/^[2-9][0-9]{11}$/.test(value)) {
+                                err = 'Government ID (Aadhaar) must be 12 digits and cannot start with 0 or 1.'
+                              } else if (/^(\d)\1{11}$/.test(value)) {
+                                err = 'Government ID (Aadhaar) cannot have all identical digits.'
+                              }
+                              setErrors((prev) => ({ ...prev, governmentId: err }))
+                            }
                           }
                         }}
                       />
@@ -795,16 +818,18 @@ const ReferDoctorForm = ({
                         value={capitalizeWords(formData.medicalRegistrationNumber)}
                         onChange={(e) => {
                           const value = e.target.value
-
-                          // Update form data
                           handleChange('medicalRegistrationNumber', value)
-
-                          // Run live validation
-                          const err = validateField('medicalRegistrationNumber', value, formData)
-                          setErrors((prev) => ({
-                            ...prev,
-                            medicalRegistrationNumber: err,
-                          }))
+                          if (!value) {
+                            setErrors((prev) => ({ ...prev, medicalRegistrationNumber: '' }))
+                          } else {
+                            let err = ''
+                            if (!/^[A-Za-z0-9\-\/]+$/.test(value)) {
+                              err = 'Medical Registration Number contains invalid characters.'
+                            } else if (value.length < 3 || value.length > 20) {
+                              err = 'Medical Registration Number must be between 3 and 20 characters.'
+                            }
+                            setErrors((prev) => ({ ...prev, medicalRegistrationNumber: err }))
+                          }
                         }}
                       />
                       {errors.medicalRegistrationNumber && (
@@ -819,11 +844,15 @@ const ReferDoctorForm = ({
                         onChange={(e) => {
                           const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
                           handleChange('department', value)
-                          const err = validateField('department', value, formData)
-                          setErrors((prev) => ({
-                            ...prev,
-                            department: err,
-                          }))
+                          if (!value) {
+                            setErrors((prev) => ({ ...prev, department: '' }))
+                          } else {
+                            let err = ''
+                            if (value.length < 2 || value.length > 50) {
+                              err = 'Department must be between 2 and 50 characters.'
+                            }
+                            setErrors((prev) => ({ ...prev, department: err }))
+                          }
                         }}
                       />
                       {errors.department && <div className="text-danger mt-1">{errors.department}</div>}
@@ -836,16 +865,16 @@ const ReferDoctorForm = ({
                         value={formData.specialization}
                         onChange={(e) => {
                           const value = e.target.value
-
-                          // Update form data
                           handleChange('specialization', value)
-
-                          // Run live validation
-                          const err = validateField('specialization', value, formData)
-                          setErrors((prev) => ({
-                            ...prev,
-                            specialization: err,
-                          }))
+                          if (!value) {
+                            setErrors((prev) => ({ ...prev, specialization: '' }))
+                          } else {
+                            let err = ''
+                            if (value.length < 2 || value.length > 50) {
+                              err = 'Specialization must be between 2 and 50 characters.'
+                            }
+                            setErrors((prev) => ({ ...prev, specialization: err }))
+                          }
                         }}
                       />
                       {errors.specialization && (
@@ -853,42 +882,37 @@ const ReferDoctorForm = ({
                       )}
                     </div>
                     <div className="col-md-4">
-                      {' '}
                       <CFormLabel>Current Hospital Name</CFormLabel>
                       <CFormInput
                         className="sf-input"
                         value={capitalizeWords(formData.currentHospitalName)}
                         onChange={(e) => handleChange('currentHospitalName', e.target.value)}
-                      />{' '}
+                      />
                     </div>
                     <div className="col-md-4">
-                      {' '}
-                      <CFormLabel>
-                        Years of Experience <span style={{ color: 'red' }}>*</span>
-                      </CFormLabel>
+                      <CFormLabel>Years of Experience</CFormLabel>
                       <CFormInput
                         className="sf-input"
                         type="number"
                         value={formData.yearsOfExperience}
                         onChange={(e) => {
                           const value = e.target.value
-
-                          // Allow only digits
                           if (/^\d*$/.test(value)) {
                             handleChange('yearsOfExperience', value)
-
-                            // Run live validation
-                            const err = validateField('yearsOfExperience', value, formData)
-                            setErrors((prev) => ({
-                              ...prev,
-                              yearsOfExperience: err,
-                            }))
+                            if (!value) {
+                              setErrors((prev) => ({ ...prev, yearsOfExperience: '' }))
+                            } else {
+                              let err = ''
+                              if (parseInt(value) < 0) {
+                                err = 'Years of Experience cannot be negative.'
+                              } else if (parseInt(value) > 50) {
+                                err = 'Years of Experience seems too high.'
+                              }
+                              setErrors((prev) => ({ ...prev, yearsOfExperience: err }))
+                            }
                           }
                         }}
                       />
-                      {errors.yearsOfExperience && (
-                        <div style={{ color: 'red', fontSize: '12px' }}>{errors.yearsOfExperience}</div>
-                      )}
                     </div>
                   </div>
 
@@ -897,42 +921,48 @@ const ReferDoctorForm = ({
                       <CFormLabel>Status</CFormLabel>
                       <CFormSelect
                         className="sf-input"
-                        value={formData.status || ''} // empty initially
+                        value={formData.status || ''}
                         onChange={(e) => {
                           const value = e.target.value
                           handleChange('status', value)
-
-                          // Run live validation
-                          const err = validateField('status', value)
-                          setErrors((prev) => ({
-                            ...prev,
-                            status: err,
-                          }))
+                          setErrors((prev) => ({ ...prev, status: '' }))
                         }}
                       >
                         <option value="">Select Status</option>
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                       </CFormSelect>
-                      {/* {errors.status && <div className="text-danger mt-1">{errors.status}</div>} */}
                     </div>
                     <div className="col-md-4">
-                      <CFormLabel>Emergency Contact <span style={{ color: 'red' }}>*</span></CFormLabel>
-
+                      <CFormLabel>Emergency Contact</CFormLabel>
                       <CFormInput
                         className="sf-input"
                         type="text"
-                        maxLength={10} // ✅ Restrict to 10 digits
+                        maxLength={10}
                         value={formData.emergencyContact}
                         onChange={(e) => {
                           const value = e.target.value
-                          // ✅ Allow only digits
                           if (/^\d*$/.test(value)) {
                             handleChange('emergencyContact', value)
+                            if (!value) {
+                              setErrors((prev) => ({ ...prev, emergencyContact: '' }))
+                            } else {
+                              let err = ''
+                              if (value.length !== 10) {
+                                err = 'Emergency contact must be 10 digits.'
+                              } else if (!/^[6-9]/.test(value)) {
+                                err = 'Emergency contact must start with 6, 7, 8, or 9.'
+                              } else if (formData.mobileNumber && value === formData.mobileNumber) {
+                                err = 'Emergency contact cannot be the same as contact number.'
+                              }
+                              setErrors((prev) => ({ ...prev, emergencyContact: err }))
+                            }
                           }
                         }}
                       />
-                      {errors.emergencyContact && <div style={{ color: 'red', fontSize: '12px' }}>{errors.emergencyContact}</div>}
+                      {errors.emergencyContact && (
+                        <div style={{ color: 'red', fontSize: '12px' }}>{errors.emergencyContact}</div>
+                      )}
                     </div>
                   </div>
 
@@ -1006,11 +1036,12 @@ const ReferDoctorForm = ({
                               onChange={(e) => {
                                 let value = e.target.value
                                 if (field === 'postalCode') {
-                                  // Only digits allowed
                                   if (/^\d*$/.test(value)) {
                                     handleNestedChange('address', field, value)
-                                    // Live validation
-                                    const err = validateField(field, value, formData)
+                                    let err = ''
+                                    if (value && value.length !== 6) {
+                                      err = 'Postal code must be 6 digits.'
+                                    }
                                     setErrors((prev) => ({
                                       ...prev,
                                       address: { ...prev.address, [field]: err },
@@ -1018,11 +1049,9 @@ const ReferDoctorForm = ({
                                   }
                                 } else {
                                   handleNestedChange('address', field, value)
-                                  // Live validation
-                                  const err = validateField(field, value, formData)
                                   setErrors((prev) => ({
                                     ...prev,
-                                    address: { ...prev.address, [field]: err },
+                                    address: { ...prev.address, [field]: '' },
                                   }))
                                 }
                               }}
@@ -1073,7 +1102,10 @@ const ReferDoctorForm = ({
                                 if (field === 'accountNumber') {
                                   if (/^\d*$/.test(value)) {
                                     handleNestedChange('bankAccountNumber', field, value)
-                                    const err = validateField('accountNumber', value, formData)
+                                    let err = ''
+                                    if (value && (value.length < 9 || value.length > 18)) {
+                                      err = 'Account number must be between 9 and 18 digits.'
+                                    }
                                     setErrors((prev) => ({
                                       ...prev,
                                       bankAccountNumber: {
@@ -1090,8 +1122,10 @@ const ReferDoctorForm = ({
                                   if (/^[A-Z]{0,5}[0-9]{0,4}[A-Z]{0,1}$/.test(value)) {
                                     handleNestedChange('bankAccountNumber', field, value)
                                   }
-
-                                  const err = validateField('panCardNumber', value, formData)
+                                  let err = ''
+                                  if (value && value.length !== 10) {
+                                    err = 'PAN Card must be 10 characters.'
+                                  }
                                   setErrors((prev) => ({
                                     ...prev,
                                     bankAccountNumber: {
@@ -1107,7 +1141,10 @@ const ReferDoctorForm = ({
                                   if (!/^[A-Z0-9]*$/.test(value)) return
                                   handleNestedChange('bankAccountNumber', field, value)
 
-                                  const err = validateField('ifscCode', value, formData)
+                                  let err = ''
+                                  if (value && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value)) {
+                                    err = 'Invalid IFSC format (e.g., HDFC0001234).'
+                                  }
                                   setErrors((prev) => ({
                                     ...prev,
                                     bankAccountNumber: { ...prev.bankAccountNumber, ifscCode: err },

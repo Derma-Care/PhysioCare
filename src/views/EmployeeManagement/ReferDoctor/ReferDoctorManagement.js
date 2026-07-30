@@ -205,9 +205,7 @@ const ReferDoctorManagement = () => {
 
                     <CTableDataCell className="rd-td">
                       <span className="rd-name">
-                        {tech.fullName?.toLowerCase().startsWith('dr')
-                          ? capitalizeWords(tech.fullName)
-                          : `Dr. ${capitalizeWords(tech.fullName)}`}
+                        {tech.fullName}
                       </span>
                     </CTableDataCell>
 
