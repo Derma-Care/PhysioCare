@@ -17,6 +17,7 @@ import {
 
 import { useNavigate } from 'react-router-dom'
 import LoadingIndicator from '../../Utils/loader'
+import Pagination from '../../Utils/Pagination'
 
 const TAB_KEYS = { INFO: 1, APPOINTMENTS: 2, REPORTS: 3, HISTORY: 4, PLAN: 5 }
 
@@ -30,6 +31,9 @@ const PatientManagement = () => {
   const [activeKey, setActiveKey] = useState(1)
   const [selectedPatient] = useState(patientInfo || null)
   const [appointments, setAppointments] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [appointmentInfo, setAppointmentInfo] = useState(null)
   const [history, setHistory] = useState([])
@@ -290,7 +294,7 @@ const PatientManagement = () => {
               <LoadingIndicator message={'Appointments Loading...'} />
             </div>
           ) : appointments.length > 0 ? (
-
+            <>
             <CTable className=" pink-table">
               <CTableHead >
                 <CTableRow>
@@ -303,7 +307,7 @@ const PatientManagement = () => {
               </CTableHead>
 
               <CTableBody>
-                {appointments.map((appt, index) => (
+                {appointments.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((appt, index) => (
                   <CTableRow key={index}>
 
                     <CTableDataCell className="pm-bold">
@@ -338,6 +342,16 @@ const PatientManagement = () => {
                 ))}
               </CTableBody>
             </CTable>
+            {appointments.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(appointments.length / rowsPerPage)}
+                pageSize={rowsPerPage}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setRowsPerPage}
+              />
+            )}
+            </>
 
           ) : (
             <div className="pm2-empty">

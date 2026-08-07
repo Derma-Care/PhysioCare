@@ -14,9 +14,13 @@ import {
 } from 'lucide-react'
 import { emailPattern } from '../../../Constant/Constants'
 import { showCustomToast } from '../../../Utils/Toaster'
+import { format } from 'date-fns'
+import { http } from '../../../Utils/Interceptors'
+import { fetchDoctorSlots } from '../../../APIs/GenerateSlots'
+import { CNav, CNavItem, CNavLink, CTabContent, CTabPane, CButton, CBadge } from '@coreui/react'
 import LoadingIndicator from '../../../Utils/loader'
 import { uploadFile } from '../../widgets/S3UploadServiceDoctor'
-
+import { useHospital } from '../../Usecontext/HospitalContext'
 /* ─────────────────────────────────────────────────────────────
    ⚠️  CRITICAL: These helpers MUST live outside PhysioForm.
    Defining them inside causes React to treat them as NEW
@@ -152,6 +156,9 @@ const Field = ({ label, error, required, children }) => (
 const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   const isView = viewMode
 
+  const hospitalContext = useHospital() || {};
+  const doctorsList = Array.isArray(hospitalContext.doctorData?.data) ? hospitalContext.doctorData.data : [];
+
   const handleOpenDocument = (url) => {
     if (url) window.open(url, '_blank');
   }
@@ -185,6 +192,14 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
     { value: 'orthopedic', label: 'Orthopedic' },
     { value: 'neurological', label: 'Neurological' },
     { value: 'sports', label: 'Sports' },
+    { value: 'cardiopulmonary', label: 'Cardiopulmonary' },
+    { value: 'womenshealth', label: 'Womens Health' },
+    { value: 'paediatric', label: 'Paediatric' },
+    { value: 'community', label: 'Community' },
+    { value: 'geriatric', label: 'Geriatric' },
+    { value: 'handrehabilitation', label: 'Hand Rehabilitation' },
+    { value: 'rehabilitationsciences', label: 'Rehabilitation Sciences' },
+    { value: 'oncologyrehabilitation', label: 'Oncology Rehabilitation' },
   ]
   const dayOptions = [
     { value: 'monday', label: 'Mon' },
@@ -218,6 +233,160 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   const [pendingFiles, setPendingFiles] = useState({})
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false);
+
+  // -- Slot States --
+  const [activeKey, setActiveKey] = useState(2) // 2: Slots, 1: Profile
+  const [selectedDate, setSelectedDate] = useState('')
+  const [days, setDays] = useState([])
+  const [allSlots, setAllSlots] = useState([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [selectedSlots, setSelectedSlots] = useState([])
+  const [visibleSlot, setVisibleSlot] = useState(false)
+  const [interval, setInterval] = useState(30)
+  const [slots, setSlots] = useState([])
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
+  const [deleteMode, setDeleteMode] = useState(null)
+
+  useEffect(() => {
+    if (visible && isView) {
+      setActiveKey(2) // Default open slots
+      const today = new Date().toISOString().split('T')[0]
+      setSelectedDate(today)
+
+      const localToday = new Date()
+      localToday.setHours(0, 0, 0, 0)
+      const fullDayList = []
+      for (let i = 0; i < 15; i++) {
+        const date = new Date(localToday)
+        date.setDate(localToday.getDate() + i)
+        fullDayList.push({ date, dayLabel: format(date, 'EEE'), dateLabel: format(date, 'dd MMM') })
+      }
+      setDays(fullDayList)
+    }
+  }, [visible, isView])
+
+  useEffect(() => {
+    if (visible && isView && initialData?.therapistId) {
+      fetchSlots()
+    }
+  }, [visible, isView, initialData])
+
+  const fetchSlots = async () => {
+    setLoadingSlots(true)
+    try {
+      const hospitalId = sessionStorage.getItem('HospitalId')
+      const branchId = sessionStorage.getItem('branchId')
+      const response = await http.get(`/getDoctorSlots/${hospitalId}/${branchId}/${initialData.therapistId}`)
+      if (response.data.success) {
+        setAllSlots(response.data.data)
+      }
+    } catch (error) {
+      console.error('Error fetching slots:', error)
+    } finally {
+      setLoadingSlots(false)
+    }
+  }
+
+  const handleDateClick = (dayObj) => {
+    setSelectedDate(format(dayObj.date, 'yyyy-MM-dd'))
+    setSelectedSlots([])
+  }
+
+  const slotsForSelectedDate = (Array.isArray(allSlots) ? allSlots.find(sd => sd.date === selectedDate) : null)?.availableSlots || []
+
+  const toggleSlot = (slot) => {
+    setSelectedSlots(prev => prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot])
+  }
+
+  const handleGenerate = async () => {
+    const doctorId = initialData?.therapistId
+    const branchId = sessionStorage.getItem('branchId')
+    const date = selectedDate
+    const intervaltime = interval
+
+    let therapistStartTime = formData?.availability?.startTime || initialData?.availability?.startTime || '09:00'
+    let therapistEndTime = formData?.availability?.endTime || initialData?.availability?.endTime || '18:00'
+
+    const formatTime = (timeValue) => {
+      if (!timeValue) return ''
+
+      // If timeValue is already something like '08:00 AM' or '09-00AM'
+      if (timeValue.toLowerCase().includes('am') || timeValue.toLowerCase().includes('pm')) {
+        let label = timeValue.replace('-', ':')
+        return encodeURIComponent(label)
+      }
+
+      const option = timeOptions.find(o => o.value === timeValue)
+      let label = option ? option.label : ''
+      if (!label) {
+        const [h, m] = timeValue.split(':')
+        const hour = parseInt(h, 10)
+        const ampm = hour >= 12 ? 'PM' : 'AM'
+        const formattedHour = hour % 12 || 12
+        label = `${formattedHour.toString().padStart(2, '0')}:${m || '00'} ${ampm}`
+      }
+      return encodeURIComponent(label)
+    }
+
+    // Use therapist timings as requested
+    const start = formatTime(therapistStartTime)
+    const end = formatTime(therapistEndTime)
+
+    const generatedSlots = await fetchDoctorSlots(doctorId, branchId, date, intervaltime, start, end)
+    if (!generatedSlots || generatedSlots.length === 0) {
+      setSlots([])
+      showCustomToast('Timing not available for this therapist', 'error')
+      return
+    }
+    setSlots(generatedSlots)
+    setSelectedSlots([])
+    showCustomToast(`Generated ${generatedSlots.length} slots`, 'success')
+  }
+
+  const handleAddSlot = async () => {
+    if (selectedSlots.length === 0) { alert('No new slots to add!'); return }
+    const payload = {
+      doctorId: initialData?.therapistId,
+      date: selectedDate,
+      availableSlots: selectedSlots.map(slot => ({ slot, slotbooked: false })),
+    }
+    try {
+      const hospitalId = sessionStorage.getItem('HospitalId')
+      const branchId = sessionStorage.getItem('branchId')
+      const res = await http.post(`/addDoctorSlots/${hospitalId}/${branchId}/${initialData.therapistId}`, payload)
+      if (res.data.success) {
+        showCustomToast('Slots added successfully', 'success')
+        setVisibleSlot(false)
+        setSelectedSlots([])
+        fetchSlots()
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Error adding slots')
+    }
+  }
+
+  const handleDeleteConfirm = async () => {
+    const branchid = sessionStorage.getItem('branchId')
+    try {
+      if (deleteMode === 'selected') {
+        for (const slot of selectedSlots) {
+          await http.delete(`/doctorId/${initialData?.therapistId}/branchId/${branchid}/date/${selectedDate}/slot/${slot}`)
+        }
+        showCustomToast('Selected slots deleted successfully.', 'success')
+        setSelectedSlots([])
+      } else if (deleteMode === 'all') {
+        await http.delete(`/delete-by-date/${initialData?.therapistId}/${branchid}/${selectedDate}`)
+        showCustomToast(`All slots for ${selectedDate} deleted.`, 'success')
+        setSelectedSlots([])
+      }
+      fetchSlots()
+    } catch (err) {
+      showCustomToast('Failed to delete slots.', 'error')
+    } finally {
+      setShowDeleteConfirmModal(false)
+    }
+  }
   /* ── Populate form on open ── */
   useEffect(() => {
     if (!visible) return
@@ -575,7 +744,7 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
   }
 
   return (
-    <CModal visible={visible} onClose={onClose} size="lg" backdrop="static">
+    <CModal visible={visible} onClose={onClose} size="xl" backdrop="static">
 
       {/* ── Header ── */}
       <CModalHeader style={{ borderBottom: '0.5px solid #d0dce9', padding: '14px 20px' }}>
@@ -593,7 +762,68 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         </CModalTitle>
       </CModalHeader>
 
-      {/* ── Body ── */}
+      {/* ══ MODAL — Add Slots ══ */}
+      <CModal visible={visibleSlot} onClose={() => { setVisibleSlot(false); setSlots([]); setSelectedSlots([]) }} size="lg" backdrop="static">
+        <CModalHeader>
+          <CModalTitle style={{ fontSize: '16px', fontWeight: '700' }}>Generate Slots — {selectedDate}</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            {[10, 20, 30].map(min => (
+              <label key={min} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
+                <input type="radio" value={min} checked={interval === min} onChange={() => { setInterval(min); setSlots([]); setSelectedSlots([]) }} style={{ accentColor: 'var(--color-bgcolor)' }} />
+                {min} min
+              </label>
+            ))}
+            <button type="button" onClick={handleGenerate} style={{ padding: '8px 16px', borderRadius: '6px', backgroundColor: '#1e3a8a', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Generate Slots</button>
+          </div>
+
+          {slots.length > 0 && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--color-bgcolor)', marginBottom: '16px', cursor: 'pointer' }}>
+              <input type="checkbox" style={{ accentColor: 'var(--color-bgcolor)', width: '16px', height: '16px' }}
+                checked={selectedSlots.length === slots.filter(s => s.available).length && slots.filter(s => s.available).length > 0}
+                onChange={e => { if (e.target.checked) setSelectedSlots(slots.filter(s => s.available).map(s => s.slot)); else setSelectedSlots([]) }} />
+              Select All Available Slots
+            </label>
+          )}
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {slots.map((slotObj, i) => {
+              const isSelected = selectedSlots.includes(slotObj.slot)
+              return (
+                <button key={i} type="button"
+                  onClick={() => { if (!slotObj.available) { showCustomToast(slotObj.reason ? `Cannot book: ${slotObj.reason}` : 'This slot is unavailable', 'warning'); return }; toggleSlot(slotObj.slot) }}
+                  style={{ width: '80px', height: '36px', fontSize: '12px', fontWeight: '600', borderRadius: '6px', border: 'none', cursor: slotObj.available ? 'pointer' : 'not-allowed', backgroundColor: isSelected ? '#1e3a8a' : !slotObj.available ? '#e2e8f0' : '#64748b', color: isSelected ? '#ffffff' : !slotObj.available ? '#94a3b8' : '#fff', opacity: !slotObj.available ? 0.6 : 1 }}>
+                  {slotObj.slot}
+                </button>
+              )
+            })}
+          </div>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setVisibleSlot(false)}>Cancel</CButton>
+          <CButton color="primary" disabled={selectedSlots.length === 0} onClick={handleAddSlot}>Save Slots ({selectedSlots.length})</CButton>
+        </CModalFooter>
+      </CModal>
+
+      {/* ══ MODAL — Confirm Delete Slots ══ */}
+      <CModal visible={showDeleteConfirmModal} onClose={() => setShowDeleteConfirmModal(false)} alignment="center">
+        <CModalHeader closeButton>
+          <CModalTitle style={{ fontSize: '16px', fontWeight: '700' }}>Confirm Delete</CModalTitle>
+        </CModalHeader>
+        <CModalBody style={{ fontSize: '14px' }}>
+          {deleteMode === 'selected'
+            ? <p>Are you sure you want to delete <strong>{selectedSlots.length}</strong> selected slot(s) for <strong>{selectedDate}</strong>?</p>
+            : <p>Are you sure you want to delete <strong>ALL</strong> slots for <strong>{selectedDate}</strong>?</p>}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setShowDeleteConfirmModal(false)}>Cancel</CButton>
+          <CButton color="danger" onClick={handleDeleteConfirm}>Confirm Delete</CButton>
+        </CModalFooter>
+      </CModal>
+
+
+
       <CModalBody style={{ padding: '20px', maxHeight: '72vh', overflowY: 'auto', position: 'relative' }}>
         {/* {saving && (
           <div style={{
@@ -608,100 +838,177 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
         {/* ═══════════════ VIEW MODE ═══════════════ */}
         {isView ? (
           <>
-            <div className="pf-profile-header">
-              <button type="button" className="pf-profile-avatar-wrapper" onClick={() => handleOpenDocument(getDocSrc(formData.documents?.profilePhoto))}>
-                <img
-                  src={getDocSrc(formData.documents?.profilePhoto) || '/assets/images/default-avatar.png'}
-                  alt={formData.fullName}
-                  className="pf-profile-avatar"
-                />
-              </button>
-              <div>
-                <div className="pf-profile-name">{formData.fullName || '—'}</div>
-                <div className="pf-profile-sub">
-                  {formData.qualification}
-                  {formData.yearsOfExperience ? ` · ${formData.yearsOfExperience} yrs exp` : ''}
-                </div>
-                <span className="pf-badge">ID: {formData.therapistId || 'N/A'}</span>
-              </div>
-            </div>
+            <CNav variant="tabs" className="mb-3">
+              <CNavItem>
+                <CNavLink active={activeKey === 1} onClick={() => setActiveKey(1)} style={{ cursor: 'pointer', fontWeight: 600 }}>
+                  Profile
+                </CNavLink>
+              </CNavItem>
+              <CNavItem>
+                <CNavLink active={activeKey === 2} onClick={() => setActiveKey(2)} style={{ cursor: 'pointer', fontWeight: 600 }}>
+                  Slots
+                </CNavLink>
+              </CNavItem>
+            </CNav>
 
-            <InfoCard icon={User} title="Personal Information">
-              <div className="pf-inner-grid">
-                <InfoRow label="Full Name" value={formData.fullName} />
-                <InfoRow label="Contact" value={formData.contactNumber} />
-                <InfoRow label="Email" value={formData.emailId} required error={errors.emailId} />
-                <InfoRow label="Gender" value={formData.gender} />
-                <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
-                <InfoRow label="Date of Joining" value={formData.dateofJoining} />
-                <InfoRow label="Emergency Contact" value={formData.emergencyContact} />
-                <InfoRow label="Aadhar ID" value={formData.aadharID} />
-                <InfoRow label="Languages" value={formData.languages?.join(', ')} />
-              </div>
-            </InfoCard>
-
-            <InfoCard icon={Briefcase} title="Professional Information">
-              <div className="pf-inner-grid">
-                <InfoRow label="Qualification" value={formData.qualification} />
-                <InfoRow label="Experience" value={formData.yearsOfExperience ? `${formData.yearsOfExperience} years` : ''} />
-                <InfoRow label="Type" value={formData.physioType} />
-                <InfoRow label="Services" value={formData.services?.join(', ')} />
-                <InfoRow label="Specializations" value={formData.specializations?.join(', ')} />
-                <InfoRow label="Expertise Areas" value={formData.expertiseAreas?.join(', ')} />
-                <InfoRow label="Treatment Types" value={formData.treatmentTypes?.join(', ')} />
-              </div>
-            </InfoCard>
-
-            <InfoCard icon={Clock} title="Availability">
-              <div className="pf-inner-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                <InfoRow
-                  label="Working Days"
-                  value={formData.availability?.days?.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}
-                />
-                <InfoRow
-                  label="Timings"
-                  value={
-                    formData.availability?.startTime && formData.availability?.endTime
-                      ? `${formData.availability.startTime} – ${formData.availability.endTime}`
-                      : ''
-                  }
-                />
-              </div>
-            </InfoCard>
-
-            <InfoCard icon={Layers} title="Bio">
-              <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.7 }}>
-                {formData.bio || '—'}
-              </p>
-            </InfoCard>
-
-            <InfoCard icon={FileText} title="Documents">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {[
-                  { label: 'License Certificate', key: 'licenseCertificate' },
-                  { label: 'Degree Certificate', key: 'degreeCertificate' },
-                ].map(({ label, key }) => ( // Changed to use getDocSrc
-                  <div key={key}>
-                    <div className="pf-info-label" style={{ marginBottom: 6 }}>{label}</div>
-                    {formData.documents?.[key]
-                      ? (
-                        <>
-                          <iframe
-                            src={getDocSrc(formData.documents[key], 'application/pdf')}
-                            width="100%" height="220px"
-                            style={{ borderRadius: 8, border: '0.5px solid #d0dce9' }}
-                            title={`${label} Preview`}
-                          />
-                          <button type="button" className="pf-view-doc-btn" onClick={() => handleOpenDocument(getDocSrc(formData.documents[key], 'application/pdf'))}>
-                            View Document
-                          </button>
-                        </>
-                      ) : <span style={{ fontSize: 13, color: '#9ca3af' }}>Not provided</span>
-                    }
+            <CTabContent>
+              <CTabPane visible={activeKey === 1}>
+                <div className="pf-profile-header">
+                  <button type="button" className="pf-profile-avatar-wrapper" onClick={() => handleOpenDocument(getDocSrc(formData.documents?.profilePhoto))}>
+                    <img
+                      src={getDocSrc(formData.documents?.profilePhoto) || '/assets/images/default-avatar.png'}
+                      alt={formData.fullName}
+                      className="pf-profile-avatar"
+                    />
+                  </button>
+                  <div>
+                    <div className="pf-profile-name">{formData.fullName || '—'}</div>
+                    <div className="pf-profile-sub">
+                      {formData.qualification}
+                      {formData.yearsOfExperience ? ` · ${formData.yearsOfExperience} yrs exp` : ''}
+                    </div>
+                    <span className="pf-badge">ID: {formData.therapistId || 'N/A'}</span>
                   </div>
-                ))}
-              </div>
-            </InfoCard>
+                </div>
+
+                <InfoCard icon={User} title="Personal Information">
+                  <div className="pf-inner-grid">
+                    <InfoRow label="Full Name" value={formData.fullName} />
+                    <InfoRow label="Contact" value={formData.contactNumber} />
+                    <InfoRow label="Email" value={formData.emailId} required error={errors.emailId} />
+                    <InfoRow label="Gender" value={formData.gender} />
+                    <InfoRow label="Date of Birth" value={formData.dateOfBirth} />
+                    <InfoRow label="Date of Joining" value={formData.dateofJoining} />
+                    <InfoRow label="Emergency Contact" value={formData.emergencyContact} />
+                    <InfoRow label="Aadhar ID" value={formData.aadharID} />
+                    <InfoRow label="Languages" value={formData.languages?.join(', ')} />
+                  </div>
+                </InfoCard>
+
+                <InfoCard icon={Briefcase} title="Professional Information">
+                  <div className="pf-inner-grid">
+                    <InfoRow label="Qualification" value={formData.qualification} />
+                    <InfoRow label="Experience" value={formData.yearsOfExperience ? `${formData.yearsOfExperience} years` : ''} />
+                    <InfoRow label="Type" value={formData.physioType} />
+                    <InfoRow label="Services" value={formData.services?.join(', ')} />
+                    <InfoRow label="Specializations" value={formData.specializations?.join(', ')} />
+                    <InfoRow label="Expertise Areas" value={formData.expertiseAreas?.join(', ')} />
+                    <InfoRow label="Treatment Types" value={formData.treatmentTypes?.join(', ')} />
+                  </div>
+                </InfoCard>
+
+                <InfoCard icon={Clock} title="Availability">
+                  <div className="pf-inner-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                    <InfoRow
+                      label="Working Days"
+                      value={formData.availability?.days?.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}
+                    />
+                    <InfoRow
+                      label="Timings"
+                      value={
+                        formData.availability?.startTime && formData.availability?.endTime
+                          ? `${formData.availability.startTime} – ${formData.availability.endTime}`
+                          : ''
+                      }
+                    />
+                  </div>
+                </InfoCard>
+
+                <InfoCard icon={Layers} title="Bio">
+                  <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.7 }}>
+                    {formData.bio || '—'}
+                  </p>
+                </InfoCard>
+
+                <InfoCard icon={FileText} title="Documents">
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: 14 }}>
+                    {[
+                      { label: 'License Certificate', key: 'licenseCertificate' },
+                      { label: 'Degree Certificate', key: 'degreeCertificate' },
+                    ].map(({ label, key }) => ( // Changed to use getDocSrc
+                      <div key={key} style={{ flex: 1, minWidth: 0 }}>
+                        <div className="pf-info-label" style={{ marginBottom: 6 }}>{label}</div>
+                        {formData.documents?.[key]
+                          ? (
+                            <>
+                              <iframe
+                                src={getDocSrc(formData.documents[key], 'application/pdf')}
+                                width="100%" height="220px"
+                                style={{ borderRadius: 8, border: '0.5px solid #d0dce9' }}
+                                title={`${label} Preview`}
+                              />
+                              <button type="button" className="pf-view-doc-btn" onClick={() => handleOpenDocument(getDocSrc(formData.documents[key], 'application/pdf'))}>
+                                View Document
+                              </button>
+                            </>
+                          ) : <span style={{ fontSize: 13, color: '#9ca3af' }}>Not provided</span>
+                        }
+                      </div>
+                    ))}
+                  </div>
+                </InfoCard>
+              </CTabPane>
+
+              <CTabPane visible={activeKey === 2}>
+                <div style={{ marginBottom: '16px' }}>
+                  <h6 style={{ fontWeight: '600', marginBottom: '12px' }}>Select Date</h6>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
+                    {days.map((dayObj, idx) => {
+                      const isSelected = selectedDate === format(dayObj.date, 'yyyy-MM-dd')
+                      return (
+                        <button key={idx} onClick={() => handleDateClick(dayObj)} style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${isSelected ? 'var(--color-bgcolor)' : '#e2e8f0'}`, backgroundColor: isSelected ? '#1e3a8a' : '#fff', color: isSelected ? '#ffffff' : '#1e293b', cursor: 'pointer', fontSize: '13px', fontWeight: isSelected ? '700' : '500', minWidth: '60px', textAlign: 'center', transition: 'all .15s' }}>
+                          <div style={{ color: isSelected ? '#ffffff' : '#1e293b', marginBottom: '2px' }}>{dayObj.dayLabel}</div>
+                          <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.85)' : '#64748b' }}>{dayObj.dateLabel}</div>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <h6 style={{ fontWeight: '600', marginBottom: '12px' }}>Available Slots — {selectedDate}</h6>
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', backgroundColor: '#f8fafc', marginBottom: '20px' }}>
+                    {loadingSlots ? (
+                      <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>Loading slots...</p>
+                    ) : slotsForSelectedDate.length === 0 ? (
+                      <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>No available slots for this date.</p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px' }}>
+                        {slotsForSelectedDate.map((slotObj, i) => {
+                          const isSelected = selectedSlots.includes(slotObj.slot)
+                          const isBooked = slotObj?.slotbooked
+                          const now = new Date()
+                          const slotTime = new Date(`${selectedDate} ${slotObj.slot}`)
+                          const todayCheck = format(now, 'yyyy-MM-dd') === selectedDate
+                          const isPastTime = !todayCheck || slotTime > now
+                          return isPastTime && (
+                            <div key={i} onClick={() => { if (isBooked) return; toggleSlot(slotObj.slot) }} title={isBooked ? 'Booked' : isSelected ? 'Selected' : 'Available'}
+                              style={{ padding: '8px 4px', borderRadius: '6px', textAlign: 'center', fontSize: '12px', fontWeight: '600', cursor: isBooked ? 'not-allowed' : 'pointer', border: `1px solid ${isSelected ? '#1e3a8a' : isBooked ? '#fca5a5' : '#e2e8f0'}`, backgroundColor: isSelected ? '#1e3a8a' : isBooked ? '#fee2e2' : '#fff', color: isSelected ? '#ffffff' : isBooked ? '#dc2626' : '#1e293b', opacity: isBooked ? 0.8 : 1, transition: 'all .15s', userSelect: 'none' }}>
+                              {slotObj?.slot}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                    {[{ color: '#fff', border: '#e2e8f0', label: 'Available' }, { color: '#1e3a8a', border: '#1e3a8a', text: '#fff', label: 'Selected' }, { color: '#fee2e2', border: '#fca5a5', label: 'Booked' }].map(item => (
+                      <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
+                        <span style={{ width: '16px', height: '16px', borderRadius: '4px', backgroundColor: item.color, border: `1px solid ${item.border}`, display: 'inline-block' }} />
+                        {item.label}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button type="button" onClick={() => setVisibleSlot(true)} style={{ padding: '8px 16px', borderRadius: '6px', backgroundColor: '#1e3a8a', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>+ Add Slot</button>
+                    <button type="button" disabled={selectedSlots.length === 0} onClick={() => { if (selectedSlots.length === 0) { showCustomToast('Please select slot(s) to delete.', 'error'); return }; setDeleteMode('selected'); setShowDeleteConfirmModal(true) }} style={{ padding: '8px 16px', borderRadius: '6px', backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', cursor: selectedSlots.length === 0 ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '600', opacity: selectedSlots.length === 0 ? 0.5 : 1 }}>
+                      Delete Selected ({selectedSlots.length})
+                    </button>
+                    <button type="button" onClick={() => { setDeleteMode('all'); setShowDeleteConfirmModal(true) }} style={{ padding: '8px 16px', borderRadius: '6px', backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Delete All for Date</button>
+                  </div>
+                </div>
+              </CTabPane>
+            </CTabContent>
           </>
 
         ) : (
@@ -727,6 +1034,60 @@ const PhysioForm = ({ visible, onClose, onSave, initialData, viewMode }) => {
                 </div>
               </div>
             </FormSection> */}
+
+            {!initialData && (
+              <FormSection icon={User} title="Auto-fill from Doctor (Optional)">
+                <div className="pf-row">
+                  <div className="pf-col-full">
+                    <Field label="Select Doctor to Auto-fill">
+                      <Select
+                        options={doctorsList.map(doc => ({ value: doc, label: doc.doctorName + (doc.doctorMobileNumber ? ` - ${doc.doctorMobileNumber}` : '') }))}
+                        onChange={(sel) => {
+                          if (sel && sel.value) {
+                            const doc = sel.value;
+                            setFormData(prev => ({
+                              ...prev,
+                              fullName: doc.doctorName || '',
+                              contactNumber: doc.doctorMobileNumber || '',
+                              emailId: doc.doctorEmail || '',
+                              gender: doc.gender ? doc.gender.toLowerCase() : '',
+                              qualification: doc.qualification || '',
+                              yearsOfExperience: doc.experience ? String(doc.experience) : '',
+                              bio: doc.profileDescription || '',
+                              languages: doc.languages || [],
+                              dateOfBirth: doc.dateofBirth || '',
+                              dateofJoining: doc.dateofJoining || '',
+                              aadharID: doc.aadharID || '',
+                              emergencyContact: doc.emergencyContact || '',
+                            }));
+                          } else {
+                            // Reset auto-filled fields when cleared
+                            setFormData(prev => ({
+                              ...prev,
+                              fullName: '',
+                              contactNumber: '',
+                              emailId: '',
+                              gender: '',
+                              qualification: '',
+                              yearsOfExperience: '',
+                              bio: '',
+                              languages: [],
+                              dateOfBirth: '',
+                              dateofJoining: '',
+                              aadharID: '',
+                              emergencyContact: '',
+                            }));
+                          }
+                        }}
+                        placeholder="Select a doctor to autofill details..."
+                        isClearable
+                        {...selectPortalProps}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </FormSection>
+            )}
 
             <FormSection icon={User} title="Basic Information">
               <div className="pf-row">

@@ -294,7 +294,6 @@ const DoctorManagement = () => {
     if (!form.profileDescription.trim()) errs.profileDescription = 'Profile description is required'
     if (!form.doctorFees.inClinicFee || Number(form.doctorFees.inClinicFee) <= 0) errs.inClinicFee = 'Enter valid in-clinic fee'
     if (!form.doctorPicture) errs.doctorPicture = 'Profile picture is required'
-    if (!form.doctorSignature) errs.doctorSignature = 'Doctor signature is required'
     if (!startDay) errs.startDay = 'Start day required'
     if (!endDay) errs.endDay = 'End day required'
     if (startDay && endDay && dayOrder.indexOf(startDay) > dayOrder.indexOf(endDay)) errs.endDay = 'End day cannot be before start day'
@@ -330,25 +329,22 @@ const DoctorManagement = () => {
     }
 
     // Aadhar ID validation
-    if (!form.aadharID) {
-      errs.aadharID = 'Aadhar ID is required'
-    } else if (!/^\d{12}$/.test(form.aadharID)) {
-      errs.aadharID = 'Aadhar ID must be 12 digits'
-    } else if (/^(.)\1+$/.test(form.aadharID)) {
-      errs.aadharID = 'Aadhar ID cannot have all identical digits'
+    if (form.aadharID) {
+      if (!/^\d{12}$/.test(form.aadharID)) {
+        errs.aadharID = 'Aadhar ID must be 12 digits'
+      } else if (/^(.)\1+$/.test(form.aadharID)) {
+        errs.aadharID = 'Aadhar ID cannot have all identical digits'
+      }
     }
-    if (!form.emergencyContact) {
-      errs.emergencyContact = 'Emergency contact is required'
-    } else if (!/^[6789]\d{9}$/.test(form.emergencyContact)) {
-      errs.emergencyContact = 'Enter valid 10-digit emergency contact'
+    if (form.emergencyContact) {
+      if (!/^[6789]\d{9}$/.test(form.emergencyContact)) {
+        errs.emergencyContact = 'Enter valid 10-digit emergency contact'
+      }
     }
 
-    if (!form.bankAccountDetails.accountHolderName.trim()) errs.accountHolderName = 'Account holder name is required'
-    if (!form.bankAccountDetails.accountNumber.trim() || !/^\d{9,18}$/.test(form.bankAccountDetails.accountNumber)) errs.accountNumber = 'Valid account number is required'
-    if (!form.bankAccountDetails.bankName.trim()) errs.bankName = 'Bank name is required'
-    if (!form.bankAccountDetails.branchName.trim()) errs.branchName = 'Branch name is required'
-    if (!form.bankAccountDetails.ifscCode.trim() || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(form.bankAccountDetails.ifscCode.toUpperCase())) errs.ifscCode = 'Valid IFSC code is required'
-    if (!form.bankAccountDetails.panCardNumber.trim() || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.bankAccountDetails.panCardNumber.toUpperCase())) errs.panCardNumber = 'Valid PAN card number is required'
+    if (form.bankAccountDetails.accountNumber.trim() && !/^\d{9,18}$/.test(form.bankAccountDetails.accountNumber)) errs.accountNumber = 'Valid account number is required'
+    if (form.bankAccountDetails.ifscCode.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(form.bankAccountDetails.ifscCode.toUpperCase())) errs.ifscCode = 'Valid IFSC code is required'
+    if (form.bankAccountDetails.panCardNumber.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.bankAccountDetails.panCardNumber.toUpperCase())) errs.panCardNumber = 'Valid PAN card number is required'
 
     setFormErrors(errs)
     return Object.keys(errs).length === 0
@@ -810,7 +806,7 @@ const DoctorManagement = () => {
               <Err field="dateofJoining" />
             </CCol>
             <CCol md={6}>
-              <label className="dm-label">Aadhar ID <span className="req">*</span></label>
+              <label className="dm-label">Aadhar ID</label>
               <CFormInput
                 className="dm-input"
                 value={form.aadharID}
@@ -825,7 +821,7 @@ const DoctorManagement = () => {
               <Err field="aadharID" />
             </CCol>
             <CCol md={6}>
-              <label className="dm-label">Emergency Contact <span className="req">*</span></label>
+              <label className="dm-label">Emergency Contact</label>
               <CFormInput
                 className="dm-input"
                 value={form.emergencyContact}
@@ -1074,7 +1070,7 @@ const DoctorManagement = () => {
           <SectionHeading text="Bank Account Details" />
           <CRow className="g-3 mb-2">
             <CCol md={6}>
-              <label className="dm-label">Account Holder Name <span className="req">*</span></label>
+              <label className="dm-label">Account Holder Name</label>
               <CFormInput
                 className="dm-input"
                 value={form.bankAccountDetails.accountHolderName}
@@ -1089,7 +1085,7 @@ const DoctorManagement = () => {
               <Err field="accountHolderName" />
             </CCol>
             <CCol md={6}>
-              <label className="dm-label">Account Number <span className="req">*</span></label>
+              <label className="dm-label">Account Number</label>
               <CFormInput
                 className="dm-input"
                 value={form.bankAccountDetails.accountNumber}
@@ -1104,7 +1100,7 @@ const DoctorManagement = () => {
               <Err field="accountNumber" />
             </CCol>
             <CCol md={6}>
-              <label className="dm-label">IFSC Code <span className="req">*</span></label>
+              <label className="dm-label">IFSC Code</label>
               <CFormInput
                 className="dm-input"
                 value={form.bankAccountDetails.ifscCode}
@@ -1125,7 +1121,7 @@ const DoctorManagement = () => {
               {isFetchingBankDetails && <small style={{ color: '#185fa5', fontSize: '11px', marginTop: '4px', display: 'block' }}>Fetching bank details...</small>}
             </CCol>
             <CCol md={6}>
-              <label className="dm-label">Bank Name <span className="req">*</span></label>
+              <label className="dm-label">Bank Name</label>
               <CFormInput
                 className="dm-input"
                 value={form.bankAccountDetails.bankName}
@@ -1140,7 +1136,7 @@ const DoctorManagement = () => {
               <Err field="bankName" />
             </CCol>
             <CCol md={6}>
-              <label className="dm-label">Branch Name <span className="req">*</span></label>
+              <label className="dm-label">Branch Name</label>
               <CFormInput
                 className="dm-input"
                 value={form.bankAccountDetails.branchName}
@@ -1156,7 +1152,7 @@ const DoctorManagement = () => {
             </CCol>
 
             <CCol md={6}>
-              <label className="dm-label">PAN Card Number <span className="req">*</span></label>
+              <label className="dm-label">PAN Card Number</label>
               <CFormInput
                 className="dm-input"
                 value={form.bankAccountDetails.panCardNumber}
@@ -1178,7 +1174,7 @@ const DoctorManagement = () => {
           <div className="dm-signature-row">
             <div style={{ flex: 1 }}>
               <label className="dm-label">
-                Doctor Signature (for E-Prescription) <span className="req">*</span>
+                Doctor Signature (for E-Prescription)
               </label>
               <div className="dm-file-input-row">
                 <CButton color="secondary" size="sm"

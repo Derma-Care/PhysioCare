@@ -922,26 +922,35 @@ export default function FollowupDashboard() {
                                   Session Details
                                 </h6>
 
-                                <CTable small bordered className='pink-table'>
+                                <div style={{ overflowX: 'auto', scrollbarWidth: 'thin' }}>
+                                  <style>{`
+                                    div::-webkit-scrollbar { height: 6px; }
+                                    div::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+                                  `}</style>
+                                  <CTable small bordered className='pink-table' style={{ tableLayout: 'fixed', width: '100%' }}>
                                   <CTableHead>
                                     <CTableRow>
-                                      <CTableHeaderCell>Session Id</CTableHeaderCell>
-                                      <CTableHeaderCell>Date</CTableHeaderCell>
-                                      <CTableHeaderCell>Status</CTableHeaderCell>
-                                      <CTableHeaderCell>Payment</CTableHeaderCell>
+                                      <CTableHeaderCell width="40%">Session</CTableHeaderCell>
+                                      <CTableHeaderCell width="15%">Date</CTableHeaderCell>
+                                      <CTableHeaderCell width="15%">Slot</CTableHeaderCell>
+                                      <CTableHeaderCell width="15%">Status</CTableHeaderCell>
+                                      <CTableHeaderCell width="15%">Payment</CTableHeaderCell>
                                     </CTableRow>
                                   </CTableHead>
 
                                   <CTableBody>
                                     {rowSessions.map((item, i) => (
                                       <CTableRow key={i}>
-                                        <CTableDataCell><div>
-                                          <p className='mb-0'>{item.exerciseName}</p>
-                                          <small className='text-muted'>Session - {item.sessionNo}</small> <br></br>
-                                          <small className='text-muted'>ID - {item.sessionId}</small>
-                                        </div></CTableDataCell>
+                                        <CTableDataCell>
+                                          <div>
+                                            <p className='mb-0'>{item.exerciseName}</p>
+                                            <small className='text-muted'>Session - {item.sessionNo}</small> <br></br>
+                                            <small className='text-muted'>ID - {item.sessionId}</small>
+                                          </div>
+                                        </CTableDataCell>
                                         <CTableDataCell>{item.date}</CTableDataCell>
-                                        <CTableDataCell>{item.status}</CTableDataCell>
+                                        <CTableDataCell>{item.slot || "NA"}</CTableDataCell>
+                                        <CTableDataCell>{item.bookingStatus || "Pending"}</CTableDataCell>
                                         <CTableDataCell>
                                           <span style={{
                                             display: 'inline-block',
@@ -960,6 +969,7 @@ export default function FollowupDashboard() {
                                     ))}
                                   </CTableBody>
                                 </CTable>
+                                </div>
                               </div>
                             </CTableDataCell>
                           </CTableRow>

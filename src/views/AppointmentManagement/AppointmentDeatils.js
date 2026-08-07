@@ -16,6 +16,7 @@ import {
   CAccordionHeader,
   CAccordionBody,
   CFormCheck,
+  CNav, CNavItem, CNavLink, CTabContent, CTabPane
 } from '@coreui/react'
 import axios from 'axios'
 import jsPDF from 'jspdf'
@@ -26,7 +27,7 @@ import { AppointmentData, deleteBookingData, GetBookingByClinicIdData } from './
 import { GetdoctorsByClinicIdData } from './appointmentAPI'
 import { FaEye, FaDownload } from 'react-icons/fa'
 import { deleteVitalsData, postVitalsData, updateVitalsData, VitalsDataById } from './VitalsAPI'
-import { Download, Eye, ArrowLeft, Activity, FileText, User, Stethoscope, CreditCard, ChevronRight, Pencil, Search } from 'lucide-react'
+import { Download, Eye, ArrowLeft, Activity, FileText, User, Stethoscope, CreditCard, ChevronRight, Pencil, Search, Calendar } from 'lucide-react'
 import BookAppointmentModal from './BookAppointmentModal'
 import { useHospital } from '../Usecontext/HospitalContext'
 // import { GetProcedureFormData } from '../ConsentForms/ConsentFormsAPI'
@@ -40,7 +41,8 @@ import LoadingIndicator from '../../Utils/loader'
 import html2canvas from 'html2canvas'
 import PrintLetterHead from '../../Utils/PrintLetterHead'
 import { fetchRecommendedTests } from '../Reports/reportAPI'
-import { BASE_URL } from '../../baseUrl'
+import { BASE_URL, wifiUrl } from '../../baseUrl'
+import GeneratedSessionsTable from './GeneratedSessionsTable'
 
 /* ─────────────────────────────────────────────
    Inline styles – scoped design tokens
@@ -175,6 +177,7 @@ const Divider = () => (
 )
 
 /* ─────────────────────────────────────────────
+/* ─────────────────────────────────────────────
    Main Component
 ───────────────────────────────────────────── */
 const AppointmentDetails = () => {
@@ -192,7 +195,28 @@ const AppointmentDetails = () => {
   const [enableVitals, setEnableVitals] = useState(false)
   const [recommendedTestsData, setRecommendedTestsData] = useState(null)
   const isPrintingRef = React.useRef(false)
+  const [generatedSessions, setGeneratedSessions] = useState(null)
+  const [activeTab, setActiveTab] = useState('info')
 
+  useEffect(() => {
+    if (activeTab === 'sessions' && appointment?.bookingId && !generatedSessions) {
+      const fetchSessions = async () => {
+        try {
+          const res = await fetch(`${wifiUrl}/api/physiotherapy-doctor/payment/${appointment.bookingId}`)
+          const data = await res.json()
+          if (data.success && data.data?.sessionTableCreatedStatus === true) {
+            setGeneratedSessions(data.data)
+          } else {
+            setGeneratedSessions({ therapyWithSessions: [] })
+          }
+        } catch (error) {
+          console.error("Failed to fetch generated sessions:", error)
+          setGeneratedSessions({ therapyWithSessions: [] })
+        }
+      }
+      fetchSessions()
+    }
+  }, [activeTab, appointment?.bookingId])
 
   useEffect(() => {
     if (id) {
@@ -653,7 +677,7 @@ const AppointmentDetails = () => {
   )
 
   return (
-    <div style={{ backgroundColor: '#f1f5f9', minHeight: '100vh', padding: '20px', color: '#1e293b' }}>
+    <div style={{ minHeight: '100vh', padding: '20px', color: '#1e293b' }}>
 
       {/* ── TOP HEADER BAR ─────────────────────────────── */}
       <div style={{
@@ -721,313 +745,366 @@ const AppointmentDetails = () => {
         overflow: 'hidden',
       }}>
 
-        {/* ── PATIENT DETAILS ── */}
-        <div style={{ padding: '20px 24px' }}>
-          <SectionHeading icon={User} title="Patient Details" />
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0 24px' }}>
-            <InfoItem label="Patient Name" value={appointment?.name} />
-            <InfoItem label="Mobile Number" value={appointment?.patientMobileNumber} />
-            <InfoItem label="Booking ID" value={appointment?.bookingId} />
-            <InfoItem label="Age" value={appointment?.age ? `${appointment.age} Yrs` : null} />
-            <InfoItem label="Gender" value={appointment?.gender} />
-            <InfoItem label="Visit Type" value={appointment?.visitType} />
-            <InfoItem label="Symptoms Duration" value={appointment?.symptomsDuration} />
-            <InfoItem label="Free Follow-ups" value={appointment?.freeFollowUpsLeft !== null ? `${appointment.freeFollowUpsLeft} of ${appointment.freeFollowUps}` : null} />
-            <InfoItem label="Payment Type" value={appointment?.foc == "FOC" ? `FOC` : 'Paid'} />
-            {
-              appointment?.foc == "FOC" && (
-                <InfoItem label="FOC Reason" value={appointment?.focReason} />
-
-              )
-            }
-          </div>
-
-          {appointment?.problem && (
-            <div style={{
-              backgroundColor: tokens.surface,
-              border: `1px solid ${tokens.border}`,
-              borderRadius: tokens.radiusSm,
-              padding: '10px 14px',
-              marginTop: '4px',
-            }}>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Chief Complaint / Problem  </div>
-              <div style={{ fontSize: '13px', color: '#1e293b' }}>{appointment.problem}</div>
-            </div>
-          )}
-
-          {appointment?.parts?.length > 0 && (
-            <div style={{
-              backgroundColor: tokens.surface,
-              border: `1px solid ${tokens.border}`,
-              borderRadius: tokens.radiusSm,
-              padding: '10px 14px',
-              marginTop: '4px',
-            }}>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Selected Body Parts</div>
-              <div style={{ fontSize: '13px', color: '#1e293b' }}>{appointment?.parts?.join(', ')}</div>
-            </div>
-          )}
-
-
-
-          {(appointment?.partImage || (appointment?.theraphyAnswers && Object.keys(appointment.theraphyAnswers).length > 0)) && (
-            <div style={{ marginTop: '24px' }}>
-              <SectionHeading icon={Activity} title="Pain Assessment / Area Mapping" />
-              <div style={{
-                border: `1px solid ${tokens.border}`,
-                borderRadius: tokens.radius,
-                padding: '16px',
-                backgroundColor: '#fff',
-                boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)'
-              }}>
-                {appointment?.partImage && (
-                  <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                    <img
-                      src={getFileUrl(appointment.partImage) || `data:image/png;base64,${appointment.partImage}`}
-                      alt="Pain Area Mapping"
-                      style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: '8px' }}
-                    />
-                    <div style={{ marginTop: '12px', fontSize: '12px', color: tokens.muted }}>
-                      Visual representation of reported pain areas and assessment markings.
-                    </div>
-                  </div>
-                )}
-
-                {appointment?.theraphyAnswers && Object.entries(appointment.theraphyAnswers).length > 0 && (
-                  <div style={{ textAlign: 'left', marginTop: '12px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: tokens.primary, marginBottom: '8px' }}>Therapy Q&A</div>
-                    <CAccordion alwaysOpen>
-                      {Object.entries(appointment.theraphyAnswers).map(([part, questions], index) => (
-                        <CAccordionItem itemKey={index + 1} key={part} style={{ marginBottom: '8px', border: `1px solid ${tokens.border}`, borderRadius: tokens.radiusSm }}>
-                          <CAccordionHeader>
-                            <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'capitalize', color: tokens.black }}>{part} ({questions?.length || 0})</span>
-                          </CAccordionHeader>
-                          <CAccordionBody style={{ padding: '12px', backgroundColor: '#fff' }}>
-                            {questions?.map((q, i) => (
-                              <div key={i} style={{ backgroundColor: tokens.surface, padding: '8px 12px', borderRadius: tokens.radiusSm, marginBottom: '6px', border: `1px solid ${tokens.border}` }}>
-                                <div style={{ fontSize: '12px', fontWeight: '600', color: tokens.black, marginBottom: '4px' }}>Q: {q?.question || 'N/A'}</div>
-                                <div style={{ fontSize: '12px', color: tokens.black }}>A: {q?.answer || 'N/A'}</div>
-                              </div>
-                            ))}
-                          </CAccordionBody>
-                        </CAccordionItem>
-                      ))}
-                    </CAccordion>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-
-        {['cancelled', 'rescheduled'].includes(normalizedStatus) && appointment?.reasonForCancel && (
-          <div
+        <div style={{ padding: '16px 24px', borderBottom: `1px solid ${tokens.border}`, backgroundColor: '#f8fafc', display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => setActiveTab('info')}
             style={{
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '8px',
-              padding: '12px 16px',
-              margin: '0px 20px 16px 20px',
+              padding: '8px 24px', borderRadius: '30px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+              border: activeTab === 'info' ? `1px solid ${COLORS.primary}` : `1px solid ${tokens.border}`,
+              backgroundColor: activeTab === 'info' ? '#e6f1fb' : '#fff',
+              color: activeTab === 'info' ? COLORS.primary : tokens.muted,
+              transition: 'all 0.2s ease',
             }}
           >
-            <div
-              style={{
-                fontSize: '11px',
-                color: '#64748b',
-                fontWeight: '600',
-                marginBottom: '4px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}
-            >
-              {normalizedStatus === 'cancelled'
-                ? 'Cancellation Reason'
-                : 'Reschedule Reason'}
-            </div>
+            Appointment Info
+          </button>
 
-            <div
-              style={{
-                fontSize: '13px',
-                color: '#1e293b',
-              }}
-            >
-              {appointment.reasonForCancel}
-            </div>
-
-          </div>
-        )}
-        {/* ── SLOT & PAYMENT ── */}
-        <div style={{ padding: '0 24px 20px' }}>
-          <SectionHeading icon={CreditCard} title="Slot & Payment Details" />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0 24px' }}>
-            <InfoItem label="Date" value={appointment?.serviceDate} />
-            <InfoItem label="Time" value={appointment?.servicetime} />
-            {/* <InfoItem label="Paid Amount" value={appointment?.totalFee ? `₹${appointment.totalFee}` : null} /> */}
-            <InfoItem label="Consultation Fee" value={appointment?.listOfConsultationFee?.[0]?.consulationFee ? `₹${appointment.listOfConsultationFee[0].consulationFee}` : 'N/A'} />
-          </div>
+          <button
+            onClick={() => setActiveTab('sessions')}
+            style={{
+              padding: '8px 24px', borderRadius: '30px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+              border: activeTab === 'sessions' ? `1px solid ${COLORS.primary}` : `1px solid ${tokens.border}`,
+              backgroundColor: activeTab === 'sessions' ? '#e6f1fb' : '#fff',
+              color: activeTab === 'sessions' ? COLORS.primary : tokens.muted,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Treatment Sessions
+          </button>
         </div>
 
-        {/* ── VITALS CARD ── */}
-        {showVitalsCard && (
-          <>
-            <Divider />
-            <div style={{ padding: '0 24px 20px' }}>
-              <SectionHeading icon={Activity} title="Vitals" />
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                <VitalChip label="Height" value={vitals?.height} unit="cm" />
-                <VitalChip label="Weight" value={vitals?.weight} unit="kg" />
-                <VitalChip label="Blood Pressure" value={vitals?.bloodPressure} unit="mmHg" />
-                <VitalChip label="Temperature" value={vitals?.temperature} unit="°C" />
-                <VitalChip label="BMI" value={vitals?.bmi} unit="kg/m²" />
+        <CTabContent>
+          <CTabPane role="tabpanel" visible={activeTab === 'info'}>
+            {/* ── PATIENT DETAILS ── */}
+            <div style={{ padding: '20px 24px' }}>
+              <SectionHeading icon={User} title="Patient Details" />
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0 24px' }}>
+                <InfoItem label="Patient Name" value={appointment?.name} />
+                <InfoItem label="Mobile Number" value={appointment?.patientMobileNumber} />
+                <InfoItem label="Booking ID" value={appointment?.bookingId} />
+                <InfoItem label="Age" value={appointment?.age ? `${appointment.age} Yrs` : null} />
+                <InfoItem label="Gender" value={appointment?.gender} />
+                <InfoItem label="Visit Type" value={appointment?.visitType} />
+                <InfoItem label="Symptoms Duration" value={appointment?.symptomsDuration} />
+                <InfoItem label="Free Follow-ups" value={appointment?.freeFollowUpsLeft !== null ? `${appointment.freeFollowUpsLeft} of ${appointment.freeFollowUps}` : null} />
+                <InfoItem label="Payment Type" value={appointment?.foc == "FOC" ? `FOC` : 'Paid'} />
+                {
+                  appointment?.foc == "FOC" && (
+                    <InfoItem label="FOC Reason" value={appointment?.focReason} />
+
+                  )
+                }
               </div>
-            </div>
-          </>
-        )}
 
-        {/* ── ACCORDION: Reports / Prescription ── */}
-        {showConfirmedOrCompleted && doctor && (
-          <>
-            <Divider />
-            <div style={{ padding: '0 24px 20px' }}>
-              <SectionHeading icon={FileText} title="Documents" />
+              {appointment?.problem && (
+                <div style={{
+                  backgroundColor: tokens.surface,
+                  border: `1px solid ${tokens.border}`,
+                  borderRadius: tokens.radiusSm,
+                  padding: '10px 14px',
+                  marginTop: '4px',
+                }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Chief Complaint / Problem  </div>
+                  <div style={{ fontSize: '13px', color: '#1e293b' }}>{appointment.problem}</div>
+                </div>
+              )}
 
-              <CAccordion flush style={{ border: `1px solid ${tokens.border}`, borderRadius: tokens.radius, overflow: 'hidden' }}>
+              {appointment?.parts?.length > 0 && (
+                <div style={{
+                  backgroundColor: tokens.surface,
+                  border: `1px solid ${tokens.border}`,
+                  borderRadius: tokens.radiusSm,
+                  padding: '10px 14px',
+                  marginTop: '4px',
+                }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Selected Body Parts</div>
+                  <div style={{ fontSize: '13px', color: '#1e293b' }}>{appointment?.parts?.join(', ')}</div>
+                </div>
+              )}
 
-                {/* Past Reports */}
-                <CAccordionItem itemKey={2}>
-                  <CAccordionHeader>Previous Medical Records</CAccordionHeader>
-                  <CAccordionBody>
-                    {appointment?.attachments?.length > 0 ? (
-                      appointment.attachments.map((attachment, index) => (
-                        <div key={index} style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          padding: '8px 0', borderBottom: index < appointment.attachments.length - 1 ? `1px solid ${tokens.border}` : 'none',
-                        }}>
-                          <div>
-                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>Attachment_{index + 1}</div>
-                            <div style={{ fontSize: '11px', color: '#64748b' }}>{appointment?.serviceDate}</div>
-                          </div>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <ActionBtn onClick={() => handlePreview(attachment)}><Eye size={13} /></ActionBtn>
-                            <ActionBtn onClick={() => handleDownload(attachment, `attachment_${index + 1}.pdf`)}><Download size={13} /></ActionBtn>
-                          </div>
+
+
+              {(appointment?.partImage || (appointment?.theraphyAnswers && Object.keys(appointment.theraphyAnswers).length > 0)) && (
+                <div style={{ marginTop: '24px' }}>
+                  <SectionHeading icon={Activity} title="Pain Assessment / Area Mapping" />
+                  <div style={{
+                    border: `1px solid ${tokens.border}`,
+                    borderRadius: tokens.radius,
+                    padding: '16px',
+                    backgroundColor: '#fff',
+                    boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)'
+                  }}>
+                    {appointment?.partImage && (
+                      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                        <img
+                          src={getFileUrl(appointment.partImage) || `data:image/png;base64,${appointment.partImage}`}
+                          alt="Pain Area Mapping"
+                          style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: '8px' }}
+                        />
+                        <div style={{ marginTop: '12px', fontSize: '12px', color: tokens.muted }}>
+                          Visual representation of reported pain areas and assessment markings.
                         </div>
-                      ))
-                    ) : (
-                      <p style={{ fontSize: '13px', color: tokens.muted, margin: 0 }}>No past reports available.</p>
+                      </div>
                     )}
-                  </CAccordionBody>
-                </CAccordionItem>
 
-                {/* Prescription */}
-                {showPrescription && (
-                  <CAccordionItem itemKey={3}>
-                    <CAccordionHeader>Prescription</CAccordionHeader>
-                    <CAccordionBody>
-                      {appointment.prescriptionPdf.map((pdf, index) => (
-                        <div key={index} style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          padding: '8px 0', borderBottom: index < appointment.prescriptionPdf.length - 1 ? `1px solid ${tokens.border}` : 'none',
-                        }}>
-                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>Prescription {index + 1}</div>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <ActionBtn onClick={() => handlePreview(pdf)}><Eye size={13} /></ActionBtn>
-                            <ActionBtn onClick={() => handleDownload(pdf, `prescription_${index + 1}.pdf`)}><Download size={13} /></ActionBtn>
-                          </div>
-                        </div>
-                      ))}
-                    </CAccordionBody>
-                  </CAccordionItem>
-                )}
-
-                {/* Consent Form */}
-                {appointment?.consentFormPdf ? (
-                  <CAccordionItem itemKey={4}>
-                    <CAccordionHeader>Patient Consent Form</CAccordionHeader>
-                    <CAccordionBody>
-                      <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '8px 0',
-                      }}>
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>Consent Form File</div>
-                          {/* <div style={{ fontSize: '11px', color: '#64748b' }}>Uploaded during booking</div> */}
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <ActionBtn onClick={() => handlePreview(appointment.consentFormPdf)}><Eye size={13} /></ActionBtn>
-                          <ActionBtn onClick={() => handleDownload(appointment.consentFormPdf, `consent_form.pdf`)}><Download size={13} /></ActionBtn>
-                        </div>
-                      </div>
-                    </CAccordionBody>
-                  </CAccordionItem>
-                ) : null}
-
-                {/* Recommended Tests */}
-                {recommendedTestsData && recommendedTestsData.tests?.length > 0 && (
-                  <CAccordionItem itemKey={5}>
-                    <CAccordionHeader>Recommended Tests</CAccordionHeader>
-                    <CAccordionBody>
-                      <div style={{ padding: '8px 0' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
-                            {recommendedTestsData.tests.length} tests recommended
-                          </div>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <ActionBtn onClick={handlePrintRecommendedTests}><FileText size={13} /> Print</ActionBtn>
-                            <ActionBtn onClick={handleDownloadRecommendedTests}><Download size={13} /> Download</ActionBtn>
-                          </div>
-                        </div>
-                        <ul style={{ margin: '0 0 12px 16px', padding: 0, fontSize: '13px', color: '#374151', lineHeight: '1.6' }}>
-                          {recommendedTestsData.tests.map((test, i) => (
-                            <li key={i}>{test}</li>
+                    {appointment?.theraphyAnswers && Object.entries(appointment.theraphyAnswers).length > 0 && (
+                      <div style={{ textAlign: 'left', marginTop: '12px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: tokens.primary, marginBottom: '8px' }}>Therapy Q&A</div>
+                        <CAccordion alwaysOpen>
+                          {Object.entries(appointment.theraphyAnswers).map(([part, questions], index) => (
+                            <CAccordionItem itemKey={index + 1} key={part} style={{ marginBottom: '8px', border: `1px solid ${tokens.border}`, borderRadius: tokens.radiusSm }}>
+                              <CAccordionHeader>
+                                <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'capitalize', color: tokens.black }}>{part} ({questions?.length || 0})</span>
+                              </CAccordionHeader>
+                              <CAccordionBody style={{ padding: '12px', backgroundColor: '#fff' }}>
+                                {questions?.map((q, i) => (
+                                  <div key={i} style={{ backgroundColor: tokens.surface, padding: '8px 12px', borderRadius: tokens.radiusSm, marginBottom: '6px', border: `1px solid ${tokens.border}` }}>
+                                    <div style={{ fontSize: '12px', fontWeight: '600', color: tokens.black, marginBottom: '4px' }}>Q: {q?.question || 'N/A'}</div>
+                                    <div style={{ fontSize: '12px', color: tokens.black }}>A: {q?.answer || 'N/A'}</div>
+                                  </div>
+                                ))}
+                              </CAccordionBody>
+                            </CAccordionItem>
                           ))}
-                        </ul>
-                        {recommendedTestsData.reason && (
-                          <div style={{ backgroundColor: tokens.surface, padding: '10px 14px', borderRadius: tokens.radiusSm, border: `1px solid ${tokens.border}` }}>
-                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', textTransform: 'uppercase' }}>Reason</div>
-                            <div style={{ fontSize: '12px', color: '#1e293b' }}>{recommendedTestsData.reason}</div>
-                          </div>
-                        )}
+                        </CAccordion>
                       </div>
-                    </CAccordionBody>
-                  </CAccordionItem>
-                )}
-              </CAccordion>
-            </div>
-
-            {/* ── DOCTOR CARD ── */}
-            <Divider />
-            <div style={{ padding: '0 24px 24px' }}>
-              <SectionHeading icon={Stethoscope} title="Doctor Details" />
-
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '16px',
-                border: `1px solid ${tokens.border}`, borderRadius: tokens.radius,
-                padding: '16px', backgroundColor: tokens.surface,
-              }}>
-                <img
-                  src={doctor.doctorPicture}
-                  alt={doctor.doctorName}
-                  style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: `2px solid var(--color-bgcolor)` }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '15px', fontWeight: '700', color: COLORS.primary, marginBottom: '2px' }}>{doctor.doctorName}</div>
-                  <div style={{ fontSize: '12px', color: COLORS.primary, fontWeight: '600', marginBottom: '6px' }}>{doctor.specialization}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: COLORS.primary }}>Qualification:</strong> {doctor.qualification}</span>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: COLORS.primary }}>Experience:</strong> {doctor.experience} yrs</span>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: COLORS.primary }}>Languages:</strong> {doctor.languages?.join(', ')}</span>
+                    )}
                   </div>
                 </div>
-                <ActionBtn style={{ backgroundColor: COLORS.primary, color: COLORS.white, alignSelf: 'center', flexShrink: 0 }} onClick={() => navigate(`/doctor/${doctor.doctorId}`, { state: { doctor } })}  >
-                  View <ChevronRight size={13} />
-                </ActionBtn>
+              )}
+            </div>
+
+
+            {['cancelled', 'rescheduled'].includes(normalizedStatus) && appointment?.reasonForCancel && (
+              <div
+                style={{
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  margin: '0px 20px 16px 20px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: '#64748b',
+                    fontWeight: '600',
+                    marginBottom: '4px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {normalizedStatus === 'cancelled'
+                    ? 'Cancellation Reason'
+                    : 'Reschedule Reason'}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: '13px',
+                    color: '#1e293b',
+                  }}
+                >
+                  {appointment.reasonForCancel}
+                </div>
+
+              </div>
+            )}
+            {/* ── SLOT & PAYMENT ── */}
+            <div style={{ padding: '0 24px 20px' }}>
+              <SectionHeading icon={CreditCard} title="Slot & Payment Details" />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0 24px' }}>
+                <InfoItem label="Date" value={appointment?.serviceDate} />
+                <InfoItem label="Time" value={appointment?.servicetime} />
+                {/* <InfoItem label="Paid Amount" value={appointment?.totalFee ? `₹${appointment.totalFee}` : null} /> */}
+                <InfoItem label="Consultation Fee" value={appointment?.listOfConsultationFee?.[0]?.consulationFee ? `₹${appointment.listOfConsultationFee[0].consulationFee}` : 'N/A'} />
               </div>
             </div>
-          </>
-        )}
+
+            {/* ── VITALS CARD ── */}
+            {showVitalsCard && (
+              <>
+                <Divider />
+                <div style={{ padding: '0 24px 20px' }}>
+                  <SectionHeading icon={Activity} title="Vitals" />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    <VitalChip label="Height" value={vitals?.height} unit="cm" />
+                    <VitalChip label="Weight" value={vitals?.weight} unit="kg" />
+                    <VitalChip label="Blood Pressure" value={vitals?.bloodPressure} unit="mmHg" />
+                    <VitalChip label="Temperature" value={vitals?.temperature} unit="°C" />
+                    <VitalChip label="BMI" value={vitals?.bmi} unit="kg/m²" />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── ACCORDION: Reports / Prescription ── */}
+            {showConfirmedOrCompleted && doctor && (
+              <>
+                <Divider />
+                <div style={{ padding: '0 24px 20px' }}>
+                  <SectionHeading icon={FileText} title="Documents" />
+
+                  <CAccordion flush style={{ border: `1px solid ${tokens.border}`, borderRadius: tokens.radius, overflow: 'hidden' }}>
+
+                    {/* Past Reports */}
+                    <CAccordionItem itemKey={2}>
+                      <CAccordionHeader>Previous Medical Records</CAccordionHeader>
+                      <CAccordionBody>
+                        {appointment?.attachments?.length > 0 ? (
+                          appointment.attachments.map((attachment, index) => (
+                            <div key={index} style={{
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              padding: '8px 0', borderBottom: index < appointment.attachments.length - 1 ? `1px solid ${tokens.border}` : 'none',
+                            }}>
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>Attachment_{index + 1}</div>
+                                <div style={{ fontSize: '11px', color: '#64748b' }}>{appointment?.serviceDate}</div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <ActionBtn onClick={() => handlePreview(attachment)}><Eye size={13} /></ActionBtn>
+                                <ActionBtn onClick={() => handleDownload(attachment, `attachment_${index + 1}.pdf`)}><Download size={13} /></ActionBtn>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p style={{ fontSize: '13px', color: tokens.muted, margin: 0 }}>No past reports available.</p>
+                        )}
+                      </CAccordionBody>
+                    </CAccordionItem>
+
+                    {/* Prescription */}
+                    {showPrescription && (
+                      <CAccordionItem itemKey={3}>
+                        <CAccordionHeader>Prescription</CAccordionHeader>
+                        <CAccordionBody>
+                          {appointment.prescriptionPdf.map((pdf, index) => (
+                            <div key={index} style={{
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              padding: '8px 0', borderBottom: index < appointment.prescriptionPdf.length - 1 ? `1px solid ${tokens.border}` : 'none',
+                            }}>
+                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>Prescription {index + 1}</div>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <ActionBtn onClick={() => handlePreview(pdf)}><Eye size={13} /></ActionBtn>
+                                <ActionBtn onClick={() => handleDownload(pdf, `prescription_${index + 1}.pdf`)}><Download size={13} /></ActionBtn>
+                              </div>
+                            </div>
+                          ))}
+                        </CAccordionBody>
+                      </CAccordionItem>
+                    )}
+
+                    {/* Consent Form */}
+                    {appointment?.consentFormPdf ? (
+                      <CAccordionItem itemKey={4}>
+                        <CAccordionHeader>Patient Consent Form</CAccordionHeader>
+                        <CAccordionBody>
+                          <div style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '8px 0',
+                          }}>
+                            <div>
+                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>Consent Form File</div>
+                              {/* <div style={{ fontSize: '11px', color: '#64748b' }}>Uploaded during booking</div> */}
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <ActionBtn onClick={() => handlePreview(appointment.consentFormPdf)}><Eye size={13} /></ActionBtn>
+                              <ActionBtn onClick={() => handleDownload(appointment.consentFormPdf, `consent_form.pdf`)}><Download size={13} /></ActionBtn>
+                            </div>
+                          </div>
+                        </CAccordionBody>
+                      </CAccordionItem>
+                    ) : null}
+
+                    {/* Recommended Tests */}
+                    {recommendedTestsData && recommendedTestsData.tests?.length > 0 && (
+                      <CAccordionItem itemKey={5}>
+                        <CAccordionHeader>Recommended Tests</CAccordionHeader>
+                        <CAccordionBody>
+                          <div style={{ padding: '8px 0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
+                                {recommendedTestsData.tests.length} tests recommended
+                              </div>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <ActionBtn onClick={handlePrintRecommendedTests}><FileText size={13} /> Print</ActionBtn>
+                                <ActionBtn onClick={handleDownloadRecommendedTests}><Download size={13} /> Download</ActionBtn>
+                              </div>
+                            </div>
+                            <ul style={{ margin: '0 0 12px 16px', padding: 0, fontSize: '13px', color: '#374151', lineHeight: '1.6' }}>
+                              {recommendedTestsData.tests.map((test, i) => (
+                                <li key={i}>{test}</li>
+                              ))}
+                            </ul>
+                            {recommendedTestsData.reason && (
+                              <div style={{ backgroundColor: tokens.surface, padding: '10px 14px', borderRadius: tokens.radiusSm, border: `1px solid ${tokens.border}` }}>
+                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', textTransform: 'uppercase' }}>Reason</div>
+                                <div style={{ fontSize: '12px', color: '#1e293b' }}>{recommendedTestsData.reason}</div>
+                              </div>
+                            )}
+                          </div>
+                        </CAccordionBody>
+                      </CAccordionItem>
+                    )}
+                  </CAccordion>
+                </div>
+
+                {/* ── DOCTOR CARD ── */}
+                <Divider />
+                <div style={{ padding: '0 24px 24px' }}>
+                  <SectionHeading icon={Stethoscope} title="Doctor Details" />
+
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '16px',
+                    border: `1px solid ${tokens.border}`, borderRadius: tokens.radius,
+                    padding: '16px', backgroundColor: tokens.surface,
+                  }}>
+                    <img
+                      src={doctor.doctorPicture}
+                      alt={doctor.doctorName}
+                      style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: `2px solid var(--color-bgcolor)` }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '15px', fontWeight: '700', color: COLORS.primary, marginBottom: '2px' }}>{doctor.doctorName}</div>
+                      <div style={{ fontSize: '12px', color: COLORS.primary, fontWeight: '600', marginBottom: '6px' }}>{doctor.specialization}</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: COLORS.primary }}>Qualification:</strong> {doctor.qualification}</span>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: COLORS.primary }}>Experience:</strong> {doctor.experience} yrs</span>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}><strong style={{ color: COLORS.primary }}>Languages:</strong> {doctor.languages?.join(', ')}</span>
+                      </div>
+                    </div>
+                    <ActionBtn style={{ backgroundColor: COLORS.primary, color: COLORS.white, alignSelf: 'center', flexShrink: 0 }} onClick={() => navigate(`/doctor/${doctor.doctorId}`, { state: { doctor } })}  >
+                      View <ChevronRight size={13} />
+                    </ActionBtn>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── GENERATED SESSIONS ── */}
+          </CTabPane>
+
+          <CTabPane role="tabpanel" visible={activeTab === 'sessions'}>
+            <div style={{ padding: '20px 0' }}>
+              {!generatedSessions ? (
+                <div style={{ textAlign: 'center', padding: '60px' }}>
+                  <LoadingIndicator message="Fetching Treatment Sessions..." />
+                </div>
+              ) : generatedSessions.therapyWithSessions?.length > 0 ? (
+                <GeneratedSessionsTable
+                  generatedSessions={generatedSessions}
+                  appointment={appointment}
+                />
+              ) : (
+                <div style={{ textAlign: 'center', padding: '60px', color: tokens.muted, fontSize: '14px', fontWeight: '500' }}>
+                  No treatment sessions found for this appointment.
+                </div>
+              )}
+            </div>
+          </CTabPane>
+        </CTabContent>
       </div>
 
       {/* ── ADD VITALS MODAL ──────────────────────────── */}

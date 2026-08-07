@@ -329,22 +329,22 @@ const ConsentForm = () => {
                   <div>
                     <h3 className="title-box">
                       CONSENT FOR PHYSIOTHERAPY <br />
-                      <div className="tamil">
+                      {/* <div className="tamil">
                         பிசியோதெரபி சிகிச்சைக்கான ஒப்புதல் படிவம்
-                      </div>
+                      </div> */}
                     </h3>
                   </div>
 
                   <table className="table">
                     <tbody>
                       <tr>
-                        <td>Hospital / Clinic (மருத்துவமனை)</td>
+                        <td>Hospital / Clinic</td>
                         <td colSpan="3">
                           {booking.clinicName}, {booking.branchname}
                         </td>
                       </tr>
                       <tr>
-                        <td>Name (பெயர்)</td>
+                        <td>Name </td>
                         <td>{data.name}</td>
                         <td>Age</td>
                         <td>{data.age}</td>
@@ -364,22 +364,18 @@ const ConsentForm = () => {
                     </tbody>
                   </table>
 
-                  <div className="text mb-2">
+                  <div className="text mb-3">
                     I hereby consent to render physiotherapy assessment and management by the
                     treating physiotherapist. I am aware of the treatment plan and risks and I
                     understand to expose the treating body part and touch the area in need of
                     treatment. Also I am ready to provide all informations to treatment and I am
                     having right to decline treatment at any time.
                   </div>
-
                   <div className="tamil mb-3">
-                    சிகிச்சை அளிக்கும் பிசியோதெரபிஸ்ட் மூலம் பிசியோதெரபி மதிப்பீடும் சிகிச்சை
-                    மேலாண்மையும் பெற நான் இத்துடன் ஒப்புதல் அளிக்கிறேன். சிகிச்சை திட்டம் மற்றும்
-                    அதனுடன் தொடர்புடைய அபாயங்கள் குறித்து எனக்கு விளக்கமாக தெரிவிக்கப்பட்டுள்ளது.
-                    சிகிச்சைக்காக தேவையான உடல் பகுதியை வெளிப்படுத்தவும், அந்த பகுதியில் தொடுதல்
-                    அவசியம் என்பதை நான் புரிந்துகொள்கிறேன். மேலும், சிகிச்சைக்குத் தேவையான அனைத்து
-                    தகவல்களையும் வழங்க நான் தயாராக இருக்கிறேன். எந்த நேரத்திலும் சிகிச்சையை
-                    நிராகரிக்கும் உரிமை எனக்குள்ளது.
+                    मैं उपचार कर रहे फिजियोथेरेपिस्ट द्वारा फिजियोथेरेपी मूल्यांकन (Assessment) एवं उपचार (Management) प्रदान किए जाने के लिए अपनी सहमति देता/देती हूँ। मुझे उपचार योजना तथा उससे जुड़े लाभ एवं संभावित जोखिमों के बारे में पूरी जानकारी दी गई है और मैं उन्हें समझता/समझती हूँ। उपचार के लिए आवश्यक शरीर के भाग को उजागर करने तथा उपचार की आवश्यकता वाले क्षेत्र को फिजियोथेरेपिस्ट द्वारा स्पर्श किए जाने के लिए मैं अपनी सहमति देता/देती हूँ। मैं अपने उपचार से संबंधित सभी आवश्यक जानकारी सही एवं पूर्ण रूप से प्रदान करने के लिए तैयार हूँ। साथ ही, मैं यह समझता/समझती हूँ कि मुझे किसी भी समय उपचार को अस्वीकार करने या उसे रोकने का पूर्ण अधिकार है.
+                  </div>
+                  <div className="tamil mb-3">
+                    నేను చికిత్స అందిస్తున్న ఫిజియోథెరపిస్ట్ ద్వారా ఫిజియోథెరపీ అంచనా (Assessment) మరియు చికిత్స (Management) పొందేందుకు నా సమ్మతిని తెలియజేస్తున్నాను. ప్రతిపాదించిన చికిత్స ప్రణాళిక మరియు దానితో సంబంధిత ప్రయోజనాలు, ప్రమాదాల గురించి నాకు వివరించబడింది మరియు నేను అవగాహన చేసుకున్నాను. చికిత్స కోసం అవసరమైన శరీర భాగాన్ని బహిర్గతం చేయడం మరియు చికిత్స అవసరమైన ప్రాంతాన్ని ఫిజియోథెరపిస్ట్ తాకడానికి నేను సమ్మతిస్తున్నాను. నా చికిత్సకు సంబంధించిన అవసరమైన అన్ని వివరాలను నిజాయితీగా అందించడానికి నేను సిద్ధంగా ఉన్నాను. అలాగే, నాకు ఎప్పుడైనా చికిత్సను తిరస్కరించే లేదా నిలిపివేయమని కోరే పూర్తి హక్కు ఉందని నేను అర్థం చేసుకున్నాను.
                   </div>
 
                   <table className="table mt-2">
@@ -388,7 +384,7 @@ const ConsentForm = () => {
                         <th>SAFETY SCREENING QUESTIONS</th>
                         <th>Yes</th>
                         <th>No</th>
-                        <th className="tamil">பாதுகாப்பு கேள்விகள்</th>
+                        {/* <th className="tamil">பாதுகாப்பு கேள்விகள்</th> */}
                       </tr>
                     </thead>
                     <tbody>
@@ -396,38 +392,42 @@ const ConsentForm = () => {
                         <td>Cardiac issues / Medical Conditions</td>
                         <td><input type="radio" name="q1" /></td>
                         <td><input type="radio" name="q1" /></td>
-                        <td className="tamil">இதய பிரச்சினைகள்</td>
+                        {/* <td className="tamil">இதய பிரச்சினைகள்</td> */}
                       </tr>
                       <tr>
                         <td>Pregnancy ? Details</td>
                         <td><input type="radio" name="q2" /></td>
                         <td><input type="radio" name="q2" /></td>
-                        <td className="tamil">கர்ப்பம்</td>
+                        {/* <td className="tamil">கர்ப்பம்</td> */}
                       </tr>
                       <tr>
                         <td>Any Red Flag Conditions ?</td>
                         <td><input type="radio" name="q3" /></td>
                         <td><input type="radio" name="q3" /></td>
-                        <td className="tamil">எச்சரிக்கை நிலை</td>
+                        {/* <td className="tamil">எச்சரிக்கை நிலை</td> */}
                       </tr>
                       <tr>
                         <td>Previous Surgery Details</td>
                         <td><input type="radio" name="q4" /></td>
                         <td><input type="radio" name="q4" /></td>
-                        <td className="tamil">முந்தைய அறுவை சிகிச்சை</td>
+                        {/* <td className="tamil">முந்தைய அறுவை சிகிச்சை</td> */}
                       </tr>
                     </tbody>
                   </table>
 
                   <div className="mt-2">
-                    Treatment Plan (சிகிச்சை திட்டம்):
+                    Treatment Plan :
                   </div>
-                  <div>
+                  <div className="mb-2">
                     I have read the form and agree to physiotherapy evaluation and treatment.
                   </div>
-                  <div className="tamil">
-                    நான் இந்த படிவத்தை வாசித்து சிகிச்சைக்கு ஒப்புக்கொள்கிறேன்.
+                  <div className="hindi mb-2">
+                    मैंने इस सहमति पत्र को पढ़ लिया है, उसे पूरी तरह समझ लिया है, और फिजियोथेरेपी उपचार के लिए अपनी सहमति प्रदान करता/करती हूँ।
                   </div>
+                  <div className="telugu">
+                    నేను ఈ సమ్మతి పత్రాన్ని చదివి, పూర్తిగా అర్థం చేసుకుని, ఫిజియోథెరపీ చికిత్సకు నా సమ్మతిని తెలియజేస్తున్నాను.
+                  </div>
+
 
                   {/* SIGNATURE SECTION */}
                   <div className="sign-section">
