@@ -198,22 +198,24 @@ const AppointmentDetails = () => {
   const [generatedSessions, setGeneratedSessions] = useState(null)
   const [activeTab, setActiveTab] = useState('info')
 
+  const fetchSessions = async () => {
+    if (!appointment?.bookingId) return;
+    try {
+      const res = await fetch(`${wifiUrl}/api/physiotherapy-doctor/payment/${appointment.bookingId}`)
+      const data = await res.json()
+      if (data.success && data.data?.sessionTableCreatedStatus === true) {
+        setGeneratedSessions(data.data)
+      } else {
+        setGeneratedSessions({ therapyWithSessions: [] })
+      }
+    } catch (error) {
+      console.error("Failed to fetch generated sessions:", error)
+      setGeneratedSessions({ therapyWithSessions: [] })
+    }
+  }
+
   useEffect(() => {
     if (activeTab === 'sessions' && appointment?.bookingId && !generatedSessions) {
-      const fetchSessions = async () => {
-        try {
-          const res = await fetch(`${wifiUrl}/api/physiotherapy-doctor/payment/${appointment.bookingId}`)
-          const data = await res.json()
-          if (data.success && data.data?.sessionTableCreatedStatus === true) {
-            setGeneratedSessions(data.data)
-          } else {
-            setGeneratedSessions({ therapyWithSessions: [] })
-          }
-        } catch (error) {
-          console.error("Failed to fetch generated sessions:", error)
-          setGeneratedSessions({ therapyWithSessions: [] })
-        }
-      }
       fetchSessions()
     }
   }, [activeTab, appointment?.bookingId])
@@ -1096,6 +1098,7 @@ const AppointmentDetails = () => {
                 <GeneratedSessionsTable
                   generatedSessions={generatedSessions}
                   appointment={appointment}
+                  onRefresh={fetchSessions}
                 />
               ) : (
                 <div style={{ textAlign: 'center', padding: '60px', color: tokens.muted, fontSize: '14px', fontWeight: '500' }}>

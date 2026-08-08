@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getMessaging, getToken, deleteToken, onMessage } from 'firebase/messaging'
+import { getMessaging, getToken, deleteToken, onMessage, isSupported } from 'firebase/messaging'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyApKucCeDspoqLR-hLZOFm7ZKMJBza281c',
@@ -11,7 +11,15 @@ const firebaseConfig = {
 }
 
 const app = initializeApp(firebaseConfig)
-const messaging = getMessaging(app)
+let messaging = null
+
+isSupported().then((supported) => {
+  if (supported) {
+    messaging = getMessaging(app)
+  } else {
+    console.warn('Firebase Messaging is not supported in this browser/environment.')
+  }
+}).catch(console.error)
 
 // ─── Shared IndexedDB constants (must match service worker) ───────────────────
 const IDB_NAME = 'physio_sw_store'
@@ -138,6 +146,11 @@ const waitForSWActive = (registration) =>
   })
 
 export const getFCMToken = async (isRetry = false) => {
+  if (!messaging) {
+    console.warn('Firebase Messaging is not initialized. Skipping token generation.')
+    return ''
+  }
+  
   try {
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') {
@@ -209,6 +222,8 @@ export const getFCMToken = async (isRetry = false) => {
 
 // ─── FOREGROUND LISTENER ──────────────────────────────────────────────────────
 export const listenNotification = (onMessageReceived) => {
+  if (!messaging) return
+  
   onMessage(messaging, (payload) => {
     console.log('[firebase.js] Foreground message:', payload)
     if (onMessageReceived) {

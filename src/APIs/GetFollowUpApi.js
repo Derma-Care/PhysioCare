@@ -34,11 +34,14 @@ export const getBookingsForFollowUps = (bookingId) => {
   return http.get(`${BASE_URL}/getBookedServiceById/${bookingId}`)
 }
 
-export const getBookingsTodayFollowUps = (branchIdOverride) => {
+export const getBookingsTodayFollowUps = (branchIdOverride, date) => {
   const clinicid = sessionStorage.getItem('HospitalId')
   const branchId = branchIdOverride || sessionStorage.getItem('branchId')
 
-  return http.get(`${BASE_URL}/today/${clinicid}/${branchId}`)
+  // Use provided date, or default to today's date
+  const queryDate = date || new Date().toISOString().split('T')[0]
+
+  return http.get(`${BASE_URL}/customDate/${clinicid}/${branchId}/${queryDate}`)
 }
 
 export const getUpcomingFollowUps = (branchIdOverride) => {

@@ -169,9 +169,20 @@ const appointmentManagement = () => {
 
     // ✅ DATE FILTER (only when selected)
     if (selectedDate !== '') {
-      filtered = filtered.filter(
-        (item) => item.serviceDate === selectedDate
-      )
+      const [year, month, day] = selectedDate.split('-');
+      const possibleFormats = [
+        selectedDate, // YYYY-MM-DD
+        `${day}-${month}-${year}`, // DD-MM-YYYY
+        `${day}/${month}/${year}`, // DD/MM/YYYY
+        `${month}-${day}-${year}`, // MM-DD-YYYY
+        `${month}/${day}/${year}`, // MM/DD/YYYY
+      ];
+
+      filtered = filtered.filter((item) => {
+        if (!item.serviceDate) return false;
+        const dateStr = String(item.serviceDate).split('T')[0].split(' ')[0];
+        return possibleFormats.includes(dateStr) || possibleFormats.includes(String(item.serviceDate));
+      });
     }
 
     setFilteredData(filtered)
@@ -453,12 +464,13 @@ const appointmentManagement = () => {
               </div>
 
               {/* LEFT SIDE → Date Input */}
-              <div style={{ position: 'relative', width: '200px' }} className='mx-2'>
+              <div style={{ position: 'relative', width: '200px' }} className='mx-2 d-flex align-items-center gap-2'>
+                <label style={{ whiteSpace: 'nowrap', fontWeight: '500', marginBottom: 0 }}>Select Date:</label>
                 <CFormInput
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  style={{ paddingRight: '30px' }}
+                  style={{ paddingRight: '30px', flex: 1 }}
                 />
 
                 {/* ❌ Clear Icon */}

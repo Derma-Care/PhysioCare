@@ -104,6 +104,7 @@ const ProgramPayment = React.lazy(() => import('./views/AppointmentManagement/Pa
 
 const PhysioConsentForm = React.lazy(() => import('./views/AppointmentManagement/PhysioConsentForm'))
 const FollowupDashboard = React.lazy(() => import('./views/AppointmentManagement/FollowUpDashboard'))
+const StaffAttendancePortal = React.lazy(() => import('./views/AppointmentManagement/StaffAttendancePortal'))
 const PaymentDetailsUI = React.lazy(() => import('./views/AppointmentManagement/PaymentDetailsUI'))
 const AttendanceTracker = React.lazy(() => import('./views/AppointmentManagement/AttendanceTracker'))
 const PatientFeedback = React.lazy(() => import('./views/Feedback/PatientFeedback'))
@@ -252,3 +253,4 @@ const routes = [
 ]
 
 export default routes
+

@@ -113,7 +113,7 @@ const AppHeader = () => {
       position="sticky"
       className="mb-4 p-0"
       ref={headerRef}
-      style={{ backgroundColor: '#1B4F8A' }}
+      style={{ backgroundColor: '#1B4F8A', top: 0, zIndex: 1020 }}
     >
       <CContainer className="px-4" fluid style={{ borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
 

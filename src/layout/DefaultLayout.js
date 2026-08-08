@@ -5,9 +5,9 @@ import ClinicSummaryPopup from '../components/ClinicSummaryPopup'
 
 const DefaultLayout = () => {
   return (
-    <div>
+    <div style={{ overflowX: 'hidden', width: '100%' }}>
       <AppSidebar />
-      <div className="wrapper d-flex flex-column min-vh-100">
+      <div className="wrapper d-flex flex-column min-vh-100" style={{ overflowX: 'hidden', width: '100%' }}>
         <AppHeader />
         <NotificationOverlay />
         <ClinicSummaryPopup />

@@ -190,7 +190,7 @@ const groupSessionsByExercise = (sessions) => {
   return grouped
 }
 
-const GeneratedSessionsTable = ({ generatedSessions, appointment }) => {
+const GeneratedSessionsTable = ({ generatedSessions, appointment, onRefresh }) => {
   const [sessionOverrides, setSessionOverrides] = useState({})
   const [sessionEdits, setSessionEdits] = useState({})
   const [doctorSlots, setDoctorSlots] = useState([])
@@ -234,6 +234,9 @@ const GeneratedSessionsTable = ({ generatedSessions, appointment }) => {
           }
         }))
         fetchSlots()
+        if (onRefresh) {
+          onRefresh()
+        }
       } else {
         showCustomToast(res.data?.message || `Failed to ${action} session`, "error")
       }
@@ -266,20 +269,29 @@ const GeneratedSessionsTable = ({ generatedSessions, appointment }) => {
         bookingStatus: action === 'book' ? "Booked" : "Rescheduled"
       }
 
-      if (action === 'reschedule_confirm') {
+      if (action === 'reschedule_confirm' || action === 'book') {
         setConfirmModal({
           visible: true,
           payload,
           action,
           rowKey,
           sessionNo,
-          title: "Confirm Reschedule",
-          message: "Are you sure you want to reschedule this session?"
+          title: action === 'book' ? "Confirm Booking" : "Confirm Reschedule",
+          message: (
+            <div>
+              <p style={{ marginBottom: '12px' }}>
+                Are you sure you want to {action === 'book' ? 'book' : 'reschedule'} this session?
+              </p>
+              <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px' }}>
+                <div style={{ marginBottom: '6px' }}><strong>Therapist:</strong> {generatedSessions.therapistName || generatedSessions.doctorName || '-'}</div>
+                <div style={{ marginBottom: '6px' }}><strong>Date:</strong> {edits.date || '-'}</div>
+                <div><strong>Slot:</strong> {edits.slot || '-'}</div>
+              </div>
+            </div>
+          )
         })
         return
       }
-
-      executeConfirmedAction(payload, action, rowKey, sessionNo)
     } else if (action === 'reschedule_init') {
       setSessionOverrides(prev => ({
         ...prev,
@@ -358,7 +370,7 @@ const GeneratedSessionsTable = ({ generatedSessions, appointment }) => {
                       const displaySlot = override?.slot || row.slot || ''
 
                       // "if slot is empty that is not booked"
-                      const isNotBooked = !displaySlot || currentStatus === 'Planned' || currentStatus === 'Not Booked'
+                      const isNotBooked = !displaySlot || displaySlot === 'NA' || currentStatus === 'Planned' || currentStatus === 'Not Booked' || currentStatus === 'NA'
                       const isEditMode = (isNotBooked || override?.mode === 'edit')
 
                       const currentDate = new Date().toISOString().split('T')[0]

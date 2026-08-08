@@ -923,7 +923,8 @@ const WidgetsDropdown = (props) => {
         .wd-table-wrapper {
           border: 0.5px solid #d0dce9;
           border-radius: 10px;
-          overflow: visible;
+          overflow-x: auto;
+          overflow-y: visible;
           margin-bottom: 12px;
         }
         /* Restore rounded corners on first/last rows since overflow:visible removes clip */

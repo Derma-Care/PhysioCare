@@ -182,6 +182,7 @@ export default function FollowupDashboard() {
   const [reason, setReason] = useState('')
   const [newDate, setNewDate] = useState('')
   const [newTime, setNewTime] = useState('')
+  const [selectedDateFilter, setSelectedDateFilter] = useState('')
   const { searchQuery, setSearchQuery } = useGlobalSearch()
   const [slotsForSelectedDate, setSlotsForSelectedDate] = useState([])
   const [loadingSlots, setLoadingSlots] = useState(false)
@@ -208,11 +209,11 @@ export default function FollowupDashboard() {
     }
   }, [globalBranchId]);
 
-  const getInitialCounts = async (branchIdOverride = globalBranchId) => {
+  const getInitialCounts = async (branchIdOverride = globalBranchId, dateStr = selectedDateFilter) => {
     setLoading(true)
     try {
       const [todayRes, upcomingRes] = await Promise.all([
-        getBookingsTodayFollowUps(branchIdOverride),
+        getBookingsTodayFollowUps(branchIdOverride, dateStr),
         getUpcomingFollowUps(branchIdOverride),
       ])
 
@@ -236,6 +237,13 @@ export default function FollowupDashboard() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (globalBranchId && activeCard === 'today') {
+      getTodayFollowUps(globalBranchId, selectedDateFilter);
+    }
+  }, [selectedDateFilter]);
+
 
   /* ── API calls ────────────────────────────────────────────────────── */
   const updatePaymentStatus = async (
@@ -382,10 +390,10 @@ export default function FollowupDashboard() {
   const visibleSlots = showAllSlots ? sortedSlots : sortedSlots.slice(0, 12)
 
   /* ── Today ────────────────────────────────────────────────────────── */
-  const getTodayFollowUps = async (branchIdOverride = globalBranchId) => {
+  const getTodayFollowUps = async (branchIdOverride = globalBranchId, dateStr = selectedDateFilter) => {
     setLoading(true)
     try {
-      const res = await getBookingsTodayFollowUps(branchIdOverride)
+      const res = await getBookingsTodayFollowUps(branchIdOverride, dateStr)
       if (res.status === 200) {
         const d = Array.isArray(res?.data?.data) ? res.data.data : []
         setRows(d)
@@ -474,8 +482,23 @@ export default function FollowupDashboard() {
       (row.paymentType || '').toLowerCase().includes(search) ||
       (row.visitType || '').toLowerCase().includes(search) ||
       (row.status || '').toLowerCase().includes(search)
-    return matchStatus && matchSearch
-  }), [rows, filter, searchQuery])
+
+    let matchDate = true;
+    if (selectedDateFilter) {
+      const [year, month, day] = selectedDateFilter.split('-');
+      const possibleFormats = [
+        selectedDateFilter,
+        `${day}-${month}-${year}`,
+        `${day}/${month}/${year}`,
+        `${month}-${day}-${year}`,
+        `${month}/${day}/${year}`,
+      ];
+      const dateStr = String(row.serviceDate).split('T')[0].split(' ')[0];
+      matchDate = possibleFormats.includes(dateStr) || possibleFormats.includes(String(row.serviceDate));
+    }
+
+    return matchStatus && matchSearch && matchDate
+  }), [rows, filter, searchQuery, selectedDateFilter])
 
   const startIndex = (currentPage - 1) * pageSize
   const paginatedRows = list.slice(startIndex, startIndex + pageSize)
@@ -584,6 +607,34 @@ export default function FollowupDashboard() {
                   <X size={14} />
                 </button>
               )}
+            </div>
+
+            {/* NEW Single Date Filter */}
+            <div className="wd-date-group">
+              <label className="wd-date-label">Select Date</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="date"
+                  value={selectedDateFilter}
+                  className="wd-date-input"
+                  onChange={(e) => setSelectedDateFilter(e.target.value)}
+                  style={{ paddingRight: '30px' }}
+                />
+                {selectedDateFilter && (
+                  <X
+                    size={14}
+                    onClick={() => setSelectedDateFilter('')}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      cursor: 'pointer',
+                      color: '#94a3b8',
+                    }}
+                  />
+                )}
+              </div>
             </div>
 
             <div className="wd-date-group">
@@ -928,47 +979,47 @@ export default function FollowupDashboard() {
                                     div::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
                                   `}</style>
                                   <CTable small bordered className='pink-table' style={{ tableLayout: 'fixed', width: '100%' }}>
-                                  <CTableHead>
-                                    <CTableRow>
-                                      <CTableHeaderCell width="40%">Session</CTableHeaderCell>
-                                      <CTableHeaderCell width="15%">Date</CTableHeaderCell>
-                                      <CTableHeaderCell width="15%">Slot</CTableHeaderCell>
-                                      <CTableHeaderCell width="15%">Status</CTableHeaderCell>
-                                      <CTableHeaderCell width="15%">Payment</CTableHeaderCell>
-                                    </CTableRow>
-                                  </CTableHead>
-
-                                  <CTableBody>
-                                    {rowSessions.map((item, i) => (
-                                      <CTableRow key={i}>
-                                        <CTableDataCell>
-                                          <div>
-                                            <p className='mb-0'>{item.exerciseName}</p>
-                                            <small className='text-muted'>Session - {item.sessionNo}</small> <br></br>
-                                            <small className='text-muted'>ID - {item.sessionId}</small>
-                                          </div>
-                                        </CTableDataCell>
-                                        <CTableDataCell>{item.date}</CTableDataCell>
-                                        <CTableDataCell>{item.slot || "NA"}</CTableDataCell>
-                                        <CTableDataCell>{item.bookingStatus || "Pending"}</CTableDataCell>
-                                        <CTableDataCell>
-                                          <span style={{
-                                            display: 'inline-block',
-                                            padding: '2px 10px',
-                                            borderRadius: '20px',
-                                            fontSize: '11px',
-                                            fontWeight: '600',
-                                            background: item.paymentStatus?.toLowerCase() === 'paid' ? '#eaf3de' : '#fcebeb',
-                                            color: item.paymentStatus?.toLowerCase() === 'paid' ? '#3b6d11' : '#a32d2d',
-                                            border: `0.5px solid ${item.paymentStatus?.toLowerCase() === 'paid' ? '#c0dd97' : '#f4b5b5'}`,
-                                          }}>
-                                            {item.paymentStatus}
-                                          </span>
-                                        </CTableDataCell>
+                                    <CTableHead>
+                                      <CTableRow>
+                                        <CTableHeaderCell width="40%">Session</CTableHeaderCell>
+                                        <CTableHeaderCell width="15%">Date</CTableHeaderCell>
+                                        <CTableHeaderCell width="15%">Slot</CTableHeaderCell>
+                                        <CTableHeaderCell width="15%">Status</CTableHeaderCell>
+                                        <CTableHeaderCell width="15%">Payment</CTableHeaderCell>
                                       </CTableRow>
-                                    ))}
-                                  </CTableBody>
-                                </CTable>
+                                    </CTableHead>
+
+                                    <CTableBody>
+                                      {rowSessions.map((item, i) => (
+                                        <CTableRow key={i}>
+                                          <CTableDataCell>
+                                            <div>
+                                              <p className='mb-0'>{item.exerciseName}</p>
+                                              <small className='text-muted'>Session - {item.sessionNo}</small> <br></br>
+                                              <small className='text-muted'>ID - {item.sessionId}</small>
+                                            </div>
+                                          </CTableDataCell>
+                                          <CTableDataCell>{item.date}</CTableDataCell>
+                                          <CTableDataCell>{item.slot || "NA"}</CTableDataCell>
+                                          <CTableDataCell>{item.bookingStatus || "Pending"}</CTableDataCell>
+                                          <CTableDataCell>
+                                            <span style={{
+                                              display: 'inline-block',
+                                              padding: '2px 10px',
+                                              borderRadius: '20px',
+                                              fontSize: '11px',
+                                              fontWeight: '600',
+                                              background: item.paymentStatus?.toLowerCase() === 'paid' ? '#eaf3de' : '#fcebeb',
+                                              color: item.paymentStatus?.toLowerCase() === 'paid' ? '#3b6d11' : '#a32d2d',
+                                              border: `0.5px solid ${item.paymentStatus?.toLowerCase() === 'paid' ? '#c0dd97' : '#f4b5b5'}`,
+                                            }}>
+                                              {item.paymentStatus}
+                                            </span>
+                                          </CTableDataCell>
+                                        </CTableRow>
+                                      ))}
+                                    </CTableBody>
+                                  </CTable>
                                 </div>
                               </div>
                             </CTableDataCell>

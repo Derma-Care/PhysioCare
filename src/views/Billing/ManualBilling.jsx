@@ -11,7 +11,7 @@ import { http } from '../../Utils/Interceptors'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import LoadingIndicator from '../../Utils/loader'
 import { CTable, CTableHead, CTableBody, CTableRow, CTableHeaderCell, CTableDataCell } from '@coreui/react'
-import { Edit, Printer, Download, Trash, Eye, Banknote } from 'lucide-react'
+import { Edit, Printer, Download, Trash, Eye, Banknote, MessageCircle } from 'lucide-react'
 import Pagination from '../../Utils/Pagination'
 
 // ---- Design tokens ----
@@ -71,14 +71,14 @@ export default function ManualBilling() {
         if (Array.isArray(doctorData)) {
             return doctorData.map(d => d.doctorName || d.name).filter(Boolean)
         }
-        return doctorData
+        return []
     }, [doctorData])
 
     const branchList = useMemo(() => {
         if (branches && Array.isArray(branches)) {
             return branches.map(b => b.branchName || b.name).filter(Boolean)
         }
-        return branches
+        return []
     }, [branches])
 
     // Tabs / View State
@@ -97,8 +97,8 @@ export default function ManualBilling() {
     const [mobile, setMobile] = useState('')
     const [patientId, setPatientId] = useState('')
     // Core billing fields
-    const [doctor, setDoctor] = useState(doctorList[0] || '')
-    const [branch, setBranch] = useState(branchList[0] || '')
+    const [doctor, setDoctor] = useState(doctorList?.[0] || '')
+    const [branch, setBranch] = useState(branchList?.[0] || '')
     const [visitType, setVisitType] = useState('')
 
     // Multiple Services State
@@ -604,6 +604,96 @@ export default function ManualBilling() {
         }
     }
 
+    const handleShareWhatsApp = async (b) => {
+        if (isDownloading) return
+        setIsDownloading(true)
+        showToast('Preparing WhatsApp share…')
+
+        try {
+            const printContent = document.getElementById('printable-receipt')
+            if (!printContent) {
+                showToast('Print element not found', true)
+                setIsDownloading(false)
+                return
+            }
+
+            const originalDisplay = printContent.style.display
+            printContent.style.display = 'block'
+            printContent.style.position = 'absolute'
+            printContent.style.left = '-9999px'
+            printContent.style.top = '0'
+
+            await new Promise(resolve => setTimeout(resolve, 400))
+
+            const canvas = await html2canvas(printContent, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+            })
+
+            printContent.style.display = originalDisplay
+            printContent.style.position = ''
+            printContent.style.left = ''
+            printContent.style.top = ''
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.98)
+            const pdf = new jsPDF('p', 'mm', 'a4')
+
+            const pdfWidth = 210
+            const pdfHeight = 297
+            const imgWidth = pdfWidth
+            const imgHeight = (canvas.height * imgWidth) / canvas.width
+            let heightLeft = imgHeight
+            let position = 0
+
+            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
+            heightLeft -= pdfHeight
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight
+                pdf.addPage()
+                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
+                heightLeft -= pdfHeight
+            }
+
+            const pdfBlob = pdf.output('blob')
+            const ptName = b?.patient?.patientName || ''
+            const fileName = `Invoice_${b.billingId}_${ptName.replace(/\s+/g, '_')}.pdf`
+            const file = new File([pdfBlob], fileName, { type: 'application/pdf' })
+
+            // Get upload URL
+            const uploadUrlRes = await http.get(`/api/s3/upload-url?fieldName=whatsappSharePdf&extension=pdf`)
+            const uploadData = uploadUrlRes.data?.data || uploadUrlRes.data || uploadUrlRes
+            const { uploadUrl, fileKey, contentType } = uploadData
+
+            // Upload to S3
+            await fetch(uploadUrl, {
+                method: "PUT",
+                headers: { "Content-Type": contentType },
+                body: file
+            })
+
+            // Validate upload
+            await http.get(`/api/s3/validate-upload?fileKey=${fileKey}&fieldName=whatsappSharePdf`)
+
+            // Get Share URL
+            const shareUrlRes = await http.get(`/api/s3/share-url?fileKey=${fileKey}`)
+            const shareData = shareUrlRes.data?.data || shareUrlRes.data || shareUrlRes
+            const { shareUrl } = shareData
+
+            // Send via WhatsApp
+            const ptMobile = b?.patient?.mobileNumber || ''
+            const msg = `Hello, your invoice details are ready. Please find the attached PDF: ${shareUrl}`;
+            window.open(`https://wa.me/91${ptMobile}?text=${encodeURIComponent(msg)}`, '_blank');
+            showToast('WhatsApp share opened!');
+        } catch (error) {
+            console.error('WhatsApp Share Error:', error)
+            showToast('Failed to share via WhatsApp', true)
+        } finally {
+            setIsDownloading(false)
+        }
+    }
+
     const inputStyle = (hasError = false) => ({
         width: '100%',
         fontSize: 14.5,
@@ -661,6 +751,36 @@ export default function ManualBilling() {
     }
 
     // Field is defined at module level (outside component) to avoid remount on re-render
+
+    const fillForPrint = (b) => {
+        const st = b.invoiceStatus || b.status || 'Draft'
+        setBillNo(b.billingId)
+        setPatientName(b.patient?.patientName || '')
+        setMobile(b.patient?.mobileNumber || '')
+        if (b.services && b.services.length > 0) {
+            setServices(b.services.map((s, i) => ({
+                id: Date.now() + i,
+                serviceName: s.serviceName || '',
+                unitPrice: s.unitPrice || '',
+                discountPercent: s.discountPercent || '',
+                taxPercent: s.taxPercent || ''
+            })))
+        } else {
+            setServices([{ id: Date.now(), serviceName: '', unitPrice: '', discountPercent: '', taxPercent: '' }])
+        }
+        setDoctor(b.doctorId || '')
+        setVisitType(b.visitType || '')
+        setStatus(st)
+        setBillDate(b.billDate || todayStr())
+        setInvoiceDate(b.invoiceDate || todayStr())
+        setPaymentMode(b.payment?.paymentMode || '')
+        setTransactionId(b.payment?.transactionId || '')
+        setRemarks(b.payment?.remarks || '')
+        setPaidAmount(b.paymentSummary?.totalPaid || 0)
+        setBillingStaff(b.additionalDetails?.billingStaff || '')
+        setNotes(b.additionalDetails?.notes || '')
+        setInternalComments(b.additionalDetails?.internalComments || '')
+    }
 
     return (
         <div style={{ background: 'transparent', minHeight: '100vh', color: INK, paddingBottom: 100 }}>
@@ -1177,9 +1297,40 @@ export default function ManualBilling() {
                             <span style={cardTitleStyle}>
                                 <span style={dot(TEAL)} /> Billing Details & Transaction History
                             </span>
-                            <button className="mbp-btn" onClick={() => setViewMode('list')} style={{ ...btnBase, background: '#f8fafc', color: SLATE, border: '1px solid #e2e8f0' }}>
-                                ← Back to List
-                            </button>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <button
+                                    onClick={() => handleEditBilling(viewBillingDetails.billingId, false)}
+                                    title="Edit"
+                                    style={{ border: 'none', background: `${TEAL}18`, color: TEAL_DEEP, padding: '7px 12px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}
+                                >
+                                    <Edit size={16} style={{ marginRight: 6 }} /> Edit
+                                </button>
+                                <button
+                                    title="Print"
+                                    onClick={() => { fillForPrint(viewBillingDetails); setTimeout(() => handlePrint('printable-receipt'), 300) }}
+                                    style={{ border: 'none', background: '#f1f5f9', color: SLATE, padding: '7px 12px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}
+                                >
+                                    <Printer size={16} style={{ marginRight: 6 }} /> Print
+                                </button>
+                                <button
+                                    title="Download PDF"
+                                    onClick={() => { fillForPrint(viewBillingDetails); setTimeout(() => handleDownloadPDF(), 300) }}
+                                    style={{ border: 'none', background: '#f0fdf4', color: SAGE, padding: '7px 12px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}
+                                >
+                                    <Download size={16} style={{ marginRight: 6 }} /> PDF
+                                </button>
+                                <button
+                                    title="WhatsApp Share"
+                                    disabled={isDownloading}
+                                    onClick={() => { fillForPrint(viewBillingDetails); setTimeout(() => handleShareWhatsApp(viewBillingDetails), 300) }}
+                                    style={{ border: 'none', background: '#dcfce7', color: '#166534', padding: '7px 12px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: isDownloading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', opacity: isDownloading ? 0.7 : 1 }}
+                                >
+                                    <MessageCircle size={16} style={{ marginRight: 6 }} /> {isDownloading ? 'Processing...' : 'WhatsApp'}
+                                </button>
+                                <button className="mbp-btn" onClick={() => setViewMode('list')} style={{ ...btnBase, background: '#f8fafc', color: SLATE, border: '1px solid #e2e8f0' }}>
+                                    ← Back to List
+                                </button>
+                            </div>
                         </div>
                         <div style={{ padding: 20 }}>
                             <div className="mbp-grid" style={{ marginBottom: 20 }}>
@@ -1299,35 +1450,6 @@ export default function ManualBilling() {
                                                     : st === 'Pending' || st === 'Partially Paid' ? { bg: '#fffaf0', color: '#d97706', border: '#fef3c7' }
                                                         : { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' }
 
-                                                const fillAndPrint = () => {
-                                                    setBillNo(b.billingId)
-                                                    setPatientName(b.patient?.patientName || '')
-                                                    setMobile(b.patient?.mobileNumber || '')
-                                                    if (b.services && b.services.length > 0) {
-                                                        setServices(b.services.map((s, i) => ({
-                                                            id: Date.now() + i,
-                                                            serviceName: s.serviceName || '',
-                                                            unitPrice: s.unitPrice || '',
-                                                            discountPercent: s.discountPercent || '',
-                                                            taxPercent: s.taxPercent || ''
-                                                        })))
-                                                    } else {
-                                                        setServices([{ id: Date.now(), serviceName: '', unitPrice: '', discountPercent: '', taxPercent: '' }])
-                                                    }
-                                                    setDoctor(b.doctorId || '')
-                                                    setVisitType(b.visitType || '')
-                                                    setStatus(st)
-                                                    setBillDate(b.billDate || todayStr())
-                                                    setInvoiceDate(b.invoiceDate || todayStr())
-                                                    setPaymentMode(b.payment?.paymentMode || '')
-                                                    setTransactionId(b.payment?.transactionId || '')
-                                                    setRemarks(b.payment?.remarks || '')
-                                                    setPaidAmount(b.paymentSummary?.totalPaid || 0)
-                                                    setBillingStaff(b.additionalDetails?.billingStaff || '')
-                                                    setNotes(b.additionalDetails?.notes || '')
-                                                    setInternalComments(b.additionalDetails?.internalComments || '')
-                                                }
-
                                                 return (
                                                     <CTableRow key={b.billingId} className="pink-table">
                                                         <CTableDataCell style={{ fontWeight: 600 }}>{b.patient?.patientName || '-'}</CTableDataCell>
@@ -1373,27 +1495,7 @@ export default function ManualBilling() {
                                                                         <Banknote size={14} style={{ marginRight: 4 }} /> Pay
                                                                     </button>
                                                                 )}
-                                                                <button
-                                                                    onClick={() => handleEditBilling(b.billingId, false)}
-                                                                    title="Edit"
-                                                                    style={{ border: 'none', background: `${TEAL}18`, color: TEAL_DEEP, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}
-                                                                >
-                                                                    <Edit size={14} style={{ marginRight: 4 }} /> Edit
-                                                                </button>
-                                                                <button
-                                                                    title="Print"
-                                                                    onClick={() => { fillAndPrint(); setTimeout(() => handlePrint('printable-receipt'), 300) }}
-                                                                    style={{ border: 'none', background: '#f1f5f9', color: SLATE, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}
-                                                                >
-                                                                    <Printer size={14} style={{ marginRight: 4 }} /> Print
-                                                                </button>
-                                                                <button
-                                                                    title="Download PDF"
-                                                                    onClick={() => { fillAndPrint(); setTimeout(() => handleDownloadPDF(), 300) }}
-                                                                    style={{ border: 'none', background: '#f0fdf4', color: SAGE, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}
-                                                                >
-                                                                    <Download size={14} style={{ marginRight: 4 }} /> PDF
-                                                                </button>
+
                                                                 <button
                                                                     title="Delete"
                                                                     onClick={() => handleDeleteBilling(b.billingId)}

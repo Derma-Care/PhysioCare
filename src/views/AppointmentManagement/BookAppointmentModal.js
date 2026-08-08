@@ -343,7 +343,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
   const progressPct = Math.round(((currentTab + 1) / visibleTabs.length) * 100)
 
   // ── Derived State ─────────────────────────────────────────────────────────
-  const isFollowupStatus = visitType === 'followup' && Number(selectedBooking?.freeFollowUpsLeft || 0) > 0
+  const isFollowupStatus = visitType === 'followup' && Number(selectedBooking?.freeFollowupsLeft ?? selectedBooking?.freeFollowUpsLeft ?? 0) > 0
 
   // ── Effects ───────────────────────────────────────────────────────────────
   useEffect(() => { setOnboardToCustomer(!selectedBooking?.customerId) }, [selectedBooking])
@@ -762,10 +762,11 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
     }
 
     if (tabId === 'booking') {
+      const isFreeFollowUp = visitType === 'followup' && Number(selectedBooking?.freeFollowupsLeft ?? selectedBooking?.freeFollowUpsLeft ?? 0) > 0;
       if (!bookingDetails.branchId) e.branchname = 'Select branch'
       if (!bookingDetails.doctorId) e.doctorName = 'Select doctor'
-      if (bookingDetails.foc === 'FOC' && !bookingDetails.focReason?.trim()) e.focReason = 'Enter FOC reason'
-      if (!bookingDetails.paymentType) e.paymentType = 'Select payment type'
+      if (bookingDetails.foc === 'FOC' && !isFreeFollowUp && !bookingDetails.focReason?.trim()) e.focReason = 'Enter FOC reason'
+      if (!bookingDetails.paymentType && bookingDetails.foc !== 'FOC') e.paymentType = 'Select payment type'
     }
 
     if (tabId === 'slots') {
@@ -1344,7 +1345,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         <CRow>
           <CCol md={6}><p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Patient Information</p></CCol>
           {selectedBooking &&
-            <CCol md={6}><p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Free consultation left : {selectedBooking?.freeFollowUpsLeft}</p></CCol>
+            <CCol md={6}><p style={{ ...sectionHeadStyle, marginTop: '8px' }}>Free consultation left : {selectedBooking?.freeFollowupsLeft ?? selectedBooking?.freeFollowUpsLeft ?? 0}</p></CCol>
           }
         </CRow>
 
