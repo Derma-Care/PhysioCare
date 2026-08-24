@@ -25,6 +25,19 @@ export const CustomerData = async (branchIdOverride) => {
   }
 }
 
+// Search customers
+export const searchCustomers = async (hospitalId, branchId, searchQuery) => {
+  try {
+    const url = `${BASE_URL}/customer/searchInput/${hospitalId}/${branchId}/${searchQuery}`
+    const response = await http.get(url)
+    const results = response.data.data || response.data || []
+    return Array.isArray(results) ? results.filter(Boolean) : [results].filter(Boolean)
+  } catch (error) {
+    console.error('Failed to search customers:', error)
+    throw error
+  }
+}
+
 // **Add a new customer
 export const addCustomer = async (customerDTO) => {
   try {

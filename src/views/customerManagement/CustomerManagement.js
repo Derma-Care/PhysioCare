@@ -17,6 +17,7 @@ import {
   deleteCustomerData,
   addCustomer,
   updateCustomerData,
+  searchCustomers,
 } from './CustomerManagementAPI'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -135,10 +136,25 @@ const CustomerManagement = () => {
   }, [globalBranchId])
 
   useEffect(() => {
-    if (globalBranchId) {
-      fetchCustomers(globalBranchId);
-    }
-  }, [globalBranchId, fetchCustomers])
+    const delayDebounceFn = setTimeout(async () => {
+      if (globalBranchId) {
+        if (searchQuery.trim()) {
+          setLoading(true); setError(null);
+          try {
+            const clinicId = sessionStorage.getItem('HospitalId')
+            const branchId = globalBranchId
+            const results = await searchCustomers(clinicId, branchId, searchQuery.trim())
+            setCustomerData(results)
+          } catch (err) {
+            setError('Failed to search customers.'); setCustomerData([])
+          } finally { setLoading(false) }
+        } else {
+          fetchCustomers(globalBranchId)
+        }
+      }
+    }, 500)
+    return () => clearTimeout(delayDebounceFn)
+  }, [searchQuery, globalBranchId, fetchCustomers])
 
   const TITLES = ['Mr.', 'Mrs.', 'Miss.', 'Ms.', 'Mx.', 'Dr.', 'Prof.', 'Rev.', 'Capt.', 'Col.']
 
@@ -155,24 +171,25 @@ const CustomerManagement = () => {
       }
     }
 
-    let title = '', firstName = '', lastName = ''
+    let title = customer.title || ''
+    let firstName = ''
+    let lastName = ''
+
     if (customer.fullName) {
       const parts = customer.fullName.trim().split(/\s+/)
-      // ✅ Check first word against known titles (case-insensitive)
-      const firstWord = parts[0]
+      const firstWord = parts[0] || ''
       const matchedTitle = TITLES.find(
-        (t) => t.toLowerCase() === firstWord.toLowerCase()
+        (t) => t.replace(/\./g, '').toLowerCase() === firstWord.replace(/\./g, '').toLowerCase()
       )
+      
       if (matchedTitle) {
-        title = matchedTitle              // use canonical casing e.g. "Mr." not "mr."
-        firstName = parts[1] || ''
-        lastName = parts.slice(2).join(' ')
+        title = matchedTitle
+        firstName = parts.slice(1).join(' ')
       } else {
-        // No title found — entire name goes into firstName + lastName
-        title = ''
-        firstName = parts[0] || ''
-        lastName = parts.slice(1).join(' ')
+        firstName = parts.join(' ')
       }
+    } else {
+      firstName = [customer.firstName, customer.lastName].filter(Boolean).join(' ')
     }
 
     setFormData({
@@ -316,9 +333,19 @@ const CustomerManagement = () => {
   }
 
   const filteredData = React.useMemo(() => {
-    const q = searchQuery.toLowerCase().trim()
-    if (!q) return customerData
-    return customerData.filter((item) => Object.values(item).some((v) => String(v).toLowerCase().includes(q)))
+    let data = [...customerData]
+
+    // Latest customer first
+    return data.sort((a, b) => {
+      const dateA = new Date(a.createdAt || a.createdDate || 0).getTime()
+      const dateB = new Date(b.createdAt || b.createdDate || 0).getTime()
+
+      if (!isNaN(dateA) && !isNaN(dateB) && dateA !== dateB) {
+        return dateB - dateA
+      }
+
+      return (b.customerId || '').localeCompare(a.customerId || '')
+    })
   }, [searchQuery, customerData])
 
   const displayData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
@@ -444,7 +471,7 @@ const CustomerManagement = () => {
                   </CTableBody>
                 </CTable>
               </div>
-              {displayData.length > 0 && (
+              {/* {displayData.length > 0 && (
                 <Pagination
                   currentPage={currentPage}
                   totalPages={Math.ceil(filteredData.length / rowsPerPage)}
@@ -452,7 +479,7 @@ const CustomerManagement = () => {
                   onPageChange={setCurrentPage}
                   onPageSizeChange={setRowsPerPage}
                 />
-              )}
+              )} */}
             </>
           )}
         </>

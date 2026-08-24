@@ -220,6 +220,7 @@ export const HospitalProvider = ({ children }) => {
       const res = await GetClinicBranches(id)
       const list = res.data || []
       setBranches(list)
+      sessionStorage.setItem('clinicBranches', JSON.stringify(list))
 
       // Always sync context state from sessionStorage after loading branches.
       // This fixes the "dropdown empty after login" bug: branchId is stored in

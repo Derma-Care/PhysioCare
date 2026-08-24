@@ -186,8 +186,20 @@ export default function Billing() {
       setLoading(true)
       const res = await AppointmentData(branchIdOverride)
       const data = res?.data || []
-      setAllData(data)                          // keep full list for counts
-      setBookings(data)                         // show all in dropdown
+      
+      const sortedData = [...data].sort((a, b) => {
+          const d1 = new Date(a.createdAt || a.bookingDate || a.date).getTime();
+          const d2 = new Date(b.createdAt || b.bookingDate || b.date).getTime();
+          if (!isNaN(d1) && !isNaN(d2)) {
+              return d2 - d1;
+          }
+          const idA = a.bookingId || a.id || a._id || '';
+          const idB = b.bookingId || b.id || b._id || '';
+          return idB.localeCompare(idA);
+      });
+
+      setAllData(sortedData)                          // keep full list for counts
+      setBookings(sortedData)                         // show all in dropdown
     } catch (error) {
       console.error('Failed to fetch bookings:', error)
     } finally {

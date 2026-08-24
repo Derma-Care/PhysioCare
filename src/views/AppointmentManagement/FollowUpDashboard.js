@@ -43,6 +43,8 @@ import { useHospital } from '../Usecontext/HospitalContext'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { showCustomToast } from '../../Utils/Toaster'
 import { GetClinicBranches } from '../Doctors/DoctorAPI'
+import { formatWhatsAppMessage } from '../../Utils/WhatsAppMessageFormatter'
+import { http } from '../../Utils/Interceptors'
 
 /* ─── Status list ─────────────────────────────────────────────────────── */
 const followUpStatus = [
@@ -291,8 +293,26 @@ export default function FollowupDashboard() {
         payload.serviceDate = newDate
         payload.servicetime = newTime
       }
-
       await bookingUpdate(payload)
+
+      // Send WhatsApp Notification
+      if (status.toLowerCase() === 'cancelled' || status.toLowerCase() === 'rescheduled') {
+        if (row?.mobileNumber) {
+          try {
+            const msg = formatWhatsAppMessage({
+              status: status.toLowerCase(),
+              patientName: row.name || 'Patient',
+              doctorName: row.doctorName || 'your doctor',
+              serviceDate: status.toLowerCase() === 'cancelled' ? row.serviceDate : newDate,
+              serviceTime: status.toLowerCase() === 'cancelled' ? row.servicetime : newTime,
+              bookingId: row.bookingId || ''
+            });
+            window.open(`https://wa.me/91${row.mobileNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+          } catch (waError) {
+            console.error("Failed to open WhatsApp", waError);
+          }
+        }
+      }
 
       // ✅ refresh current tab data
       if (activeCard === "upcoming") {

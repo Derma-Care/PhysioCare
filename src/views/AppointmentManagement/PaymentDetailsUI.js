@@ -31,6 +31,8 @@ import { ToWords } from 'to-words';
 import { uploadFile } from "../widgets/S3UploadServiceDoctor";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { http } from "../../Utils/Interceptors";
+import { formatWhatsAppMessage } from "../../Utils/WhatsAppMessageFormatter";
 
 const StatusBadge = ({ status }) => {
     const styles = {
@@ -107,9 +109,10 @@ export default function PaymentDetailsUI() {
     const [emailTitle, setEmailTitle] = useState("");
     const [isEmailing, setIsEmailing] = useState(false);
     const [emailLoadingStep, setEmailLoadingStep] = useState("");
+    const [shareMode, setShareMode] = useState("email");
 
     const handleSendEmail = async () => {
-        if (!emailAddress) {
+        if (shareMode === "email" && !emailAddress) {
             showCustomToast("Please enter an email address", "error");
             return;
         }
@@ -178,6 +181,30 @@ export default function PaymentDetailsUI() {
             setEmailLoadingStep("Uploading to cloud...");
             const fileKey = await uploadFile("patientPdf", file);
 
+            if (shareMode === "whatsapp") {
+                setEmailLoadingStep("Generating link...");
+                const shareUrlRes = await http.get(`/api/s3/share-url?fileKey=${fileKey}`);
+                const shareData = shareUrlRes.data?.data || shareUrlRes.data || shareUrlRes;
+                const { shareUrl } = shareData;
+
+                const ptMobile = patientInfo?.mobileNumber || '';
+                const msg = formatWhatsAppMessage({
+                    status: 'invoice',
+                    patientName: patientInfo?.name || "Patient",
+                    bookingId: data.bookingId || '',
+                    serviceDate: new Date().toLocaleDateString(),
+                    billAmount: `₹${data.totalAmount}`,
+                    balanceDue: `₹${data.balanceAmount}`,
+                    invoiceUrl: shareUrl
+                });
+
+                window.open(`https://wa.me/91${ptMobile}?text=${encodeURIComponent(msg)}`, '_blank');
+                showCustomToast("WhatsApp share opened!", "success");
+                setEmailModalVisible(false);
+                setIsEmailing(false);
+                return;
+            }
+
             // Send email via backend
             setEmailLoadingStep("Sending email...");
             const payload = {
@@ -187,15 +214,6 @@ export default function PaymentDetailsUI() {
                 pdfFile: fileKey,
             };
 
-            // if (emailType === "consolidated") {
-            //     payload.startDate = startDateInput || data.sessionStartDate || data.date;
-            //     payload.endDate = endDateInput || data.sessionEndDate || data.date;
-            //     payload.treatmentName = treatmentNameInput || data.treatmentName;
-            // } else {
-            //     payload.treatmentName = data.treatmentName;
-            // }
-
-            console.log(payload, "payload")
             const res = await sendReceiptEmail(payload);
             const responseData = res?.data || res;
 
@@ -460,6 +478,29 @@ export default function PaymentDetailsUI() {
                             setEndDateInput(defaultEnd);
                             setEmailType("recent");
                             setEmailTitle("Payment Receipt");
+                            setShareMode("whatsapp");
+                            setEmailModalVisible(true);
+                        }}
+                        style={{
+                            background: "#25D366",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 16px",
+                            cursor: "pointer",
+                        }}
+                    >
+                        Share via WhatsApp
+                    </button>
+                    <button
+                        onClick={() => {
+                            const defaultStart = data.sessionStartDate ? new Date(data.sessionStartDate).toISOString().split('T')[0] : (data.bookingDate ? new Date(data.bookingDate).toISOString().split('T')[0] : "");
+                            const defaultEnd = data.sessionEndDate ? new Date(data.sessionEndDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                            setStartDateInput(defaultStart);
+                            setEndDateInput(defaultEnd);
+                            setEmailType("recent");
+                            setEmailTitle("Payment Receipt");
+                            setShareMode("email");
                             setEmailModalVisible(true);
                         }}
                         style={{
@@ -1207,9 +1248,11 @@ export default function PaymentDetailsUI() {
                         </div>
                         <div>
                             <CModalTitle style={{ fontSize: "1.15rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
-                                Send Receipt
+                                {shareMode === "whatsapp" ? "Share Receipt" : "Send Receipt"}
                             </CModalTitle>
-                            <p style={{ margin: "2px 0 0", fontSize: "12.5px", color: "#64748b" }}>Dispatch payment details securely via email.</p>
+                            <p style={{ margin: "2px 0 0", fontSize: "12.5px", color: "#64748b" }}>
+                                {shareMode === "whatsapp" ? "Share payment details directly via WhatsApp." : "Dispatch payment details securely via email."}
+                            </p>
                         </div>
                     </div>
                 </CModalHeader>
@@ -1283,7 +1326,7 @@ export default function PaymentDetailsUI() {
                         </label>
                         <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                             <div>
-                                <label style={{ fontSize: "11px", color: "#64748b", fontWeight: "600", marginBottom: "4px", display: "block" }}>Email Title</label>
+                                <label style={{ fontSize: "11px", color: "#64748b", fontWeight: "600", marginBottom: "4px", display: "block" }}>{shareMode === "whatsapp" ? "Title (Optional)" : "Email Title"}</label>
                                 <CFormInput
                                     type="text"
                                     value={emailTitle}
@@ -1292,16 +1335,18 @@ export default function PaymentDetailsUI() {
                                     style={{ padding: "10px 12px", borderRadius: "6px", fontSize: "13px", border: "1px solid #cbd5e1" }}
                                 />
                             </div>
-                            <div>
-                                <label style={{ fontSize: "11px", color: "#64748b", fontWeight: "600", marginBottom: "4px", display: "block" }}>Patient Email Address <span style={{ color: "#ef4444" }}>*</span></label>
-                                <CFormInput
-                                    type="email"
-                                    value={emailAddress}
-                                    onChange={(e) => setEmailAddress(e.target.value)}
-                                    placeholder="patient@example.com"
-                                    style={{ padding: "10px 12px", borderRadius: "6px", fontSize: "13px", border: "1px solid", borderColor: emailAddress ? "#cbd5e1" : "#fca5a5", backgroundColor: emailAddress ? "#fff" : "#fef2f2" }}
-                                />
-                            </div>
+                            {shareMode === "email" && (
+                                <div>
+                                    <label style={{ fontSize: "11px", color: "#64748b", fontWeight: "600", marginBottom: "4px", display: "block" }}>Patient Email Address <span style={{ color: "#ef4444" }}>*</span></label>
+                                    <CFormInput
+                                        type="email"
+                                        value={emailAddress}
+                                        onChange={(e) => setEmailAddress(e.target.value)}
+                                        placeholder="patient@example.com"
+                                        style={{ padding: "10px 12px", borderRadius: "6px", fontSize: "13px", border: "1px solid", borderColor: emailAddress ? "#cbd5e1" : "#fca5a5", backgroundColor: emailAddress ? "#fff" : "#fef2f2" }}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -1366,19 +1411,19 @@ export default function PaymentDetailsUI() {
                     </CButton>
                     <CButton
                         style={{
-                            backgroundColor: emailAddress ? "#2563eb" : "#94a3b8",
+                            backgroundColor: (shareMode === "whatsapp" || emailAddress) ? "#2563eb" : "#94a3b8",
                             color: "white",
                             fontWeight: "600",
                             padding: "10px 24px",
                             borderRadius: "8px",
-                            boxShadow: emailAddress ? "0 4px 12px rgba(37, 99, 235, 0.2)" : "none",
+                            boxShadow: (shareMode === "whatsapp" || emailAddress) ? "0 4px 12px rgba(37, 99, 235, 0.2)" : "none",
                             transition: "all 0.2s ease-in-out",
                             display: "flex",
                             alignItems: "center",
                             gap: "8px"
                         }}
                         onClick={handleSendEmail}
-                        disabled={isEmailing || !emailAddress}
+                        disabled={isEmailing || (shareMode === "email" && !emailAddress)}
                     >
                         {isEmailing ? (
                             <>
@@ -1387,8 +1432,8 @@ export default function PaymentDetailsUI() {
                             </>
                         ) : (
                             <>
-                                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                                Send Email
+                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                {shareMode === "whatsapp" ? "Share via WhatsApp" : "Send Email"}
                             </>
                         )}
                     </CButton>

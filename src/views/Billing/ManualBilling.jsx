@@ -11,8 +11,10 @@ import { http } from '../../Utils/Interceptors'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import LoadingIndicator from '../../Utils/loader'
 import { CTable, CTableHead, CTableBody, CTableRow, CTableHeaderCell, CTableDataCell } from '@coreui/react'
-import { Edit, Printer, Download, Trash, Eye, Banknote, MessageCircle } from 'lucide-react'
+import { Edit, Printer, Download, Trash, Eye, Banknote, MessageCircle, ArrowLeft, FileText } from 'lucide-react'
 import Pagination from '../../Utils/Pagination'
+import { formatWhatsAppMessage } from '../../Utils/WhatsAppMessageFormatter'
+import { useNavigate } from 'react-router-dom'
 
 // ---- Design tokens ----
 const INK = '#1a1a2e'
@@ -61,6 +63,7 @@ const currency = (n) =>
     `₹${(Number.isFinite(n) ? n : 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 export default function ManualBilling() {
+    const navigate = useNavigate()
     const { selectedHospital, doctorData, branches } = useHospital() || {}
 
     // Resolve Dynamic Data with context fallbacks
@@ -168,10 +171,19 @@ export default function ManualBilling() {
                 const res = await AppointmentData(currentBranchId)
                 const data = res?.data || []
 
-                // Filter for "in-progress" and "completed"
+                // Filter for "in-progress" and "completed" and sort descending
                 const filtered = data.filter(b =>
-                    ['in-progress', 'completed',].includes((b.status || '').toLowerCase())
-                )
+                    ['in-progress', 'completed'].includes((b.status || '').toLowerCase())
+                ).sort((a, b) => {
+                    const d1 = new Date(a.createdAt || a.bookingDate || a.date).getTime();
+                    const d2 = new Date(b.createdAt || b.bookingDate || b.date).getTime();
+                    if (!isNaN(d1) && !isNaN(d2)) {
+                        return d2 - d1;
+                    }
+                    const idA = a.bookingId || a.id || a._id || '';
+                    const idB = b.bookingId || b.id || b._id || '';
+                    return idB.localeCompare(idA);
+                })
                 setAppointments(filtered)
             } catch (err) {
                 console.error('Error fetching appointments:', err)
@@ -190,7 +202,10 @@ export default function ManualBilling() {
             const bId = sessionStorage.getItem('branchId') || '000101'
             const res = await http.get(`/getAllBillingsByUsingClinicIdAndBranchId/${cId}/${bId}`)
             const list = res?.data?.data || res?.data || []
-            setBillingsList(Array.isArray(list) ? list : [])
+            const sortedList = Array.isArray(list) 
+                ? list.sort((a, b) => new Date(b.createdAt || b.billDate) - new Date(a.createdAt || a.billDate))
+                : []
+            setBillingsList(sortedList)
         } catch (err) {
             console.error('Error fetching all billings:', err)
         } finally {
@@ -683,7 +698,17 @@ export default function ManualBilling() {
 
             // Send via WhatsApp
             const ptMobile = b?.patient?.mobileNumber || ''
-            const msg = `Hello, your invoice details are ready. Please find the attached PDF: ${shareUrl}`;
+            
+            const msg = formatWhatsAppMessage({
+                status: 'invoice',
+                patientName: b?.patient?.patientName || 'Patient',
+                bookingId: b?.billingId || '',
+                serviceDate: b?.billDate || '',
+                billAmount: currency(Number(b?.paymentSummary?.totalAmount)),
+                balanceDue: currency(Number(b?.paymentSummary?.dueAmount)),
+                invoiceUrl: shareUrl
+            });
+            
             window.open(`https://wa.me/91${ptMobile}?text=${encodeURIComponent(msg)}`, '_blank');
             showToast('WhatsApp share opened!');
         } catch (error) {
@@ -836,12 +861,36 @@ export default function ManualBilling() {
                         gap: 15,
                     }}
                 >
-                    <div>
-                        <div style={{ fontWeight: 800, color: '#F3F7F6', fontSize: 24, letterSpacing: '-0.3px', color: COLORS.primary, }}>
-                            Manual Billing Portal
-                        </div>
-                        <div style={{ fontSize: 11, letterSpacing: 0.8, color: 'rgba(115, 119, 118, 0.88)' }}>
-                            CLINIC ADMIN · BRANDED CLINIC RECEIPT SYSTEM
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <button
+                            onClick={() => navigate(-1)}
+                            style={{
+                                background: '#fff',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: 40,
+                                height: 40,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: COLORS.primary,
+                                transition: 'all 0.2s ease',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                            }}
+                            onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)'; }}
+                            onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; }}
+                            title="Go Back"
+                        >
+                            <ArrowLeft size={20} strokeWidth={2.5} />
+                        </button>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: 24, letterSpacing: '-0.3px', color: COLORS.primary }}>
+                                Manual Billing Portal
+                            </div>
+                            <div style={{ fontSize: 11, letterSpacing: 0.8, color: 'rgba(115, 119, 118, 0.88)' }}>
+                                CLINIC ADMIN · BRANDED CLINIC RECEIPT SYSTEM
+                            </div>
                         </div>
                     </div>
 
@@ -1294,9 +1343,18 @@ export default function ManualBilling() {
                     /* Billing View Mode */
                     <div style={cardStyle}>
                         <div style={cardHeaderStyle}>
-                            <span style={cardTitleStyle}>
-                                <span style={dot(TEAL)} /> Billing Details & Transaction History
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px', color: SLATE, borderRadius: '4px' }}
+                                    title="Back"
+                                >
+                                    <ArrowLeft size={20} />
+                                </button>
+                                <span style={cardTitleStyle}>
+                                    <span style={dot(TEAL)} /> Billing Details & Transaction History
+                                </span>
+                            </div>
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <button
                                     onClick={() => handleEditBilling(viewBillingDetails.billingId, false)}
@@ -1327,85 +1385,92 @@ export default function ManualBilling() {
                                 >
                                     <MessageCircle size={16} style={{ marginRight: 6 }} /> {isDownloading ? 'Processing...' : 'WhatsApp'}
                                 </button>
-                                <button className="mbp-btn" onClick={() => setViewMode('list')} style={{ ...btnBase, background: '#f8fafc', color: SLATE, border: '1px solid #e2e8f0' }}>
-                                    ← Back to List
-                                </button>
                             </div>
                         </div>
                         <div style={{ padding: 20 }}>
-                            <div className="mbp-grid" style={{ marginBottom: 20 }}>
+                            <div className="mbp-grid" style={{ marginBottom: 24, background: '#f8fafc', padding: 20, borderRadius: 10, border: '1px solid #e2e8f0' }}>
                                 <div style={{ gridColumn: 'span 4' }}>
-                                    <div style={{ fontSize: 11, color: SLATE, textTransform: 'uppercase', fontWeight: 600 }}>Bill No.</div>
+                                    <div style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Bill No.</div>
                                     <div style={{ fontSize: 16, fontWeight: 700, color: TEAL }}>{viewBillingDetails.billingId}</div>
                                 </div>
                                 <div style={{ gridColumn: 'span 4' }}>
-                                    <div style={{ fontSize: 11, color: SLATE, textTransform: 'uppercase', fontWeight: 600 }}>Patient Id</div>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>{viewBillingDetails.patient?.patientId || '-'}</div>
+                                    <div style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Patient ID</div>
+                                    <div style={{ fontSize: 15, fontWeight: 600, color: INK }}>{viewBillingDetails.patient?.patientId || '-'}</div>
                                 </div>
                                 <div style={{ gridColumn: 'span 4' }}>
-                                    <div style={{ fontSize: 11, color: SLATE, textTransform: 'uppercase', fontWeight: 600 }}>Patient Name</div>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>{viewBillingDetails.patient?.patientName || '-'}</div>
-                                </div>
-                                <div style={{ gridColumn: 'span 4' }}>
-                                    <div style={{ fontSize: 11, color: SLATE, textTransform: 'uppercase', fontWeight: 600 }}>Total Amount</div>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>{currency(Number(viewBillingDetails.paymentSummary?.subTotal))}</div>
-                                </div>
-                                <div style={{ gridColumn: 'span 4' }}>
-                                    <div style={{ fontSize: 11, color: SLATE, textTransform: 'uppercase', fontWeight: 600 }}>Total Discount</div>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>{currency(Number(viewBillingDetails.paymentSummary?.totalDiscount))}</div>
-                                </div>
-                                <div style={{ gridColumn: 'span 4' }}>
-                                    <div style={{ fontSize: 11, color: SLATE, textTransform: 'uppercase', fontWeight: 600 }}>Final Amount</div>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>{currency(Number(viewBillingDetails.paymentSummary?.totalAmount))}</div>
-                                </div>
-                                <div style={{ gridColumn: 'span 4' }}>
-                                    <div style={{ fontSize: 11, color: SLATE, textTransform: 'uppercase', fontWeight: 600 }}>Total Paid</div>
-                                    <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>{currency(Number(viewBillingDetails.paymentSummary?.totalPaid))}</div>
-                                </div>
-                                <div style={{ gridColumn: 'span 4' }}>
-                                    <div style={{ fontSize: 11, color: SLATE, textTransform: 'uppercase', fontWeight: 600 }}>Balance Due</div>
-                                    <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>{currency(Number(viewBillingDetails.paymentSummary?.dueAmount))}</div>
+                                    <div style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Patient Name</div>
+                                    <div style={{ fontSize: 15, fontWeight: 600, color: INK }}>{viewBillingDetails.patient?.patientName || '-'}</div>
                                 </div>
                             </div>
-                            <h5 style={{ fontSize: 14, fontWeight: 700, color: TEAL_DEEP, marginBottom: 10, borderBottom: '1px solid #eee', paddingBottom: 5 }}>Transaction History</h5>
-                            <CTable striped responsive>
-                                <CTableHead className="pink-table">
-                                    <CTableRow>
-                                        <CTableHeaderCell>Date</CTableHeaderCell>
-                                        <CTableHeaderCell>Receipt No.</CTableHeaderCell>
-                                        <CTableHeaderCell>Payment Mode</CTableHeaderCell>
-                                        <CTableHeaderCell>Transaction ID</CTableHeaderCell>
-                                        <CTableHeaderCell>Paid Amount</CTableHeaderCell>
-                                        {/* <CTableHeaderCell>Due Amount</CTableHeaderCell> */}
-                                        <CTableHeaderCell>Status</CTableHeaderCell>
-                                    </CTableRow>
-                                </CTableHead>
-                                <CTableBody>
-                                    {viewBillingDetails.transactions && viewBillingDetails.transactions.length > 0 ? (
-                                        viewBillingDetails.transactions.map((txn, i) => (
-                                            <CTableRow key={i}>
-                                                <CTableDataCell>{txn.paymentDate || viewBillingDetails.billDate}</CTableDataCell>
-                                                <CTableDataCell style={{ fontWeight: 600 }}>{txn.receiptNo || '-'}</CTableDataCell>
-                                                <CTableDataCell>{txn.paymentMode || '-'}</CTableDataCell>
-                                                <CTableDataCell>{txn.transactionId || '-'}</CTableDataCell>
-                                                <CTableDataCell style={{ color: SAGE, fontWeight: 600 }}>{currency(txn.amount || txn.paidAmount)}</CTableDataCell>
-                                                {/* <CTableDataCell>-</CTableDataCell> */}
-                                                <CTableDataCell>Success</CTableDataCell>
+
+                            <div className="mbp-grid" style={{ marginBottom: 30, gap: '16px' }}>
+                                <div style={{ gridColumn: 'span 3', padding: 16, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Total Amount</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: INK }}>{currency(Number(viewBillingDetails.paymentSummary?.subTotal))}</div>
+                                </div>
+                                <div style={{ gridColumn: 'span 3', padding: 16, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Total Discount</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: CORAL }}>{currency(Number(viewBillingDetails.paymentSummary?.totalDiscount))}</div>
+                                </div>
+                                <div style={{ gridColumn: 'span 3', padding: 16, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ fontSize: 12, color: '#166534', textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Total Paid</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: SAGE }}>{currency(Number(viewBillingDetails.paymentSummary?.totalPaid))}</div>
+                                </div>
+                                <div style={{ gridColumn: 'span 3', padding: 16, background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ fontSize: 12, color: '#92400e', textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Balance Due</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: '#b45309' }}>{currency(Number(viewBillingDetails.paymentSummary?.dueAmount))}</div>
+                                </div>
+                            </div>
+                            <div style={{ marginTop: 24 }}>
+                                <h5 style={{ fontSize: 15, fontWeight: 700, color: TEAL_DEEP, marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 8, display: 'flex', alignItems: 'center' }}>
+                                    <FileText size={18} style={{ marginRight: 8, color: SLATE }} /> Transaction History
+                                </h5>
+                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                                    <CTable hover responsive style={{ margin: 0, border: 'none' }}>
+                                        <CTableHead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                            <CTableRow>
+                                                <CTableHeaderCell style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, padding: '12px 16px', border: 'none' }}>Date</CTableHeaderCell>
+                                                <CTableHeaderCell style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, padding: '12px 16px', border: 'none' }}>Receipt No.</CTableHeaderCell>
+                                                <CTableHeaderCell style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, padding: '12px 16px', border: 'none' }}>Payment Mode</CTableHeaderCell>
+                                                <CTableHeaderCell style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, padding: '12px 16px', border: 'none' }}>Transaction ID</CTableHeaderCell>
+                                                <CTableHeaderCell style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, padding: '12px 16px', border: 'none' }}>Paid Amount</CTableHeaderCell>
+                                                <CTableHeaderCell style={{ fontSize: 12, color: SLATE, textTransform: 'uppercase', fontWeight: 600, padding: '12px 16px', border: 'none' }}>Status</CTableHeaderCell>
                                             </CTableRow>
-                                        ))
-                                    ) : (
-                                        <CTableRow>
-                                            <CTableDataCell>{viewBillingDetails.billDate}</CTableDataCell>
-                                            <CTableDataCell style={{ fontWeight: 600 }}>-</CTableDataCell>
-                                            <CTableDataCell>{viewBillingDetails.payment?.paymentMode || '-'}</CTableDataCell>
-                                            <CTableDataCell>{viewBillingDetails.payment?.transactionId || '-'}</CTableDataCell>
-                                            <CTableDataCell style={{ color: SAGE, fontWeight: 600 }}>{currency(viewBillingDetails.payment?.paidAmount)}</CTableDataCell>
-                                            <CTableDataCell style={{ color: CORAL, fontWeight: 600 }}>{currency(viewBillingDetails.payment?.dueAmount)}</CTableDataCell>
-                                            <CTableDataCell>{viewBillingDetails.invoiceStatus || viewBillingDetails.status || 'Draft'}</CTableDataCell>
-                                        </CTableRow>
-                                    )}
-                                </CTableBody>
-                            </CTable>
+                                        </CTableHead>
+                                        <CTableBody>
+                                            {viewBillingDetails.transactions && viewBillingDetails.transactions.length > 0 ? (
+                                                viewBillingDetails.transactions.map((txn, i) => (
+                                                    <CTableRow key={i}>
+                                                        <CTableDataCell style={{ fontSize: 13, color: INK, padding: '12px 16px', verticalAlign: 'middle' }}>{txn.paymentDate || viewBillingDetails.billDate}</CTableDataCell>
+                                                        <CTableDataCell style={{ fontSize: 13, color: TEAL, fontWeight: 600, padding: '12px 16px', verticalAlign: 'middle' }}>{txn.receiptNo || '-'}</CTableDataCell>
+                                                        <CTableDataCell style={{ fontSize: 13, color: INK, padding: '12px 16px', verticalAlign: 'middle' }}>
+                                                            <span style={{ background: '#f1f5f9', padding: '4px 8px', borderRadius: 4, fontWeight: 500 }}>{txn.paymentMode || '-'}</span>
+                                                        </CTableDataCell>
+                                                        <CTableDataCell style={{ fontSize: 13, color: SLATE, padding: '12px 16px', verticalAlign: 'middle' }}>{txn.transactionId || '-'}</CTableDataCell>
+                                                        <CTableDataCell style={{ fontSize: 14, color: SAGE, fontWeight: 700, padding: '12px 16px', verticalAlign: 'middle' }}>{currency(txn.amount || txn.paidAmount)}</CTableDataCell>
+                                                        <CTableDataCell style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                                                            <span style={{ background: '#dcfce7', color: '#166534', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>Success</span>
+                                                        </CTableDataCell>
+                                                    </CTableRow>
+                                                ))
+                                            ) : (
+                                                <CTableRow>
+                                                    <CTableDataCell style={{ fontSize: 13, color: INK, padding: '12px 16px', verticalAlign: 'middle' }}>{viewBillingDetails.billDate}</CTableDataCell>
+                                                    <CTableDataCell style={{ fontSize: 13, color: SLATE, padding: '12px 16px', verticalAlign: 'middle' }}>-</CTableDataCell>
+                                                    <CTableDataCell style={{ fontSize: 13, color: INK, padding: '12px 16px', verticalAlign: 'middle' }}>
+                                                        <span style={{ background: '#f1f5f9', padding: '4px 8px', borderRadius: 4, fontWeight: 500 }}>{viewBillingDetails.payment?.paymentMode || '-'}</span>
+                                                    </CTableDataCell>
+                                                    <CTableDataCell style={{ fontSize: 13, color: SLATE, padding: '12px 16px', verticalAlign: 'middle' }}>{viewBillingDetails.payment?.transactionId || '-'}</CTableDataCell>
+                                                    <CTableDataCell style={{ fontSize: 14, color: SAGE, fontWeight: 700, padding: '12px 16px', verticalAlign: 'middle' }}>{currency(viewBillingDetails.payment?.paidAmount)}</CTableDataCell>
+                                                    <CTableDataCell style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                                                        <span style={{ background: '#f1f5f9', color: SLATE, padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{viewBillingDetails.invoiceStatus || viewBillingDetails.status || 'Draft'}</span>
+                                                    </CTableDataCell>
+                                                </CTableRow>
+                                            )}
+                                        </CTableBody>
+                                    </CTable>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 ) : (

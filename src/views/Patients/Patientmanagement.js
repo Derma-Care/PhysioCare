@@ -295,62 +295,66 @@ const PatientManagement = () => {
             </div>
           ) : appointments.length > 0 ? (
             <>
-            <CTable className=" pink-table">
-              <CTableHead >
-                <CTableRow>
-                  <CTableHeaderCell>Booking ID</CTableHeaderCell>
-                  <CTableHeaderCell>Date</CTableHeaderCell>
-                  <CTableHeaderCell>Doctor</CTableHeaderCell>
-                  <CTableHeaderCell>Visit Type</CTableHeaderCell>
-                  <CTableHeaderCell>Action</CTableHeaderCell>
-                </CTableRow>
-              </CTableHead>
-
-              <CTableBody>
-                {appointments.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((appt, index) => (
-                  <CTableRow key={index}>
-
-                    <CTableDataCell className="pm-bold">
-                      {appt.bookingId}
-                    </CTableDataCell>
-
-                    <CTableDataCell>
-                      {appt.serviceDate}
-                    </CTableDataCell>
-
-                    <CTableDataCell>
-                      {appt.doctorName}
-                    </CTableDataCell>
-
-                    <CTableDataCell>
-                      <span className="pm-tag">{appt.visitType}</span>
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      <button
-                        className="pm-action-btn view"
-                        title="View"
-                        onClick={() =>
-                          navigate(`/appointment-details/${appt.bookingId}`, {
-                            state: { appointment: appt }
-                          })
-                        }
-                      >
-                        <Eye size={14} />
-                      </button>
-                    </CTableDataCell>
+              <CTable className=" pink-table">
+                <CTableHead >
+                  <CTableRow>
+                    <CTableHeaderCell>Booking ID</CTableHeaderCell>
+                    <CTableHeaderCell>Date</CTableHeaderCell>
+                    <CTableHeaderCell>Doctor</CTableHeaderCell>
+                    <CTableHeaderCell>Visit Type</CTableHeaderCell>
+                    <CTableHeaderCell>Status</CTableHeaderCell>
+                    <CTableHeaderCell>Action</CTableHeaderCell>
                   </CTableRow>
-                ))}
-              </CTableBody>
-            </CTable>
-            {appointments.length > 0 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={Math.ceil(appointments.length / rowsPerPage)}
-                pageSize={rowsPerPage}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={setRowsPerPage}
-              />
-            )}
+                </CTableHead>
+
+                <CTableBody>
+                  {appointments.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((appt, index) => (
+                    <CTableRow key={index}>
+
+                      <CTableDataCell className="pm-bold">
+                        {appt.bookingId}
+                      </CTableDataCell>
+
+                      <CTableDataCell>
+                        {appt.serviceDate}
+                      </CTableDataCell>
+
+                      <CTableDataCell>
+                        {appt.doctorName}
+                      </CTableDataCell>
+
+                      <CTableDataCell>
+                        <span className="pm-tag">{appt.visitType}</span>
+                      </CTableDataCell>
+                      <CTableDataCell>
+                        <span className="pm-tag">{appt.status}</span>
+                      </CTableDataCell>
+                      <CTableDataCell>
+                        <button
+                          className="pm-action-btn view"
+                          title="View"
+                          onClick={() =>
+                            navigate(`/appointment-details/${appt.bookingId}`, {
+                              state: { appointment: appt }
+                            })
+                          }
+                        >
+                          <Eye size={14} />
+                        </button>
+                      </CTableDataCell>
+                    </CTableRow>
+                  ))}
+                </CTableBody>
+              </CTable>
+              {appointments.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(appointments.length / rowsPerPage)}
+                  pageSize={rowsPerPage}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setRowsPerPage}
+                />
+              )}
             </>
 
           ) : (

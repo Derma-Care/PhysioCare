@@ -6,6 +6,8 @@ import { showCustomToast } from '../../Utils/Toaster'
 import { BASE_URL, wifiUrl } from '../../baseUrl'
 import { COLORS } from '../../Constant/Themes'
 import ConfirmModal from '../../components/ConfirmLogoutModal'
+import { http } from '../../Utils/Interceptors'
+import { formatWhatsAppMessage } from '../../Utils/WhatsAppMessageFormatter'
 
 /* ─────────────────────────────────────────────
    Inline styles – scoped design tokens
@@ -237,6 +239,25 @@ const GeneratedSessionsTable = ({ generatedSessions, appointment, onRefresh }) =
         if (onRefresh) {
           onRefresh()
         }
+
+        // Send WhatsApp Notification
+        if (appointment?.patientMobileNumber) {
+          try {
+            const msg = formatWhatsAppMessage({
+              status: action === 'book' ? 'booked' : action,
+              patientName: appointment.name || 'Patient',
+              doctorName: generatedSessions.therapistName || generatedSessions.doctorName || 'your therapist',
+              serviceDate: payload.date,
+              serviceTime: payload.slot,
+              isSession: true,
+              sessionNo: sessionNo
+            });
+            window.open(`https://wa.me/91${appointment.patientMobileNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+          } catch (waError) {
+            console.error("Failed to open WhatsApp", waError);
+          }
+        }
+
       } else {
         showCustomToast(res.data?.message || `Failed to ${action} session`, "error")
       }

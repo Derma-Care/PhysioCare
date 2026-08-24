@@ -28,6 +28,7 @@ import Select from 'react-select'
 import { BASE_URL, wifiUrl } from '../../baseUrl'
 import axios from 'axios'
 import { useHospital } from '../Usecontext/HospitalContext'
+import { http } from '../../Utils/Interceptors'
 
 import { followUPBooking, postBooking } from '../../APIs/BookServiceAPi'
 import { bookingUpdate } from './appointmentAPI'
@@ -39,6 +40,7 @@ import { COLORS } from '../../Constant/Themes'
 import BookingSearch from '../widgets/BookingSearch '
 import { uploadFile } from '../widgets/S3UploadService'
 import { emailPattern } from '../../Constant/Constants'
+import { formatWhatsAppMessage } from '../../Utils/WhatsAppMessageFormatter'
 
 // ─── Tab config ────────────────────────────────────────────────────────────────
 const TABS = [
@@ -955,10 +957,30 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         })
       }
 
-      // ✅ Correct order: close → reset → toast → navigate
       onClose()
       handleFullReset()
       showCustomToast('Booking submitted successfully!', 'success')
+      
+      // WhatsApp notification
+      try {
+        const patientName = combinedName || 'Patient';
+        const mobile = bookingDetails.patientMobileNumber || bookingDetails.mobileNumber || '';
+        
+        if (mobile) {
+          const msg = formatWhatsAppMessage({
+            status: editData ? 'updated' : 'booked',
+            patientName,
+            doctorName: bookingDetails.doctorName,
+            serviceDate: selectedDate,
+            serviceTime: bookingDetails.servicetime,
+            bookingId: selectedBooking?.bookingId || editData?.bookingId || ''
+          });
+          window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+      } catch (waError) {
+        console.error("Failed to open WhatsApp", waError);
+      }
+
       navigate('/dashboard')
 
     } catch (err) {
@@ -1001,10 +1023,30 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
         referredDoctorId: bookingDetails.doctorRefCode === 'OTHER' ? '' : bookingDetails.doctorRefCode,
       })
 
-      // ✅ Correct order: close → reset → toast → navigate
       onClose()
       handleFullReset()
       showCustomToast('Follow-up booking submitted successfully!', 'success')
+
+      // WhatsApp notification
+      try {
+        const patientName = selectedBooking?.name || bookingDetails.name || 'Patient';
+        const mobile = selectedBooking?.mobileNumber || bookingDetails.patientMobileNumber || bookingDetails.mobileNumber || '';
+        
+        if (mobile) {
+          const msg = formatWhatsAppMessage({
+            status: 'booked',
+            patientName,
+            doctorName: bookingDetails.doctorName || selectedBooking?.doctorName || 'your doctor',
+            serviceDate: selectedDate,
+            serviceTime: bookingDetails.servicetime,
+            bookingId: selectedBooking?.bookingId || ''
+          });
+          window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+      } catch (waError) {
+        console.error("Failed to open WhatsApp", waError);
+      }
+
       navigate('/dashboard')
 
     } catch (err) {
@@ -2026,7 +2068,7 @@ const BookAppointmentModal = ({ visible, onClose, editData }) => {
                   fontSize: FS, padding: '4px 14px',
                   backgroundColor: COLORS.primary, color: '#fff', border: 'none',
                 }}
-                onClick={visitType === 'followup' ? handleFollowUpSubmit : handleSubmit}>
+                onClick={(visitType === 'followup' && !editData) ? handleFollowUpSubmit : handleSubmit}>
                 {saveloading ? (
                   <div className="d-flex align-items-center gap-1 text-white">
                     <span className="spinner-border spinner-border-sm text-white" style={{ width: '12px', height: '12px' }} />

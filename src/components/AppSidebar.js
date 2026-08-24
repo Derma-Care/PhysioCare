@@ -93,7 +93,7 @@ const AppSidebar = () => {
 
         /* ─── Sidebar shell ─────────────────────────── */
         .sb-sidebar {
-          background: #1a3a6b !important;
+          background: #1B4F8A !important;
           border-right: none !important;
           display: flex;
           flex-direction: column;
@@ -101,7 +101,7 @@ const AppSidebar = () => {
 
         /* ─── Header ────────────────────────────────── */
         .sb-header {
-          background: #1a3a6b !important;
+          background: #1B4F8A !important;
           border-bottom: 1px solid rgba(255,255,255,0.08) !important;
           padding: 0 !important;
         }
@@ -122,7 +122,7 @@ const AppSidebar = () => {
           border-radius: 50%;
           border: 3px solid #f0b429;
           padding: 3px;
-          background: #1a3a6b;
+          background: #1B4F8A;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -215,7 +215,7 @@ const AppSidebar = () => {
         .sb-nav-wrap .nav-link.active,
         .sb-nav-wrap a.nav-link.active {
           background: #f0b429 !important;
-          color: #1a3a6b !important;
+          color: #1B4F8A !important;
           font-weight: 700 !important;
           box-shadow: 0 4px 12px rgba(240,180,41,0.35) !important;
         }
@@ -236,8 +236,8 @@ const AppSidebar = () => {
         /* Icons active — dark so they show on gold */
         .sb-nav-wrap .nav-link.active svg,
         .sb-nav-wrap .nav-link.active .c-icon {
-          color: #1a3a6b !important;
-          fill: #1a3a6b !important;
+          color: #1B4F8A !important;
+          fill: #1B4F8A !important;
         }
 
         /* Section / group titles */
